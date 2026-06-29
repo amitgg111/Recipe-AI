@@ -48,16 +48,18 @@ class RecipeEditorController extends GetxController {
   final RxList<String> tags = <String>[].obs;
 
   // -----------------------------
-  // Ingredients
+  // Ingredients (flat + sections)
   // -----------------------------
 
   final RxList<String> ingredients = <String>[].obs;
+  final RxList<IngredientSection> ingredientSections = <IngredientSection>[].obs;
 
   // -----------------------------
-  // Instructions
+  // Instructions (flat + sections)
   // -----------------------------
 
   final RxList<String> instructions = <String>[].obs;
+  final RxList<InstructionSection> instructionSections = <InstructionSection>[].obs;
 
   // -----------------------------
   // Loading
@@ -65,6 +67,7 @@ class RecipeEditorController extends GetxController {
 
   final RxBool isSaving = false.obs;
   final RxBool imageRemoved = false.obs;
+  final RxBool isPublic = false.obs;
 
   Future<void> removeImage() async {
     imageRemoved.value = true;
@@ -104,9 +107,24 @@ class RecipeEditorController extends GetxController {
 
     tags.assignAll(recipe!.keywords);
 
-    ingredients.assignAll(recipe!.ingredients);
+    isPublic.value = recipe!.isPublic;
 
+    ingredients.assignAll(recipe!.ingredients);
     instructions.assignAll(recipe!.instructions);
+
+    if (recipe!.ingredientSections.isNotEmpty &&
+        recipe!.ingredientSections.any((s) => s.items.isNotEmpty)) {
+      ingredientSections.assignAll(recipe!.ingredientSections);
+    } else if (recipe!.ingredients.isNotEmpty) {
+      ingredientSections.assignAll([IngredientSection(items: List.from(recipe!.ingredients))]);
+    }
+
+    if (recipe!.instructionSections.isNotEmpty &&
+        recipe!.instructionSections.any((s) => s.steps.isNotEmpty)) {
+      instructionSections.assignAll(recipe!.instructionSections);
+    } else if (recipe!.instructions.isNotEmpty) {
+      instructionSections.assignAll([InstructionSection(steps: List.from(recipe!.instructions))]);
+    }
   }
 
   // ===================================================
@@ -211,6 +229,73 @@ class RecipeEditorController extends GetxController {
   }
 
   // ===================================================
+  // SECTION-BASED OPERATIONS
+  // ===================================================
+
+  void _syncFlatFromSections() {
+    ingredients.assignAll(ingredientSections.expand((s) => s.items));
+    instructions.assignAll(instructionSections.expand((s) => s.steps));
+  }
+
+  void addIngredientToSection(int sectionIdx, String value) {
+    if (value.trim().isEmpty) return;
+    final s = ingredientSections[sectionIdx];
+    ingredientSections[sectionIdx] = IngredientSection(
+      name: s.name,
+      items: [...s.items, value.trim()],
+    );
+    _syncFlatFromSections();
+  }
+
+  void removeIngredientFromSection(int sectionIdx, int itemIdx) {
+    final s = ingredientSections[sectionIdx];
+    final newItems = List<String>.from(s.items)..removeAt(itemIdx);
+    ingredientSections[sectionIdx] = IngredientSection(name: s.name, items: newItems);
+    _syncFlatFromSections();
+  }
+
+  void updateIngredientInSection(int sectionIdx, int itemIdx, String value) {
+    final s = ingredientSections[sectionIdx];
+    final newItems = List<String>.from(s.items);
+    newItems[itemIdx] = value;
+    ingredientSections[sectionIdx] = IngredientSection(name: s.name, items: newItems);
+    _syncFlatFromSections();
+  }
+
+  void addIngredientGroup(String name) {
+    ingredientSections.add(IngredientSection(name: name.trim(), items: []));
+  }
+
+  void addInstructionToSection(int sectionIdx, String value) {
+    if (value.trim().isEmpty) return;
+    final s = instructionSections[sectionIdx];
+    instructionSections[sectionIdx] = InstructionSection(
+      name: s.name,
+      steps: [...s.steps, value.trim()],
+    );
+    _syncFlatFromSections();
+  }
+
+  void removeInstructionFromSection(int sectionIdx, int stepIdx) {
+    final s = instructionSections[sectionIdx];
+    final newSteps = List<String>.from(s.steps)..removeAt(stepIdx);
+    instructionSections[sectionIdx] = InstructionSection(name: s.name, steps: newSteps);
+    _syncFlatFromSections();
+  }
+
+  void updateInstructionInSection(int sectionIdx, int stepIdx, String value) {
+    final s = instructionSections[sectionIdx];
+    final newSteps = List<String>.from(s.steps);
+    newSteps[stepIdx] = value;
+    instructionSections[sectionIdx] = InstructionSection(name: s.name, steps: newSteps);
+    _syncFlatFromSections();
+  }
+
+  void addInstructionGroup(String name) {
+    instructionSections.add(InstructionSection(name: name.trim(), steps: []));
+  }
+
+  // ===================================================
   // SAVE
   // ===================================================
 
@@ -302,13 +387,15 @@ class RecipeEditorController extends GetxController {
 
         "instructions": instructions.toList(),
 
-        "ingredientSections": [
-          IngredientSection(items: ingredients.toList()).toMap(),
-        ],
+        "ingredientSections": ingredientSections.isNotEmpty
+            ? ingredientSections.map((s) => s.toMap()).toList()
+            : [IngredientSection(items: ingredients.toList()).toMap()],
 
-        "instructionSections": [
-          InstructionSection(steps: instructions.toList()).toMap(),
-        ],
+        "instructionSections": instructionSections.isNotEmpty
+            ? instructionSections.map((s) => s.toMap()).toList()
+            : [InstructionSection(steps: instructions.toList()).toMap()],
+
+        "isPublic": isPublic.value,
       };
       log("FINAL IMAGE URL => $imageUrl");
       final collection = FirebaseFirestore.instance

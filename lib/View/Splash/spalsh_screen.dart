@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:recipe_ai/View/Auth/auth_wrapper.dart';
 import 'package:recipe_ai/Widget/custom_text.dart';
+import 'package:recipe_ai/screens/onboarding/welcome_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -20,7 +22,14 @@ class _SplashScreenState extends State<SplashScreen> {
 
     _redirectTimer = Timer(const Duration(seconds: 2), () {
       if (!mounted) return;
-      Get.off(() => const AuthWrapper());
+      final box = GetStorage();
+      final hasSeenOnboarding = box.read<bool>('hasSeenOnboarding') ?? false;
+      if (!hasSeenOnboarding) {
+        box.write('hasSeenOnboarding', true);
+        Get.off(() => const WelcomeScreen());
+      } else {
+        Get.off(() => const AuthWrapper());
+      }
     });
   }
 

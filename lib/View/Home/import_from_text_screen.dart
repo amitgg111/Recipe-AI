@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/Service/import_with_image_api_calling_service.dart';
+import 'package:recipe_ai/widgets/app_search_bar.dart';
 
 class GenerateRecipeScreen extends StatefulWidget {
   const GenerateRecipeScreen({super.key});
@@ -65,16 +66,10 @@ class _GenerateRecipeScreenState extends State<GenerateRecipeScreen> {
 
             const SizedBox(height: 30),
 
-            TextField(
+            AppSearchBar(
               controller: recipeController,
+              hintText: 'e.g. Paneer Butter Masala',
               textInputAction: TextInputAction.done,
-              decoration: InputDecoration(
-                hintText: 'e.g. Paneer Butter Masala',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
               onSubmitted: (_) => _generateRecipe(),
             ),
 

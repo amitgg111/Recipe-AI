@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:recipe_ai/View/Home/cookbooks_screen.dart';
+import 'package:recipe_ai/View/Home/discover_screen.dart';
 import 'package:recipe_ai/View/Home/groceries_screen.dart';
 import 'package:recipe_ai/View/Home/meal_plan_screen.dart';
 import 'package:recipe_ai/View/Home/profile_screen.dart';
+import 'package:recipe_ai/theme/app_colors.dart';
+import 'package:recipe_ai/widgets/app_bottom_nav.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
-  // Preserve the active tab index across hot reloads
   static int activeIndex = 0;
 
   @override
@@ -15,9 +17,9 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // IndexedStack keeps all pages alive so state is preserved on tab switch
   final List<Widget> _pages = [
     const CookbooksScreen(),
+    const DiscoverScreen(),
     const MealPlanScreen(),
     GroceriesScreen(),
     const ProfileScreen(),
@@ -26,33 +28,11 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: IndexedStack(index: HomeScreen.activeIndex, children: _pages),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: HomeScreen.activeIndex,
-        onDestinationSelected: (index) =>
-            setState(() => HomeScreen.activeIndex = index),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.menu_book_outlined),
-            selectedIcon: Icon(Icons.menu_book),
-            label: 'Cookbooks',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            selectedIcon: Icon(Icons.calendar_month),
-            label: 'Meal Plan',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.shopping_cart_outlined),
-            selectedIcon: Icon(Icons.shopping_cart),
-            label: 'Groceries',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
+      bottomNavigationBar: AppBottomNav(
+        currentIndex: HomeScreen.activeIndex,
+        onTap: (index) => setState(() => HomeScreen.activeIndex = index),
       ),
     );
   }

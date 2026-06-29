@@ -16,7 +16,8 @@ import 'package:recipe_ai/Service/auth_service.dart';
 
 import 'package:recipe_ai/Model/recipe_section_model.dart';
 import 'package:recipe_ai/View/Home/cookbooks_screen.dart';
-
+import 'package:recipe_ai/View/Home/import_processing_screen.dart';
+import 'package:recipe_ai/View/Home/import_complete_screen.dart';
 import 'package:recipe_ai/View/Home/recipe_detail_screen.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 
@@ -215,19 +216,15 @@ class RecipeImportService {
           .toList(),
     );
 
-    if (Get.isDialogOpen ?? false) {
-      Get.back();
-    }
-    // final _imageUrl =
-    //     firebaseImageUrl ??
-    //     remoteImageUrl ??
-    //     (recipe.imageUrl?.isNotEmpty == true ? recipe.imageUrl : null);
-
     log("firebaseImageUrl = $firebaseImageUrl");
     log("remoteImageUrl = $remoteImageUrl");
     log("recipe.imageUrl = ${recipe.imageUrl}");
     log("final imageUrl = $imageUrl");
-    Get.to(() => RecipeDetailScreen(recipe: recipeModel));
+
+    Get.off(
+      () => ImportCompleteScreen(recipe: recipeModel),
+      transition: Transition.fadeIn,
+    );
   }
 
   static Future<String?> _uploadImageFile(File imageFile, String uid) async {
@@ -255,9 +252,9 @@ class RecipeImportService {
     required String errorMessage,
     required Future<void> Function() import,
   }) async {
-    Get.dialog(
-      PhotoImportLoadingOverlay(steps: loadingSteps),
-      barrierDismissible: false,
+    Get.to(
+      () => ImportProcessingScreen(steps: loadingSteps),
+      transition: Transition.fadeIn,
     );
 
     try {
@@ -266,9 +263,7 @@ class RecipeImportService {
       log('Import error: $e');
       log(stack.toString());
 
-      if (Get.isDialogOpen ?? false) {
-        Get.back();
-      }
+      Get.back();
 
       CustomSnackbar.show(
         title: 'Error',

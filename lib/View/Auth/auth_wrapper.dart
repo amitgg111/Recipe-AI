@@ -1,8 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:recipe_ai/View/Auth/auth_screen.dart';
 import 'package:recipe_ai/View/Home/home_screen.dart';
 import 'package:recipe_ai/View/Splash/spalsh_screen.dart';
+import 'package:recipe_ai/screens/auth/create_account_screen.dart';
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
@@ -20,7 +20,7 @@ class AuthWrapper extends StatelessWidget {
           return const HomeScreen();
         }
 
-        return const AuthScreen();
+        return const CreateAccountScreen();
       },
     );
   }

@@ -26,6 +26,7 @@ class RecipeModel {
   final List<String> instructions;
   final List<IngredientSection> ingredientSections;
   final List<InstructionSection> instructionSections;
+  final bool isPublic;
 
   RecipeModel({
     required this.id,
@@ -44,6 +45,7 @@ class RecipeModel {
     required this.instructions,
     required this.ingredientSections,
     required this.instructionSections,
+    this.isPublic = false,
   });
 
   factory RecipeModel.fromDocument(DocumentSnapshot doc) {
@@ -67,6 +69,7 @@ class RecipeModel {
       instructions: parsed.instructions,
       ingredientSections: parsed.ingredientSections,
       instructionSections: parsed.instructionSections,
+      isPublic: data['isPublic'] == true,
     );
   }
   double get servingCount {
