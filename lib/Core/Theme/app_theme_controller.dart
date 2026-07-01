@@ -7,9 +7,10 @@ class ThemeController extends GetxController {
 
   static const String themeKey = 'theme_mode';
 
-  final Rx<ThemeMode> themeMode = ThemeMode.system.obs;
+  // Single-theme app: always the orange (light) theme. Dark mode removed.
+  final Rx<ThemeMode> themeMode = ThemeMode.light.obs;
 
-  bool get isDark => themeMode.value == ThemeMode.dark;
+  bool get isDark => false;
 
   @override
   void onInit() {
@@ -18,23 +19,10 @@ class ThemeController extends GetxController {
   }
 
   void _loadTheme() {
-    final savedTheme = _storage.read(themeKey);
-
-    switch (savedTheme) {
-      case 'light':
-        themeMode.value = ThemeMode.light;
-        break;
-
-      case 'dark':
-        themeMode.value = ThemeMode.dark;
-        break;
-
-      case 'system':
-      default:
-        themeMode.value = ThemeMode.system;
-    }
-
-    Get.changeThemeMode(themeMode.value);
+    // Always resolve to the orange (light) theme, ignoring any previously
+    // saved value or the device setting.
+    themeMode.value = ThemeMode.light;
+    Get.changeThemeMode(ThemeMode.light);
   }
 
   void _saveTheme(ThemeMode mode) {

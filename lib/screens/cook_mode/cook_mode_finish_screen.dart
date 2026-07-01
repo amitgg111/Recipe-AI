@@ -65,7 +65,7 @@ class _CookModeFinishScreenState extends State<CookModeFinishScreen>
       duration: const Duration(milliseconds: 3400),
     ),
     _ConfettiPiece(
-      color: AppColors.purple,
+      color: AppColors.primary,
       size: 12,
       rotation: -15,
       shape: _ConfettiShape.square,

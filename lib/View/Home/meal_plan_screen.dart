@@ -56,7 +56,10 @@ class _S {
 
   static TextStyle f(double size, FontWeight weight, Color color) {
     return GoogleFonts.plusJakartaSans(
-        fontSize: size, fontWeight: weight, color: color);
+      fontSize: size,
+      fontWeight: weight,
+      color: color,
+    );
   }
 }
 
@@ -75,12 +78,32 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
   static const _dayLetters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   static const _dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   static const _monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
   static const _shortMonths = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
 
   @override
@@ -93,11 +116,18 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
           // ── Header ──
           Container(
             color: _S.bg,
-            padding: EdgeInsets.only(top: top + 12, left: 20, right: 20, bottom: 12),
+            padding: EdgeInsets.only(
+              top: top + 12,
+              left: 20,
+              right: 20,
+              bottom: 12,
+            ),
             child: Row(
               children: [
-                Text('Meal Plan',
-                    style: _S.f(24, FontWeight.w800, _S.textDark)),
+                Text(
+                  'Meal Plan',
+                  style: _S.f(18, FontWeight.w800, _S.textDark),
+                ),
                 const Spacer(),
                 // Day / Month toggle
                 _buildViewToggle(),
@@ -113,7 +143,8 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
             child: Obx(() {
               if (controller.isLoading.value) {
                 return const Center(
-                    child: CircularProgressIndicator(color: _S.primary));
+                  child: CircularProgressIndicator(color: _S.primary),
+                );
               }
               if (_viewIndex == 1) return _buildMonthView();
               return _buildDayView();
@@ -135,10 +166,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        children: [
-          _toggleTab('Day', 0),
-          _toggleTab('Month', 1),
-        ],
+        children: [_toggleTab('Day', 0), _toggleTab('Month', 1)],
       ),
     );
   }
@@ -155,17 +183,24 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
           color: sel ? _S.card : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           boxShadow: sel
-              ? [BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
-                  blurRadius: 4,
-                  offset: const Offset(0, 1),
-                )]
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
+                ]
               : [],
         ),
         child: Center(
-          child: Text(label,
-              style: _S.f(13, sel ? FontWeight.w700 : FontWeight.w500,
-                  sel ? _S.textDark : _S.textHint)),
+          child: Text(
+            label,
+            style: _S.f(
+              13,
+              sel ? FontWeight.w700 : FontWeight.w500,
+              sel ? _S.textDark : _S.textHint,
+            ),
+          ),
         ),
       ),
     );
@@ -184,26 +219,43 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
         showMenu(
           context: context,
           position: RelativeRect.fromLTRB(
-              pos.dx - 140, pos.dy + box.size.height + 4, pos.dx + 20, 0),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            pos.dx - 140,
+            pos.dy + box.size.height + 4,
+            pos.dx + 20,
+            0,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
           color: _S.card,
           items: [
-            _menuItem(Icons.auto_awesome_rounded, 'Auto-fill my week', false, () {
-              Navigator.pop(context);
-              _showAutoFillSheet();
-            }),
+            _menuItem(
+              Icons.auto_awesome_rounded,
+              'Auto-fill my week',
+              false,
+              () {
+                Navigator.pop(context);
+                _showAutoFillSheet();
+              },
+            ),
             _menuItem(Icons.share_outlined, 'Share meal plan', false, () {
               Navigator.pop(context);
             }),
-            _menuItem(Icons.delete_outline_rounded, 'Clear this week', true, () {
-              Navigator.pop(context);
-              _showClearWeekDialog();
-            }),
+            _menuItem(
+              Icons.delete_outline_rounded,
+              'Clear this week',
+              true,
+              () {
+                Navigator.pop(context);
+                _showClearWeekDialog();
+              },
+            ),
           ],
         );
       },
       child: Container(
-        width: 34, height: 34,
+        width: 34,
+        height: 34,
         decoration: BoxDecoration(
           color: _S.card,
           borderRadius: BorderRadius.circular(10),
@@ -214,15 +266,22 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
     );
   }
 
-  PopupMenuItem _menuItem(IconData icon, String label, bool red, VoidCallback onTap) {
+  PopupMenuItem _menuItem(
+    IconData icon,
+    String label,
+    bool red,
+    VoidCallback onTap,
+  ) {
     final c = red ? _S.snackColor : _S.textDark;
     return PopupMenuItem(
       onTap: onTap,
-      child: Row(children: [
-        Icon(icon, size: 20, color: c),
-        const SizedBox(width: 12),
-        Text(label, style: _S.f(14, FontWeight.w600, c)),
-      ]),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: c),
+          const SizedBox(width: 12),
+          Text(label, style: _S.f(14, FontWeight.w600, c)),
+        ],
+      ),
     );
   }
 
@@ -246,9 +305,10 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: GestureDetector(
               onTap: () => CustomSnackbar.show(
-                  title: 'Groceries',
-                  message: 'Week added to grocery list',
-                  type: SnackbarType.success),
+                title: 'Groceries',
+                message: 'Week added to grocery list',
+                type: SnackbarType.success,
+              ),
               child: Container(
                 width: double.infinity,
                 height: 44,
@@ -259,10 +319,16 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.shopping_cart_outlined, size: 18, color: _S.primary),
+                    Icon(
+                      Icons.shopping_cart_outlined,
+                      size: 18,
+                      color: _S.primary,
+                    ),
                     const SizedBox(width: 8),
-                    Text('Add this week to groceries',
-                        style: _S.f(14, FontWeight.w700, _S.primary)),
+                    Text(
+                      'Add this week to groceries',
+                      style: _S.f(14, FontWeight.w700, _S.primary),
+                    ),
                   ],
                 ),
               ),
@@ -330,8 +396,8 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                         color: isSel
                             ? _S.primary
                             : isToday
-                                ? _S.primary.withValues(alpha: 0.12)
-                                : Colors.transparent,
+                            ? _S.primary.withValues(alpha: 0.12)
+                            : Colors.transparent,
                         border: isToday && !isSel
                             ? Border.all(color: _S.primary, width: 1.5)
                             : null,
@@ -345,8 +411,8 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                             isSel
                                 ? Colors.white
                                 : isToday
-                                    ? _S.primary
-                                    : _S.textDark,
+                                ? _S.primary
+                                : _S.textDark,
                           ),
                         ),
                       ),
@@ -381,15 +447,20 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
       children: [
         const SizedBox(height: 14),
         // Section header: colored dot + label
-        Row(children: [
-          Container(
-            width: 10, height: 10,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 8),
-          Text(mealType.toUpperCase(),
-              style: _S.f(12, FontWeight.w800, color)),
-        ]),
+        Row(
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              mealType.toUpperCase(),
+              style: _S.f(12, FontWeight.w800, color),
+            ),
+          ],
+        ),
         const SizedBox(height: 10),
 
         // Meal cards
@@ -411,8 +482,10 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
               children: [
                 Icon(Icons.add, size: 18, color: _S.primary),
                 const SizedBox(width: 6),
-                Text('Add ${mealType.toLowerCase()}',
-                    style: _S.f(14, FontWeight.w600, _S.primary)),
+                Text(
+                  'Add ${mealType.toLowerCase()}',
+                  style: _S.f(14, FontWeight.w600, _S.primary),
+                ),
               ],
             ),
           ),
@@ -437,22 +510,31 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
           // Round recipe image
           ClipOval(
             child: SizedBox(
-              width: 46, height: 46,
-              child: meal.recipeImageUrl != null && meal.recipeImageUrl!.isNotEmpty
+              width: 46,
+              height: 46,
+              child:
+                  meal.recipeImageUrl != null && meal.recipeImageUrl!.isNotEmpty
                   ? CachedNetworkImage(
                       imageUrl: meal.recipeImageUrl!,
                       fit: BoxFit.cover,
-                      placeholder: (_, __) => Container(color: AppColors.shimmerBase),
+                      placeholder: (_, __) =>
+                          Container(color: AppColors.shimmerBase),
                       errorWidget: (_, __, ___) => Container(
                         color: AppColors.shimmerBase,
-                        child: const Icon(Icons.restaurant, size: 20,
-                            color: AppColors.shimmerHighlight),
+                        child: const Icon(
+                          Icons.restaurant,
+                          size: 20,
+                          color: AppColors.shimmerHighlight,
+                        ),
                       ),
                     )
                   : Container(
                       color: _S.mealColor(meal.mealType).withValues(alpha: 0.1),
-                      child: Icon(_S.mealIcon(meal.mealType),
-                          size: 22, color: _S.mealColor(meal.mealType)),
+                      child: Icon(
+                        _S.mealIcon(meal.mealType),
+                        size: 22,
+                        color: _S.mealColor(meal.mealType),
+                      ),
                     ),
             ),
           ),
@@ -463,17 +545,27 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(meal.recipeTitle,
-                    style: _S.f(14, FontWeight.w700, _S.textDark),
-                    maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(
+                  meal.recipeTitle,
+                  style: _S.f(14, FontWeight.w700, _S.textDark),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 const SizedBox(height: 3),
-                Row(children: [
-                  Icon(Icons.access_time_rounded, size: 13,
-                      color: _S.textHint),
-                  const SizedBox(width: 4),
-                  Text(_getMealTime(meal),
-                      style: _S.f(12, FontWeight.w500, _S.textHint)),
-                ]),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.access_time_rounded,
+                      size: 13,
+                      color: _S.textHint,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _getMealTime(meal),
+                      style: _S.f(12, FontWeight.w500, _S.textHint),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -492,9 +584,12 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
   }
 
   String _getMealTime(MealPlanItem meal) {
-    final recipe = homeController.recipes
-        .firstWhereOrNull((r) => r.id == meal.recipeId);
-    if (recipe != null && recipe.totalTime != null && recipe.totalTime!.isNotEmpty) {
+    final recipe = homeController.recipes.firstWhereOrNull(
+      (r) => r.id == meal.recipeId,
+    );
+    if (recipe != null &&
+        recipe.totalTime != null &&
+        recipe.totalTime!.isNotEmpty) {
       return recipe.totalTime!;
     }
     return meal.mealType;
@@ -550,16 +645,25 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                     children: [
                       GestureDetector(
                         onTap: () {
-                          final prev = DateTime(selDate.year, selDate.month - 1, 1);
+                          final prev = DateTime(
+                            selDate.year,
+                            selDate.month - 1,
+                            1,
+                          );
                           controller.selectDate(prev);
                         },
                         child: Container(
-                          width: 32, height: 32,
+                          width: 32,
+                          height: 32,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(color: _S.border),
                           ),
-                          child: const Icon(Icons.chevron_left, size: 20, color: _S.textDark),
+                          child: const Icon(
+                            Icons.chevron_left,
+                            size: 20,
+                            color: _S.textDark,
+                          ),
                         ),
                       ),
                       const Spacer(),
@@ -570,16 +674,25 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                       const Spacer(),
                       GestureDetector(
                         onTap: () {
-                          final next = DateTime(selDate.year, selDate.month + 1, 1);
+                          final next = DateTime(
+                            selDate.year,
+                            selDate.month + 1,
+                            1,
+                          );
                           controller.selectDate(next);
                         },
                         child: Container(
-                          width: 32, height: 32,
+                          width: 32,
+                          height: 32,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(color: _S.border),
                           ),
-                          child: const Icon(Icons.chevron_right, size: 20, color: _S.textDark),
+                          child: const Icon(
+                            Icons.chevron_right,
+                            size: 20,
+                            color: _S.textDark,
+                          ),
                         ),
                       ),
                     ],
@@ -589,16 +702,27 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                   // Day headers: M T W T F S S
                   Row(
                     children: _dayLetters
-                        .map((d) => Expanded(
+                        .map(
+                          (d) => Expanded(
                             child: Center(
-                                child: Text(d,
-                                    style: _S.f(12, FontWeight.w600, _S.textHint)))))
+                              child: Text(
+                                d,
+                                style: _S.f(12, FontWeight.w600, _S.textHint),
+                              ),
+                            ),
+                          ),
+                        )
                         .toList(),
                   ),
                   const SizedBox(height: 8),
 
                   // Calendar grid with meal color dots
-                  _buildCalendarGrid(firstDay, daysInMonth, startWeekday, selDate),
+                  _buildCalendarGrid(
+                    firstDay,
+                    daysInMonth,
+                    startWeekday,
+                    selDate,
+                  ),
                 ],
               ),
             ),
@@ -617,7 +741,10 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                   GestureDetector(
                     onTap: () => _showAddMealSheet(selDate, 'Breakfast'),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: _S.primary,
                         borderRadius: BorderRadius.circular(10),
@@ -627,7 +754,10 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                         children: [
                           const Icon(Icons.add, size: 16, color: Colors.white),
                           const SizedBox(width: 4),
-                          Text('Add meal', style: _S.f(13, FontWeight.w700, Colors.white)),
+                          Text(
+                            'Add meal',
+                            style: _S.f(13, FontWeight.w700, Colors.white),
+                          ),
                         ],
                       ),
                     ),
@@ -640,18 +770,28 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
             // ── Meal cards for selected date ──
             if (selectedMeals.isEmpty)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 30,
+                ),
                 child: Column(
                   children: [
-                    Icon(Icons.restaurant_menu_rounded,
-                        size: 48, color: _S.textHint.withValues(alpha: 0.3)),
+                    Icon(
+                      Icons.restaurant_menu_rounded,
+                      size: 48,
+                      color: _S.textHint.withValues(alpha: 0.3),
+                    ),
                     const SizedBox(height: 10),
-                    Text('No meals for this day',
-                        style: _S.f(15, FontWeight.w600, _S.textMed)),
+                    Text(
+                      'No meals for this day',
+                      style: _S.f(15, FontWeight.w600, _S.textMed),
+                    ),
                     const SizedBox(height: 4),
-                    Text('Add a recipe to breakfast, lunch, dinner or a snack.',
-                        style: _S.f(12, FontWeight.w500, _S.textHint),
-                        textAlign: TextAlign.center),
+                    Text(
+                      'Add a recipe to breakfast, lunch, dinner or a snack.',
+                      style: _S.f(12, FontWeight.w500, _S.textHint),
+                      textAlign: TextAlign.center,
+                    ),
                   ],
                 ),
               )
@@ -660,8 +800,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   children: [
-                    for (final meal in selectedMeals)
-                      _buildMonthMealCard(meal),
+                    for (final meal in selectedMeals) _buildMonthMealCard(meal),
                   ],
                 ),
               ),
@@ -677,17 +816,22 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                   width: double.infinity,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: AppColors.purpleBgLight,
+                    color: AppColors.primary,
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.auto_awesome_rounded, size: 18,
-                          color: AppColors.purple),
+                      Icon(
+                        Icons.auto_awesome_rounded,
+                        size: 18,
+                        color: AppColors.primary,
+                      ),
                       const SizedBox(width: 8),
-                      Text('Auto-fill my week',
-                          style: _S.f(14, FontWeight.w700, AppColors.purple)),
+                      Text(
+                        'Auto-fill my week',
+                        style: _S.f(14, FontWeight.w700, AppColors.primary),
+                      ),
                     ],
                   ),
                 ),
@@ -699,8 +843,12 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
     });
   }
 
-  Widget _buildCalendarGrid(DateTime firstDay, int daysInMonth,
-      int startWeekday, DateTime selected) {
+  Widget _buildCalendarGrid(
+    DateTime firstDay,
+    int daysInMonth,
+    int startWeekday,
+    DateTime selected,
+  ) {
     final now = DateTime.now();
     final rows = <Widget>[];
     int dayCounter = 1;
@@ -723,65 +871,73 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
         final isToday = controller.isSameDay(date, now);
         final mealTypesForDate = controller.getMealTypesForDate(date);
 
-        rowChildren.add(Expanded(
-          child: GestureDetector(
-            onTap: () => controller.selectDate(date),
-            child: SizedBox(
-              height: 48,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Date number
-                  Container(
-                    width: 30, height: 30,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isSel
-                          ? _S.primary
-                          : isToday
-                              ? _S.primary.withValues(alpha: 0.1)
-                              : Colors.transparent,
-                    ),
-                    child: Center(
-                      child: Text(
-                        '$dayNum',
-                        style: _S.f(
-                          13,
-                          isToday || isSel ? FontWeight.w700 : FontWeight.w500,
-                          isSel
-                              ? Colors.white
-                              : isToday
-                                  ? _S.primary
-                                  : _S.textDark,
+        rowChildren.add(
+          Expanded(
+            child: GestureDetector(
+              onTap: () => controller.selectDate(date),
+              child: SizedBox(
+                height: 48,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Date number
+                    Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isSel
+                            ? _S.primary
+                            : isToday
+                            ? _S.primary.withValues(alpha: 0.1)
+                            : Colors.transparent,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '$dayNum',
+                          style: _S.f(
+                            13,
+                            isToday || isSel
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                            isSel
+                                ? Colors.white
+                                : isToday
+                                ? _S.primary
+                                : _S.textDark,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  // Meal color dots row
-                  if (mealTypesForDate.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          for (final type in MealPlanController.mealTypes)
-                            if (mealTypesForDate.contains(type))
-                              Container(
-                                width: 5, height: 5,
-                                margin: const EdgeInsets.symmetric(horizontal: 1),
-                                decoration: BoxDecoration(
-                                  color: _S.mealColor(type),
-                                  shape: BoxShape.circle,
+                    // Meal color dots row
+                    if (mealTypesForDate.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            for (final type in MealPlanController.mealTypes)
+                              if (mealTypesForDate.contains(type))
+                                Container(
+                                  width: 5,
+                                  height: 5,
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 1,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: _S.mealColor(type),
+                                    shape: BoxShape.circle,
+                                  ),
                                 ),
-                              ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
-        ));
+        );
       }
       rows.add(Row(children: rowChildren));
     }
@@ -808,22 +964,32 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
             // Round recipe image
             ClipOval(
               child: SizedBox(
-                width: 46, height: 46,
-                child: meal.recipeImageUrl != null && meal.recipeImageUrl!.isNotEmpty
+                width: 46,
+                height: 46,
+                child:
+                    meal.recipeImageUrl != null &&
+                        meal.recipeImageUrl!.isNotEmpty
                     ? CachedNetworkImage(
                         imageUrl: meal.recipeImageUrl!,
                         fit: BoxFit.cover,
-                        placeholder: (_, __) => Container(color: AppColors.shimmerBase),
+                        placeholder: (_, __) =>
+                            Container(color: AppColors.shimmerBase),
                         errorWidget: (_, __, ___) => Container(
                           color: AppColors.shimmerBase,
-                          child: const Icon(Icons.restaurant, size: 20,
-                              color: AppColors.shimmerHighlight),
+                          child: const Icon(
+                            Icons.restaurant,
+                            size: 20,
+                            color: AppColors.shimmerHighlight,
+                          ),
                         ),
                       )
                     : Container(
                         color: color.withValues(alpha: 0.1),
-                        child: Icon(_S.mealIcon(meal.mealType),
-                            size: 22, color: color),
+                        child: Icon(
+                          _S.mealIcon(meal.mealType),
+                          size: 22,
+                          color: color,
+                        ),
                       ),
               ),
             ),
@@ -834,19 +1000,32 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(meal.mealType.toUpperCase(),
-                      style: _S.f(10, FontWeight.w800, color)),
+                  Text(
+                    meal.mealType.toUpperCase(),
+                    style: _S.f(10, FontWeight.w800, color),
+                  ),
                   const SizedBox(height: 2),
-                  Text(meal.recipeTitle,
-                      style: _S.f(14, FontWeight.w700, _S.textDark),
-                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                  Text(
+                    meal.recipeTitle,
+                    style: _S.f(14, FontWeight.w700, _S.textDark),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   const SizedBox(height: 2),
-                  Row(children: [
-                    Icon(Icons.access_time_rounded, size: 12, color: _S.textHint),
-                    const SizedBox(width: 3),
-                    Text(_getMealTime(meal),
-                        style: _S.f(11, FontWeight.w500, _S.textHint)),
-                  ]),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.access_time_rounded,
+                        size: 12,
+                        color: _S.textHint,
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        _getMealTime(meal),
+                        style: _S.f(11, FontWeight.w500, _S.textHint),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -901,10 +1080,14 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(width: 40, height: 4,
-                decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(20))),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
             const SizedBox(height: 16),
             // Recipe info card
             Container(
@@ -913,63 +1096,89 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                 color: _S.mealColor(meal.mealType).withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Row(children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: SizedBox(
-                    width: 50, height: 50,
-                    child: meal.recipeImageUrl != null &&
-                            meal.recipeImageUrl!.isNotEmpty
-                        ? CachedNetworkImage(
-                            imageUrl: meal.recipeImageUrl!, fit: BoxFit.cover)
-                        : Container(
-                            color: _S.mealColor(meal.mealType)
-                                .withValues(alpha: 0.15),
-                            child: Icon(_S.mealIcon(meal.mealType),
-                                color: _S.mealColor(meal.mealType))),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: SizedBox(
+                      width: 50,
+                      height: 50,
+                      child:
+                          meal.recipeImageUrl != null &&
+                              meal.recipeImageUrl!.isNotEmpty
+                          ? CachedNetworkImage(
+                              imageUrl: meal.recipeImageUrl!,
+                              fit: BoxFit.cover,
+                            )
+                          : Container(
+                              color: _S
+                                  .mealColor(meal.mealType)
+                                  .withValues(alpha: 0.15),
+                              child: Icon(
+                                _S.mealIcon(meal.mealType),
+                                color: _S.mealColor(meal.mealType),
+                              ),
+                            ),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(meal.recipeTitle,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          meal.recipeTitle,
                           style: _S.f(15, FontWeight.w700, _S.textDark),
-                          maxLines: 1, overflow: TextOverflow.ellipsis),
-                      Text(meal.mealType,
-                          style: _S.f(12, FontWeight.w500, _S.textHint)),
-                    ],
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          meal.mealType,
+                          style: _S.f(12, FontWeight.w500, _S.textHint),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ]),
+                ],
+              ),
             ),
             const SizedBox(height: 16),
             _optionTile(Icons.visibility_outlined, 'View recipe', false, () {
               Navigator.pop(context);
-              final recipe = homeController.recipes
-                  .firstWhereOrNull((r) => r.id == meal.recipeId);
+              final recipe = homeController.recipes.firstWhereOrNull(
+                (r) => r.id == meal.recipeId,
+              );
               if (recipe != null) {
                 Get.to(() => RecipeDetailScreen(recipe: recipe));
               }
             }),
             _optionTile(
-                Icons.shopping_cart_outlined, 'Add to groceries', false, () {
-              Navigator.pop(context);
-              CustomSnackbar.show(
+              Icons.shopping_cart_outlined,
+              'Add to groceries',
+              false,
+              () {
+                Navigator.pop(context);
+                CustomSnackbar.show(
                   title: 'Added',
                   message: 'Ingredients added to groceries',
-                  type: SnackbarType.success);
-            }),
+                  type: SnackbarType.success,
+                );
+              },
+            ),
             _optionTile(
-                Icons.delete_outline_rounded, 'Remove from plan', true, () {
-              Navigator.pop(context);
-              controller.deleteMealPlanItem(meal.id);
-              CustomSnackbar.show(
+              Icons.delete_outline_rounded,
+              'Remove from plan',
+              true,
+              () {
+                Navigator.pop(context);
+                controller.deleteMealPlanItem(meal.id);
+                CustomSnackbar.show(
                   title: 'Removed',
                   message: '${meal.recipeTitle} removed from plan',
-                  type: SnackbarType.info);
-            }),
+                  type: SnackbarType.info,
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -977,17 +1186,23 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
   }
 
   Widget _optionTile(
-      IconData icon, String label, bool red, VoidCallback onTap) {
+    IconData icon,
+    String label,
+    bool red,
+    VoidCallback onTap,
+  ) {
     final c = red ? _S.snackColor : _S.textDark;
     return GestureDetector(
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 14),
-        child: Row(children: [
-          Icon(icon, size: 22, color: c),
-          const SizedBox(width: 14),
-          Text(label, style: _S.f(15, FontWeight.w600, c)),
-        ]),
+        child: Row(
+          children: [
+            Icon(icon, size: 22, color: c),
+            const SizedBox(width: 14),
+            Text(label, style: _S.f(15, FontWeight.w600, c)),
+          ],
+        ),
       ),
     );
   }
@@ -1009,61 +1224,84 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(width: 40, height: 4,
-                decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(20))),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
             const SizedBox(height: 20),
             Container(
-              width: 56, height: 56,
+              width: 56,
+              height: 56,
               decoration: BoxDecoration(
-                  color: AppColors.redBg,
-                  borderRadius: BorderRadius.circular(16)),
-              child: const Icon(Icons.delete_outline_rounded,
-                  size: 28, color: AppColors.red),
+                color: AppColors.redBg,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(
+                Icons.delete_outline_rounded,
+                size: 28,
+                color: AppColors.red,
+              ),
             ),
             const SizedBox(height: 16),
-            Text('Clear this week?',
-                style: _S.f(18, FontWeight.w800, _S.textDark)),
+            Text(
+              'Clear this week?',
+              style: _S.f(18, FontWeight.w800, _S.textDark),
+            ),
             const SizedBox(height: 6),
-            Text('This will remove all meals from the current week.',
-                style: _S.f(13, FontWeight.w500, _S.textHint),
-                textAlign: TextAlign.center),
+            Text(
+              'This will remove all meals from the current week.',
+              style: _S.f(13, FontWeight.w500, _S.textHint),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 20),
-            Row(children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    height: 48,
-                    decoration: BoxDecoration(
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      height: 48,
+                      decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: _S.border)),
-                    child: Center(
-                        child: Text('Cancel',
-                            style: _S.f(14, FontWeight.w700, _S.textDark))),
+                        border: Border.all(color: _S.border),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Cancel',
+                          style: _S.f(14, FontWeight.w700, _S.textDark),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.pop(context);
-                    controller.clearWeek();
-                  },
-                  child: Container(
-                    height: 48,
-                    decoration: BoxDecoration(
+                const SizedBox(width: 12),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                      controller.clearWeek();
+                    },
+                    child: Container(
+                      height: 48,
+                      decoration: BoxDecoration(
                         color: AppColors.red,
-                        borderRadius: BorderRadius.circular(12)),
-                    child: Center(
-                        child: Text('Clear',
-                            style: _S.f(14, FontWeight.w700, Colors.white))),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Clear',
+                          style: _S.f(14, FontWeight.w700, Colors.white),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ]),
+              ],
+            ),
           ],
         ),
       ),
@@ -1129,78 +1367,104 @@ class _AddMealSheetState extends State<_AddMealSheet> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-            child: Column(children: [
-              Container(width: 40, height: 4,
+            child: Column(
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
                   decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(20))),
-              const SizedBox(height: 16),
-              Row(children: [
-                Expanded(
-                    child: Text(
-                        'Add to ${widget.dayName}, $_selectedType',
-                        style: _S.f(18, FontWeight.w800, _S.textDark))),
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    width: 30, height: 30,
-                    decoration: const BoxDecoration(
-                        color: _S.primary, shape: BoxShape.circle),
-                    child:
-                        const Icon(Icons.close, size: 16, color: Colors.white),
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(20),
                   ),
                 ),
-              ]),
-              const SizedBox(height: 14),
-              SizedBox(
-                height: 34,
-                child: Row(
-                  children: MealPlanController.mealTypes.map((type) {
-                    final sel = type == _selectedType;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: GestureDetector(
-                        onTap: () => setState(() => _selectedType = type),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 7),
-                          decoration: BoxDecoration(
-                            color: sel
-                                ? _S.mealColor(type)
-                                : _S.mealColor(type).withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(type,
-                              style: _S.f(12, FontWeight.w700,
-                                  sel ? Colors.white : _S.mealColor(type))),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Add to ${widget.dayName}, $_selectedType',
+                        style: _S.f(18, FontWeight.w800, _S.textDark),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        width: 30,
+                        height: 30,
+                        decoration: const BoxDecoration(
+                          color: _S.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          size: 16,
+                          color: Colors.white,
                         ),
                       ),
-                    );
-                  }).toList(),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 12),
-              AppSearchBar(
-                hintText: 'Search your recipes',
-                onChanged: (v) => setState(() => _search = v),
-              ),
-              const SizedBox(height: 12),
-            ]),
+                const SizedBox(height: 14),
+                SizedBox(
+                  height: 34,
+                  child: Row(
+                    children: MealPlanController.mealTypes.map((type) {
+                      final sel = type == _selectedType;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: GestureDetector(
+                          onTap: () => setState(() => _selectedType = type),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 7,
+                            ),
+                            decoration: BoxDecoration(
+                              color: sel
+                                  ? _S.mealColor(type)
+                                  : _S.mealColor(type).withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              type,
+                              style: _S.f(
+                                12,
+                                FontWeight.w700,
+                                sel ? Colors.white : _S.mealColor(type),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                AppSearchBar(
+                  hintText: 'Search your recipes',
+                  onChanged: (v) => setState(() => _search = v),
+                ),
+                const SizedBox(height: 12),
+              ],
+            ),
           ),
           Expanded(
             child: Obx(() {
               final recipes = widget.homeController.recipes
-                  .where((r) =>
-                      _search.isEmpty ||
-                      r.title
-                          .toLowerCase()
-                          .contains(_search.toLowerCase()))
+                  .where(
+                    (r) =>
+                        _search.isEmpty ||
+                        r.title.toLowerCase().contains(_search.toLowerCase()),
+                  )
                   .toList();
 
               if (recipes.isEmpty) {
                 return Center(
-                    child: Text('No recipes found',
-                        style: _S.f(14, FontWeight.w500, _S.textHint)));
+                  child: Text(
+                    'No recipes found',
+                    style: _S.f(14, FontWeight.w500, _S.textHint),
+                  ),
+                );
               }
 
               return ListView.separated(
@@ -1212,69 +1476,83 @@ class _AddMealSheetState extends State<_AddMealSheet> {
                   final recipe = recipes[i];
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 10),
-                    child: Row(children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: SizedBox(
-                          width: 44, height: 44,
-                          child: recipe.imageUrl != null &&
-                                  recipe.imageUrl!.isNotEmpty
-                              ? CachedNetworkImage(
-                                  imageUrl: recipe.imageUrl!,
-                                  fit: BoxFit.cover)
-                              : Container(
-                                  color: AppColors.shimmerBase,
-                                  child: const Icon(Icons.restaurant,
+                    child: Row(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: SizedBox(
+                            width: 44,
+                            height: 44,
+                            child:
+                                recipe.imageUrl != null &&
+                                    recipe.imageUrl!.isNotEmpty
+                                ? CachedNetworkImage(
+                                    imageUrl: recipe.imageUrl!,
+                                    fit: BoxFit.cover,
+                                  )
+                                : Container(
+                                    color: AppColors.shimmerBase,
+                                    child: const Icon(
+                                      Icons.restaurant,
                                       size: 20,
-                                      color: AppColors.shimmerHighlight)),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(recipe.title,
-                                style:
-                                    _S.f(14, FontWeight.w700, _S.textDark),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis),
-                            if (recipe.totalTime != null &&
-                                recipe.totalTime!.isNotEmpty)
-                              Text(recipe.totalTime!,
-                                  style: _S.f(
-                                      12, FontWeight.w500, _S.textHint)),
-                          ],
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          widget.controller.addMealPlanItem(
-                            date: widget.date,
-                            mealType: _selectedType,
-                            recipeId: recipe.id,
-                            recipeTitle: recipe.title,
-                            recipeImageUrl: recipe.imageUrl,
-                          );
-                          Navigator.pop(context);
-                          CustomSnackbar.show(
-                            title: 'Added',
-                            message:
-                                '${recipe.title} added to $_selectedType',
-                            type: SnackbarType.success,
-                          );
-                        },
-                        child: Container(
-                          width: 32, height: 32,
-                          decoration: BoxDecoration(
-                            color: _S.primary.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(10),
+                                      color: AppColors.shimmerHighlight,
+                                    ),
+                                  ),
                           ),
-                          child: const Icon(Icons.add,
-                              size: 18, color: _S.primary),
                         ),
-                      ),
-                    ]),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                recipe.title,
+                                style: _S.f(14, FontWeight.w700, _S.textDark),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (recipe.totalTime != null &&
+                                  recipe.totalTime!.isNotEmpty)
+                                Text(
+                                  recipe.totalTime!,
+                                  style: _S.f(12, FontWeight.w500, _S.textHint),
+                                ),
+                            ],
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            widget.controller.addMealPlanItem(
+                              date: widget.date,
+                              mealType: _selectedType,
+                              recipeId: recipe.id,
+                              recipeTitle: recipe.title,
+                              recipeImageUrl: recipe.imageUrl,
+                            );
+                            Navigator.pop(context);
+                            CustomSnackbar.show(
+                              title: 'Added',
+                              message:
+                                  '${recipe.title} added to $_selectedType',
+                              type: SnackbarType.success,
+                            );
+                          },
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: _S.primary.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.add,
+                              size: 18,
+                              color: _S.primary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   );
                 },
               );
@@ -1304,7 +1582,10 @@ class _AutoFillSheetState extends State<_AutoFillSheet> {
   int _servings = 4;
 
   static const _dietOptions = [
-    'Vegetarian', 'High-protein', 'Quick (sub 30m)', 'Budget'
+    'Vegetarian',
+    'High-protein',
+    'Quick (sub 30m)',
+    'Budget',
   ];
 
   @override
@@ -1324,27 +1605,41 @@ class _AutoFillSheetState extends State<_AutoFillSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Center(
-                    child: Container(
-                        width: 40, height: 4,
-                        decoration: BoxDecoration(
-                            color: Colors.grey.shade300,
-                            borderRadius: BorderRadius.circular(20)))),
-                const SizedBox(height: 16),
-                Row(children: [
-                  Text('Auto-fill my week',
-                      style: _S.f(18, FontWeight.w800, _S.textDark)),
-                  const Spacer(),
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 30, height: 30,
-                      decoration: const BoxDecoration(
-                          color: _S.primary, shape: BoxShape.circle),
-                      child: const Icon(Icons.close,
-                          size: 16, color: Colors.white),
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(20),
                     ),
                   ),
-                ]),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Text(
+                      'Auto-fill my week',
+                      style: _S.f(18, FontWeight.w800, _S.textDark),
+                    ),
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        width: 30,
+                        height: 30,
+                        decoration: const BoxDecoration(
+                          color: _S.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          size: 16,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -1355,29 +1650,41 @@ class _AutoFillSheetState extends State<_AutoFillSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('DIET & STYLE',
-                      style: _S.f(11, FontWeight.w700, _S.textHint)),
+                  Text(
+                    'DIET & STYLE',
+                    style: _S.f(11, FontWeight.w700, _S.textHint),
+                  ),
                   const SizedBox(height: 10),
                   Wrap(
-                    spacing: 8, runSpacing: 8,
+                    spacing: 8,
+                    runSpacing: 8,
                     children: _dietOptions.map((opt) {
                       final sel = _selectedDiet.contains(opt);
                       return GestureDetector(
-                        onTap: () => setState(() => sel
-                            ? _selectedDiet.remove(opt)
-                            : _selectedDiet.add(opt)),
+                        onTap: () => setState(
+                          () => sel
+                              ? _selectedDiet.remove(opt)
+                              : _selectedDiet.add(opt),
+                        ),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 8),
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: sel
                                 ? AppColors.green
                                 : AppColors.greenBgLight,
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: Text(opt,
-                              style: _S.f(12, FontWeight.w700,
-                                  sel ? Colors.white : AppColors.green)),
+                          child: Text(
+                            opt,
+                            style: _S.f(
+                              12,
+                              FontWeight.w700,
+                              sel ? Colors.white : AppColors.green,
+                            ),
+                          ),
                         ),
                       );
                     }).toList(),
@@ -1385,83 +1692,109 @@ class _AutoFillSheetState extends State<_AutoFillSheet> {
                   const SizedBox(height: 14),
                   GestureDetector(
                     onTap: () => setState(() => _usePantry = !_usePantry),
-                    child: Row(children: [
-                      Container(
-                        width: 22, height: 22,
-                        decoration: BoxDecoration(
-                          color: _usePantry
-                              ? AppColors.green
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                              color: _usePantry
-                                  ? AppColors.green
-                                  : _S.border,
-                              width: 1.5),
-                        ),
-                        child: _usePantry
-                            ? const Icon(Icons.check,
-                                size: 14, color: Colors.white)
-                            : null,
-                      ),
-                      const SizedBox(width: 10),
-                      Text('Use my pantry',
-                          style: _S.f(14, FontWeight.w600, _S.textDark)),
-                    ]),
-                  ),
-                  const SizedBox(height: 24),
-                  Text('WHICH MEALS',
-                      style: _S.f(11, FontWeight.w700, _S.textHint)),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: MealPlanController.mealTypes.map((type) {
-                      final sel = _selectedMeals.contains(type);
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: GestureDetector(
-                          onTap: () => setState(() => sel
-                              ? _selectedMeals.remove(type)
-                              : _selectedMeals.add(type)),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: sel
-                                  ? _S.mealColor(type)
-                                  : _S.mealColor(type)
-                                      .withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(10),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 22,
+                          height: 22,
+                          decoration: BoxDecoration(
+                            color: _usePantry
+                                ? AppColors.green
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: _usePantry ? AppColors.green : _S.border,
+                              width: 1.5,
                             ),
-                            child: Text(type,
-                                style: _S.f(
-                                    12,
-                                    FontWeight.w700,
-                                    sel
-                                        ? Colors.white
-                                        : _S.mealColor(type))),
                           ),
+                          child: _usePantry
+                              ? const Icon(
+                                  Icons.check,
+                                  size: 14,
+                                  color: Colors.white,
+                                )
+                              : null,
                         ),
-                      );
-                    }).toList(),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Use my pantry',
+                          style: _S.f(14, FontWeight.w600, _S.textDark),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 24),
-                  Row(children: [
-                    Text('Servings',
-                        style: _S.f(14, FontWeight.w700, _S.textDark)),
-                    const Spacer(),
-                    _servingBtn(Icons.remove, () {
-                      if (_servings > 1) setState(() => _servings--);
-                    }),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text('$_servings',
-                          style: _S.f(16, FontWeight.w800, _S.textDark)),
+                  Text(
+                    'WHICH MEALS',
+                    style: _S.f(11, FontWeight.w700, _S.textHint),
+                  ),
+                  const SizedBox(height: 10),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: MealPlanController.mealTypes.map((type) {
+                        final sel = _selectedMeals.contains(type);
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: GestureDetector(
+                            onTap: () => setState(
+                              () => sel
+                                  ? _selectedMeals.remove(type)
+                                  : _selectedMeals.add(type),
+                            ),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: sel
+                                    ? _S.mealColor(type)
+                                    : _S
+                                          .mealColor(type)
+                                          .withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                type,
+                                style: _S.f(
+                                  12,
+                                  FontWeight.w700,
+                                  sel ? Colors.white : _S.mealColor(type),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
                     ),
-                    _servingBtn(Icons.add, () => setState(() => _servings++)),
-                  ]),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Text(
+                        'Servings',
+                        style: _S.f(14, FontWeight.w700, _S.textDark),
+                      ),
+                      const Spacer(),
+                      _servingBtn(Icons.remove, () {
+                        if (_servings > 1) setState(() => _servings--);
+                      }),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          '$_servings',
+                          style: _S.f(16, FontWeight.w800, _S.textDark),
+                        ),
+                      ),
+                      _servingBtn(Icons.add, () => setState(() => _servings++)),
+                    ],
+                  ),
                   const SizedBox(height: 4),
-                  Text('Scales every recipe',
-                      style: _S.f(12, FontWeight.w500, _S.textHint)),
+                  Text(
+                    'Scales every recipe',
+                    style: _S.f(12, FontWeight.w500, _S.textHint),
+                  ),
                   const SizedBox(height: 30),
                 ],
               ),
@@ -1473,18 +1806,24 @@ class _AutoFillSheetState extends State<_AutoFillSheet> {
               onTap: () {
                 Navigator.pop(context);
                 CustomSnackbar.show(
-                    title: 'Coming Soon',
-                    message: 'AI meal plan generation coming soon!',
-                    type: SnackbarType.info);
+                  title: 'Coming Soon',
+                  message: 'AI meal plan generation coming soon!',
+                  type: SnackbarType.info,
+                );
               },
               child: Container(
-                width: double.infinity, height: 52,
+                width: double.infinity,
+                height: 52,
                 decoration: BoxDecoration(
-                    color: AppColors.green,
-                    borderRadius: BorderRadius.circular(14)),
+                  color: AppColors.green,
+                  borderRadius: BorderRadius.circular(14),
+                ),
                 child: Center(
-                    child: Text('Generate my week',
-                        style: _S.f(15, FontWeight.w700, Colors.white))),
+                  child: Text(
+                    'Generate my week',
+                    style: _S.f(15, FontWeight.w700, Colors.white),
+                  ),
+                ),
               ),
             ),
           ),
@@ -1497,10 +1836,12 @@ class _AutoFillSheetState extends State<_AutoFillSheet> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 34, height: 34,
+        width: 34,
+        height: 34,
         decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: _S.border)),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: _S.border),
+        ),
         child: Icon(icon, size: 18, color: _S.textDark),
       ),
     );

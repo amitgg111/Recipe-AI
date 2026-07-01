@@ -59,10 +59,10 @@ class CookbookRecipesScreen extends StatelessWidget {
                 child: Text(
                   latestCookbook.name,
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 28,
+                    fontSize: 25,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textDark,
-                    letterSpacing: -0.3,
+                    letterSpacing: -0.5,
                   ),
                 ),
               ),
@@ -108,73 +108,142 @@ class CookbookRecipesScreen extends StatelessWidget {
     );
   }
 
-  // ── Popup menu (Edit / Delete) ───────────────────────────────────────────
+  // ── Popup menu (Edit / Delete) — custom anchored card (HTML #21) ──────────
   void _showMenu(
     BuildContext context,
     CookbookModel cb,
     CookbookController ctrl,
   ) {
-    final RenderBox button = context.findRenderObject() as RenderBox;
-    final overlay =
-        Overlay.of(context).context.findRenderObject() as RenderBox;
+    final topOffset = MediaQuery.of(context).padding.top + 54;
 
-    showMenu<String>(
+    showGeneralDialog(
       context: context,
-      position: RelativeRect.fromRect(
-        Rect.fromLTWH(
-          overlay.size.width - 60,
-          MediaQuery.of(context).padding.top + 44,
-          40,
-          40,
+      barrierDismissible: true,
+      barrierLabel: 'menu',
+      barrierColor: const Color(0x521E1B18), // rgba(30,27,24,.32)
+      transitionDuration: const Duration(milliseconds: 140),
+      pageBuilder: (ctx, _, __) => const SizedBox.shrink(),
+      transitionBuilder: (ctx, anim, __, child) {
+        return Stack(
+          children: [
+            // Pointer triangle
+            Positioned(
+              top: topOffset - 6,
+              right: 30,
+              child: Transform.rotate(
+                angle: 0.785398, // 45°
+                child: Container(
+                  width: 16,
+                  height: 16,
+                  decoration: const BoxDecoration(
+                    color: AppColors.surface,
+                    border: Border(
+                      left: BorderSide(color: Color(0xFFEFE6D6)),
+                      top: BorderSide(color: Color(0xFFEFE6D6)),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // Menu card
+            Positioned(
+              top: topOffset,
+              right: 22,
+              child: FadeTransition(
+                opacity: anim,
+                child: ScaleTransition(
+                  scale: Tween<double>(begin: 0.92, end: 1).animate(
+                    CurvedAnimation(parent: anim, curve: Curves.easeOutBack),
+                  ),
+                  alignment: Alignment.topRight,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: Container(
+                      width: 200,
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: const Color(0xFFEFE6D6)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF1E1B18)
+                                .withValues(alpha: 0.45),
+                            blurRadius: 50,
+                            offset: const Offset(0, 24),
+                            spreadRadius: -16,
+                          ),
+                        ],
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _menuRow(
+                            icon: Icons.edit_outlined,
+                            iconColor: const Color(0xFF5A5147),
+                            label: 'Edit',
+                            labelColor: const Color(0xFF2A211B),
+                            onTap: () {
+                              Navigator.pop(ctx);
+                              _showRenameSheet(context, cb, ctrl);
+                            },
+                          ),
+                          Container(
+                            height: 1,
+                            margin: const EdgeInsets.symmetric(horizontal: 14),
+                            color: const Color(0xFFF4ECDF),
+                          ),
+                          _menuRow(
+                            icon: Icons.delete_outline,
+                            iconColor: const Color(0xFFE0481F),
+                            label: 'Delete',
+                            labelColor: const Color(0xFFE0481F),
+                            onTap: () {
+                              Navigator.pop(ctx);
+                              _showDeleteDialog(context, cb, ctrl);
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _menuRow({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    required Color labelColor,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: iconColor),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: labelColor,
+              ),
+            ),
+          ],
         ),
-        Offset.zero & overlay.size,
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      color: AppColors.surface,
-      elevation: 8,
-      items: [
-        PopupMenuItem<String>(
-          value: 'edit',
-          child: Row(
-            children: [
-              Icon(Icons.edit_outlined, size: 20, color: AppColors.textDark),
-              const SizedBox(width: 10),
-              Text(
-                'Edit',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textDark,
-                ),
-              ),
-            ],
-          ),
-        ),
-        PopupMenuItem<String>(
-          value: 'delete',
-          child: Row(
-            children: [
-              const Icon(Icons.delete_outline, size: 20, color: Colors.red),
-              const SizedBox(width: 10),
-              Text(
-                'Delete',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.red,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    ).then((value) {
-      if (value == 'edit') {
-        _showRenameSheet(context, cb, ctrl);
-      } else if (value == 'delete') {
-        _showDeleteDialog(context, cb, ctrl);
-      }
-    });
+    );
   }
 
   // ── Rename bottom sheet (screen 22) ──────────────────────────────────────
@@ -488,24 +557,19 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.sm,
-        AppSpacing.sm,
-        AppSpacing.sm,
-        0,
-      ),
+      padding: const EdgeInsets.fromLTRB(22, 6, 22, 0),
       child: Row(
         children: [
           // Back button
           GestureDetector(
             onTap: onBack,
             child: Container(
-              width: 40,
-              height: 40,
+              width: 42,
+              height: 42,
               decoration: BoxDecoration(
                 color: AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.surfaceBorderLight),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFEDE3D2)),
               ),
               child: const Icon(
                 Icons.arrow_back_ios_new_rounded,
@@ -514,30 +578,31 @@ class _TopBar extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 12),
-          // Title
+          // Centered title
           Expanded(
-            child: Text(
-              title,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textDark,
+            child: Center(
+              child: Text(
+                title,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textDark,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
           ),
           // Menu button
           GestureDetector(
             onTap: onMenuTap,
             child: Container(
-              width: 40,
-              height: 40,
+              width: 42,
+              height: 42,
               decoration: BoxDecoration(
                 color: AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.surfaceBorderLight),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFEDE3D2)),
               ),
               child: const Icon(
                 Icons.more_horiz_rounded,
@@ -747,7 +812,7 @@ class _RecipeList extends StatelessWidget {
               AppSpacing.xxl,
             ),
             itemCount: recipes.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 2),
+            separatorBuilder: (_, __) => const SizedBox(height: 13),
             itemBuilder: (context, index) {
               final recipe = recipes[index];
               return _RecipeListTile(recipe: recipe);
@@ -773,16 +838,29 @@ class _RecipeListTile extends StatelessWidget {
     return GestureDetector(
       onTap: () => Get.to(() => RecipeDetailScreen(recipe: recipe)),
       behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFF0E7D6)),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF2A211B).withValues(alpha: 0.4),
+              blurRadius: 24,
+              offset: const Offset(0, 10),
+              spreadRadius: -20,
+            ),
+          ],
+        ),
         child: Row(
           children: [
             // Recipe image
             ClipRRect(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
               child: SizedBox(
-                width: 56,
-                height: 56,
+                width: 74,
+                height: 74,
                 child: _buildImage(),
               ),
             ),
@@ -798,24 +876,26 @@ class _RecipeListTile extends StatelessWidget {
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textDark,
+                      height: 1.25,
                     ),
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.access_time_rounded,
-                        size: 14,
-                        color: AppColors.textHint,
+                        size: 15,
+                        color: Color(0xFFA89F90),
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 5),
                       Text(
                         recipe.totalTime ?? recipe.cookTime ?? '—',
-                        style: AppTextStyles.smallLabel.copyWith(
-                          color: AppColors.textHint,
-                          fontSize: 12,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF8A7E70),
                         ),
                       ),
                     ],
@@ -823,11 +903,12 @@ class _RecipeListTile extends StatelessWidget {
                 ],
               ),
             ),
+            const SizedBox(width: 8),
             // Chevron
             const Icon(
               Icons.arrow_forward_ios,
-              size: 14,
-              color: AppColors.textHint,
+              size: 15,
+              color: Color(0xFFC7BCAC),
             ),
           ],
         ),
@@ -839,8 +920,8 @@ class _RecipeListTile extends StatelessWidget {
     if (recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty) {
       return Image.network(
         recipe.imageUrl!,
-        width: 56,
-        height: 56,
+        width: 74,
+        height: 74,
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) => _placeholder(),
         loadingBuilder: (_, child, loading) {
@@ -854,12 +935,12 @@ class _RecipeListTile extends StatelessWidget {
 
   Widget _placeholder() {
     return Container(
-      width: 56,
-      height: 56,
-      color: const Color(0xFFF5EDE0),
+      width: 74,
+      height: 74,
+      color: const Color(0xFFEDE5D7),
       child: Icon(
         Icons.restaurant_rounded,
-        size: 24,
+        size: 26,
         color: AppColors.textLight.withValues(alpha: 0.4),
       ),
     );

@@ -7,6 +7,7 @@ import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/View/Auth/auth_wrapper.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
+import 'package:recipe_ai/widgets/app_logo.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_dimensions.dart';
 import 'package:recipe_ai/screens/auth/forgot_password_screen.dart';
@@ -664,11 +665,7 @@ class _AppLogo extends StatelessWidget {
             color: AppColors.primary,
             borderRadius: BorderRadius.circular(9),
           ),
-          child: const Icon(
-            Icons.restaurant_menu,
-            color: Colors.white,
-            size: 17,
-          ),
+          child: const AppLogoMark(size: 20),
         ),
         const SizedBox(width: 8),
         Text(

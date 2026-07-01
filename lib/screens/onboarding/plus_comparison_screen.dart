@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
+import 'package:recipe_ai/widgets/app_logo.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/screens/onboarding/trial_chooser_screen.dart';
@@ -9,11 +10,7 @@ class PlusComparisonScreen extends StatefulWidget {
   final VoidCallback? onContinue;
   final VoidCallback? onClose;
 
-  const PlusComparisonScreen({
-    super.key,
-    this.onContinue,
-    this.onClose,
-  });
+  const PlusComparisonScreen({super.key, this.onContinue, this.onClose});
 
   @override
   State<PlusComparisonScreen> createState() => _PlusComparisonScreenState();
@@ -45,19 +42,25 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
   static double _cl(double v) => v < 0.0 ? 0.0 : (v > 1.0 ? 1.0 : v);
 
   // Eased 0→1 sub-animation over [begin, end] of the entrance timeline.
-  CurvedAnimation _c(double begin, double end,
-          [Curve curve = Curves.easeOutCubic]) =>
-      CurvedAnimation(
-        parent: _entrance,
-        curve: Interval(begin, end, curve: curve),
-      );
+  CurvedAnimation _c(
+    double begin,
+    double end, [
+    Curve curve = Curves.easeOutCubic,
+  ]) => CurvedAnimation(
+    parent: _entrance,
+    curve: Interval(begin, end, curve: curve),
+  );
 
   // Upward slide (dy in fractions of the widget's own height) → rest.
-  Animation<Offset> _slide(double begin, double end, double dy,
-          [Curve curve = Curves.easeOutCubic]) =>
-      Tween<Offset>(begin: Offset(0, dy), end: Offset.zero).animate(
-        _c(begin, end, curve),
-      );
+  Animation<Offset> _slide(
+    double begin,
+    double end,
+    double dy, [
+    Curve curve = Curves.easeOutCubic,
+  ]) => Tween<Offset>(
+    begin: Offset(0, dy),
+    end: Offset.zero,
+  ).animate(_c(begin, end, curve));
 
   // Feature rows: (label, freeValue, plusValue)
   // plusValue: null means checkmark, String means text
@@ -159,23 +162,20 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                             width: 34,
                             height: 34,
                             decoration: BoxDecoration(
-                              color: AppColors.purple,
+                              color: AppColors.primary,
                               borderRadius: BorderRadius.circular(11),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF8B5CF6)
-                                      .withValues(alpha: 0.7),
+                                  color: const Color(
+                                    0xFF8B5CF6,
+                                  ).withValues(alpha: 0.7),
                                   blurRadius: 14,
                                   offset: const Offset(0, 6),
                                   spreadRadius: -5,
                                 ),
                               ],
                             ),
-                            child: const Icon(
-                              Icons.restaurant_menu,
-                              color: Colors.white,
-                              size: 18,
-                            ),
+                            child: const AppLogoMark(size: 23),
                           ),
                           const SizedBox(width: 9),
                           Text.rich(
@@ -193,7 +193,7 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 21,
                                     fontWeight: FontWeight.w800,
-                                    color: AppColors.purple,
+                                    color: AppColors.primary,
                                     letterSpacing: -0.42,
                                   ),
                                 ),
@@ -207,14 +207,16 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                         child: Align(
                           alignment: Alignment.centerRight,
                           child: GestureDetector(
-                            onTap: widget.onClose ??
+                            onTap:
+                                widget.onClose ??
                                 () => Get.to(() => const TrialChooserScreen()),
                             child: Container(
                               width: 34,
                               height: 34,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF2A211B)
-                                    .withValues(alpha: 0.07),
+                                color: const Color(
+                                  0xFF2A211B,
+                                ).withValues(alpha: 0.07),
                                 borderRadius: BorderRadius.circular(17),
                               ),
                               child: const Icon(
@@ -296,7 +298,7 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 26,
                                     fontWeight: FontWeight.w800,
-                                    color: AppColors.purple,
+                                    color: AppColors.primary,
                                     height: 1.18,
                                     letterSpacing: -0.52,
                                   ),
@@ -329,7 +331,8 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                           opacity: _ctaFade,
                           child: PrimaryButton.purple(
                             label: 'Start my free week',
-                            onPressed: widget.onContinue ??
+                            onPressed:
+                                widget.onContinue ??
                                 () => Get.to(() => const TrialChooserScreen()),
                             enableBob: true,
                           ),
@@ -416,10 +419,7 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                       padding: const EdgeInsets.fromLTRB(16, 0, 8, 0),
                       decoration: const BoxDecoration(
                         border: Border(
-                          top: BorderSide(
-                            color: AppColors.divider,
-                            width: 1,
-                          ),
+                          top: BorderSide(color: AppColors.divider, width: 1),
                         ),
                       ),
                       alignment: Alignment.centerLeft,
@@ -467,10 +467,7 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                       height: 62,
                       decoration: const BoxDecoration(
                         border: Border(
-                          top: BorderSide(
-                            color: AppColors.divider,
-                            width: 1,
-                          ),
+                          top: BorderSide(color: AppColors.divider, width: 1),
                         ),
                       ),
                       alignment: Alignment.center,
@@ -575,7 +572,7 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                     ],
                   ),
                   // Sheen sweep overlay: a narrow white band that slides
-                  // across the purple column (does not cover it).
+                  // across the primary column (does not cover it).
                   Positioned.fill(
                     child: IgnorePointer(
                       child: ClipRect(

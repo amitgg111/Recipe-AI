@@ -68,7 +68,7 @@ class AddMenuSheet extends StatelessWidget {
                 _OptionRow(
                   iconBgColor: const Color(0xFFEDE7FE),
                   icon: Icons.menu_book_rounded,
-                  iconColor: AppColors.purple,
+                  iconColor: AppColors.primary,
                   title: 'Add a Cookbook',
                   subtitle: 'Start a new collection',
                   onTap: () {

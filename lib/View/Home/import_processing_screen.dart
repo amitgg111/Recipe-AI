@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
+import 'package:recipe_ai/widgets/app_logo.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 
 class ImportProcessingScreen extends StatefulWidget {
@@ -123,11 +124,7 @@ class ImportProcessingScreenState extends State<ImportProcessingScreen>
                             color: AppColors.primary,
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          child: const Icon(
-                            Icons.restaurant_menu,
-                            color: Colors.white,
-                            size: 28,
-                          ),
+                          child: const AppLogoMark(size: 38),
                         ),
                       ],
                     ),

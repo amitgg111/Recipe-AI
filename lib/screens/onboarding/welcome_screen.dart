@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
+import 'package:recipe_ai/widgets/app_logo.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/screens/onboarding/social_proof_screen.dart';
 import 'package:recipe_ai/screens/auth/login_screen.dart';
@@ -145,11 +146,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Center(
-                            child: Icon(
-                              Icons.restaurant_menu,
-                              color: Colors.white,
-                              size: 18,
-                            ),
+                            child: AppLogoMark(size: 22),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -340,11 +337,7 @@ class _WelcomeBodyState extends State<WelcomeBody>
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Center(
-                    child: Icon(
-                      Icons.restaurant_menu,
-                      color: Colors.white,
-                      size: 18,
-                    ),
+                    child: AppLogoMark(size: 22),
                   ),
                 ),
                 const SizedBox(width: 10),

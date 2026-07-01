@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
+import 'package:recipe_ai/widgets/app_logo.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/screens/onboarding/plus_comparison_screen.dart';
@@ -184,11 +185,7 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
                           ),
                         ],
                       ),
-                      child: const Icon(
-                        Icons.restaurant_menu,
-                        color: Colors.white,
-                        size: 18,
-                      ),
+                      child: const AppLogoMark(size: 23),
                     ),
                     const SizedBox(width: 9),
                     Text.rich(

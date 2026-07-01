@@ -919,7 +919,7 @@ class _RecipeDetailViewScreenState extends State<RecipeDetailViewScreen> {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: AppColors.purple,
+                              color: AppColors.primary,
                               width: 8,
                             ),
                           ),

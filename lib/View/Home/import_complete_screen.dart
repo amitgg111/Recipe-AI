@@ -6,6 +6,7 @@ import 'package:recipe_ai/Controllers/home_controller.dart';
 import 'package:recipe_ai/View/Home/cookbooks_screen.dart';
 import 'package:recipe_ai/View/Home/recipe_detail_screen.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
+import 'package:recipe_ai/widgets/app_logo.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_dimensions.dart';
 
@@ -205,11 +206,7 @@ class ImportCompleteScreen extends StatelessWidget {
                             color: AppColors.primary,
                             borderRadius: BorderRadius.circular(5),
                           ),
-                          child: const Icon(
-                            Icons.restaurant_menu,
-                            color: Colors.white,
-                            size: 12,
-                          ),
+                          child: const AppLogoMark(size: 14),
                         ),
                         const SizedBox(width: 6),
                         Text(

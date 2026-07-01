@@ -2,9 +2,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/View/Auth/auth_wrapper.dart';
-import 'package:recipe_ai/Widget/custom_text.dart';
 import 'package:recipe_ai/screens/onboarding/onboarding_flow_screen.dart';
+import 'package:recipe_ai/widgets/app_logo.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -13,14 +14,73 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen>
+    with TickerProviderStateMixin {
   Timer? _redirectTimer;
+
+  // One-shot entrance for the icon, wordmark and tagline.
+  late final AnimationController _entrance;
+  late final Animation<double> _iconScale;
+  late final Animation<double> _iconFade;
+  late final Animation<double> _wordFade;
+  late final Animation<Offset> _wordSlide;
+  late final Animation<double> _tagFade;
+  late final Animation<Offset> _tagSlide;
+
+  // Continuous ripple rings + loading dots.
+  late final AnimationController _loop;
 
   @override
   void initState() {
     super.initState();
 
-    _redirectTimer = Timer(const Duration(seconds: 2), () {
+    _entrance = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    );
+    // Icon pop: scale .4 -> 1 with an overshoot (cubic-bezier(.34,1.56,.64,1)).
+    _iconScale = Tween<double>(begin: 0.4, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _entrance,
+        curve: const Interval(0.0, 0.57, curve: Curves.easeOutBack),
+      ),
+    );
+    _iconFade = CurvedAnimation(
+      parent: _entrance,
+      curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
+    );
+    // Wordmark: rise + fade in at ~0.5s.
+    _wordFade = CurvedAnimation(
+      parent: _entrance,
+      curve: const Interval(0.36, 0.72, curve: Curves.easeOut),
+    );
+    _wordSlide = Tween<Offset>(begin: const Offset(0, 0.4), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _entrance,
+            curve: const Interval(0.36, 0.72, curve: Curves.easeOut),
+          ),
+        );
+    // Tagline: same, slightly later (~0.68s).
+    _tagFade = CurvedAnimation(
+      parent: _entrance,
+      curve: const Interval(0.49, 0.85, curve: Curves.easeOut),
+    );
+    _tagSlide = Tween<Offset>(begin: const Offset(0, 0.6), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _entrance,
+            curve: const Interval(0.49, 0.85, curve: Curves.easeOut),
+          ),
+        );
+    _entrance.forward();
+
+    _loop = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat();
+
+    _redirectTimer = Timer(const Duration(seconds: 3), () {
       if (!mounted) return;
       final box = GetStorage();
       final hasSeenOnboarding = box.read<bool>('hasSeenOnboarding') ?? false;
@@ -36,6 +96,8 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void dispose() {
     _redirectTimer?.cancel();
+    _entrance.dispose();
+    _loop.dispose();
     super.dispose();
   }
 
@@ -44,44 +106,213 @@ class _SplashScreenState extends State<SplashScreen> {
     return Scaffold(
       body: Container(
         width: double.infinity,
-        alignment: Alignment.center,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment(0.6, -1),
+            end: Alignment(-0.6, 1),
+            colors: [Color(0xFFFF8763), Color(0xFFF2623E), Color(0xFFE0481F)],
+            stops: [0.0, 0.6, 1.0],
+          ),
+        ),
+        child: Stack(
           children: [
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary,
-                borderRadius: BorderRadius.circular(30),
+            // Soft radial glows in opposite corners.
+            Positioned(top: -80, right: -60, child: _glow(260, 0.16)),
+            Positioned(bottom: -70, left: -50, child: _glow(230, 0.10)),
+            // Centered logo + wordmark + tagline.
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 150,
+                    height: 150,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Two staggered ripple rings.
+                        _Ripple(controller: _loop, delayFraction: 0.0),
+                        _Ripple(controller: _loop, delayFraction: 0.5),
+                        // White tile with the brand mark.
+                        FadeTransition(
+                          opacity: _iconFade,
+                          child: ScaleTransition(
+                            scale: _iconScale,
+                            child: Container(
+                              width: 118,
+                              height: 118,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(34),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(
+                                      0xFF2A211B,
+                                    ).withValues(alpha: 0.4),
+                                    blurRadius: 44,
+                                    offset: const Offset(0, 22),
+                                    spreadRadius: -16,
+                                  ),
+                                ],
+                              ),
+                              alignment: Alignment.center,
+                              child: const AppLogoMark(
+                                size: 72,
+                                hatColor: Color(0xFFF2623E),
+                                bandColor: Color(0xFFE0481F),
+                                pleatColor: Color(0x99FFFFFF),
+                                sparkleColor: Color(0xFFFFE3B0),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 26),
+                  FadeTransition(
+                    opacity: _wordFade,
+                    child: SlideTransition(
+                      position: _wordSlide,
+                      child: Text(
+                        'Recipe AI',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 34,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: -1.0,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  FadeTransition(
+                    opacity: _tagFade,
+                    child: SlideTransition(
+                      position: _tagSlide,
+                      child: Text(
+                        'COOK SMARTER',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white.withValues(alpha: 0.85),
+                          letterSpacing: 3.0,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              child: const Icon(
-                Icons.restaurant_menu,
-                color: Colors.white,
-                size: 60,
+            ),
+            // Loading dots near the bottom.
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 64,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  3,
+                  (i) => Padding(
+                    padding: EdgeInsets.only(left: i == 0 ? 0 : 8),
+                    child: _Dot(controller: _loop, index: i),
+                  ),
+                ),
               ),
             ),
-
-            const SizedBox(height: 24),
-
-            const CustomText(
-              "RecipeNest",
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-            ),
-
-            const SizedBox(height: 8),
-
-            CustomText(
-              "Cook Smarter With AI",
-              fontSize: 15,
-              color: Colors.grey.shade600,
-            ),
-
-            const SizedBox(height: 50),
-
-            const CircularProgressIndicator(),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _glow(double size, double opacity) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [
+            Colors.white.withValues(alpha: opacity),
+            Colors.white.withValues(alpha: 0),
+          ],
+          stops: const [0.0, 0.7],
+        ),
+      ),
+    );
+  }
+}
+
+/// A single expanding + fading ring, matching the `splashRipple` keyframe
+/// (scale .5 -> 2.1, opacity .5 -> 0) with a staggered start.
+class _Ripple extends StatelessWidget {
+  final AnimationController controller;
+  final double delayFraction;
+
+  const _Ripple({required this.controller, required this.delayFraction});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, child) {
+        var t = controller.value + delayFraction;
+        if (t > 1) t -= 1;
+        final scale = 0.5 + t * (2.1 - 0.5);
+        final opacity = (0.5 * (1 - t)).clamp(0.0, 1.0);
+        return Opacity(
+          opacity: opacity,
+          child: Transform.scale(scale: scale, child: child),
+        );
+      },
+      child: Container(
+        width: 118,
+        height: 118,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.5),
+            width: 2,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A pulsing loading dot, matching the `splashDots` keyframe with per-dot delay.
+class _Dot extends StatelessWidget {
+  final AnimationController controller;
+  final int index;
+
+  const _Dot({required this.controller, required this.index});
+
+  @override
+  Widget build(BuildContext context) {
+    // The loop runs 2.4s; the dot cycle is 1.2s, so run it twice per loop.
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, child) {
+        var t = (controller.value * 2 - (0.2 / 1.2) * index) % 1.0;
+        if (t < 0) t += 1;
+        // scale .6 -> 1 -> .6, opacity .4 -> 1 -> .4 with the peak at 40%.
+        final double p = t < 0.4 ? t / 0.4 : (1 - t) / 0.6;
+        final e = Curves.easeInOut.transform(p.clamp(0.0, 1.0));
+        final scale = 0.6 + 0.4 * e;
+        final opacity = 0.4 + 0.6 * e;
+        return Opacity(
+          opacity: opacity,
+          child: Transform.scale(scale: scale, child: child),
+        );
+      },
+      child: Container(
+        width: 9,
+        height: 9,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
         ),
       ),
     );

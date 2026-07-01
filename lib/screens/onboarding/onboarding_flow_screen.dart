@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../theme/app_colors.dart';
+import '../../widgets/app_logo.dart';
 import '../../theme/app_dimensions.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/onboarding_progress_bar.dart';
@@ -290,11 +291,7 @@ class _AppNameLogo extends StatelessWidget {
             color: AppColors.primary,
             borderRadius: BorderRadius.circular(9),
           ),
-          child: const Icon(
-            Icons.restaurant_menu,
-            color: Colors.white,
-            size: 17,
-          ),
+          child: const AppLogoMark(size: 20),
         ),
         const SizedBox(width: 9),
         Text(

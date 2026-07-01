@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/Service/import_with_image_api_calling_service.dart';
+import 'package:recipe_ai/widgets/social_guide_animation.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_dimensions.dart';
@@ -172,10 +173,7 @@ class _SocialMediaPickerSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          Text(
-            'Import from social media',
-            style: AppTextStyles.screenTitle,
-          ),
+          Text('Import from social media', style: AppTextStyles.screenTitle),
           const SizedBox(height: 4),
           Text(
             'Pick where your recipe is from.',
@@ -192,14 +190,7 @@ class _SocialMediaPickerSheet extends StatelessWidget {
             subtitle: 'Reels, posts & saved',
             onTap: () {
               Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const SocialGuideScreen(
-                    platform: SocialPlatform.instagram,
-                  ),
-                ),
-              );
+              SocialGuideScreen.show(Get.context!, SocialPlatform.instagram);
             },
           ),
           const SizedBox(height: 4),
@@ -211,14 +202,7 @@ class _SocialMediaPickerSheet extends StatelessWidget {
             subtitle: 'Recipe videos',
             onTap: () {
               Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const SocialGuideScreen(
-                    platform: SocialPlatform.tiktok,
-                  ),
-                ),
-              );
+              SocialGuideScreen.show(Get.context!, SocialPlatform.tiktok);
             },
           ),
           const SizedBox(height: 4),
@@ -230,14 +214,7 @@ class _SocialMediaPickerSheet extends StatelessWidget {
             subtitle: 'Posts & watch videos',
             onTap: () {
               Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const SocialGuideScreen(
-                    platform: SocialPlatform.facebook,
-                  ),
-                ),
-              );
+              SocialGuideScreen.show(Get.context!, SocialPlatform.facebook);
             },
           ),
         ],
@@ -330,13 +307,33 @@ class SocialGuideScreen extends StatefulWidget {
 
   const SocialGuideScreen({super.key, required this.platform});
 
+  /// Shows the platform guide as a bottom sheet (matching the HTML design).
+  static Future<void> show(BuildContext context, SocialPlatform platform) {
+    return showModalBottomSheet(
+      scrollControlDisabledMaxHeightRatio: Get.height * 0.8,
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: const Color(0x801E1B18),
+      builder: (_) => SocialGuideScreen(platform: platform),
+    );
+  }
+
   @override
   State<SocialGuideScreen> createState() => _SocialGuideScreenState();
 }
 
 class _SocialGuideScreenState extends State<SocialGuideScreen> {
-  final PageController _pageController = PageController();
-  int _currentPage = 0;
+  GuidePlatform get _guidePlatform {
+    switch (widget.platform) {
+      case SocialPlatform.instagram:
+        return GuidePlatform.instagram;
+      case SocialPlatform.tiktok:
+        return GuidePlatform.tiktok;
+      case SocialPlatform.facebook:
+        return GuidePlatform.facebook;
+    }
+  }
 
   String get _platformName {
     switch (widget.platform) {
@@ -360,213 +357,71 @@ class _SocialGuideScreenState extends State<SocialGuideScreen> {
     }
   }
 
-  Color get _platformColor {
-    switch (widget.platform) {
-      case SocialPlatform.instagram:
-        return const Color(0xFFE1306C);
-      case SocialPlatform.tiktok:
-        return Colors.black;
-      case SocialPlatform.facebook:
-        return const Color(0xFF1877F2);
-    }
-  }
-
-  List<_GuideStep> get _steps {
-    switch (widget.platform) {
-      case SocialPlatform.instagram:
-        return [
-          _GuideStep(
-            title: 'Find a recipe post or reel',
-            description: 'Open Instagram and find a recipe you want to save.',
-            icon: Icons.search_rounded,
-          ),
-          _GuideStep(
-            title: 'Tap the share button',
-            description: 'Tap the paper plane icon below the post.',
-            icon: Icons.send_rounded,
-          ),
-          _GuideStep(
-            title: 'Share to Recipe AI',
-            description:
-                'Find Recipe AI in the share sheet and tap it to import.',
-            icon: Icons.restaurant_menu_rounded,
-          ),
-        ];
-      case SocialPlatform.tiktok:
-        return [
-          _GuideStep(
-            title: 'Find a recipe video',
-            description: 'Open TikTok and find a recipe video you like.',
-            icon: Icons.search_rounded,
-          ),
-          _GuideStep(
-            title: 'Tap the share button',
-            description: 'Tap the share arrow on the right side of the video.',
-            icon: Icons.send_rounded,
-          ),
-          _GuideStep(
-            title: 'Share to Recipe AI',
-            description:
-                'Find Recipe AI in the share sheet and tap it to import.',
-            icon: Icons.restaurant_menu_rounded,
-          ),
-        ];
-      case SocialPlatform.facebook:
-        return [
-          _GuideStep(
-            title: 'Find a recipe post',
-            description:
-                'Open Facebook and find a recipe post or watch video.',
-            icon: Icons.search_rounded,
-          ),
-          _GuideStep(
-            title: 'Tap the share button',
-            description: 'Tap Share below the post.',
-            icon: Icons.send_rounded,
-          ),
-          _GuideStep(
-            title: 'Share to Recipe AI',
-            description:
-                'Find Recipe AI in the share sheet and tap it to import.',
-            icon: Icons.restaurant_menu_rounded,
-          ),
-        ];
-    }
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 8),
-            // Top bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Drag handle
+              Container(
+                width: 42,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE7E0D2),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+              const SizedBox(height: 18),
+              // Header: back + title
+              Row(
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      size: 20,
-                      color: AppColors.textDark,
+                    behavior: HitTestBehavior.opaque,
+                    child: const SizedBox(
+                      width: 40,
+                      height: 40,
+                      child: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 20,
+                        color: AppColors.textDark,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 6),
                   Text(
                     'Import from $_platformName',
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
                       color: AppColors.textDark,
+                      letterSpacing: -0.38,
                     ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 24),
+              const SizedBox(height: 6),
 
-            // Guide carousel
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppColors.surfaceBorderLight),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 20,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      // Phone mockup area with steps
-                      Expanded(
-                        child: PageView.builder(
-                          controller: _pageController,
-                          onPageChanged: (i) =>
-                              setState(() => _currentPage = i),
-                          itemCount: _steps.length,
-                          itemBuilder: (context, index) {
-                            return _buildGuidePage(_steps[index], index);
-                          },
-                        ),
-                      ),
-
-                      // Page dots
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: List.generate(_steps.length, (i) {
-                            return Container(
-                              width: _currentPage == i ? 24 : 8,
-                              height: 8,
-                              margin: const EdgeInsets.symmetric(horizontal: 3),
-                              decoration: BoxDecoration(
-                                color: _currentPage == i
-                                    ? AppColors.textDark
-                                    : AppColors.surfaceBorder,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            );
-                          }),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              // Guide illustration (auto-cross-fading slides, HTML design) —
+              // fixed 372px height to match the HTML sheet (not stretched).
+              SizedBox(
+                height: 472,
+                width: double.infinity,
+                child: SocialGuideAnimation(platform: _guidePlatform),
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
-            // Hint text
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'tap ',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      color: AppColors.textHint,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                  Text(
-                    'share to',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textMedium,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Open app button
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: GestureDetector(
+              // Open app button
+              GestureDetector(
                 onTap: _openPlatformApp,
                 child: Container(
                   width: double.infinity,
@@ -586,6 +441,7 @@ class _SocialGuideScreenState extends State<SocialGuideScreen> {
                     ],
                   ),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(_platformIcon, color: Colors.white, size: 20),
@@ -598,157 +454,10 @@ class _SocialGuideScreenState extends State<SocialGuideScreen> {
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 24),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGuidePage(_GuideStep step, int index) {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          const SizedBox(height: 8),
-          // Phone mockup illustration
-          Expanded(
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Fake food image placeholder
-                  Container(
-                    width: 180,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF0E6D6),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          Icon(
-                            Icons.restaurant_rounded,
-                            size: 48,
-                            color: AppColors.textHint.withValues(alpha: 0.3),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Search bar mockup
-                  Container(
-                    width: 180,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.surfaceBorderLight),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.search,
-                          size: 16,
-                          color: AppColors.textHint.withValues(alpha: 0.4),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  // Grid of circles mockup
-                  SizedBox(
-                    width: 180,
-                    child: Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: List.generate(8, (i) {
-                        return Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceBorder.withValues(
-                              alpha: 0.5,
-                            ),
-                            shape: BoxShape.circle,
-                          ),
-                        );
-                      }),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  // Action buttons row (share icon highlighted)
-                  SizedBox(
-                    width: 180,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceBorder.withValues(
-                              alpha: 0.4,
-                            ),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        // Share/upload button (highlighted)
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: _platformColor,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            index == 1
-                                ? Icons.file_upload_outlined
-                                : Icons.file_upload_outlined,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        // Green circle (send)
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF25D366),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  // "Share to..." label
-                  Text(
-                    'Share to...',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w400,
-                      color: AppColors.textHint,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+              const SizedBox(height: 8),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -786,16 +495,4 @@ class _SocialGuideScreenState extends State<SocialGuideScreen> {
       );
     }
   }
-}
-
-class _GuideStep {
-  final String title;
-  final String description;
-  final IconData icon;
-
-  _GuideStep({
-    required this.title,
-    required this.description,
-    required this.icon,
-  });
 }

@@ -38,7 +38,6 @@ import 'package:recipe_ai/screens/auth/create_account_screen.dart';
 import 'package:recipe_ai/screens/auth/login_screen.dart';
 import 'package:recipe_ai/screens/auth/sign_up_screen.dart';
 import 'package:recipe_ai/screens/auth/forgot_password_screen.dart';
-
 // Cookbook screens
 import 'package:recipe_ai/screens/cookbooks/cookbooks_empty_screen.dart';
 import 'package:recipe_ai/screens/cookbooks/cookbooks_home_screen.dart';
@@ -105,9 +104,11 @@ class MyApp extends StatelessWidget {
     return GetMaterialApp(
       title: 'Recipe AI',
       debugShowCheckedModeBanner: false,
+      // Single-theme app: always the orange (light) theme. Dark mode removed —
+      // darkTheme also points at the orange theme so nothing can render dark.
       theme: new_theme.AppTheme.light,
-      darkTheme: new_theme.AppTheme.dark,
-      themeMode: ThemeMode.system,
+      darkTheme: new_theme.AppTheme.light,
+      themeMode: ThemeMode.light,
       home: SplashScreen(),
       getPages: [
         // Onboarding

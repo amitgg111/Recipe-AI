@@ -50,7 +50,7 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 26,
                               fontWeight: FontWeight.w800,
-                              color: AppColors.purple,
+                              color: AppColors.primary,
                               height: 1.18,
                               letterSpacing: -0.52,
                             ),
@@ -204,8 +204,10 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
             child: Transform.rotate(
               angle: -6 * 3.14159265 / 180,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 11,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.goldStar,
                   borderRadius: BorderRadius.circular(11),
@@ -228,8 +230,10 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
             child: Transform.rotate(
               angle: 7 * 3.14159265 / 180,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 11,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.starOrange,
                   borderRadius: BorderRadius.circular(11),
@@ -264,7 +268,7 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: isSelected ? AppColors.purple : AppColors.surfaceBorder,
+            color: isSelected ? AppColors.primary : AppColors.surfaceBorder,
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
@@ -308,14 +312,10 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
                 width: 26,
                 height: 26,
                 decoration: const BoxDecoration(
-                  color: AppColors.purple,
+                  color: AppColors.primary,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.check,
-                  color: Colors.white,
-                  size: 16,
-                ),
+                child: const Icon(Icons.check, color: Colors.white, size: 16),
               )
             else
               Container(
@@ -339,7 +339,7 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
-        color: AppColors.purpleBgLight,
+        color: AppColors.primaryShadow,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -363,11 +363,14 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
               height: 27,
               padding: const EdgeInsets.all(3),
               decoration: BoxDecoration(
-                color: _remindMe ? AppColors.purple : AppColors.unselectedBorder,
+                color: _remindMe
+                    ? AppColors.primary
+                    : AppColors.unselectedBorder,
                 borderRadius: BorderRadius.circular(14),
               ),
-              alignment:
-                  _remindMe ? Alignment.centerRight : Alignment.centerLeft,
+              alignment: _remindMe
+                  ? Alignment.centerRight
+                  : Alignment.centerLeft,
               child: Container(
                 width: 21,
                 height: 21,
@@ -421,11 +424,8 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
             Row(
               children: List.generate(
                 5,
-                (_) => const Icon(
-                  Icons.star,
-                  color: AppColors.goldStar,
-                  size: 14,
-                ),
+                (_) =>
+                    const Icon(Icons.star, color: AppColors.goldStar, size: 14),
               ),
             ),
             const SizedBox(height: 2),
@@ -449,11 +449,7 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.check_circle,
-            color: AppColors.green,
-            size: 20,
-          ),
+          const Icon(Icons.check_circle, color: AppColors.green, size: 20),
           const SizedBox(width: 7),
           Text(
             'No payment now',

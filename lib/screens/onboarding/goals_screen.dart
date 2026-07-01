@@ -149,9 +149,9 @@ class _GoalsScreenState extends State<GoalsScreen> {
               // Goal tiles - flex:1, column, gap 11
               Expanded(
                 child: ListView.separated(
-                  // physics: const NeverScrollableScrollPhysics(),
+                  physics: const NeverScrollableScrollPhysics(),
                   shrinkWrap: true,
-
+                  scrollDirection: Axis.vertical,
                   itemCount: _goals.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 11),
                   itemBuilder: (context, index) {
@@ -162,7 +162,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 15,
-                          vertical: 13,
+                          vertical: 10  ,
                         ),
                         decoration: BoxDecoration(
                           color: Colors.white,

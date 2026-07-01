@@ -79,7 +79,7 @@ class ImportPickerScreen extends StatelessWidget {
                           child: _ImportOptionCard(
                             icon: Icons.language_rounded,
                             iconBgColor: const Color(0xFFEDE7FE),
-                            iconColor: AppColors.purple,
+                            iconColor: AppColors.primary,
                             title: 'Import from web',
                             subtitle: 'Paste a recipe URL',
                             onTap: () {},

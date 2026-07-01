@@ -83,11 +83,11 @@ class _PrimaryButtonState extends State<PrimaryButton>
   }
 
   Color get _baseColor => widget.variant == PrimaryButtonVariant.purple
-      ? AppColors.purple
+      ? AppColors.primary
       : AppColors.primary;
 
   Color get _shadowColor => widget.variant == PrimaryButtonVariant.purple
-      ? AppColors.purpleShadow
+      ? AppColors.primaryShadow
       : AppColors.primaryShadow;
 
   @override

@@ -417,7 +417,7 @@ class _SettingUpScreenState extends State<SettingUpScreen>
                             left: 100,
                             size: 6,
                           ),
-                          // Sparkle: top 20px, right 36px, purple, floaty
+                          // Sparkle: top 20px, right 36px, primary, floaty
                           AnimatedBuilder(
                             animation: _sparkleY,
                             builder: (context, _) {
@@ -426,7 +426,7 @@ class _SettingUpScreenState extends State<SettingUpScreen>
                                 right: 36,
                                 child: const Icon(
                                   Icons.auto_awesome,
-                                  color: AppColors.purple,
+                                  color: AppColors.primary,
                                   size: 20,
                                 ),
                               );
@@ -887,7 +887,7 @@ class _SettingUpBodyState extends State<SettingUpBody>
                         left: 100,
                         size: 6,
                       ),
-                      // Sparkle: top 20px, right 36px, purple, floaty
+                      // Sparkle: top 20px, right 36px, primary, floaty
                       AnimatedBuilder(
                         animation: _sparkleY,
                         builder: (context, _) {
@@ -896,7 +896,7 @@ class _SettingUpBodyState extends State<SettingUpBody>
                             right: 36,
                             child: const Icon(
                               Icons.auto_awesome,
-                              color: AppColors.purple,
+                              color: AppColors.primary,
                               size: 20,
                             ),
                           );

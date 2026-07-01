@@ -8,6 +8,7 @@ import 'package:recipe_ai/Controllers/profile_controller.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:recipe_ai/Widget/custom_text.dart';
+import 'package:recipe_ai/theme/app_colors.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -70,7 +71,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final currentUser = FirebaseAuth.instance.currentUser!;
     final profileController = Get.find<ProfileController>();
     return Scaffold(
-      appBar: AppBar(title: const Text("Profile"), centerTitle: true),
+      backgroundColor: AppColors.background,
+      appBar: AppBar(title: const Text("Profile"), centerTitle: false),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -80,22 +82,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Obx(
               () => Stack(
                 children: [
-                  // CircleAvatar(
-                  //   radius: 50,
-                  //   backgroundImage:
-                  //       (profileController.imagePath.value.isNotEmpty)
-                  //       ? NetworkImage(profileController.imagePath.value)
-                  //       : (FirebaseAuth.instance.currentUser?.photoURL != null
-                  //             ? NetworkImage(
-                  //                 FirebaseAuth.instance.currentUser!.photoURL!,
-                  //               )
-                  //             : null),
-                  //   child:
-                  //       (FirebaseAuth.instance.currentUser?.photoURL == null &&
-                  //           profileController.imagePath.value.isEmpty)
-                  //       ? const Icon(Icons.person, size: 50)
-                  //       : null,
-                  // ),
+                
                   ClipOval(
                     child: CachedNetworkImage(
                       imageUrl: profileController.imagePath.value.isNotEmpty

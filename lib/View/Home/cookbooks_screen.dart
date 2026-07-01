@@ -11,12 +11,14 @@ import 'package:recipe_ai/View/Home/import_from_web.dart';
 import 'package:recipe_ai/View/Home/recipe_detail_screen.dart';
 import 'package:recipe_ai/View/Home/recipe_editor_screen.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
+import 'package:recipe_ai/widgets/app_logo.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_spacing.dart';
 import 'package:recipe_ai/theme/app_dimensions.dart';
 import 'package:recipe_ai/widgets/segmented_control.dart';
 import 'package:recipe_ai/widgets/app_search_bar.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
+import 'package:recipe_ai/widgets/empty_plate_illustration.dart';
 
 class CookbooksScreen extends StatefulWidget {
   const CookbooksScreen({super.key});
@@ -29,22 +31,12 @@ class _CookbooksScreenState extends State<CookbooksScreen>
     with TickerProviderStateMixin {
   int _selectedSegment = 0;
   int _sortIndex = 0;
-  late AnimationController _steamController;
   late AnimationController _fabPulseController;
-  late Animation<double> _steamAnimation;
   late Animation<double> _fabPulseAnimation;
 
   @override
   void initState() {
     super.initState();
-    _steamController = AnimationController(
-      duration: const Duration(milliseconds: 2500),
-      vsync: this,
-    )..repeat(reverse: true);
-    _steamAnimation = Tween<double>(begin: 0, end: -12).animate(
-      CurvedAnimation(parent: _steamController, curve: Curves.easeInOut),
-    );
-
     _fabPulseController = AnimationController(
       duration: const Duration(milliseconds: 1800),
       vsync: this,
@@ -56,7 +48,6 @@ class _CookbooksScreenState extends State<CookbooksScreen>
 
   @override
   void dispose() {
-    _steamController.dispose();
     _fabPulseController.dispose();
     super.dispose();
   }
@@ -113,9 +104,7 @@ class _CookbooksScreenState extends State<CookbooksScreen>
               color: AppColors.primary,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(
-              Icons.restaurant_menu, color: Colors.white, size: 20,
-            ),
+            child: const AppLogoMark(size: 24),
           ),
           const SizedBox(width: 10),
           Text(
@@ -164,102 +153,8 @@ class _CookbooksScreenState extends State<CookbooksScreen>
               alignment: Alignment.centerLeft,
               child: Text('Cookbooks', style: AppTextStyles.screenTitle),
             ),
-            const SizedBox(height: 48),
-            SizedBox(
-              height: 200,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  AnimatedBuilder(
-                    animation: _steamAnimation,
-                    builder: (context, child) {
-                      return Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Positioned(
-                            top: 10 + _steamAnimation.value,
-                            left: 80,
-                            child: _steamWisp(3, 18),
-                          ),
-                          Positioned(
-                            top: 5 + _steamAnimation.value * 0.8,
-                            child: _steamWisp(3, 24),
-                          ),
-                          Positioned(
-                            top: 12 + _steamAnimation.value * 1.2,
-                            right: 80,
-                            child: _steamWisp(3, 16),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                  Positioned(
-                    left: 30,
-                    top: 50,
-                    child: Transform.rotate(
-                      angle: -0.3,
-                      child: Icon(
-                        Icons.blender_outlined,
-                        size: 32,
-                        color: AppColors.textHint.withValues(alpha: 0.4),
-                      ),
-                    ),
-                  ),
-                  Container(
-                    width: 152,
-                    height: 152,
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.06),
-                          blurRadius: 30,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Container(
-                        width: 108,
-                        height: 108,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: AppColors.surfaceBorder, width: 1.5,
-                          ),
-                        ),
-                        child: CustomPaint(
-                          painter: _DashedCirclePainter(
-                            color: AppColors.surfaceBorder,
-                          ),
-                          child: const Center(
-                            child: Icon(
-                              Icons.restaurant_rounded,
-                              size: 40,
-                              color: AppColors.iconLight,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    right: 30,
-                    top: 55,
-                    child: Transform.rotate(
-                      angle: 0.3,
-                      child: Icon(
-                        Icons.flatware_rounded,
-                        size: 32,
-                        color: AppColors.textHint.withValues(alpha: 0.4),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            const SizedBox(height: 40),
+            const EmptyPlateIllustration(),
             const SizedBox(height: AppSpacing.xxl),
             Text(
               "Let's get cooking!",
@@ -515,17 +410,6 @@ class _CookbooksScreenState extends State<CookbooksScreen>
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _steamWisp(double width, double height) {
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: AppColors.textHint.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(width),
       ),
     );
   }
@@ -1784,38 +1668,6 @@ class _PhotoImportLoadingOverlayState extends State<PhotoImportLoadingOverlay>
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
-
-class _DashedCirclePainter extends CustomPainter {
-  final Color color;
-  _DashedCirclePainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-
-    const dashCount = 24;
-    const dashArc = 3.14159 * 2 / dashCount;
-    const gapFraction = 0.4;
-
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2 - 2;
-
-    for (int i = 0; i < dashCount; i++) {
-      final startAngle = i * dashArc;
-      final sweepAngle = dashArc * (1 - gapFraction);
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        startAngle, sweepAngle, false, paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
 
 class AnimatedBuilder extends AnimatedWidget {
   final Widget Function(BuildContext context, Widget? child) builder;

@@ -5,6 +5,7 @@ import 'package:recipe_ai/Controllers/home_controller.dart';
 import 'package:recipe_ai/Core/Theme/app_theme.dart';
 import 'package:recipe_ai/View/Home/recipe_detail_screen.dart';
 import 'package:recipe_ai/Widget/custom_text.dart';
+import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:share_plus/share_plus.dart';
 
 class _GroceryItemTile extends StatelessWidget {
@@ -422,10 +423,10 @@ Generated with Recipe AI ❤️
     }
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         scrolledUnderElevation: 0,
-        automaticallyImplyLeading: false,
+
         titleSpacing: 16,
         title: const CustomText(
           'Grocery List',
@@ -441,14 +442,10 @@ Generated with Recipe AI ❤️
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: AppTheme.surface(context),
+                  color: AppColors.bottomNavBg,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  Icons.add,
-                  color: AppTheme.textPrimary(context),
-                  size: 20,
-                ),
+                child: Icon(Icons.add, color: AppColors.textBody, size: 20),
               ),
             ),
           ),
@@ -1049,7 +1046,7 @@ class _AppBarCircleBtn extends StatelessWidget {
         width: 36,
         height: 36,
         decoration: BoxDecoration(
-          color: AppTheme.border(context),
+          color: AppColors.bottomNavBg,
           shape: BoxShape.circle,
         ),
         child: Icon(icon, size: 18),

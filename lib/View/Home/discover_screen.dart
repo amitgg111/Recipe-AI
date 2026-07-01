@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:recipe_ai/Controllers/discover_controller.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
+import 'package:recipe_ai/widgets/app_logo.dart';
 import 'package:recipe_ai/widgets/app_search_bar.dart';
 
 class DiscoverScreen extends StatefulWidget {
@@ -49,7 +50,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                           color: AppColors.primary,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.restaurant_menu, color: Colors.white, size: 18),
+                        child: const AppLogoMark(size: 20),
                       ),
                       const SizedBox(width: 10),
                       Text(
