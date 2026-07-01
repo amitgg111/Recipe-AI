@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
-import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/widgets/progress_indicator_dots.dart';
 import 'package:recipe_ai/screens/onboarding/when_to_cook_screen.dart';
@@ -23,207 +22,309 @@ class _GoalsHappenScreenState extends State<GoalsHappenScreen> {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.fromLTRB(26, 0, 26, 26),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const ProgressIndicatorDots(
-                totalSteps: 8,
-                currentStep: 3,
-              ),
-              const SizedBox(height: 28),
-              Text(
-                "Let's make your\ngoals happen!",
-                textAlign: TextAlign.center,
-                style: AppTextStyles.screenTitle.copyWith(fontSize: 26),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                "You want to save money and eat healthier — we'll help you get there.",
-                textAlign: TextAlign.center,
-                style: AppTextStyles.bodyMedium.copyWith(fontSize: 15),
-              ),
-              const SizedBox(height: 28),
-              // Progress chart card
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: AppColors.surfaceBorder),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          "Your progress",
-                          style: AppTextStyles.bodyLarge,
-                        ),
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFDBF0E7),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.auto_awesome,
-                                size: 12,
-                                color: Color(0xFF1F7A5E),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                "ON TRACK",
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                  color: const Color(0xFF1F7A5E),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      height: 140,
-                      child: CustomPaint(
-                        size: Size.infinite,
-                        painter: _ChartPainter(),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text("Wk 1", style: AppTextStyles.smallLabel),
-                        Text("Wk 2", style: AppTextStyles.smallLabel),
-                        Text("Wk 3", style: AppTextStyles.smallLabel),
-                        Text("Wk 4", style: AppTextStyles.smallLabel),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              // Two goal cards
+              const SizedBox(height: 8),
+              // Logo + Progress row
               Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEAF6F0),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: const Color(0xFFD5EDE2)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF1F7A5E),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Center(
-                              child: Icon(
-                                Icons.restaurant,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            "Eat healthier",
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.textDark,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            "Balanced, fresh meals",
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: const Color(0xFF5E8676),
-                            ),
-                          ),
-                        ],
-                      ),
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.restaurant,
+                      color: Colors.white,
+                      size: 16,
                     ),
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFCF3DE),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: const Color(0xFFF1E4C3)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFC0860F),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Center(
-                              child: Icon(
-                                Icons.account_balance_wallet,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            "Save money",
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.textDark,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            "Cook more, waste less",
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: const Color(0xFF9A7B3A),
-                            ),
-                          ),
-                        ],
-                      ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Recipe AI',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
                     ),
                   ),
                 ],
               ),
-              const Spacer(),
+              const SizedBox(height: 12),
+              // Progress dots (step 4 of 8, index 3)
+              const ProgressIndicatorDots(
+                totalSteps: 8,
+                currentStep: 3,
+              ),
+              // Title
+              const SizedBox(height: 18),
+              Text(
+                "Let's make your\ngoals happen!",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textDark,
+                  height: 1.15,
+                  letterSpacing: -0.52,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Text(
+                  "You want to save money and eat healthier — we'll help you get there.",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textMedium,
+                    height: 1.5,
+                  ),
+                ),
+              ),
+              // Content area
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Progress chart card
+                      Container(
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(22),
+                          border: Border.all(color: AppColors.surfaceBorder),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF2A211B)
+                                  .withValues(alpha: 0.4),
+                              blurRadius: 38,
+                              offset: const Offset(0, 18),
+                              spreadRadius: -24,
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            // Header row
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Your progress',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.textDark,
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.greenBg,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.auto_awesome,
+                                        size: 12,
+                                        color: AppColors.green,
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        'ON TRACK',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w800,
+                                          color: AppColors.green,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+                            // Chart
+                            SizedBox(
+                              height: 92,
+                              child: CustomPaint(
+                                size: const Size(double.infinity, 92),
+                                painter: _ProgressChartPainter(),
+                              ),
+                            ),
+                            // Week labels
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Wk 1',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textSubtle,
+                                  ),
+                                ),
+                                Text(
+                                  'Wk 2',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textSubtle,
+                                  ),
+                                ),
+                                Text(
+                                  'Wk 3',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textSubtle,
+                                  ),
+                                ),
+                                Text(
+                                  'Wk 4',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textSubtle,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 15),
+                      // 2-column grid
+                      Row(
+                        children: [
+                          // Card 1: Eat healthier
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(15),
+                              decoration: BoxDecoration(
+                                color: AppColors.greenBgLight,
+                                borderRadius: BorderRadius.circular(18),
+                                border:
+                                    Border.all(color: AppColors.greenBorder),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.green,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Center(
+                                      child: Icon(
+                                        Icons.restaurant,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 11),
+                                  Text(
+                                    'Eat healthier',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.textDark,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Balanced, fresh meals',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.greenText,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          // Card 2: Save money
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(15),
+                              decoration: BoxDecoration(
+                                color: AppColors.goldBg,
+                                borderRadius: BorderRadius.circular(18),
+                                border:
+                                    Border.all(color: AppColors.goldBorder),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.gold,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Center(
+                                      child: Icon(
+                                        Icons.account_balance_wallet,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 11),
+                                  Text(
+                                    'Save money',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.textDark,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Cook more, waste less',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.goldText,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // Bottom: Continue button
               PrimaryButton(
-                label: "Continue",
+                label: 'Continue',
                 onPressed: () {
                   Get.to(() => const WhenToCookScreen());
                 },
               ),
-              const SizedBox(height: 16),
             ],
           ),
         ),
@@ -232,88 +333,349 @@ class _GoalsHappenScreenState extends State<GoalsHappenScreen> {
   }
 }
 
-class _ChartPainter extends CustomPainter {
+// ─────────────────────────────────────────────────────────────────────────────
+// GoalsHappenBody — content-only widget for single-screen onboarding
+// ─────────────────────────────────────────────────────────────────────────────
+
+class GoalsHappenBody extends StatelessWidget {
+  const GoalsHappenBody({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 26),
+      child: Column(
+        children: [
+          const SizedBox(height: 8),
+          // Title
+          Text(
+            "Let's make your\ngoals happen!",
+            textAlign: TextAlign.center,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textDark,
+              height: 1.15,
+              letterSpacing: -0.52,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Text(
+              "You want to save money and eat healthier — we'll help you get there.",
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textMedium,
+                height: 1.5,
+              ),
+            ),
+          ),
+          // Content area
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Progress chart card
+                  Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(color: AppColors.surfaceBorder),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF2A211B)
+                              .withValues(alpha: 0.4),
+                          blurRadius: 38,
+                          offset: const Offset(0, 18),
+                          spreadRadius: -24,
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        // Header row
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Your progress',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.textDark,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.greenBg,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.auto_awesome,
+                                    size: 12,
+                                    color: AppColors.green,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    'ON TRACK',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.green,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        // Chart
+                        SizedBox(
+                          height: 92,
+                          child: CustomPaint(
+                            size: const Size(double.infinity, 92),
+                            painter: _ProgressChartPainter(),
+                          ),
+                        ),
+                        // Week labels
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Wk 1',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textSubtle,
+                              ),
+                            ),
+                            Text(
+                              'Wk 2',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textSubtle,
+                              ),
+                            ),
+                            Text(
+                              'Wk 3',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textSubtle,
+                              ),
+                            ),
+                            Text(
+                              'Wk 4',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textSubtle,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 15),
+                  // 2-column grid
+                  Row(
+                    children: [
+                      // Card 1: Eat healthier
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(15),
+                          decoration: BoxDecoration(
+                            color: AppColors.greenBgLight,
+                            borderRadius: BorderRadius.circular(18),
+                            border:
+                                Border.all(color: AppColors.greenBorder),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: AppColors.green,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.restaurant,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 11),
+                              Text(
+                                'Eat healthier',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.textDark,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Balanced, fresh meals',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.greenText,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      // Card 2: Save money
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(15),
+                          decoration: BoxDecoration(
+                            color: AppColors.goldBg,
+                            borderRadius: BorderRadius.circular(18),
+                            border:
+                                Border.all(color: AppColors.goldBorder),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: AppColors.gold,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.account_balance_wallet,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 11),
+                              Text(
+                                'Save money',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.textDark,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Cook more, waste less',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.goldText,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Custom painter that draws the ascending progress curve.
+/// Based on SVG viewBox 0 0 280 92:
+///   Path: "M6 82 C 60 78, 78 52, 120 50 C 166 48, 192 22, 274 10"
+///   Fill area: same path + L274 90 L6 90 Z
+///   Mid-circle at (120,50): r4, white fill, #F2623E stroke 2.5
+///   End-circle at (274,10): r5, #F2623E fill
+class _ProgressChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final dashPaint = Paint()
-      ..color = AppColors.surfaceBorder
-      ..strokeWidth = 1
-      ..style = PaintingStyle.stroke;
+    // Map SVG viewBox (280x92) to actual canvas size
+    final sx = size.width / 280;
+    final sy = size.height / 92;
 
-    // Draw 4 vertical dashed grid lines
-    for (int i = 0; i < 4; i++) {
-      final x = size.width * (i + 1) / 5;
-      _drawDashedLine(
-        canvas,
-        Offset(x, 0),
-        Offset(x, size.height),
-        dashPaint,
-      );
-    }
+    Offset p(double x, double y) => Offset(x * sx, y * sy);
 
-    // Curved line from bottom-left to top-right
-    final linePaint = Paint()
-      ..color = AppColors.primary
-      ..strokeWidth = 2.5
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
+    // Build the cubic bezier path matching the SVG
     final path = Path();
-    final startPoint = Offset(0, size.height * 0.9);
-    final endPoint = Offset(size.width, size.height * 0.1);
-    final controlPoint = Offset(size.width * 0.4, size.height * 0.7);
-
-    path.moveTo(startPoint.dx, startPoint.dy);
-    path.quadraticBezierTo(
-      controlPoint.dx,
-      controlPoint.dy,
-      endPoint.dx,
-      endPoint.dy,
+    path.moveTo(p(6, 82).dx, p(6, 82).dy);
+    path.cubicTo(
+      p(60, 78).dx, p(60, 78).dy,
+      p(78, 52).dx, p(78, 52).dy,
+      p(120, 50).dx, p(120, 50).dy,
+    );
+    path.cubicTo(
+      p(166, 48).dx, p(166, 48).dy,
+      p(192, 22).dx, p(192, 22).dy,
+      p(274, 10).dx, p(274, 10).dy,
     );
 
-    canvas.drawPath(path, linePaint);
-
-    // Area fill below curve
+    // Fill area below curve
     final fillPath = Path.from(path);
-    fillPath.lineTo(size.width, size.height);
-    fillPath.lineTo(0, size.height);
+    fillPath.lineTo(p(274, 90).dx, p(274, 90).dy);
+    fillPath.lineTo(p(6, 90).dx, p(6, 90).dy);
     fillPath.close();
 
     final fillPaint = Paint()
-      ..color = AppColors.primary.withValues(alpha: 0.09)
+      ..color = const Color(0xFFF2623E).withValues(alpha: 0.09)
       ..style = PaintingStyle.fill;
-
     canvas.drawPath(fillPath, fillPaint);
 
-    // Dot at end of line
-    final dotPaint = Paint()
-      ..color = AppColors.primary
+    // Stroke the curve
+    final linePaint = Paint()
+      ..color = const Color(0xFFF2623E)
+      ..strokeWidth = 3
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+    canvas.drawPath(path, linePaint);
+
+    // Mid-point circle at (120, 50) — white fill, orange stroke
+    final midCenter = p(120, 50);
+    final midBgPaint = Paint()
+      ..color = Colors.white
       ..style = PaintingStyle.fill;
+    canvas.drawCircle(midCenter, 4 * sx, midBgPaint);
+    final midStrokePaint = Paint()
+      ..color = const Color(0xFFF2623E)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5;
+    canvas.drawCircle(midCenter, 4 * sx, midStrokePaint);
 
-    canvas.drawCircle(endPoint, 5, dotPaint);
-  }
-
-  void _drawDashedLine(
-    Canvas canvas,
-    Offset start,
-    Offset end,
-    Paint paint,
-  ) {
-    const dashLength = 5.0;
-    const gapLength = 4.0;
-    final totalLength = (end - start).distance;
-    final direction = (end - start) / totalLength;
-    var current = 0.0;
-
-    while (current < totalLength) {
-      final dashEnd = (current + dashLength).clamp(0, totalLength).toDouble();
-      canvas.drawLine(
-        start + direction * current,
-        start + direction * dashEnd,
-        paint,
-      );
-      current += dashLength + gapLength;
-    }
+    // End-point circle at (274, 10) — solid orange fill
+    final endCenter = p(274, 10);
+    final endPaint = Paint()
+      ..color = const Color(0xFFF2623E)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(endCenter, 5 * sx, endPaint);
   }
 
   @override

@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
-import 'package:recipe_ai/theme/app_text_styles.dart';
-import 'package:recipe_ai/theme/app_dimensions.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/screens/onboarding/social_proof_screen.dart';
 import 'package:recipe_ai/screens/auth/login_screen.dart';
@@ -19,7 +17,6 @@ class WelcomeScreen extends StatefulWidget {
 
 class _WelcomeScreenState extends State<WelcomeScreen>
     with TickerProviderStateMixin {
-  // ── Entrance animation controllers ──
   late final AnimationController _entranceController;
   late final Animation<double> _logoFade;
   late final Animation<Offset> _logoSlide;
@@ -29,231 +26,74 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   late final Animation<Offset> _subtitleSlide;
   late final Animation<double> _potFade;
   late final Animation<double> _potScale;
-  late final Animation<double> _tag1Fade;
-  late final Animation<Offset> _tag1Slide;
-  late final Animation<double> _tag2Fade;
-  late final Animation<Offset> _tag2Slide;
-  late final Animation<double> _tag3Fade;
-  late final Animation<Offset> _tag3Slide;
   late final Animation<double> _buttonFade;
   late final Animation<Offset> _buttonSlide;
   late final Animation<double> _loginFade;
 
-  // ── Continuous floating animations ──
-  late final AnimationController _float1Controller;
-  late final AnimationController _float2Controller;
-  late final AnimationController _float3Controller;
-  late final Animation<double> _float1Y;
-  late final Animation<double> _float2Y;
-  late final Animation<double> _float3Y;
-
-  // ── Steam wisps ──
-  late final AnimationController _steamController;
-
-  // ── Floating leaf/herb animations ──
-  late final AnimationController _leaf1Controller;
-  late final AnimationController _leaf2Controller;
-  late final AnimationController _leaf3Controller;
-  late final AnimationController _leaf4Controller;
-
   @override
   void initState() {
     super.initState();
-    _setupEntranceAnimations();
-    _setupFloatingAnimations();
-    _setupSteamAnimation();
-    _setupLeafAnimations();
-    _entranceController.forward();
-  }
-
-  void _setupEntranceAnimations() {
     _entranceController = AnimationController(
       duration: const Duration(milliseconds: 2200),
       vsync: this,
     );
 
-    _logoFade = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(
-        parent: _entranceController,
-        curve: const Interval(0.0, 0.25, curve: Curves.easeOut),
-      ),
-    );
-    _logoSlide = Tween<Offset>(
-      begin: const Offset(0, -0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _entranceController,
-      curve: const Interval(0.0, 0.25, curve: Curves.easeOutCubic),
-    ));
-
-    _titleFade = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(
-        parent: _entranceController,
-        curve: const Interval(0.10, 0.35, curve: Curves.easeOut),
-      ),
-    );
-    _titleSlide = Tween<Offset>(
-      begin: const Offset(0, 0.15),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _entranceController,
-      curve: const Interval(0.10, 0.35, curve: Curves.easeOutCubic),
-    ));
-
-    _subtitleFade = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(
-        parent: _entranceController,
-        curve: const Interval(0.18, 0.42, curve: Curves.easeOut),
-      ),
-    );
-    _subtitleSlide = Tween<Offset>(
-      begin: const Offset(0, 0.15),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _entranceController,
-      curve: const Interval(0.18, 0.42, curve: Curves.easeOutCubic),
-    ));
-
-    _potFade = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(
-        parent: _entranceController,
-        curve: const Interval(0.25, 0.55, curve: Curves.easeOut),
-      ),
-    );
+    _logoFade = _fade(0.0, 0.25);
+    _logoSlide = _slide(const Offset(0, -0.3), 0.0, 0.25);
+    _titleFade = _fade(0.10, 0.35);
+    _titleSlide = _slide(const Offset(0, 0.15), 0.10, 0.35);
+    _subtitleFade = _fade(0.18, 0.42);
+    _subtitleSlide = _slide(const Offset(0, 0.15), 0.18, 0.42);
+    _potFade = _fade(0.28, 0.58);
     _potScale = Tween<double>(begin: 0.7, end: 1.0).animate(
       CurvedAnimation(
         parent: _entranceController,
-        curve: const Interval(0.25, 0.55, curve: Curves.elasticOut),
+        curve: const Interval(0.28, 0.58, curve: Curves.elasticOut),
       ),
     );
+    _buttonFade = _fade(0.70, 0.90);
+    _buttonSlide = _slide(const Offset(0, 0.3), 0.70, 0.90);
+    _loginFade = _fade(0.82, 1.0);
 
-    _tag1Fade = Tween<double>(begin: 0, end: 1).animate(
+    _entranceController.forward();
+  }
+
+  Animation<double> _fade(double start, double end) {
+    return Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(
         parent: _entranceController,
-        curve: const Interval(0.40, 0.62, curve: Curves.easeOut),
-      ),
-    );
-    _tag1Slide = Tween<Offset>(
-      begin: const Offset(-0.5, 0.2),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _entranceController,
-      curve: const Interval(0.40, 0.62, curve: Curves.easeOutBack),
-    ));
-
-    _tag2Fade = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(
-        parent: _entranceController,
-        curve: const Interval(0.48, 0.70, curve: Curves.easeOut),
-      ),
-    );
-    _tag2Slide = Tween<Offset>(
-      begin: const Offset(0.5, 0.2),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _entranceController,
-      curve: const Interval(0.48, 0.70, curve: Curves.easeOutBack),
-    ));
-
-    _tag3Fade = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(
-        parent: _entranceController,
-        curve: const Interval(0.55, 0.78, curve: Curves.easeOut),
-      ),
-    );
-    _tag3Slide = Tween<Offset>(
-      begin: const Offset(-0.3, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _entranceController,
-      curve: const Interval(0.55, 0.78, curve: Curves.easeOutBack),
-    ));
-
-    _buttonFade = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(
-        parent: _entranceController,
-        curve: const Interval(0.70, 0.90, curve: Curves.easeOut),
-      ),
-    );
-    _buttonSlide = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _entranceController,
-      curve: const Interval(0.70, 0.90, curve: Curves.easeOutCubic),
-    ));
-
-    _loginFade = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(
-        parent: _entranceController,
-        curve: const Interval(0.82, 1.0, curve: Curves.easeOut),
+        curve: Interval(start, end, curve: Curves.easeOut),
       ),
     );
   }
 
-  void _setupFloatingAnimations() {
-    _float1Controller = AnimationController(
-      duration: const Duration(milliseconds: 2600),
-      vsync: this,
-    )..repeat(reverse: true);
-    _float2Controller = AnimationController(
-      duration: const Duration(milliseconds: 3200),
-      vsync: this,
-    )..repeat(reverse: true);
-    _float3Controller = AnimationController(
-      duration: const Duration(milliseconds: 2900),
-      vsync: this,
-    )..repeat(reverse: true);
-
-    _float1Y = Tween<double>(begin: 0, end: -8).animate(
-      CurvedAnimation(parent: _float1Controller, curve: Curves.easeInOut),
+  Animation<Offset> _slide(Offset begin, double start, double end) {
+    return Tween<Offset>(begin: begin, end: Offset.zero).animate(
+      CurvedAnimation(
+        parent: _entranceController,
+        curve: Interval(start, end, curve: Curves.easeOutCubic),
+      ),
     );
-    _float2Y = Tween<double>(begin: 0, end: -10).animate(
-      CurvedAnimation(parent: _float2Controller, curve: Curves.easeInOut),
-    );
-    _float3Y = Tween<double>(begin: 0, end: -7).animate(
-      CurvedAnimation(parent: _float3Controller, curve: Curves.easeInOut),
-    );
-  }
-
-  void _setupSteamAnimation() {
-    _steamController = AnimationController(
-      duration: const Duration(milliseconds: 2000),
-      vsync: this,
-    )..repeat();
-  }
-
-  void _setupLeafAnimations() {
-    _leaf1Controller = AnimationController(
-      duration: const Duration(milliseconds: 3000),
-      vsync: this,
-    )..repeat(reverse: true);
-    _leaf2Controller = AnimationController(
-      duration: const Duration(milliseconds: 2500),
-      vsync: this,
-    )..repeat(reverse: true);
-    _leaf3Controller = AnimationController(
-      duration: const Duration(milliseconds: 3500),
-      vsync: this,
-    )..repeat(reverse: true);
-    _leaf4Controller = AnimationController(
-      duration: const Duration(milliseconds: 2800),
-      vsync: this,
-    )..repeat(reverse: true);
   }
 
   @override
   void dispose() {
     _entranceController.dispose();
-    _float1Controller.dispose();
-    _float2Controller.dispose();
-    _float3Controller.dispose();
-    _steamController.dispose();
-    _leaf1Controller.dispose();
-    _leaf2Controller.dispose();
-    _leaf3Controller.dispose();
-    _leaf4Controller.dispose();
     super.dispose();
+  }
+
+  Widget _animatedSlide(
+    Animation<double> fade,
+    Animation<Offset> slide,
+    Widget child,
+  ) {
+    return AnimatedBuilder(
+      animation: _entranceController,
+      builder: (context, _) => SlideTransition(
+        position: slide,
+        child: Opacity(opacity: fade.value, child: child),
+      ),
+    );
   }
 
   @override
@@ -262,17 +102,13 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          // Radial gradient overlays
           Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: RadialGradient(
                   center: Alignment.topCenter,
                   radius: 1.2,
-                  colors: [
-                    const Color(0x15F2623E),
-                    Colors.transparent,
-                  ],
+                  colors: [const Color(0x15F2623E), Colors.transparent],
                 ),
               ),
             ),
@@ -283,26 +119,22 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 gradient: RadialGradient(
                   center: Alignment.bottomLeft,
                   radius: 1.0,
-                  colors: [
-                    const Color(0x101F7A5E),
-                    Colors.transparent,
-                  ],
+                  colors: [const Color(0x101F7A5E), Colors.transparent],
                 ),
               ),
             ),
           ),
-          // Main content
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 28),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 children: [
                   const SizedBox(height: 24),
-                  // ── Logo ──
-                  _buildAnimatedSlideAndFade(
-                    fade: _logoFade,
-                    slide: _logoSlide,
-                    child: Row(
+                  // Logo
+                  _animatedSlide(
+                    _logoFade,
+                    _logoSlide,
+                    Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Container(
@@ -313,8 +145,11 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Center(
-                            child: Icon(Icons.restaurant_menu,
-                                color: Colors.white, size: 18),
+                            child: Icon(
+                              Icons.restaurant_menu,
+                              color: Colors.white,
+                              size: 18,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -330,11 +165,11 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                     ),
                   ),
                   const SizedBox(height: 32),
-                  // ── Title ──
-                  _buildAnimatedSlideAndFade(
-                    fade: _titleFade,
-                    slide: _titleSlide,
-                    child: RichText(
+                  // Title
+                  _animatedSlide(
+                    _titleFade,
+                    _titleSlide,
+                    RichText(
                       textAlign: TextAlign.center,
                       text: TextSpan(
                         style: GoogleFonts.plusJakartaSans(
@@ -350,7 +185,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                             text: 'anything',
                             style: TextStyle(
                               color: AppColors.primary,
-                              fontStyle: FontStyle.italic,
+                              fontStyle: FontStyle.normal,
                             ),
                           ),
                           const TextSpan(text: ',\nwithout the chaos'),
@@ -359,11 +194,11 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                     ),
                   ),
                   const SizedBox(height: 14),
-                  // ── Subtitle ──
-                  _buildAnimatedSlideAndFade(
-                    fade: _subtitleFade,
-                    slide: _subtitleSlide,
-                    child: Padding(
+                  // Subtitle
+                  _animatedSlide(
+                    _subtitleFade,
+                    _subtitleSlide,
+                    Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: Text(
                         'Import any recipe, build smart shopping lists, and plan your week — like a pro.',
@@ -377,110 +212,40 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  // ── Pot + floating tags area ──
+                  const SizedBox(height: 16),
+                  // Animation area
                   Expanded(
                     child: AnimatedBuilder(
                       animation: _entranceController,
-                      builder: (context, _) {
-                        return Center(
-                          child: SizedBox(
-                            width: 310,
-                            height: 300,
-                            child: Stack(
-                              clipBehavior: Clip.none,
-                              alignment: Alignment.center,
-                              children: [
-                                // Pot illustration
-                                Positioned(
-                                  bottom: 20,
-                                  child: Opacity(
-                                    opacity: _potFade.value,
-                                    child: Transform.scale(
-                                      scale: _potScale.value,
-                                      child: _buildCookingPot(),
-                                    ),
-                                  ),
-                                ),
-                                // Steam wisps
-                                ..._buildSteamWisps(),
-                                // Floating leaves
-                                ..._buildFloatingLeaves(),
-                                // Feature tag 1: Import any recipe (top-left)
-                                Positioned(
-                                  top: 10,
-                                  left: -10,
-                                  child: _buildFloatingTag(
-                                    fade: _tag1Fade,
-                                    slide: _tag1Slide,
-                                    floatAnimation: _float1Y,
-                                    floatController: _float1Controller,
-                                    label: 'Import any recipe',
-                                    icon: Icons.auto_awesome,
-                                    iconColor: const Color(0xFFD98A12),
-                                    iconBg: const Color(0xFFFDEBD2),
-                                  ),
-                                ),
-                                // Feature tag 2: Plan your week (right)
-                                Positioned(
-                                  top: 65,
-                                  right: -18,
-                                  child: _buildFloatingTag(
-                                    fade: _tag2Fade,
-                                    slide: _tag2Slide,
-                                    floatAnimation: _float2Y,
-                                    floatController: _float2Controller,
-                                    label: 'Plan your week',
-                                    icon: Icons.calendar_today,
-                                    iconColor: const Color(0xFF2D6FE0),
-                                    iconBg: const Color(0xFFE4ECFB),
-                                  ),
-                                ),
-                                // Feature tag 3: Auto shopping list (bottom-left)
-                                Positioned(
-                                  bottom: 8,
-                                  left: 5,
-                                  child: _buildFloatingTag(
-                                    fade: _tag3Fade,
-                                    slide: _tag3Slide,
-                                    floatAnimation: _float3Y,
-                                    floatController: _float3Controller,
-                                    label: 'Auto shopping list',
-                                    icon: Icons.shopping_cart_outlined,
-                                    iconColor: const Color(0xFF1F7A5E),
-                                    iconBg: const Color(0xFFDBF0E7),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
+                      builder: (context, child) => Opacity(
+                        opacity: _potFade.value,
+                        child: Transform.scale(
+                          scale: _potScale.value,
+                          child: child,
+                        ),
+                      ),
+                      child: const WelcomeCookingAnimation(),
                     ),
                   ),
-                  // ── Get Started button ──
-                  _buildAnimatedSlideAndFade(
-                    fade: _buttonFade,
-                    slide: _buttonSlide,
-                    child: PrimaryButton(
+                  SizedBox(height: 10),
+                  // Get Started button
+                  _animatedSlide(
+                    _buttonFade,
+                    _buttonSlide,
+                    PrimaryButton(
                       label: 'Get Started',
-                      enableSheen: true,
+                      enableSheen: false,
+
                       height: 54,
-                      onPressed: () {
-                        Get.to(() => const SocialProofScreen());
-                      },
+                      onPressed: () => Get.to(() => const SocialProofScreen()),
                     ),
                   ),
                   const SizedBox(height: 16),
-                  // ── Login link ──
+                  // Login link
                   AnimatedBuilder(
                     animation: _loginFade,
-                    builder: (context, child) {
-                      return Opacity(
-                        opacity: _loginFade.value,
-                        child: child,
-                      );
-                    },
+                    builder: (context, child) =>
+                        Opacity(opacity: _loginFade.value, child: child),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -517,440 +282,629 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       ),
     );
   }
+}
 
-  // ── Animated entrance helpers ──
+// ─────────────────────────────────────────────────────────────────────────────
+// WelcomeBody — content-only version for single-screen onboarding flow
+// ─────────────────────────────────────────────────────────────────────────────
 
-  Widget _buildAnimatedSlideAndFade({
-    required Animation<double> fade,
-    required Animation<Offset> slide,
-    required Widget child,
-  }) {
+class WelcomeBody extends StatefulWidget {
+  const WelcomeBody({super.key});
+
+  @override
+  State<WelcomeBody> createState() => _WelcomeBodyState();
+}
+
+class _WelcomeBodyState extends State<WelcomeBody>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _entranceController;
+  late final Animation<double> _fade;
+
+  @override
+  void initState() {
+    super.initState();
+    _entranceController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _fade = CurvedAnimation(parent: _entranceController, curve: Curves.easeOut);
+    _entranceController.forward();
+  }
+
+  @override
+  void dispose() {
+    _entranceController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: AnimatedBuilder(
+        animation: _fade,
+        builder: (context, child) =>
+            Opacity(opacity: _fade.value, child: child),
+        child: Column(
+          children: [
+            const SizedBox(height: 24),
+            // Logo
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.restaurant_menu,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'Recipe AI',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textDark,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 32),
+            // Title
+            RichText(
+              textAlign: TextAlign.center,
+              text: TextSpan(
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 33,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textDark,
+                  height: 1.08,
+                  letterSpacing: -1.0,
+                ),
+                children: [
+                  const TextSpan(text: 'Cook '),
+                  TextSpan(
+                    text: 'anything',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                  const TextSpan(text: ',\nwithout the chaos'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            // Subtitle
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                'Import any recipe, build smart shopping lists, and plan your week — like a pro.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 15.5,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textMedium,
+                  height: 1.5,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Animation area
+            const Expanded(child: WelcomeCookingAnimation()),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WelcomeCookingAnimation — pot, steam, bubbles, floating ingredients, chips
+// ─────────────────────────────────────────────────────────────────────────────
+
+class WelcomeCookingAnimation extends StatefulWidget {
+  const WelcomeCookingAnimation({super.key});
+
+  @override
+  State<WelcomeCookingAnimation> createState() =>
+      _WelcomeCookingAnimationState();
+}
+
+class _WelcomeCookingAnimationState extends State<WelcomeCookingAnimation>
+    with TickerProviderStateMixin {
+  late final AnimationController _loop;
+
+  @override
+  void initState() {
+    super.initState();
+    _loop = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 5),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _loop.dispose();
+    super.dispose();
+  }
+
+  double _pingPong(double t, double period, double phase) {
+    final x = ((t * 5 / period) + phase) % 1.0;
+    return (1 - math.cos(x * 2 * math.pi)) / 2;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: _entranceController,
+      animation: _loop,
       builder: (context, _) {
-        return SlideTransition(
-          position: slide,
-          child: Opacity(
-            opacity: fade.value,
-            child: child,
+        final t = _loop.value;
+        return SizedBox(
+          width: double.infinity,
+          height: 330,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // ambient glow
+              Container(
+                width: 300,
+                height: 300,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [Color(0x26F2623E), Color(0x00F2623E)],
+                    stops: [0.0, 0.66],
+                  ),
+                ),
+              ),
+
+              // floating ingredients
+              _floater(
+                top: 34,
+                left: 64,
+                dy: -11 * _pingPong(t, 4.0, 0.0),
+                child: _tomato(),
+              ),
+              _floater(
+                top: 26,
+                right: 70,
+                dy: -11 * _pingPong(t, 4.6, 0.4),
+                child: _lemon(),
+              ),
+              _floater(
+                bottom: 96,
+                right: 48,
+                dy: -11 * _pingPong(t, 5.0, 0.8),
+                child: _herb(),
+              ),
+
+              // simmering pot (potbob)
+              Transform.translate(
+                offset: Offset(0, -4 * _pingPong(t, 4.0, 0.0)),
+                child: _pot(t),
+              ),
+
+              // feature chips (floaty)
+              _chip(
+                top: 10,
+                left: 6,
+                dy: -7 * _pingPong(t, 4.0, 0.0),
+                bg: const Color(0xFFFDEBD2),
+                fg: const Color(0xFFD98A12),
+                icon: Icons.auto_awesome,
+                label: 'Import any recipe',
+              ),
+              _chip(
+                topFraction: 0.48,
+                right: 8,
+                dy: -7 * _pingPong(t, 4.8, 0.5),
+                bg: const Color(0xFFE4ECFB),
+                fg: const Color(0xFF2D6FE0),
+                icon: Icons.calendar_today,
+                label: 'Plan your week',
+              ),
+              _chip(
+                bottom: 8,
+                left: 2,
+                dy: -7 * _pingPong(t, 4.4, 0.9),
+                bg: const Color(0xFFDBF0E7),
+                fg: const Color(0xFF1F7A5E),
+                icon: Icons.shopping_cart_outlined,
+                label: 'Auto shopping list',
+              ),
+            ],
           ),
         );
       },
-      child: child,
     );
   }
 
-  // ── Floating tag with entrance + continuous bounce ──
-
-  Widget _buildFloatingTag({
-    required Animation<double> fade,
-    required Animation<Offset> slide,
-    required Animation<double> floatAnimation,
-    required AnimationController floatController,
-    required String label,
-    required IconData icon,
-    required Color iconColor,
-    required Color iconBg,
+  Widget _floater({
+    double? top,
+    double? left,
+    double? right,
+    double? bottom,
+    required double dy,
+    required Widget child,
   }) {
-    return AnimatedBuilder(
-      animation: Listenable.merge([_entranceController, floatController]),
-      builder: (context, _) {
-        return SlideTransition(
-          position: slide,
-          child: Opacity(
-            opacity: fade.value,
-            child: Transform.translate(
-              offset: Offset(0, floatAnimation.value),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.surfaceBorder),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.06),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 30,
-                      height: 30,
-                      decoration: BoxDecoration(
-                        color: iconBg,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Center(
-                        child: Icon(icon, size: 16, color: iconColor),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      label,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textDark,
-                      ),
-                    ),
-                  ],
+    return Positioned(
+      top: top,
+      left: left,
+      right: right,
+      bottom: bottom,
+      child: Transform.translate(offset: Offset(0, dy), child: child),
+    );
+  }
+
+  Widget _tomato() => SizedBox(
+    width: 30,
+    height: 30,
+    child: Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          width: 30,
+          height: 30,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(
+              center: Alignment(-0.36, -0.4),
+              colors: [Color(0xFFFF6F52), Color(0xFFE5402A)],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0x802A211B),
+                blurRadius: 16,
+                offset: Offset(0, 8),
+              ),
+            ],
+          ),
+        ),
+        Positioned(
+          top: -4,
+          left: 11,
+          child: Transform.rotate(
+            angle: 0.35,
+            child: Container(
+              width: 8,
+              height: 8,
+              decoration: const BoxDecoration(
+                color: Color(0xFF3E8E4F),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(8),
+                  topRight: Radius.circular(8),
+                  bottomLeft: Radius.circular(8),
                 ),
               ),
             ),
           ),
-        );
-      },
-    );
-  }
+        ),
+      ],
+    ),
+  );
 
-  // ── Cooking pot illustration (built with Flutter) ──
+  Widget _lemon() => Container(
+    width: 32,
+    height: 23,
+    decoration: const BoxDecoration(
+      borderRadius: BorderRadius.all(Radius.elliptical(32, 23)),
+      gradient: RadialGradient(
+        center: Alignment(-0.36, -0.4),
+        colors: [Color(0xFFFFE05A), Color(0xFFEBAE14)],
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: Color(0x802A211B),
+          blurRadius: 16,
+          offset: Offset(0, 8),
+        ),
+      ],
+    ),
+  );
 
-  Widget _buildCookingPot() {
+  Widget _herb() => SizedBox(
+    width: 26,
+    height: 26,
+    child: Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.topCenter,
+      children: [
+        Container(
+          width: 7,
+          height: 20,
+          decoration: BoxDecoration(
+            color: const Color(0xFF3E8E4F),
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+        Positioned(
+          top: 1,
+          left: 2,
+          child: Transform.rotate(angle: -0.52, child: _leafShape()),
+        ),
+        Positioned(
+          top: 6,
+          right: 2,
+          child: Transform.rotate(angle: 0.52, child: _leafShape()),
+        ),
+      ],
+    ),
+  );
+
+  Widget _leafShape() => Container(
+    width: 11,
+    height: 11,
+    decoration: const BoxDecoration(
+      color: Color(0xFF54B069),
+      borderRadius: BorderRadius.only(
+        topLeft: Radius.circular(11),
+        topRight: Radius.circular(11),
+        bottomLeft: Radius.circular(11),
+      ),
+    ),
+  );
+
+  Widget _pot(double t) {
     return SizedBox(
-      width: 200,
-      height: 180,
+      width: 220,
+      height: 200,
       child: Stack(
         clipBehavior: Clip.none,
-        alignment: Alignment.bottomCenter,
         children: [
-          // Pot shadow
+          // steam
           Positioned(
-            bottom: 0,
+            top: 18,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _steam(34, _pingPong(t, 2.6, 0.0)),
+                  const SizedBox(width: 16),
+                  _steam(48, _pingPong(t, 2.6, 0.27)),
+                  const SizedBox(width: 16),
+                  _steam(34, _pingPong(t, 2.6, 0.5)),
+                ],
+              ),
+            ),
+          ),
+          // left handle
+          Positioned(
+            left: -6,
+            top: 122,
             child: Container(
-              width: 140,
-              height: 16,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(70),
+              width: 30,
+              height: 26,
+              decoration: const BoxDecoration(
+                border: Border(
+                  left: BorderSide(color: Color(0xFF2A211B), width: 7),
+                  top: BorderSide(color: Color(0xFF2A211B), width: 7),
+                  bottom: BorderSide(color: Color(0xFF2A211B), width: 7),
+                ),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  bottomLeft: Radius.circular(16),
+                ),
+              ),
+            ),
+          ),
+          // right handle
+          Positioned(
+            right: -6,
+            top: 122,
+            child: Container(
+              width: 30,
+              height: 26,
+              decoration: const BoxDecoration(
+                border: Border(
+                  right: BorderSide(color: Color(0xFF2A211B), width: 7),
+                  top: BorderSide(color: Color(0xFF2A211B), width: 7),
+                  bottom: BorderSide(color: Color(0xFF2A211B), width: 7),
+                ),
+                borderRadius: BorderRadius.only(
+                  topRight: Radius.circular(16),
+                  bottomRight: Radius.circular(16),
+                ),
+              ),
+            ),
+          ),
+          // body
+          Positioned(
+            left: 24,
+            top: 102,
+            child: Container(
+              width: 172,
+              height: 105,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFF3A302A), Color(0xFF241C17)],
+                ),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(22),
+                  topRight: Radius.circular(22),
+                  bottomLeft: Radius.circular(46),
+                  bottomRight: Radius.circular(46),
+                ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.12),
-                    blurRadius: 20,
-                    spreadRadius: 2,
+                    color: Color(0x8C2A211B),
+                    blurRadius: 38,
+                    offset: Offset(0, 22),
                   ),
                 ],
               ),
             ),
           ),
-          // Main pot body
+          // rim
           Positioned(
-            bottom: 6,
+            left: 12,
+            top: 86,
             child: Container(
-              width: 150,
-              height: 95,
+              width: 196,
+              height: 46,
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0xFF3A3028),
-                    Color(0xFF2A211B),
-                    Color(0xFF1E1814),
-                  ],
-                ),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(40),
-                  bottomRight: Radius.circular(40),
-                  topLeft: Radius.circular(6),
-                  topRight: Radius.circular(6),
-                ),
+                color: Color(0xFF1E1712),
+                shape: BoxShape.circle,
               ),
             ),
           ),
-          // Pot rim
+          // food surface
           Positioned(
-            bottom: 95,
-            child: Container(
-              width: 164,
-              height: 12,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFF4A3F35),
-                    Color(0xFF3A302A),
-                    Color(0xFF4A3F35),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(6),
-              ),
-            ),
-          ),
-          // Left handle
-          Positioned(
-            bottom: 70,
-            left: 5,
-            child: Container(
-              width: 20,
-              height: 10,
-              decoration: BoxDecoration(
-                color: const Color(0xFF4A3F35),
-                borderRadius: BorderRadius.circular(5),
-              ),
-            ),
-          ),
-          // Right handle
-          Positioned(
-            bottom: 70,
-            right: 5,
-            child: Container(
-              width: 20,
-              height: 10,
-              decoration: BoxDecoration(
-                color: const Color(0xFF4A3F35),
-                borderRadius: BorderRadius.circular(5),
-              ),
-            ),
-          ),
-          // Food inside pot (colored circles representing ingredients)
-          Positioned(
-            bottom: 98,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(60),
-              child: Container(
-                width: 120,
-                height: 60,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color(0xFF6DB56D),
-                      Color(0xFF4A9B4A),
-                      Color(0xFF3D8B3D),
-                    ],
+            left: 35,
+            top: 105,
+            child: ClipOval(
+              child: SizedBox(
+                width: 140,
+                height: 18,
+                child: Image.network(
+                  'https://images.unsplash.com/photo-1547592180-85f173990554?w=400&q=80&auto=format&fit=crop',
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: const Color(0xFF4A9B4A),
+                    child: const Center(
+                      child: Icon(
+                        Icons.restaurant,
+                        color: Colors.white54,
+                        size: 20,
+                      ),
+                    ),
                   ),
                 ),
-                child: Stack(
-                  children: [
-                    // Lettuce/salad leaves
-                    Positioned(
-                      top: 5,
-                      left: 8,
-                      child: _foodCircle(22, const Color(0xFF8BC34A)),
-                    ),
-                    Positioned(
-                      top: 2,
-                      left: 35,
-                      child: _foodCircle(18, const Color(0xFFE74C3C)),
-                    ),
-                    Positioned(
-                      top: 8,
-                      right: 15,
-                      child: _foodCircle(20, const Color(0xFFF39C12)),
-                    ),
-                    Positioned(
-                      top: 15,
-                      left: 55,
-                      child: _foodCircle(16, const Color(0xFFE8D44D)),
-                    ),
-                    Positioned(
-                      top: 0,
-                      right: 5,
-                      child: _foodCircle(14, const Color(0xFF27AE60)),
-                    ),
-                    Positioned(
-                      bottom: 5,
-                      left: 20,
-                      child: _foodCircle(14, const Color(0xFFD35400)),
-                    ),
-                    Positioned(
-                      bottom: 2,
-                      right: 30,
-                      child: _foodCircle(16, const Color(0xFF2ECC71)),
-                    ),
-                  ],
-                ),
               ),
             ),
           ),
+          // bubbles
+          _bubble(left: 78, top: 94, size: 9, p: _pingPong(t, 2.2, 0.0)),
+          _bubble(left: 118, top: 98, size: 7, p: _pingPong(t, 2.4, 0.33)),
+          _bubble(left: 98, top: 96, size: 6, p: _pingPong(t, 2.0, 0.7)),
         ],
       ),
     );
   }
 
-  Widget _foodCircle(double size, Color color) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.3),
-            blurRadius: 4,
+  Widget _steam(double h, double p) {
+    return Opacity(
+      opacity: (0.5 * p).clamp(0.0, 0.5),
+      child: Transform.translate(
+        offset: Offset(0, 10 - 40 * p),
+        child: Container(
+          width: 9,
+          height: h,
+          decoration: BoxDecoration(
+            color: const Color(0xFFE0D4C0),
+            borderRadius: BorderRadius.circular(6),
           ),
-        ],
+        ),
       ),
     );
   }
 
-  // ── Steam wisps ──
-
-  List<Widget> _buildSteamWisps() {
-    return [
-      _buildSingleSteam(left: 90, delay: 0.0, width: 3, height: 16),
-      _buildSingleSteam(left: 105, delay: 0.3, width: 2.5, height: 20),
-      _buildSingleSteam(left: 118, delay: 0.6, width: 3, height: 14),
-    ];
-  }
-
-  Widget _buildSingleSteam({
+  Widget _bubble({
     required double left,
-    required double delay,
-    required double width,
-    required double height,
-  }) {
-    return Positioned(
-      bottom: 175,
-      left: left,
-      child: AnimatedBuilder(
-        animation: _steamController,
-        builder: (context, _) {
-          final t = ((_steamController.value + delay) % 1.0);
-          final opacity = t < 0.5 ? (t * 2) * 0.4 : (1 - t) * 2 * 0.4;
-          final yOffset = -t * 25;
-          return Transform.translate(
-            offset: Offset(math.sin(t * math.pi * 2) * 3, yOffset),
-            child: Opacity(
-              opacity: _potFade.value * opacity.clamp(0.0, 1.0),
-              child: Container(
-                width: width,
-                height: height,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.7),
-                  borderRadius: BorderRadius.circular(width),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  // ── Floating leaves/herbs around the pot ──
-
-  List<Widget> _buildFloatingLeaves() {
-    return [
-      _buildLeaf(
-        bottom: 45,
-        right: 20,
-        controller: _leaf1Controller,
-        rotation: 0.3,
-        size: 14,
-        color: const Color(0xFF2ECC71),
-      ),
-      _buildLeaf(
-        bottom: 80,
-        right: 10,
-        controller: _leaf2Controller,
-        rotation: -0.5,
-        size: 10,
-        color: const Color(0xFF27AE60),
-      ),
-      _buildLeaf(
-        bottom: 55,
-        right: 30,
-        controller: _leaf3Controller,
-        rotation: 0.8,
-        size: 8,
-        color: const Color(0xFF3D9B3D),
-      ),
-      _buildLeaf(
-        bottom: 35,
-        right: 45,
-        controller: _leaf4Controller,
-        rotation: -0.2,
-        size: 11,
-        color: const Color(0xFF1F7A5E),
-      ),
-    ];
-  }
-
-  Widget _buildLeaf({
-    required double bottom,
-    required double right,
-    required AnimationController controller,
-    required double rotation,
+    required double top,
     required double size,
-    required Color color,
+    required double p,
   }) {
     return Positioned(
-      bottom: bottom,
-      right: right,
-      child: AnimatedBuilder(
-        animation: Listenable.merge([controller, _entranceController]),
-        builder: (context, _) {
-          final floatVal = Tween<double>(begin: 0, end: -6)
-              .animate(CurvedAnimation(
-                  parent: controller, curve: Curves.easeInOut))
-              .value;
-          final rotVal = Tween<double>(begin: rotation, end: rotation + 0.15)
-              .animate(CurvedAnimation(
-                  parent: controller, curve: Curves.easeInOut))
-              .value;
-          return Opacity(
-            opacity: _potFade.value,
-            child: Transform.translate(
-              offset: Offset(0, floatVal),
-              child: Transform.rotate(
-                angle: rotVal,
-                child: CustomPaint(
-                  size: Size(size, size * 1.5),
-                  painter: _LeafPainter(color: color),
-                ),
-              ),
+      left: left,
+      top: top,
+      child: Opacity(
+        opacity: (0.9 * p).clamp(0.0, 0.9),
+        child: Transform.translate(
+          offset: Offset(0, 2 - 14 * p),
+          child: Container(
+            width: size,
+            height: size,
+            decoration: const BoxDecoration(
+              color: Color(0xE6FFEBD2),
+              shape: BoxShape.circle,
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }
-}
 
-// ── Leaf shape painter ──
-
-class _LeafPainter extends CustomPainter {
-  final Color color;
-  _LeafPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    final path = Path()
-      ..moveTo(size.width * 0.5, 0)
-      ..quadraticBezierTo(size.width, size.height * 0.3, size.width * 0.5, size.height)
-      ..quadraticBezierTo(0, size.height * 0.3, size.width * 0.5, 0)
-      ..close();
-
-    canvas.drawPath(path, paint);
-
-    // Leaf vein
-    final veinPaint = Paint()
-      ..color = color.withValues(alpha: 0.5)
-      ..strokeWidth = 0.5
-      ..style = PaintingStyle.stroke;
-    canvas.drawLine(
-      Offset(size.width * 0.5, size.height * 0.1),
-      Offset(size.width * 0.5, size.height * 0.85),
-      veinPaint,
+  Widget _chip({
+    double? top,
+    double? topFraction,
+    double? left,
+    double? right,
+    double? bottom,
+    required double dy,
+    required Color bg,
+    required Color fg,
+    required IconData icon,
+    required String label,
+  }) {
+    final chip = Transform.translate(
+      offset: Offset(0, dy),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(9, 8, 13, 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFF0E7D6)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x732A211B),
+              blurRadius: 30,
+              offset: Offset(0, 16),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: bg,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, size: 16, color: fg),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF2A211B),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    return Positioned(
+      top: topFraction != null ? 330 * topFraction : top,
+      left: left,
+      right: right,
+      bottom: bottom,
+      child: chip,
     );
   }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-// ── AnimatedBuilder helper ──
+// ─────────────────────────────────────────────────────────────────────────────
+// AnimatedBuilder helper (shared)
+// ─────────────────────────────────────────────────────────────────────────────
 
 class AnimatedBuilder extends AnimatedWidget {
   final Widget Function(BuildContext context, Widget? child) builder;

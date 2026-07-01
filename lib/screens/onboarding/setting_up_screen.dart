@@ -1,8 +1,8 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:recipe_ai/theme/app_colors.dart';
-import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/screens/onboarding/plus_intro_screen.dart';
 
@@ -24,12 +24,544 @@ class SettingUpScreen extends StatefulWidget {
 
 class _SettingUpScreenState extends State<SettingUpScreen>
     with TickerProviderStateMixin {
+  // Pan tilt animation
   late final AnimationController _panController;
-  late final AnimationController _spinnerController;
-  late final AnimationController _foodController;
-  late final AnimationController _sizzleController;
   late final Animation<double> _panRotation;
 
+  // Food flip animations
+  late final AnimationController _foodController1;
+  late final AnimationController _foodController2;
+  late final Animation<double> _foodArc1;
+  late final Animation<double> _foodArc2;
+
+  // Sizzle puffs
+  late final AnimationController _sizzleController1;
+  late final AnimationController _sizzleController2;
+  late final AnimationController _sizzleController3;
+
+  // Spinner
+  late final AnimationController _spinnerController;
+
+  // Sparkle floaty
+  late final AnimationController _sparkleController;
+  late final Animation<double> _sparkleY;
+
+  // Message cycling
+  late final AnimationController _messageController;
+  int _messageIndex = 0;
+
+  static const _messages = [
+    'Gathering your favorite recipes…',
+    'Setting up your cookbooks…',
+    'Building your meal planner…',
+    'Almost ready to cook…',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Pan tilt: subtle rotation -3deg to 3deg, 2.2s, ease-in-out, infinite
+    _panController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2200),
+    )..repeat(reverse: true);
+    _panRotation = Tween<double>(
+      begin: -3.0 * math.pi / 180.0,
+      end: 3.0 * math.pi / 180.0,
+    ).animate(
+      CurvedAnimation(parent: _panController, curve: Curves.easeInOut),
+    );
+
+    // Food flip 1 (orange ball): arc Y 0 -> -60 -> 0, 2.2s, ease-in-out
+    _foodController1 = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2200),
+    )..repeat();
+    _foodArc1 = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween(begin: 0.0, end: -60.0)
+            .chain(CurveTween(curve: Curves.easeOut)),
+        weight: 50,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: -60.0, end: 0.0)
+            .chain(CurveTween(curve: Curves.easeIn)),
+        weight: 50,
+      ),
+    ]).animate(_foodController1);
+
+    // Food flip 2 (green ball): same but delayed by 0.35s (350ms)
+    _foodController2 = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2200),
+    );
+    _foodArc2 = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween(begin: 0.0, end: -60.0)
+            .chain(CurveTween(curve: Curves.easeOut)),
+        weight: 50,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: -60.0, end: 0.0)
+            .chain(CurveTween(curve: Curves.easeIn)),
+        weight: 50,
+      ),
+    ]).animate(_foodController2);
+    // Start with delay
+    Future.delayed(const Duration(milliseconds: 350), () {
+      if (mounted) _foodController2.repeat();
+    });
+
+    // Sizzle puffs: opacity 0->1->0 with upward drift, 1.6s, staggered
+    _sizzleController1 = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1600),
+    )..repeat();
+    _sizzleController2 = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1600),
+    );
+    _sizzleController3 = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1600),
+    );
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) _sizzleController2.repeat();
+    });
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      if (mounted) _sizzleController3.repeat();
+    });
+
+    // Spinner: continuous 360deg, 1s, linear
+    _spinnerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat();
+
+    // Sparkle floaty: Y oscillation +/-8px, 3.4s, ease-in-out
+    _sparkleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3400),
+    )..repeat(reverse: true);
+    _sparkleY = Tween<double>(begin: -8.0, end: 8.0).animate(
+      CurvedAnimation(parent: _sparkleController, curve: Curves.easeInOut),
+    );
+
+    // Message cycling: 2s per message, fade transition
+    _messageController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    );
+    Future.delayed(const Duration(seconds: 2), _cycleMessage);
+  }
+
+  void _cycleMessage() {
+    if (!mounted) return;
+    setState(() {
+      _messageIndex = (_messageIndex + 1) % _messages.length;
+    });
+    Future.delayed(const Duration(seconds: 2), _cycleMessage);
+  }
+
+  @override
+  void dispose() {
+    _panController.dispose();
+    _foodController1.dispose();
+    _foodController2.dispose();
+    _sizzleController1.dispose();
+    _sizzleController2.dispose();
+    _sizzleController3.dispose();
+    _spinnerController.dispose();
+    _sparkleController.dispose();
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(26, 0, 26, 26),
+          child: Column(
+            children: [
+              const SizedBox(height: 8),
+              // Logo
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.restaurant,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Recipe AI',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ],
+              ),
+              // Title
+              const SizedBox(height: 24),
+              Text(
+                'We’re setting everything\nup for you',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textDark,
+                  letterSpacing: -0.52,
+                  height: 1.18,
+                ),
+              ),
+              // Center content area
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Frying pan animation area
+                    Container(
+                      width: 220,
+                      height: 220,
+                      margin: const EdgeInsets.only(bottom: 34),
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          // Ambient glow
+                          Center(
+                            child: Container(
+                              width: 220,
+                              height: 220,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: RadialGradient(
+                                  colors: [
+                                    const Color(0xFFF2623E)
+                                        .withValues(alpha: 0.14),
+                                    Colors.transparent,
+                                  ],
+                                  stops: const [0.0, 0.66],
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Pan with tilt animation
+                          AnimatedBuilder(
+                            animation: _panRotation,
+                            builder: (context, child) {
+                              return Positioned(
+                                bottom: 46,
+                                left: 0,
+                                right: 0,
+                                child: Center(
+                                  child: Transform.rotate(
+                                    angle: _panRotation.value,
+                                    alignment: Alignment.centerRight,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        // Pan body
+                                        Container(
+                                          width: 120,
+                                          height: 120,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            gradient: const LinearGradient(
+                                              begin: Alignment.topCenter,
+                                              end: Alignment.bottomCenter,
+                                              colors: [
+                                                Color(0xFF3A302A),
+                                                Color(0xFF241C17),
+                                              ],
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black
+                                                    .withValues(alpha: 0.18),
+                                                blurRadius: 20,
+                                                offset: const Offset(0, 8),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Center(
+                                            // Inner circle
+                                            child: Container(
+                                              width: 96,
+                                              height: 96,
+                                              decoration: const BoxDecoration(
+                                                color: Color(0xFF2A211B),
+                                                shape: BoxShape.circle,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        // Handle
+                                        Container(
+                                          width: 78,
+                                          height: 14,
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF5A4632),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          // Orange food ball - food flip arc
+                          AnimatedBuilder(
+                            animation: _foodArc1,
+                            builder: (context, _) {
+                              return Positioned(
+                                top: 42 + _foodArc1.value,
+                                left: 0,
+                                right: 0,
+                                child: Center(
+                                  child: Transform.rotate(
+                                    angle: _foodController1.value *
+                                        2 *
+                                        math.pi,
+                                    child: Container(
+                                      width: 32,
+                                      height: 32,
+                                      decoration: const BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                          colors: [
+                                            Color(0xFFFFC074),
+                                            Color(0xFFE58A3C),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          // Green food ball - food flip arc, delayed
+                          AnimatedBuilder(
+                            animation: _foodController2,
+                            builder: (context, _) {
+                              return Positioned(
+                                top: 48 + _foodArc2.value,
+                                left: 0,
+                                right: 14,
+                                child: Center(
+                                  child: Transform.translate(
+                                    offset: const Offset(14, 0),
+                                    child: Transform.rotate(
+                                      angle: _foodController2.value *
+                                          2 *
+                                          math.pi,
+                                      child: Container(
+                                        width: 22,
+                                        height: 22,
+                                        decoration: const BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                            colors: [
+                                              Color(0xFF9BD45E),
+                                              Color(0xFF5E9C36),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          // Sizzle puff 1: bottom 78px, left 78px
+                          _buildSizzlePuff(
+                            controller: _sizzleController1,
+                            bottom: 78,
+                            left: 78,
+                            size: 8,
+                          ),
+                          // Sizzle puff 2: bottom 80px, left 120px
+                          _buildSizzlePuff(
+                            controller: _sizzleController2,
+                            bottom: 80,
+                            left: 120,
+                            size: 7,
+                          ),
+                          // Sizzle puff 3: bottom 76px, left 100px
+                          _buildSizzlePuff(
+                            controller: _sizzleController3,
+                            bottom: 76,
+                            left: 100,
+                            size: 6,
+                          ),
+                          // Sparkle: top 20px, right 36px, purple, floaty
+                          AnimatedBuilder(
+                            animation: _sparkleY,
+                            builder: (context, _) {
+                              return Positioned(
+                                top: 20 + _sparkleY.value,
+                                right: 36,
+                                child: const Icon(
+                                  Icons.auto_awesome,
+                                  color: AppColors.purple,
+                                  size: 20,
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Loading indicator
+                    Column(
+                      children: [
+                        // Spinner
+                        AnimatedBuilder(
+                          animation: _spinnerController,
+                          builder: (context, _) {
+                            return Transform.rotate(
+                              angle:
+                                  _spinnerController.value * 2 * math.pi,
+                              child: SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CustomPaint(
+                                  painter: _SpinnerPainter(),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 14),
+                        // Rotating messages
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 400),
+                          child: Text(
+                            _messages[_messageIndex],
+                            key: ValueKey<int>(_messageIndex),
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textMedium,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              // Continue button
+              PrimaryButton(
+                label: 'Continue',
+                onPressed: widget.onContinue ??
+                    () => Get.to(() => const PlusIntroScreen()),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSizzlePuff({
+    required AnimationController controller,
+    required double bottom,
+    required double left,
+    required double size,
+  }) {
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        // opacity 0 -> 1 -> 0 with slight upward drift
+        final progress = controller.value;
+        double opacity;
+        if (progress < 0.5) {
+          opacity = progress * 2.0; // 0 -> 1
+        } else {
+          opacity = (1.0 - progress) * 2.0; // 1 -> 0
+        }
+        final drift = progress * -12.0; // upward drift
+        return Positioned(
+          bottom: bottom - drift,
+          left: left,
+          child: Opacity(
+            opacity: opacity.clamp(0.0, 1.0),
+            child: Container(
+              width: size,
+              height: size,
+              decoration: const BoxDecoration(
+                color: Color(0xFFE7DCC8),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Content-only body widget for the single-screen onboarding architecture.
+/// Renders the logo, title, frying-pan animation, spinner and cycling
+/// loading messages (no progress dots, no CTA button).
+class SettingUpBody extends StatefulWidget {
+  const SettingUpBody({super.key});
+
+  @override
+  State<SettingUpBody> createState() => _SettingUpBodyState();
+}
+
+class _SettingUpBodyState extends State<SettingUpBody>
+    with TickerProviderStateMixin {
+  // Pan tilt animation
+  late final AnimationController _panController;
+  late final Animation<double> _panRotation;
+
+  // Food flip animations
+  late final AnimationController _foodController1;
+  late final AnimationController _foodController2;
+  late final Animation<double> _foodArc1;
+  late final Animation<double> _foodArc2;
+
+  // Sizzle puffs
+  late final AnimationController _sizzleController1;
+  late final AnimationController _sizzleController2;
+  late final AnimationController _sizzleController3;
+
+  // Spinner
+  late final AnimationController _spinnerController;
+
+  // Sparkle floaty
+  late final AnimationController _sparkleController;
+  late final Animation<double> _sparkleY;
+
+  // Message cycling
+  late final AnimationController _messageController;
   int _messageIndex = 0;
 
   static const _messages = [
@@ -45,31 +577,88 @@ class _SettingUpScreenState extends State<SettingUpScreen>
 
     _panController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 2200),
     )..repeat(reverse: true);
     _panRotation = Tween<double>(
-      begin: -8 * math.pi / 180,
-      end: 4 * math.pi / 180,
+      begin: -3.0 * math.pi / 180.0,
+      end: 3.0 * math.pi / 180.0,
     ).animate(
       CurvedAnimation(parent: _panController, curve: Curves.easeInOut),
     );
+
+    _foodController1 = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2200),
+    )..repeat();
+    _foodArc1 = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween(begin: 0.0, end: -60.0)
+            .chain(CurveTween(curve: Curves.easeOut)),
+        weight: 50,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: -60.0, end: 0.0)
+            .chain(CurveTween(curve: Curves.easeIn)),
+        weight: 50,
+      ),
+    ]).animate(_foodController1);
+
+    _foodController2 = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2200),
+    );
+    _foodArc2 = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween(begin: 0.0, end: -60.0)
+            .chain(CurveTween(curve: Curves.easeOut)),
+        weight: 50,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: -60.0, end: 0.0)
+            .chain(CurveTween(curve: Curves.easeIn)),
+        weight: 50,
+      ),
+    ]).animate(_foodController2);
+    Future.delayed(const Duration(milliseconds: 350), () {
+      if (mounted) _foodController2.repeat();
+    });
+
+    _sizzleController1 = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1600),
+    )..repeat();
+    _sizzleController2 = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1600),
+    );
+    _sizzleController3 = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1600),
+    );
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) _sizzleController2.repeat();
+    });
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      if (mounted) _sizzleController3.repeat();
+    });
 
     _spinnerController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     )..repeat();
 
-    _foodController = AnimationController(
+    _sparkleController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2000),
-    )..repeat();
+      duration: const Duration(milliseconds: 3400),
+    )..repeat(reverse: true);
+    _sparkleY = Tween<double>(begin: -8.0, end: 8.0).animate(
+      CurvedAnimation(parent: _sparkleController, curve: Curves.easeInOut),
+    );
 
-    _sizzleController = AnimationController(
+    _messageController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat();
-
-    // Cycle messages
+      duration: const Duration(seconds: 2),
+    );
     Future.delayed(const Duration(seconds: 2), _cycleMessage);
   }
 
@@ -84,246 +673,345 @@ class _SettingUpScreenState extends State<SettingUpScreen>
   @override
   void dispose() {
     _panController.dispose();
+    _foodController1.dispose();
+    _foodController2.dispose();
+    _sizzleController1.dispose();
+    _sizzleController2.dispose();
+    _sizzleController3.dispose();
     _spinnerController.dispose();
-    _foodController.dispose();
-    _sizzleController.dispose();
+    _sparkleController.dispose();
+    _messageController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 26),
-          child: Column(
-            children: [
-              const SizedBox(height: 16),
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.restaurant_menu, color: Colors.white, size: 16),
-              ),
-              const SizedBox(height: 48),
-              Text(
-                'We\'re setting everything up for you',
-                textAlign: TextAlign.center,
-                style: AppTextStyles.screenTitle.copyWith(fontSize: 26, height: 1.18),
-              ),
-              const Spacer(flex: 2),
-              // Frying pan animation
-              SizedBox(
-                height: 200,
-                width: 200,
-                child: AnimatedBuilder(
-                  animation: _panRotation,
-                  builder: (context, _) {
-                    return Transform.rotate(
-                      angle: _panRotation.value,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          // Ambient radial glow
-                          Container(
-                            width: 180,
-                            height: 180,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: RadialGradient(
-                                colors: [
-                                  AppColors.primary.withValues(alpha: 0.12),
-                                  AppColors.primary.withValues(alpha: 0.0),
-                                ],
-                              ),
-                            ),
-                          ),
-                          // Pan body
-                          Container(
-                            width: 120,
-                            height: 120,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: const LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  Color(0xFF3A302A),
-                                  Color(0xFF241C17),
-                                ],
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.15),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
-                            ),
-                          ),
-                          // Inner circle
-                          Container(
-                            width: 96,
-                            height: 96,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF2A211B),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          // Pan handle
-                          Positioned(
-                            right: 10,
-                            child: Container(
-                              width: 78,
-                              height: 14,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF5A4632),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          ),
-                          // Food circles
-                          ..._buildFoodItems(),
-                          // Sizzle dots
-                          ..._buildSizzleDots(),
-                          // Spark icon
-                          Positioned(
-                            top: 10,
-                            right: 20,
-                            child: Icon(Icons.auto_awesome, color: AppColors.purple, size: 20),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const Spacer(flex: 1),
-              // Spinner + message
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  AnimatedBuilder(
-                    animation: _spinnerController,
-                    builder: (context, _) {
-                      return Transform.rotate(
-                        angle: _spinnerController.value * 2 * math.pi,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 26),
+      child: Column(
+        children: [
+          const SizedBox(height: 8),
+          // Title
+          Text(
+            'We’re setting everything\nup for you',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textDark,
+              letterSpacing: -0.52,
+              height: 1.18,
+            ),
+          ),
+          // Center content area
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Frying pan animation area
+                Container(
+                  width: 220,
+                  height: 220,
+                  margin: const EdgeInsets.only(bottom: 34),
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      // Ambient glow
+                      Center(
                         child: Container(
-                          width: 22,
-                          height: 22,
+                          width: 220,
+                          height: 220,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            border: Border.all(
-                              color: const Color(0xFFF0EDE5),
-                              width: 3,
+                            gradient: RadialGradient(
+                              colors: [
+                                const Color(0xFFF2623E)
+                                    .withValues(alpha: 0.14),
+                                Colors.transparent,
+                              ],
+                              stops: const [0.0, 0.66],
                             ),
                           ),
-                          child: CustomPaint(
-                            painter: _SpinnerArcPainter(),
-                          ),
                         ),
-                      );
-                    },
+                      ),
+                      // Pan with tilt animation
+                      AnimatedBuilder(
+                        animation: _panRotation,
+                        builder: (context, child) {
+                          return Positioned(
+                            bottom: 46,
+                            left: 0,
+                            right: 0,
+                            child: Center(
+                              child: Transform.rotate(
+                                angle: _panRotation.value,
+                                alignment: Alignment.centerRight,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    // Pan body
+                                    Container(
+                                      width: 120,
+                                      height: 120,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        gradient: const LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          colors: [
+                                            Color(0xFF3A302A),
+                                            Color(0xFF241C17),
+                                          ],
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black
+                                                .withValues(alpha: 0.18),
+                                            blurRadius: 20,
+                                            offset: const Offset(0, 8),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Center(
+                                        // Inner circle
+                                        child: Container(
+                                          width: 96,
+                                          height: 96,
+                                          decoration: const BoxDecoration(
+                                            color: Color(0xFF2A211B),
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    // Handle
+                                    Container(
+                                      width: 78,
+                                      height: 14,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF5A4632),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      // Orange food ball - food flip arc
+                      AnimatedBuilder(
+                        animation: _foodArc1,
+                        builder: (context, _) {
+                          return Positioned(
+                            top: 42 + _foodArc1.value,
+                            left: 0,
+                            right: 0,
+                            child: Center(
+                              child: Transform.rotate(
+                                angle: _foodController1.value * 2 * math.pi,
+                                child: Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        Color(0xFFFFC074),
+                                        Color(0xFFE58A3C),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      // Green food ball - food flip arc, delayed
+                      AnimatedBuilder(
+                        animation: _foodController2,
+                        builder: (context, _) {
+                          return Positioned(
+                            top: 48 + _foodArc2.value,
+                            left: 0,
+                            right: 14,
+                            child: Center(
+                              child: Transform.translate(
+                                offset: const Offset(14, 0),
+                                child: Transform.rotate(
+                                  angle:
+                                      _foodController2.value * 2 * math.pi,
+                                  child: Container(
+                                    width: 22,
+                                    height: 22,
+                                    decoration: const BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          Color(0xFF9BD45E),
+                                          Color(0xFF5E9C36),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      // Sizzle puff 1: bottom 78px, left 78px
+                      _buildSizzlePuff(
+                        controller: _sizzleController1,
+                        bottom: 78,
+                        left: 78,
+                        size: 8,
+                      ),
+                      // Sizzle puff 2: bottom 80px, left 120px
+                      _buildSizzlePuff(
+                        controller: _sizzleController2,
+                        bottom: 80,
+                        left: 120,
+                        size: 7,
+                      ),
+                      // Sizzle puff 3: bottom 76px, left 100px
+                      _buildSizzlePuff(
+                        controller: _sizzleController3,
+                        bottom: 76,
+                        left: 100,
+                        size: 6,
+                      ),
+                      // Sparkle: top 20px, right 36px, purple, floaty
+                      AnimatedBuilder(
+                        animation: _sparkleY,
+                        builder: (context, _) {
+                          return Positioned(
+                            top: 20 + _sparkleY.value,
+                            right: 36,
+                            child: const Icon(
+                              Icons.auto_awesome,
+                              color: AppColors.purple,
+                              size: 20,
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 400),
-                    child: Text(
-                      _messages[_messageIndex],
-                      key: ValueKey(_messageIndex),
-                      style: const TextStyle(fontSize: 15, color: Color(0xFF8A7E70), fontWeight: FontWeight.w600),
+                ),
+                // Loading indicator
+                Column(
+                  children: [
+                    // Spinner
+                    AnimatedBuilder(
+                      animation: _spinnerController,
+                      builder: (context, _) {
+                        return Transform.rotate(
+                          angle: _spinnerController.value * 2 * math.pi,
+                          child: SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CustomPaint(
+                              painter: _SpinnerPainter(),
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                  ),
-                ],
-              ),
-              const Spacer(flex: 2),
-              PrimaryButton(
-                label: 'Continue',
-                onPressed: widget.onContinue ?? () => Get.to(() => const PlusIntroScreen()),
-              ),
-              const SizedBox(height: 32),
-            ],
+                    const SizedBox(height: 14),
+                    // Rotating messages
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 400),
+                      child: Text(
+                        _messages[_messageIndex],
+                        key: ValueKey<int>(_messageIndex),
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textMedium,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  List<Widget> _buildFoodItems() {
-    final foodColors = [
-      const Color(0xFFE8B84A),
-      const Color(0xFFE06B4A),
-      const Color(0xFF7BC77B),
-    ];
-    return List.generate(3, (i) {
-      final offset = _foodController.value * 2 * math.pi;
-      final y = -20 + math.sin(offset + i * 1.2) * 15;
-      final x = -20.0 + i * 20;
-      return Positioned(
-        left: 80 + x,
-        top: 50 + y,
-        child: Transform(
-          alignment: Alignment.center,
-          transform: Matrix4.identity()
-            ..rotateX(math.sin(offset + i) * 0.5),
-          child: Container(
-            width: 18,
-            height: 18,
-            decoration: BoxDecoration(
-              color: foodColors[i],
-              shape: BoxShape.circle,
+  Widget _buildSizzlePuff({
+    required AnimationController controller,
+    required double bottom,
+    required double left,
+    required double size,
+  }) {
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        final progress = controller.value;
+        double opacity;
+        if (progress < 0.5) {
+          opacity = progress * 2.0;
+        } else {
+          opacity = (1.0 - progress) * 2.0;
+        }
+        final drift = progress * -12.0;
+        return Positioned(
+          bottom: bottom - drift,
+          left: left,
+          child: Opacity(
+            opacity: opacity.clamp(0.0, 1.0),
+            child: Container(
+              width: size,
+              height: size,
+              decoration: const BoxDecoration(
+                color: Color(0xFFE7DCC8),
+                shape: BoxShape.circle,
+              ),
             ),
           ),
-        ),
-      );
-    });
-  }
-
-  List<Widget> _buildSizzleDots() {
-    return List.generate(5, (i) {
-      final progress =
-          (_sizzleController.value + i * 0.2) % 1.0;
-      final opacity = (1.0 - progress).clamp(0.0, 1.0);
-      final x = 80.0 + i * 10 - 10;
-      final y = 70.0 - progress * 40;
-      return Positioned(
-        left: x,
-        top: y,
-        child: Opacity(
-          opacity: opacity,
-          child: Container(
-            width: 4,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.6),
-              shape: BoxShape.circle,
-            ),
-          ),
-        ),
-      );
-    });
+        );
+      },
+    );
   }
 }
 
-class _SpinnerArcPainter extends CustomPainter {
+class _SpinnerPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
+    // Background circle border
+    final bgPaint = Paint()
+      ..color = const Color(0xFFF0EDE5)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3;
+    canvas.drawCircle(
+      Offset(size.width / 2, size.height / 2),
+      size.width / 2 - 1.5,
+      bgPaint,
+    );
+
+    // Active arc (top portion)
+    final arcPaint = Paint()
       ..color = AppColors.primary
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3
       ..strokeCap = StrokeCap.round;
-
     canvas.drawArc(
-      Rect.fromLTWH(0, 0, size.width, size.height),
+      Rect.fromLTWH(1.5, 1.5, size.width - 3, size.height - 3),
       -math.pi / 2,
       math.pi * 0.7,
       false,
-      paint,
+      arcPaint,
     );
   }
 

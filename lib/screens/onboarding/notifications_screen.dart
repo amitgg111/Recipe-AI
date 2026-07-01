@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
-import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/widgets/progress_indicator_dots.dart';
 import 'package:recipe_ai/screens/onboarding/how_did_you_hear_screen.dart';
@@ -22,168 +22,427 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 26),
+          padding: const EdgeInsets.fromLTRB(26, 0, 26, 26),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              const SizedBox(height: 8),
+              // Logo + Progress row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.restaurant,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Recipe AI',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Progress dots (step 6 of 8, index 5)
               const ProgressIndicatorDots(
                 totalSteps: 8,
                 currentStep: 5,
               ),
-              const SizedBox(height: 28),
+              // Title
+              const SizedBox(height: 18),
               Text(
-                "Get the right recipe at the right time",
+                'Get the right recipe at the right time',
                 textAlign: TextAlign.center,
-                style: AppTextStyles.sectionTitle.copyWith(
+                style: GoogleFonts.plusJakartaSans(
                   fontSize: 25,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textDark,
                   height: 1.18,
+                  letterSpacing: -0.50,
                 ),
               ),
               const SizedBox(height: 11),
-              Text(
-                "We'll send you a recipe idea at the time that works for you.",
-                textAlign: TextAlign.center,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  fontSize: 15,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Text(
+                  "We'll send you a recipe idea at the time that works for you.",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textMedium,
+                    height: 1.5,
+                  ),
                 ),
               ),
-              const SizedBox(height: 40),
-              // Notification card
-              Center(
-                child: Container(
-                  width: 300,
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(26),
-                    border: Border.all(color: AppColors.surfaceBorder),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF2A211B).withValues(alpha: 0.45),
-                        blurRadius: 50,
-                        offset: const Offset(0, 26),
-                        spreadRadius: -26,
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(24),
+              // Center content
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Notification dialog card
+                    SizedBox(
+                      width: 300,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(26),
+                          border: Border.all(color: AppColors.surfaceBorder),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF2A211B)
+                                  .withValues(alpha: 0.45),
+                              blurRadius: 50,
+                              offset: const Offset(0, 26),
+                              spreadRadius: -26,
+                            ),
+                          ],
+                        ),
+                        clipBehavior: Clip.antiAlias,
                         child: Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Container(
-                              width: 58,
-                              height: 58,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFCE3DB),
-                                borderRadius: BorderRadius.circular(18),
+                            // Top section
+                            Padding(
+                              padding:
+                                  const EdgeInsets.fromLTRB(22, 24, 22, 18),
+                              child: Column(
+                                children: [
+                                  // Bell icon
+                                  Container(
+                                    width: 58,
+                                    height: 58,
+                                    margin: const EdgeInsets.only(bottom: 16),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.redBg,
+                                      borderRadius: BorderRadius.circular(18),
+                                    ),
+                                    child: const Center(
+                                      child: Icon(
+                                        Icons.notifications,
+                                        color: AppColors.primary,
+                                        size: 30,
+                                      ),
+                                    ),
+                                  ),
+                                  // Permission text
+                                  RichText(
+                                    textAlign: TextAlign.center,
+                                    text: TextSpan(
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textDark,
+                                        height: 1.35,
+                                      ),
+                                      children: [
+                                        const TextSpan(text: 'Allow '),
+                                        TextSpan(
+                                          text: 'Recipe AI',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.primary,
+                                            height: 1.35,
+                                          ),
+                                        ),
+                                        const TextSpan(
+                                          text:
+                                              ' to send you notifications?',
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.notifications,
-                                  color: AppColors.primary,
-                                  size: 28,
+                            ),
+                            // Allow button
+                            Container(
+                              width: double.infinity,
+                              decoration: const BoxDecoration(
+                                border: Border(
+                                  top: BorderSide(
+                                    color: AppColors.divider,
+                                  ),
+                                ),
+                              ),
+                              child: GestureDetector(
+                                onTap: () {},
+                                child: Padding(
+                                  padding: const EdgeInsets.all(15),
+                                  child: Center(
+                                    child: Text(
+                                      'Allow',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 18),
-                            RichText(
-                              textAlign: TextAlign.center,
-                              text: TextSpan(
-                                style: AppTextStyles.bodyLarge.copyWith(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
+                            // Don't allow button
+                            Container(
+                              width: double.infinity,
+                              decoration: const BoxDecoration(
+                                border: Border(
+                                  top: BorderSide(
+                                    color: AppColors.divider,
+                                  ),
                                 ),
-                                children: [
-                                  const TextSpan(text: "Allow "),
-                                  TextSpan(
-                                    text: "Recipe AI",
-                                    style: AppTextStyles.bodyLarge.copyWith(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.primary,
+                              ),
+                              child: GestureDetector(
+                                onTap: () {},
+                                child: Padding(
+                                  padding: const EdgeInsets.all(15),
+                                  child: Center(
+                                    child: Text(
+                                      "Don't allow",
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textMedium,
+                                      ),
                                     ),
                                   ),
-                                  const TextSpan(
-                                    text: " to send you notifications?",
-                                  ),
-                                ],
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
-                      Container(
-                        width: double.infinity,
-                        height: 1,
-                        color: const Color(0xFFF4ECDF),
+                    ),
+                    // Below card text
+                    const SizedBox(height: 18),
+                    Text(
+                      'Turn off notifications anytime',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textLighter,
                       ),
-                      GestureDetector(
-                        onTap: () {},
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(15),
-                          child: Center(
-                            child: Text(
-                              "Allow",
-                              style: AppTextStyles.bodyLarge.copyWith(
-                                fontSize: 16,
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Container(
-                        width: double.infinity,
-                        height: 1,
-                        color: const Color(0xFFF4ECDF),
-                      ),
-                      GestureDetector(
-                        onTap: () {},
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(15),
-                          child: Center(
-                            child: Text(
-                              "Don't allow",
-                              style: AppTextStyles.bodyLarge.copyWith(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: const Color(0xFF8A7E70),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 18),
-              Center(
-                child: Text(
-                  "Turn off notifications anytime",
-                  style: AppTextStyles.disclaimer.copyWith(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFFA8A092),
-                  ),
-                ),
-              ),
-              const Spacer(),
+              // Bottom: Help me stay on track button
               PrimaryButton(
-                label: "Help me stay on track",
+                label: 'Help me stay on track',
                 onPressed: () {
                   Get.to(() => const HowDidYouHearScreen());
                 },
               ),
-              const SizedBox(height: 16),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class NotificationsBody extends StatelessWidget {
+  const NotificationsBody({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 26),
+      child: Column(
+        children: [
+          const SizedBox(height: 8),
+          // Title
+          Text(
+            'Get the right recipe at the right time',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 25,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textDark,
+              height: 1.18,
+              letterSpacing: -0.50,
+            ),
+          ),
+          const SizedBox(height: 11),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              "We'll send you a recipe idea at the time that works for you.",
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textMedium,
+                height: 1.5,
+              ),
+            ),
+          ),
+          // Center content
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Notification dialog card
+                SizedBox(
+                  width: 300,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(26),
+                      border: Border.all(color: AppColors.surfaceBorder),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF2A211B)
+                              .withValues(alpha: 0.45),
+                          blurRadius: 50,
+                          offset: const Offset(0, 26),
+                          spreadRadius: -26,
+                        ),
+                      ],
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Top section
+                        Padding(
+                          padding:
+                              const EdgeInsets.fromLTRB(22, 24, 22, 18),
+                          child: Column(
+                            children: [
+                              // Bell icon
+                              Container(
+                                width: 58,
+                                height: 58,
+                                margin: const EdgeInsets.only(bottom: 16),
+                                decoration: BoxDecoration(
+                                  color: AppColors.redBg,
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.notifications,
+                                    color: AppColors.primary,
+                                    size: 30,
+                                  ),
+                                ),
+                              ),
+                              // Permission text
+                              RichText(
+                                textAlign: TextAlign.center,
+                                text: TextSpan(
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textDark,
+                                    height: 1.35,
+                                  ),
+                                  children: [
+                                    const TextSpan(text: 'Allow '),
+                                    TextSpan(
+                                      text: 'Recipe AI',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.primary,
+                                        height: 1.35,
+                                      ),
+                                    ),
+                                    const TextSpan(
+                                      text:
+                                          ' to send you notifications?',
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Allow button
+                        Container(
+                          width: double.infinity,
+                          decoration: const BoxDecoration(
+                            border: Border(
+                              top: BorderSide(
+                                color: AppColors.divider,
+                              ),
+                            ),
+                          ),
+                          child: GestureDetector(
+                            onTap: () {},
+                            child: Padding(
+                              padding: const EdgeInsets.all(15),
+                              child: Center(
+                                child: Text(
+                                  'Allow',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Don't allow button
+                        Container(
+                          width: double.infinity,
+                          decoration: const BoxDecoration(
+                            border: Border(
+                              top: BorderSide(
+                                color: AppColors.divider,
+                              ),
+                            ),
+                          ),
+                          child: GestureDetector(
+                            onTap: () {},
+                            child: Padding(
+                              padding: const EdgeInsets.all(15),
+                              child: Center(
+                                child: Text(
+                                  "Don't allow",
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textMedium,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                // Below card text
+                const SizedBox(height: 18),
+                Text(
+                  'Turn off notifications anytime',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textLighter,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

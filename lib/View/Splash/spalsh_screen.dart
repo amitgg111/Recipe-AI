@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:recipe_ai/View/Auth/auth_wrapper.dart';
 import 'package:recipe_ai/Widget/custom_text.dart';
-import 'package:recipe_ai/screens/onboarding/welcome_screen.dart';
+import 'package:recipe_ai/screens/onboarding/onboarding_flow_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -26,7 +26,7 @@ class _SplashScreenState extends State<SplashScreen> {
       final hasSeenOnboarding = box.read<bool>('hasSeenOnboarding') ?? false;
       if (!hasSeenOnboarding) {
         box.write('hasSeenOnboarding', true);
-        Get.off(() => const WelcomeScreen());
+        Get.off(() => const OnboardingFlowScreen());
       } else {
         Get.off(() => const AuthWrapper());
       }

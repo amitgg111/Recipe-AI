@@ -133,7 +133,10 @@ class _PrimaryButtonState extends State<PrimaryButton>
                               widget.leadingIcon!,
                               const SizedBox(width: 8),
                             ],
-                            Text(widget.label, style: AppTextStyles.buttonLabel),
+                            Text(
+                              widget.label,
+                              style: AppTextStyles.buttonLabel,
+                            ),
                           ],
                         ),
                 ),

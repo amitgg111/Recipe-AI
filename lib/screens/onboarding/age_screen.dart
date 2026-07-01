@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:recipe_ai/theme/app_colors.dart';
-import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
-import 'package:recipe_ai/widgets/progress_indicator_dots.dart';
 import 'package:recipe_ai/screens/onboarding/setting_up_screen.dart';
 
 class AgeScreen extends StatefulWidget {
@@ -23,9 +22,15 @@ class AgeScreen extends StatefulWidget {
 }
 
 class _AgeScreenState extends State<AgeScreen> {
-  int? _selectedIndex;
+  int _selectedIndex = 1; // "25-34" selected by default
 
-  static const _ageRanges = ['24 and under', '25–34', '35–44', '45–54', '55+'];
+  static const _ageRanges = [
+    '24 and under',
+    '25–34',
+    '35–44',
+    '45–54',
+    '55+',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -33,65 +38,97 @@ class _AgeScreenState extends State<AgeScreen> {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 26),
+          padding: const EdgeInsets.fromLTRB(26, 0, 26, 26),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 16),
-              Center(
-                child: ProgressIndicatorDots(
-                  totalSteps: widget.totalSteps,
-                  currentStep: widget.currentStep,
-                ),
+              const SizedBox(height: 8),
+              // Logo
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.restaurant,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Recipe AI',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 36),
-              Center(
-                child: Text(
-                  'How old are you?',
-                  style: AppTextStyles.screenTitle.copyWith(fontSize: 25),
-                  textAlign: TextAlign.center,
+              // Title
+              const SizedBox(height: 16),
+              Text(
+                'How old are you?',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 25,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textDark,
+                  letterSpacing: -0.50,
                 ),
               ),
               const SizedBox(height: 8),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Center(
-                  child: Text(
-                    'We only use this to personalize your experience.',
-                    style: AppTextStyles.bodyMedium.copyWith(fontSize: 14.5),
-                    textAlign: TextAlign.center,
+                child: Text(
+                  'We only use this to personalize your experience.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textMedium,
+                    height: 1.5,
                   ),
                 ),
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 20),
+              // Age options
               ...List.generate(_ageRanges.length, (index) {
                 final isSelected = _selectedIndex == index;
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
+                  padding: EdgeInsets.only(
+                    bottom: index < _ageRanges.length - 1 ? 12 : 0,
+                  ),
                   child: GestureDetector(
                     onTap: () => setState(() => _selectedIndex = index),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 17,
-                        vertical: 18,
+                        horizontal: 18,
+                        vertical: 17,
                       ),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(18),
                         border: Border.all(
-                          color: isSelected
-                              ? AppColors.primary
-                              : AppColors.surfaceBorder,
-                          width: isSelected ? 2 : 1,
+                          color: AppColors.surfaceBorder,
+                          width: 1,
                         ),
                       ),
                       child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Expanded(
-                            child: Text(
-                              _ageRanges[index],
-                              style: AppTextStyles.bodyLarge,
+                          Text(
+                            _ageRanges[index],
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textDark,
                             ),
                           ),
                           AnimatedContainer(
@@ -111,8 +148,11 @@ class _AgeScreenState extends State<AgeScreen> {
                               ),
                             ),
                             child: isSelected
-                                ? const Icon(Icons.check,
-                                    color: Colors.white, size: 14)
+                                ? const Icon(
+                                    Icons.check,
+                                    color: Colors.white,
+                                    size: 14,
+                                  )
                                 : null,
                           ),
                         ],
@@ -124,12 +164,136 @@ class _AgeScreenState extends State<AgeScreen> {
               const Spacer(),
               PrimaryButton(
                 label: 'Continue',
-                onPressed: widget.onContinue ?? () => Get.to(() => const SettingUpScreen()),
+                onPressed: widget.onContinue ??
+                    () => Get.to(() => const SettingUpScreen()),
               ),
-              const SizedBox(height: 32),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Content-only body widget for the single-screen onboarding architecture.
+/// Renders the logo, title, subtitle and the tappable age options
+/// (no progress dots, no CTA button).
+class AgeBody extends StatefulWidget {
+  const AgeBody({super.key});
+
+  @override
+  State<AgeBody> createState() => _AgeBodyState();
+}
+
+class _AgeBodyState extends State<AgeBody> {
+  int _selectedIndex = 1; // "25-34" selected by default
+
+  static const _ageRanges = [
+    '24 and under',
+    '25–34',
+    '35–44',
+    '45–54',
+    '55+',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 26),
+      child: Column(
+        children: [
+          const SizedBox(height: 8),
+          // Title
+          Text(
+            'How old are you?',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 25,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textDark,
+              letterSpacing: -0.50,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              'We only use this to personalize your experience.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 14.5,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textMedium,
+                height: 1.5,
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          // Age options
+          ...List.generate(_ageRanges.length, (index) {
+            final isSelected = _selectedIndex == index;
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: index < _ageRanges.length - 1 ? 12 : 0,
+              ),
+              child: GestureDetector(
+                onTap: () => setState(() => _selectedIndex = index),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 17,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: AppColors.surfaceBorder,
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _ageRanges[index],
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textDark,
+                        ),
+                      ),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isSelected
+                              ? AppColors.primary
+                              : Colors.transparent,
+                          border: Border.all(
+                            color: isSelected
+                                ? AppColors.primary
+                                : AppColors.unselectedBorder,
+                            width: isSelected ? 0 : 2,
+                          ),
+                        ),
+                        child: isSelected
+                            ? const Icon(
+                                Icons.check,
+                                color: Colors.white,
+                                size: 14,
+                              )
+                            : null,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+        ],
       ),
     );
   }

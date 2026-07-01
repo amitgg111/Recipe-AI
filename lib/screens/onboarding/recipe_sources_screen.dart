@@ -1,29 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
-import 'package:get/get.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/widgets/progress_indicator_dots.dart';
 import 'package:recipe_ai/screens/onboarding/awesome_import_screen.dart';
 
 class RecipeSourcesScreen extends StatefulWidget {
-  final VoidCallback? onContinue;
-  final int currentStep;
-  final int totalSteps;
+  static const String routeName = '/onboarding/recipe-sources';
 
-  const RecipeSourcesScreen({
-    super.key,
-    this.onContinue,
-    this.currentStep = 0,
-    this.totalSteps = 7,
-  });
+  const RecipeSourcesScreen({super.key});
 
   @override
   State<RecipeSourcesScreen> createState() => _RecipeSourcesScreenState();
 }
 
 class _RecipeSourcesScreenState extends State<RecipeSourcesScreen> {
-  final Set<int> _selected = {};
+  final Set<int> _selected = {0};
 
   void _toggle(int index) {
     setState(() {
@@ -41,24 +35,47 @@ class _RecipeSourcesScreenState extends State<RecipeSourcesScreen> {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 26),
+          padding: const EdgeInsets.fromLTRB(26, 8, 26, 26),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 16),
-              Center(
-                child: ProgressIndicatorDots(
-                  totalSteps: widget.totalSteps,
-                  currentStep: widget.currentStep,
-                ),
+              // Logo + Progress
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.restaurant, color: Colors.white, size: 16),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Recipe AI',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 36),
+              const SizedBox(height: 10),
+              const ProgressIndicatorDots(
+                totalSteps: 8,
+                currentStep: 7,
+              ),
+              // Title
+              const SizedBox(height: 16),
               Text(
                 'Where do you get your\nrecipes from?',
                 textAlign: TextAlign.center,
                 style: AppTextStyles.sectionTitle.copyWith(
                   fontSize: 25,
                   height: 1.18,
+                  letterSpacing: -0.5,
                 ),
               ),
               const SizedBox(height: 8),
@@ -67,93 +84,239 @@ class _RecipeSourcesScreenState extends State<RecipeSourcesScreen> {
                 textAlign: TextAlign.center,
                 style: AppTextStyles.bodySmall,
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 22),
+              // Card 1: Social media (pre-selected)
               _SourceCard(
                 title: 'Social media',
                 isSelected: _selected.contains(0),
                 onTap: () => _toggle(0),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: [
+                  children: const [
                     _SocialBadge(
                       icon: Icons.camera_alt,
-                      color: const Color(0xFFC13584),
-                      bg: const Color(0xFFFCE4EE),
+                      color: Color(0xFFC13584),
+                      bg: Color(0xFFFCE4EE),
                     ),
-                    const SizedBox(width: 4),
+                    SizedBox(width: 6),
                     _SocialBadge(
                       icon: Icons.music_note,
-                      color: const Color(0xFF1F1F24),
-                      bg: const Color(0xFFECECEF),
+                      color: Color(0xFF1F1F24),
+                      bg: Color(0xFFECECEF),
                     ),
-                    const SizedBox(width: 4),
+                    SizedBox(width: 6),
                     _SocialBadge(
-                      icon: Icons.chat,
-                      color: const Color(0xFF2D6FE0),
-                      bg: const Color(0xFFE4ECFB),
+                      icon: Icons.chat_bubble,
+                      color: Color(0xFF2D6FE0),
+                      bg: Color(0xFFE4ECFB),
                     ),
-                    const SizedBox(width: 4),
+                    SizedBox(width: 6),
                     _SocialBadge(
                       icon: Icons.push_pin,
-                      color: const Color(0xFFDD3B33),
-                      bg: const Color(0xFFFCE2E0),
+                      color: Color(0xFFDD3B33),
+                      bg: Color(0xFFFCE2E0),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 13),
+              // Card 2: Recipe websites
               _SourceCard(
                 title: 'Recipe websites',
                 isSelected: _selected.contains(1),
                 onTap: () => _toggle(1),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: [
+                  children: const [
                     _SocialBadge(
-                      icon: Icons.language,
-                      color: const Color(0xFF2F7AB5),
-                      bg: const Color(0xFFDCEBF4),
+                      icon: Icons.public,
+                      color: Color(0xFF2F7AB5),
+                      bg: Color(0xFFDCEBF4),
                     ),
-                    const SizedBox(width: 4),
+                    SizedBox(width: 6),
                     _SocialBadge(
                       icon: Icons.search,
-                      color: const Color(0xFF6B6359),
-                      bg: const Color(0xFFF0EEE9),
+                      color: Color(0xFF6B6359),
+                      bg: Color(0xFFF0EEE9),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 13),
+              // Card 3: Printed / handwritten
               _SourceCard(
                 title: 'Printed / handwritten',
                 isSelected: _selected.contains(2),
                 onTap: () => _toggle(2),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: [
+                  children: const [
                     _SocialBadge(
                       icon: Icons.menu_book,
-                      color: const Color(0xFFE0552F),
-                      bg: const Color(0xFFFCE3DB),
+                      color: Color(0xFFE0552F),
+                      bg: Color(0xFFFCE3DB),
                     ),
-                    const SizedBox(width: 4),
+                    SizedBox(width: 6),
                     _SocialBadge(
                       icon: Icons.edit,
-                      color: const Color(0xFF5E8A2C),
-                      bg: const Color(0xFFE7F0DC),
+                      color: Color(0xFF5E8A2C),
+                      bg: Color(0xFFE7F0DC),
                     ),
                   ],
                 ),
               ),
               const Spacer(),
+              // Continue button
               PrimaryButton(
                 label: 'Continue',
-                onPressed: widget.onContinue ?? () => Get.to(() => const AwesomeImportScreen()),
+                onPressed: () => Get.to(() => const AwesomeImportScreen()),
               ),
-              const SizedBox(height: 32),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class RecipeSourcesBody extends StatefulWidget {
+  /// Reports whether at least one source is selected (drives the Continue
+  /// button).
+  final ValueChanged<bool>? onValidityChanged;
+
+  const RecipeSourcesBody({super.key, this.onValidityChanged});
+
+  @override
+  State<RecipeSourcesBody> createState() => _RecipeSourcesBodyState();
+}
+
+class _RecipeSourcesBodyState extends State<RecipeSourcesBody> {
+  final Set<int> _selected = {0};
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.onValidityChanged?.call(_selected.isNotEmpty);
+    });
+  }
+
+  void _toggle(int index) {
+    setState(() {
+      if (_selected.contains(index)) {
+        _selected.remove(index);
+      } else {
+        _selected.add(index);
+      }
+    });
+    widget.onValidityChanged?.call(_selected.isNotEmpty);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 26),
+      child: Column(
+        children: [
+          const SizedBox(height: 8),
+          // Title
+          Text(
+            'Where do you get your\nrecipes from?',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.sectionTitle.copyWith(
+              fontSize: 25,
+              height: 1.18,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Select all that apply',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.bodySmall,
+          ),
+          const SizedBox(height: 22),
+          // Card 1: Social media (pre-selected)
+          _SourceCard(
+            title: 'Social media',
+            isSelected: _selected.contains(0),
+            onTap: () => _toggle(0),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                _SocialBadge(
+                  icon: Icons.camera_alt,
+                  color: Color(0xFFC13584),
+                  bg: Color(0xFFFCE4EE),
+                ),
+                SizedBox(width: 6),
+                _SocialBadge(
+                  icon: Icons.music_note,
+                  color: Color(0xFF1F1F24),
+                  bg: Color(0xFFECECEF),
+                ),
+                SizedBox(width: 6),
+                _SocialBadge(
+                  icon: Icons.chat_bubble,
+                  color: Color(0xFF2D6FE0),
+                  bg: Color(0xFFE4ECFB),
+                ),
+                SizedBox(width: 6),
+                _SocialBadge(
+                  icon: Icons.push_pin,
+                  color: Color(0xFFDD3B33),
+                  bg: Color(0xFFFCE2E0),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 13),
+          // Card 2: Recipe websites
+          _SourceCard(
+            title: 'Recipe websites',
+            isSelected: _selected.contains(1),
+            onTap: () => _toggle(1),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                _SocialBadge(
+                  icon: Icons.public,
+                  color: Color(0xFF2F7AB5),
+                  bg: Color(0xFFDCEBF4),
+                ),
+                SizedBox(width: 6),
+                _SocialBadge(
+                  icon: Icons.search,
+                  color: Color(0xFF6B6359),
+                  bg: Color(0xFFF0EEE9),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 13),
+          // Card 3: Printed / handwritten
+          _SourceCard(
+            title: 'Printed / handwritten',
+            isSelected: _selected.contains(2),
+            onTap: () => _toggle(2),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                _SocialBadge(
+                  icon: Icons.menu_book,
+                  color: Color(0xFFE0552F),
+                  bg: Color(0xFFFCE3DB),
+                ),
+                SizedBox(width: 6),
+                _SocialBadge(
+                  icon: Icons.edit,
+                  color: Color(0xFF5E8A2C),
+                  bg: Color(0xFFE7F0DC),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -198,12 +361,11 @@ class _SourceCard extends StatelessWidget {
               : [],
         ),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Expanded(
-              child: Text(
-                title,
-                style: AppTextStyles.bodyLarge,
-              ),
+            Text(
+              title,
+              style: AppTextStyles.bodyLarge,
             ),
             trailing,
           ],
@@ -233,7 +395,9 @@ class _SocialBadge extends StatelessWidget {
         color: bg,
         borderRadius: BorderRadius.circular(9),
       ),
-      child: Icon(icon, size: 14, color: color),
+      child: Center(
+        child: Icon(icon, size: 14, color: color),
+      ),
     );
   }
 }

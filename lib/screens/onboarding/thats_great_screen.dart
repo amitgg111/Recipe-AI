@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
-import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/widgets/progress_indicator_dots.dart';
 import 'package:recipe_ai/screens/onboarding/goals_happen_screen.dart';
@@ -19,19 +18,20 @@ class ThatsGreatScreen extends StatefulWidget {
 
 class _ThatsGreatScreenState extends State<ThatsGreatScreen>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _walletFloatController;
-  late final Animation<double> _walletFloatAnimation;
+  late final AnimationController _floatController;
+  late final Animation<double> _floatAnimation;
 
   @override
   void initState() {
     super.initState();
-    _walletFloatController = AnimationController(
-      duration: const Duration(milliseconds: 2000),
+    // 4.2s duration, ease-in-out, infinite reverse
+    _floatController = AnimationController(
+      duration: const Duration(milliseconds: 4200),
       vsync: this,
     )..repeat(reverse: true);
-    _walletFloatAnimation = Tween<double>(begin: -6, end: 0).animate(
+    _floatAnimation = Tween<double>(begin: 0, end: -8).animate(
       CurvedAnimation(
-        parent: _walletFloatController,
+        parent: _floatController,
         curve: Curves.easeInOut,
       ),
     );
@@ -39,7 +39,7 @@ class _ThatsGreatScreenState extends State<ThatsGreatScreen>
 
   @override
   void dispose() {
-    _walletFloatController.dispose();
+    _floatController.dispose();
     super.dispose();
   }
 
@@ -49,36 +49,351 @@ class _ThatsGreatScreenState extends State<ThatsGreatScreen>
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.fromLTRB(26, 0, 26, 26),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 16),
-              // Progress dots
-              Center(
-                child: ProgressIndicatorDots(
-                  totalSteps: 8,
-                  currentStep: 2,
-                ),
+              const SizedBox(height: 8),
+              // Logo
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.restaurant,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Recipe AI',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 28),
-              // Title
+              const SizedBox(height: 12),
+              // Progress dots (step 3 of 8, index 2)
+              const ProgressIndicatorDots(
+                totalSteps: 8,
+                currentStep: 2,
+              ),
+              // Title area
+              const SizedBox(height: 18),
               Text(
                 "That's great!",
-                style: AppTextStyles.screenTitle,
-              ),
-              const SizedBox(height: 8),
-              // Subtitle
-              Text(
-                "Here's what members just like you are achieving with Recipe AI.",
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textMedium,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 27,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textDark,
+                  letterSpacing: -0.54,
                 ),
               ),
-              const SizedBox(height: 32),
-              // Progress ring
-              Center(
-                child: SizedBox(
+              const SizedBox(height: 10),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Text(
+                  "Here's what members just like you are achieving with Recipe AI.",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textMedium,
+                    height: 1.5,
+                  ),
+                ),
+              ),
+              // Center content - flex:1, column centered, gap 22
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Circular progress ring 210x210
+                    SizedBox(
+                      width: 210,
+                      height: 210,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        clipBehavior: Clip.none,
+                        children: [
+                          // Ring
+                          CustomPaint(
+                            size: const Size(210, 210),
+                            painter: _ProgressRingPainter(
+                              progress: 0.92,
+                              trackColor: const Color(0xFFF1E4CF),
+                              progressColor: AppColors.primary,
+                              strokeWidth: 18,
+                            ),
+                          ),
+                          // Center text
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              RichText(
+                                text: TextSpan(
+                                  children: [
+                                    TextSpan(
+                                      text: '92',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 48,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppColors.textDark,
+                                        height: 1,
+                                        letterSpacing: -1.44,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text: '%',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppColors.textDark,
+                                        height: 1,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                'report saving money',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textMedium,
+                                ),
+                              ),
+                            ],
+                          ),
+                          // Floating wallet icon - top-right
+                          Positioned(
+                            top: -6,
+                            right: -6,
+                            child: AnimatedBuilder(
+                              animation: _floatController,
+                              builder: (context, child) {
+                                return Transform.translate(
+                                  offset:
+                                      Offset(0, _floatAnimation.value),
+                                  child: child,
+                                );
+                              },
+                              child: Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(14),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFF2A211B)
+                                          .withValues(alpha: 0.45),
+                                      blurRadius: 24,
+                                      offset: const Offset(0, 12),
+                                      spreadRadius: -12,
+                                    ),
+                                  ],
+                                ),
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.account_balance_wallet,
+                                    color: AppColors.gold,
+                                    size: 22,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+                    // Testimonial mini card
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 15,
+                        vertical: 13,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: AppColors.surfaceBorder),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF2A211B)
+                                .withValues(alpha: 0.08),
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Avatar
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFEADFCF),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 13),
+                          // Content column
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Stars - color #F2A24C, gap 2px
+                                Row(
+                                  children: List.generate(
+                                    5,
+                                    (index) => Padding(
+                                      padding: EdgeInsets.only(
+                                          right: index < 4 ? 2 : 0),
+                                      child: const Icon(
+                                        Icons.star,
+                                        color: AppColors.starOrange,
+                                        size: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                // Quote
+                                Text(
+                                  'Saved over \$1,200 this year cooking at home.',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textDark,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                // Attribution
+                                Text(
+                                  'Leslie A. · member since 2024',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textLight,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Continue button
+              PrimaryButton(
+                label: 'Continue',
+                onPressed: () {
+                  Get.to(() => const GoalsHappenScreen());
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ThatsGreatBody — content-only widget for single-screen onboarding
+// ─────────────────────────────────────────────────────────────────────────────
+
+class ThatsGreatBody extends StatefulWidget {
+  const ThatsGreatBody({super.key});
+
+  @override
+  State<ThatsGreatBody> createState() => _ThatsGreatBodyState();
+}
+
+class _ThatsGreatBodyState extends State<ThatsGreatBody>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _floatController;
+  late final Animation<double> _floatAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    // 4.2s duration, ease-in-out, infinite reverse
+    _floatController = AnimationController(
+      duration: const Duration(milliseconds: 4200),
+      vsync: this,
+    )..repeat(reverse: true);
+    _floatAnimation = Tween<double>(begin: 0, end: -8).animate(
+      CurvedAnimation(
+        parent: _floatController,
+        curve: Curves.easeInOut,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _floatController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 26),
+      child: Column(
+        children: [
+          const SizedBox(height: 8),
+          // Title area
+          Text(
+            "That's great!",
+            textAlign: TextAlign.center,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 27,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textDark,
+              letterSpacing: -0.54,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              "Here's what members just like you are achieving with Recipe AI.",
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textMedium,
+                height: 1.5,
+              ),
+            ),
+          ),
+          // Center content - flex:1, column centered, gap 22
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Circular progress ring 210x210
+                SizedBox(
                   width: 210,
                   height: 210,
                   child: Stack(
@@ -124,6 +439,7 @@ class _ThatsGreatScreenState extends State<ThatsGreatScreen>
                               ],
                             ),
                           ),
+                          const SizedBox(height: 3),
                           Text(
                             'report saving money',
                             textAlign: TextAlign.center,
@@ -135,16 +451,15 @@ class _ThatsGreatScreenState extends State<ThatsGreatScreen>
                           ),
                         ],
                       ),
-                      // Floating wallet icon
+                      // Floating wallet icon - top-right
                       Positioned(
                         top: -6,
                         right: -6,
                         child: AnimatedBuilder(
-                          animation: _walletFloatController,
+                          animation: _floatController,
                           builder: (context, child) {
                             return Transform.translate(
-                              offset: Offset(
-                                  0, _walletFloatAnimation.value),
+                              offset: Offset(0, _floatAnimation.value),
                               child: child,
                             );
                           },
@@ -156,7 +471,8 @@ class _ThatsGreatScreenState extends State<ThatsGreatScreen>
                               borderRadius: BorderRadius.circular(14),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF2A211B).withValues(alpha: 0.45),
+                                  color: const Color(0xFF2A211B)
+                                      .withValues(alpha: 0.45),
                                   blurRadius: 24,
                                   offset: const Offset(0, 12),
                                   spreadRadius: -12,
@@ -176,81 +492,98 @@ class _ThatsGreatScreenState extends State<ThatsGreatScreen>
                     ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 28),
-              // Testimonial mini card
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: AppColors.surfaceBorder),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEADFCF),
-                        borderRadius: BorderRadius.circular(21),
+                const SizedBox(height: 22),
+                // Testimonial mini card
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 15,
+                    vertical: 13,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: AppColors.surfaceBorder),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF2A211B)
+                            .withValues(alpha: 0.08),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: List.generate(
-                              5,
-                              (index) => const Icon(
-                                Icons.star,
-                                color: AppColors.starOrange,
-                                size: 14,
+                    ],
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Avatar
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFEADFCF),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 13),
+                      // Content column
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Stars - color #F2A24C, gap 2px
+                            Row(
+                              children: List.generate(
+                                5,
+                                (index) => Padding(
+                                  padding: EdgeInsets.only(
+                                      right: index < 4 ? 2 : 0),
+                                  child: const Icon(
+                                    Icons.star,
+                                    color: AppColors.starOrange,
+                                    size: 14,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Saved over \$1,200 this year cooking at home.',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textDark,
+                            const SizedBox(height: 4),
+                            // Quote
+                            Text(
+                              'Saved over \$1,200 this year cooking at home.',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textDark,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Leslie A. · member since 2024',
-                            style: AppTextStyles.smallLabel.copyWith(
-                              color: AppColors.textMedium,
+                            const SizedBox(height: 2),
+                            // Attribution
+                            Text(
+                              'Leslie A. · member since 2024',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textLight,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const Spacer(),
-              // Continue button
-              PrimaryButton(
-                label: 'Continue',
-                onPressed: () {
-                  Get.to(() => const GoalsHappenScreen());
-                },
-              ),
-              const SizedBox(height: 24),
-            ],
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Progress ring painter
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _ProgressRingPainter extends CustomPainter {
   final double progress;
@@ -304,6 +637,10 @@ class _ProgressRingPainter extends CustomPainter {
         oldDelegate.strokeWidth != strokeWidth;
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AnimatedBuilder helper
+// ─────────────────────────────────────────────────────────────────────────────
 
 class AnimatedBuilder extends AnimatedWidget {
   final Widget Function(BuildContext context, Widget? child) builder;

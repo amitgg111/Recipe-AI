@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
-import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/screens/auth/create_account_screen.dart';
@@ -23,56 +23,99 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: [
+            // Header image grid: height 230, no safe area padding
             _buildHeroImages(),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(26, 4, 26, 26),
-              child: Column(
-                children: [
-                  Text.rich(
-                    TextSpan(
-                      text: 'Choose your ',
-                      children: [
-                        TextSpan(
-                          text: 'trial experience',
-                          style: TextStyle(color: AppColors.purple),
+            // Content: padding 4px 26px 26px, margin-top -8px
+            Transform.translate(
+              offset: const Offset(0, -8),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(26, 4, 26, 26),
+                child: Column(
+                  children: [
+                    // Title
+                    RichText(
+                      textAlign: TextAlign.center,
+                      text: TextSpan(
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textDark,
+                          height: 1.18,
+                          letterSpacing: -0.52,
                         ),
-                      ],
+                        children: [
+                          const TextSpan(text: 'Choose your '),
+                          TextSpan(
+                            text: 'trial experience',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 26,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.purple,
+                              height: 1.18,
+                              letterSpacing: -0.52,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    style: AppTextStyles.screenTitle.copyWith(fontSize: 26),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 22),
-                  _buildPlanOption(0, 'FREE', '7 day trial', null),
-                  const SizedBox(height: 12),
-                  _buildPlanOption(1, '₹99.00', '30 day trial', null),
-                  const SizedBox(height: 16),
-                  _buildRemindToggle(),
-                  const SizedBox(height: 16),
-                  Text(
-                    'View all plans',
-                    style: AppTextStyles.link.copyWith(
-                      color: AppColors.textMedium,
-                      decoration: TextDecoration.underline,
-                      decorationColor: AppColors.textMedium,
+                    const SizedBox(height: 22),
+                    // Trial option 1: FREE 7 day (selected)
+                    _buildPlanOption(
+                      index: 0,
+                      price: 'FREE',
+                      period: '7 day trial',
                     ),
-                  ),
-                  const SizedBox(height: 18),
-                  _buildStatsRow(),
-                  const SizedBox(height: 8),
-                  _buildNoPaymentRow(),
-                  const SizedBox(height: 14),
-                  PrimaryButton(
-                    label: 'Redeem 7 days for ₹0.00',
-                    onPressed: () => Get.offAll(() => const CreateAccountScreen()),
-                    variant: PrimaryButtonVariant.purple,
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    '7 days free, then ₹1,700.00 / year · Cancel anytime',
-                    style: AppTextStyles.trialPrice,
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+                    const SizedBox(height: 12),
+                    // Trial option 2: 99.00 30 day
+                    _buildPlanOption(
+                      index: 1,
+                      price: '₹99.00',
+                      period: '30 day trial',
+                    ),
+                    const SizedBox(height: 16),
+                    // Reminder toggle
+                    _buildRemindToggle(),
+                    const SizedBox(height: 16),
+                    // View all plans link
+                    GestureDetector(
+                      onTap: () {},
+                      child: Text(
+                        'View all plans',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textMedium,
+                          decoration: TextDecoration.underline,
+                          decorationColor: AppColors.textMedium,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    // Stats row
+                    _buildStatsRow(),
+                    const SizedBox(height: 8),
+                    // No payment row
+                    _buildNoPaymentRow(),
+                    const SizedBox(height: 14),
+                    // Button
+                    PrimaryButton.purple(
+                      label: 'Redeem 7 days for ₹0.00',
+                      onPressed: () =>
+                          Get.offAll(() => const CreateAccountScreen()),
+                    ),
+                    const SizedBox(height: 10),
+                    // Disclaimer
+                    Text(
+                      '7 days free, then ₹1,700.00 / year · Cancel anytime',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textLighter,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -86,15 +129,38 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
       height: 230,
       child: Stack(
         children: [
-          Row(
-            children: [
-              Expanded(child: Container(color: const Color(0xFFE8C9A0))),
-              const SizedBox(width: 5),
-              Expanded(child: Container(color: const Color(0xFFD4A574))),
-              const SizedBox(width: 5),
-              Expanded(child: Container(color: const Color(0xFFC19660))),
-            ],
+          // 3-column grid with 5px gap, opacity 0.96
+          Opacity(
+            opacity: 0.96,
+            child: Row(
+              children: [
+                Expanded(
+                  child: _HeroImage(
+                    url:
+                        'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=240&q=80&auto=format&fit=crop',
+                    fallback: Colors.orange.shade200,
+                  ),
+                ),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: _HeroImage(
+                    url:
+                        'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=240&q=80&auto=format&fit=crop',
+                    fallback: Colors.green.shade200,
+                  ),
+                ),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: _HeroImage(
+                    url:
+                        'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=240&q=80&auto=format&fit=crop',
+                    fallback: Colors.red.shade200,
+                  ),
+                ),
+              ],
+            ),
           ),
+          // Gradient overlay: linear-gradient 180deg, transparent 40% -> background 100%
           Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
@@ -102,15 +168,15 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    AppColors.background.withValues(alpha: 0),
-                    AppColors.background.withValues(alpha: 0),
-                    AppColors.background,
+                    const Color(0xFFFBF4EA).withValues(alpha: 0),
+                    const Color(0xFFFBF4EA),
                   ],
-                  stops: const [0.0, 0.4, 1.0],
+                  stops: const [0.4, 1.0],
                 ),
               ),
             ),
           ),
+          // Close button: absolute top 14px, right 18px
           Positioned(
             top: 14,
             right: 18,
@@ -123,37 +189,59 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
                   color: Colors.white.withValues(alpha: 0.92),
                   borderRadius: BorderRadius.circular(18),
                 ),
-                child: const Icon(Icons.close, size: 20, color: AppColors.textDark),
+                child: const Icon(
+                  Icons.close,
+                  size: 20,
+                  color: AppColors.textDark,
+                ),
               ),
             ),
           ),
+          // "Healthy" tag: top 64, left 24, rotate -6deg
           Positioned(
             top: 64,
             left: 24,
             child: Transform.rotate(
-              angle: -0.1,
+              angle: -6 * 3.14159265 / 180,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF6C84C),
+                  color: AppColors.goldStar,
                   borderRadius: BorderRadius.circular(11),
                 ),
-                child: Text('Healthy', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: const Color(0xFF5A4410))),
+                child: Text(
+                  'Healthy',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF5A4410),
+                  ),
+                ),
               ),
             ),
           ),
+          // "Fall recipes" tag: top 48, right 30, rotate 7deg
           Positioned(
             top: 48,
             right: 30,
             child: Transform.rotate(
-              angle: 0.12,
+              angle: 7 * 3.14159265 / 180,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
                 decoration: BoxDecoration(
                   color: AppColors.starOrange,
                   borderRadius: BorderRadius.circular(11),
                 ),
-                child: Text('Fall recipes', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: const Color(0xFF5A3410))),
+                child: Text(
+                  'Fall recipes',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF5A3410),
+                  ),
+                ),
               ),
             ),
           ),
@@ -162,21 +250,32 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
     );
   }
 
-  Widget _buildPlanOption(int index, String price, String period, String? badge) {
+  Widget _buildPlanOption({
+    required int index,
+    required String price,
+    required String period,
+  }) {
     final isSelected = _selectedPlan == index;
     return GestureDetector(
       onTap: () => setState(() => _selectedPlan = index),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: isSelected ? AppColors.purple : AppColors.surfaceBorder,
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
-              ? [BoxShadow(color: AppColors.purple.withValues(alpha: 0.3), blurRadius: 26, offset: const Offset(0, 12), spreadRadius: -16)]
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF8B5CF6).withValues(alpha: 0.5),
+                    blurRadius: 26,
+                    offset: const Offset(0, 12),
+                    spreadRadius: -16,
+                  ),
+                ]
               : null,
         ),
         child: Row(
@@ -185,17 +284,38 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(price, style: AppTextStyles.listTitle.copyWith(fontSize: 17)),
+                Text(
+                  price,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textDark,
+                  ),
+                ),
                 const SizedBox(height: 1),
-                Text(period, style: TextStyle(fontSize: 13, color: AppColors.textMedium, fontWeight: FontWeight.w600)),
+                Text(
+                  period,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textMedium,
+                  ),
+                ),
               ],
             ),
             if (isSelected)
               Container(
                 width: 26,
                 height: 26,
-                decoration: const BoxDecoration(color: AppColors.purple, shape: BoxShape.circle),
-                child: const Icon(Icons.check, color: Colors.white, size: 16),
+                decoration: const BoxDecoration(
+                  color: AppColors.purple,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check,
+                  color: Colors.white,
+                  size: 16,
+                ),
               )
             else
               Container(
@@ -203,7 +323,10 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
                 height: 26,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.unselectedBorder, width: 2),
+                  border: Border.all(
+                    color: AppColors.unselectedBorder,
+                    width: 2,
+                  ),
                 ),
               ),
           ],
@@ -222,11 +345,20 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text('Remind me before my trial ends',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+          Expanded(
+            child: Text(
+              'Remind me before my trial ends',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textDark,
+              ),
+            ),
+          ),
           GestureDetector(
             onTap: () => setState(() => _remindMe = !_remindMe),
-            child: Container(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
               width: 46,
               height: 27,
               padding: const EdgeInsets.all(3),
@@ -234,11 +366,15 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
                 color: _remindMe ? AppColors.purple : AppColors.unselectedBorder,
                 borderRadius: BorderRadius.circular(14),
               ),
-              alignment: _remindMe ? Alignment.centerRight : Alignment.centerLeft,
+              alignment:
+                  _remindMe ? Alignment.centerRight : Alignment.centerLeft,
               child: Container(
                 width: 21,
                 height: 21,
-                decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
               ),
             ),
           ),
@@ -251,21 +387,56 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
+        // 10M+ stat
         Column(
           children: [
-            Text('10M+', style: AppTextStyles.statMedium),
-            const SizedBox(height: 2),
-            Text('Happy cooks', style: TextStyle(fontSize: 11, color: AppColors.textMedium, fontWeight: FontWeight.w600)),
+            Text(
+              '10M+',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textDark,
+              ),
+            ),
+            Text(
+              'Happy cooks',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textMedium,
+              ),
+            ),
           ],
         ),
-        Container(width: 1, height: 28, color: AppColors.unselectedBorder, margin: const EdgeInsets.symmetric(horizontal: 22)),
+        // Divider: 1px wide, 28px tall
+        Container(
+          width: 1,
+          height: 28,
+          color: AppColors.unselectedBorder,
+          margin: const EdgeInsets.symmetric(horizontal: 22),
+        ),
+        // Stars + rating
         Column(
           children: [
             Row(
-              children: List.generate(5, (_) => const Icon(Icons.star_rounded, color: AppColors.goldStar, size: 16)),
+              children: List.generate(
+                5,
+                (_) => const Icon(
+                  Icons.star,
+                  color: AppColors.goldStar,
+                  size: 14,
+                ),
+              ),
             ),
             const SizedBox(height: 2),
-            Text('4.8 rating', style: TextStyle(fontSize: 11, color: AppColors.textMedium, fontWeight: FontWeight.w600)),
+            Text(
+              '4.8 rating',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textMedium,
+              ),
+            ),
           ],
         ),
       ],
@@ -273,13 +444,49 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
   }
 
   Widget _buildNoPaymentRow() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Icon(Icons.check, color: AppColors.green, size: 20),
-        const SizedBox(width: 7),
-        Text('No payment now', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textDark)),
-      ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.check_circle,
+            color: AppColors.green,
+            size: 20,
+          ),
+          const SizedBox(width: 7),
+          Text(
+            'No payment now',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textDark,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroImage extends StatelessWidget {
+  final String url;
+  final Color fallback;
+
+  const _HeroImage({required this.url, required this.fallback});
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.network(
+      url,
+      fit: BoxFit.cover,
+      height: double.infinity,
+      width: double.infinity,
+      loadingBuilder: (context, child, progress) {
+        if (progress == null) return child;
+        return Container(color: fallback);
+      },
+      errorBuilder: (context, error, stack) => Container(color: fallback),
     );
   }
 }

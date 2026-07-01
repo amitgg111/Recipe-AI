@@ -1,6 +1,7 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
-import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/screens/onboarding/plus_comparison_screen.dart';
@@ -9,11 +10,7 @@ class PlusIntroScreen extends StatefulWidget {
   final VoidCallback? onContinue;
   final VoidCallback? onClose;
 
-  const PlusIntroScreen({
-    super.key,
-    this.onContinue,
-    this.onClose,
-  });
+  const PlusIntroScreen({super.key, this.onContinue, this.onClose});
 
   @override
   State<PlusIntroScreen> createState() => _PlusIntroScreenState();
@@ -21,37 +18,110 @@ class PlusIntroScreen extends StatefulWidget {
 
 class _PlusIntroScreenState extends State<PlusIntroScreen>
     with TickerProviderStateMixin {
-  late final AnimationController _pulseController;
-  late final AnimationController _bobController;
-  late final Animation<double> _pulseAnimation;
-  late final Animation<double> _bobAnimation;
+  // One-shot staggered entrance (crown pop → badge → tags → sparkles).
+  late final AnimationController _entrance;
+  late final Animation<double> _crownScale;
+  late final Animation<double> _crownFade;
+  late final Animation<double> _badgeScale;
+  late final Animation<double> _glowFade;
+  late final List<Animation<double>> _tagReveal;
+  late final Animation<double> _sparkleFade;
+
+  // Continuous loops.
+  late final AnimationController _pulse; // crown ring pulse + glow breathing
+  late final AnimationController _bob; // crown gentle vertical bob
+  late final AnimationController _float; // tags + sparkles floating
+  late final Animation<double> _bobAnim;
+
+  // Fixed per-tag data: rotation (deg) and float phase (0..1).
+  static const List<double> _tagRot = [0, 0, 0, 0];
+  static const List<double> _tagPhase = [0.0, 0.25, 0.5, 0.75];
+
+  static double _cl(double v) => v < 0.0 ? 0.0 : (v > 1.0 ? 1.0 : v);
 
   @override
   void initState() {
     super.initState();
-    _pulseController = AnimationController(
+
+    _entrance = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2000),
-    )..repeat(reverse: true);
-    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.15).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+      duration: const Duration(milliseconds: 1300),
+    );
+    _crownScale = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _entrance,
+        curve: const Interval(0.0, 0.5, curve: Curves.easeOutBack),
+      ),
+    );
+    _crownFade = CurvedAnimation(
+      parent: _entrance,
+      curve: const Interval(0.0, 0.32, curve: Curves.easeOut),
+    );
+    _glowFade = CurvedAnimation(
+      parent: _entrance,
+      curve: const Interval(0.0, 0.45, curve: Curves.easeOut),
+    );
+    _badgeScale = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _entrance,
+        curve: const Interval(0.42, 0.72, curve: Curves.easeOutBack),
+      ),
+    );
+    const tagStart = [0.44, 0.54, 0.64, 0.74];
+    _tagReveal = List.generate(4, (i) {
+      final s = tagStart[i];
+      return CurvedAnimation(
+        parent: _entrance,
+        curve: Interval(s, _cl(s + 0.34), curve: Curves.easeOutCubic),
+      );
+    });
+    _sparkleFade = CurvedAnimation(
+      parent: _entrance,
+      curve: const Interval(0.82, 1.0, curve: Curves.easeOut),
     );
 
-    _bobController = AnimationController(
+    _pulse = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1600),
+      duration: const Duration(milliseconds: 2200),
+    )..repeat();
+
+    _bob = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3600),
     )..repeat(reverse: true);
-    _bobAnimation = Tween<double>(begin: 0, end: -8).animate(
-      CurvedAnimation(parent: _bobController, curve: Curves.easeInOut),
-    );
+    _bobAnim = Tween<double>(
+      begin: 0.0,
+      end: -6.0,
+    ).animate(CurvedAnimation(parent: _bob, curve: Curves.easeInOut));
+
+    _float = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 4200),
+    )..repeat();
+
+    _entrance.forward();
   }
 
   @override
   void dispose() {
-    _pulseController.dispose();
-    _bobController.dispose();
+    _entrance.dispose();
+    _pulse.dispose();
+    _bob.dispose();
+    _float.dispose();
     super.dispose();
   }
+
+  // Seamless vertical bob (one full smooth cycle per loop).
+  double _bobDy(double phase, double amp) =>
+      amp * math.sin(2 * math.pi * ((_float.value + phase) % 1.0));
+
+  // Subtle, slower horizontal drift for an organic "floating" feel.
+  double _driftDx(double phase, double amp) =>
+      amp * math.sin(2 * math.pi * ((0.6 * _float.value + phase) % 1.0));
+
+  // A ring's expanding-fade parameters at a given phase offset.
+  double _ringScaleAt(double p) => 1.0 + 0.62 * ((_pulse.value + p) % 1.0);
+  double _ringOpacityAt(double p) => 0.55 * (1.0 - ((_pulse.value + p) % 1.0));
 
   @override
   Widget build(BuildContext context) {
@@ -59,235 +129,440 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 26),
+          padding: const EdgeInsets.fromLTRB(28, 0, 28, 26),
           child: Column(
             children: [
-              const SizedBox(height: 12),
-              // Top row with close button
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  GestureDetector(
-                    onTap: widget.onClose ?? () => Get.to(() => const PlusComparisonScreen()),
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2A211B).withValues(alpha: 0.07),
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: const Icon(Icons.close, size: 18,
-                          color: AppColors.textMedium),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              // Logo
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: AppColors.purple,
-                      borderRadius: BorderRadius.circular(11),
-                    ),
-                    child: const Icon(Icons.restaurant_menu, color: Colors.white, size: 18),
-                  ),
-                  const SizedBox(width: 8),
-                  Text.rich(
-                    TextSpan(
-                      text: 'Recipe AI ',
-                      style: AppTextStyles.listTitle,
-                      children: [
-                        TextSpan(
-                          text: 'Plus',
-                          style: AppTextStyles.listTitle.copyWith(color: AppColors.purple),
+              // Top: close button at top-right, height 36
+              SizedBox(
+                height: 36,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    GestureDetector(
+                      onTap:
+                          widget.onClose ??
+                          () => Get.to(() => const PlusComparisonScreen()),
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: const Color(
+                            0xFF2A211B,
+                          ).withValues(alpha: 0.07),
+                          borderRadius: BorderRadius.circular(18),
                         ),
-                      ],
+                        child: const Icon(
+                          Icons.close,
+                          size: 18,
+                          color: AppColors.textMedium,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              const SizedBox(height: 16),
+              // Logo: margin 6px 0 24px
+              Padding(
+                padding: const EdgeInsets.fromLTRB(0, 6, 0, 24),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: AppColors.purple,
+                        borderRadius: BorderRadius.circular(11),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(
+                              0xFF8B5CF6,
+                            ).withValues(alpha: 0.7),
+                            blurRadius: 14,
+                            offset: const Offset(0, 6),
+                            spreadRadius: -5,
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.restaurant_menu,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 9),
+                    Text.rich(
+                      TextSpan(
+                        text: 'Recipe AI ',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 21,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textDark,
+                          letterSpacing: -0.42,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: 'Plus',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 21,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.purple,
+                              letterSpacing: -0.42,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Subtitle
               Text(
                 'Recipe AI is free to use, but…',
-                style: AppTextStyles.bodyMedium,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textMedium,
+                ),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 14),
-              // Title with purple highlight
+              // Title
               RichText(
                 textAlign: TextAlign.center,
                 text: TextSpan(
-                  style: AppTextStyles.screenTitle.copyWith(fontSize: 29, height: 1.2),
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 29,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textDark,
+                    height: 1.2,
+                    letterSpacing: -0.58,
+                  ),
                   children: [
                     const TextSpan(text: 'We\'d love you to try '),
                     TextSpan(
                       text: 'the full experience for 7 days, free!',
-                      style: AppTextStyles.screenTitle.copyWith(
+                      style: GoogleFonts.plusJakartaSans(
                         fontSize: 29,
-                        height: 1.2,
+                        fontWeight: FontWeight.w800,
                         color: AppColors.purple,
+                        height: 1.2,
+                        letterSpacing: -0.58,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-              // Crown + feature tags area
-              SizedBox(
-                width: 330,
-                height: 300,
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  alignment: Alignment.center,
-                  children: [
-                    // Radial glow
-                    Container(
-                      width: 130,
-                      height: 130,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppColors.purple.withValues(alpha: 0.18),
-                      ),
-                    ),
-                    // Crown with animations
-                    _AnimatedBuilder(
-                      animation: Listenable.merge([_pulseAnimation, _bobAnimation]),
-                      builder: (context, _) {
-                        return Transform.translate(
-                          offset: Offset(0, _bobAnimation.value),
-                          child: Stack(
-                            alignment: Alignment.center,
-                            clipBehavior: Clip.none,
-                            children: [
-                              // Pulse ring
-                              Transform.scale(
-                                scale: _pulseAnimation.value,
-                                child: Container(
-                                  width: 100,
-                                  height: 100,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: AppColors.purple.withValues(alpha: 0.15),
-                                      width: 2,
-                                    ),
-                                  ),
-                                ),
+              // Center animation area: flex:1
+              Expanded(
+                child: Center(
+                  child: SizedBox(
+                    width: 330,
+                    height: 300,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      alignment: Alignment.center,
+                      children: [
+                        // Radial glow (fades in + gentle breathing)
+                        AnimatedBuilder(
+                          animation: Listenable.merge([_entrance, _pulse]),
+                          builder: (context, child) {
+                            return Opacity(
+                              opacity: _glowFade.value,
+                              child: Transform.scale(
+                                scale:
+                                    1.0 +
+                                    0.06 * math.sin(2 * math.pi * _pulse.value),
+                                child: child,
                               ),
-                              // Crown container
-                              Container(
-                                width: 80,
-                                height: 80,
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [Color(0xFF9466F2), Color(0xFF7A45E0)],
-                                  ),
-                                  borderRadius: BorderRadius.circular(26),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppColors.purple.withValues(alpha: 0.35),
-                                      blurRadius: 24,
-                                      offset: const Offset(0, 8),
-                                    ),
-                                  ],
-                                ),
-                                child: const Icon(Icons.workspace_premium, color: Colors.white, size: 36),
+                            );
+                          },
+                          child: Container(
+                            width: 130,
+                            height: 130,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [
+                                  const Color(
+                                    0xFF8B5CF6,
+                                  ).withValues(alpha: 0.18),
+                                  Colors.transparent,
+                                ],
+                                stops: const [0.0, 0.66],
                               ),
-                              // 7 DAYS FREE badge
-                              Positioned(
-                                top: -8,
-                                right: -18,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.08),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
+                            ),
+                          ),
+                        ),
+                        // Crown with entrance + bob + double-ring pulse
+                        AnimatedBuilder(
+                          animation: Listenable.merge([
+                            _entrance,
+                            _bob,
+                            _pulse,
+                          ]),
+                          builder: (context, _) {
+                            return Opacity(
+                              opacity: _crownFade.value,
+                              child: Transform.scale(
+                                scale: _crownScale.value,
+                                child: Transform.translate(
+                                  offset: Offset(0, _bobAnim.value),
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    clipBehavior: Clip.none,
+                                    children: [
+                                      // Two staggered expanding pulse rings
+                                      _pulseRing(0.0),
+                                      _pulseRing(0.5),
+                                      // Main icon: 80x80, gradient 160deg
+                                      Container(
+                                        width: 80,
+                                        height: 80,
+                                        decoration: BoxDecoration(
+                                          gradient: const LinearGradient(
+                                            begin: Alignment(-0.17, -0.98),
+                                            end: Alignment(0.17, 0.98),
+                                            colors: [
+                                              Color(0xFF9466F2),
+                                              Color(0xFF7A45E0),
+                                            ],
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            26,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: const Color(
+                                                0xFF7A45E0,
+                                              ).withValues(alpha: 0.7),
+                                              blurRadius: 32,
+                                              offset: const Offset(0, 18),
+                                              spreadRadius: -12,
+                                            ),
+                                          ],
+                                        ),
+                                        child: const Center(
+                                          child: SizedBox(
+                                            width: 38,
+                                            height: 30,
+                                            child: CustomPaint(
+                                              painter: _CrownPainter(
+                                                Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      // "7 DAYS FREE" badge (pops in)
+                                      Positioned(
+                                        top: -8,
+                                        right: -12,
+                                        child: Transform.scale(
+                                          scale: _badgeScale.value,
+                                          child: _daysFreeBadge(),
+                                        ),
                                       ),
                                     ],
                                   ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text('7', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.purple)),
-                                      const SizedBox(width: 3),
-                                      Text('DAYS FREE', style: TextStyle(fontSize: 7, fontWeight: FontWeight.w700, color: Color(0xFF9A938A), letterSpacing: 0.42)),
-                                    ],
-                                  ),
                                 ),
                               ),
-                            ],
-                          ),
-                        );
-                      },
+                            );
+                          },
+                        ),
+                        // Feature tags (staggered reveal + floating)
+                        _tag(
+                          0,
+
+                          left: 0,
+                          top: 8,
+                          label: 'Unlimited Recipe imports',
+                          icon: Icons.auto_awesome,
+                          color: AppColors.purple,
+                        ),
+                        _tag(
+                          1,
+                          right: 0,
+                          top: 48,
+                          label: 'Nutrition calculator',
+                          icon: Icons.check_circle,
+                          color: AppColors.green,
+                        ),
+                        _tag(
+                          2,
+                          left: 0,
+                          bottom: 56,
+                          label: 'AI cooking assistant',
+                          icon: Icons.auto_awesome,
+                          color: AppColors.primary,
+                        ),
+                        _tag(
+                          3,
+                          right: 0,
+                          bottom: 22,
+                          label: 'Convert measurements',
+                          icon: Icons.language,
+                          color: AppColors.blue,
+                        ),
+                        // Sparkles (fade in + float)
+                        _sparkle(
+                          left: 40,
+                          top: 96,
+                          phase: 0.1,
+                          color: AppColors.starOrange,
+                        ),
+                        _sparkle(
+                          right: 50,
+                          bottom: 96,
+                          phase: 0.6,
+                          color: AppColors.purple,
+                        ),
+                      ],
                     ),
-                    // Feature tags positioned around crown
-                    Positioned(
-                      left: 8,
-                      top: 18,
-                      child: Transform.rotate(
-                        angle: -5 * 3.14159 / 180,
-                        child: _buildFeatureTag('Unlimited Recipe imports', Icons.auto_awesome, AppColors.purple),
-                      ),
-                    ),
-                    Positioned(
-                      right: 6,
-                      top: 48,
-                      child: Transform.rotate(
-                        angle: 6 * 3.14159 / 180,
-                        child: _buildFeatureTag('Nutrition calculator', Icons.check_circle, AppColors.green),
-                      ),
-                    ),
-                    Positioned(
-                      left: 14,
-                      bottom: 46,
-                      child: Transform.rotate(
-                        angle: 4 * 3.14159 / 180,
-                        child: _buildFeatureTag('AI cooking assistant', Icons.auto_awesome, AppColors.primary),
-                      ),
-                    ),
-                    Positioned(
-                      right: 24,
-                      bottom: 22,
-                      child: Transform.rotate(
-                        angle: -6 * 3.14159 / 180,
-                        child: _buildFeatureTag('Convert measurements', Icons.language, AppColors.blue),
-                      ),
-                    ),
-                    // Floating sparkles
-                    Positioned(
-                      left: 40,
-                      top: 96,
-                      child: Icon(Icons.auto_awesome, color: AppColors.goldStar, size: 14),
-                    ),
-                    Positioned(
-                      right: 50,
-                      bottom: 96,
-                      child: Icon(Icons.auto_awesome, color: AppColors.purple, size: 14),
-                    ),
-                  ],
+                  ),
                 ),
               ),
-              const Spacer(),
+              // Bottom button
               PrimaryButton.purple(
                 label: 'Try for ₹0.00',
-                onPressed: widget.onContinue ?? () => Get.to(() => const PlusComparisonScreen()),
-                enableSheen: true,
+                onPressed:
+                    widget.onContinue ??
+                    () => Get.to(() => const PlusComparisonScreen()),
               ),
-              const SizedBox(height: 32),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // ---- Building blocks -----------------------------------------------------
+
+  Widget _pulseRing(double phase) {
+    return Transform.scale(
+      scale: _ringScaleAt(phase),
+      child: Opacity(
+        opacity: _ringOpacityAt(phase),
+        child: Container(
+          width: 68,
+          height: 68,
+          decoration: BoxDecoration(
+            color: AppColors.purple,
+            borderRadius: BorderRadius.circular(26),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _daysFreeBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            '7',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 8,
+
+              fontWeight: FontWeight.w800,
+              color: AppColors.purple,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(width: 3),
+          Text(
+            'DAYS FREE',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 5,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textLight,
+              letterSpacing: 0.42,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tag(
+    int i, {
+    double? left,
+    double? right,
+    double? top,
+    double? bottom,
+    required String label,
+    required IconData icon,
+    required Color color,
+  }) {
+    final tagWidget = Transform.rotate(
+      angle: _tagRot[i] * math.pi / 180,
+      child: _buildFeatureTag(label, icon, color),
+    );
+    return Positioned(
+      left: left,
+      right: right,
+      top: top,
+      bottom: bottom,
+      child: AnimatedBuilder(
+        animation: Listenable.merge([_entrance, _float]),
+        builder: (context, child) {
+          final rev = _tagReveal[i].value;
+          return Opacity(
+            opacity: rev,
+            child: Transform.translate(
+              offset: Offset(
+                _driftDx(_tagPhase[i], 4),
+                _bobDy(_tagPhase[i], 6) + (1 - rev) * 10,
+              ),
+              child: Transform.scale(scale: 0.7 + 0.2 * rev, child: child),
+            ),
+          );
+        },
+        child: tagWidget,
+      ),
+    );
+  }
+
+  Widget _sparkle({
+    double? left,
+    double? right,
+    double? top,
+    double? bottom,
+    required double phase,
+    required Color color,
+  }) {
+    return Positioned(
+      left: left,
+      right: right,
+      top: top,
+      bottom: bottom,
+      child: AnimatedBuilder(
+        animation: Listenable.merge([_entrance, _float]),
+        builder: (context, child) {
+          return Opacity(
+            opacity: _sparkleFade.value,
+            child: Transform.translate(
+              offset: Offset(_driftDx(phase, 2), _bobDy(phase, 1)),
+              child: child,
+            ),
+          );
+        },
+        child: Icon(Icons.auto_awesome, color: color, size: 14),
       ),
     );
   }
@@ -298,32 +573,91 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(11),
-        border: Border.all(color: const Color(0xFFEEE6FB)),
+        border: Border.all(color: AppColors.purpleBorder),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF7A45E0).withValues(alpha: 0.6),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+            spreadRadius: -18,
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 12, color: iconColor),
-          const SizedBox(width: 5),
-          Text(text, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textDark,
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _AnimatedBuilder extends AnimatedWidget {
-  final Widget Function(BuildContext context, Widget? child) builder;
-  final Widget? child;
-
-  const _AnimatedBuilder({
-    required Listenable animation,
-    required this.builder,
-    this.child,
-  }) : super(listenable: animation);
+/// A simple 3-peak crown (matches the reference video's crown glyph).
+class _CrownPainter extends CustomPainter {
+  final Color color;
+  const _CrownPainter(this.color);
 
   @override
-  Widget build(BuildContext context) {
-    return builder(context, child);
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill
+      ..isAntiAlias = true;
+
+    final leftX = 0.10 * w;
+    final midX = 0.50 * w;
+    final rightX = 0.90 * w;
+    final vL = 0.30 * w;
+    final vR = 0.70 * w;
+
+    final midPeak = 0.10 * h;
+    final sidePeak = 0.30 * h;
+    final valley = 0.60 * h;
+    final baseTop = 0.64 * h;
+    final baseBot = 0.92 * h;
+
+    // Crown body (peaks + valleys).
+    final body = Path()
+      ..moveTo(leftX, sidePeak)
+      ..lineTo(vL, valley)
+      ..lineTo(midX, midPeak)
+      ..lineTo(vR, valley)
+      ..lineTo(rightX, sidePeak)
+      ..lineTo(rightX, baseTop)
+      ..lineTo(leftX, baseTop)
+      ..close();
+    canvas.drawPath(body, paint);
+
+    // Rounded base band.
+    final base = RRect.fromLTRBR(
+      0.05 * w,
+      baseTop - 0.03 * h,
+      0.95 * w,
+      baseBot,
+      Radius.circular(0.06 * w),
+    );
+    canvas.drawRRect(base, paint);
+
+    // Small rounded caps on the three peaks.
+    final dotR = 0.055 * w;
+    canvas.drawCircle(Offset(leftX, sidePeak), dotR, paint);
+    canvas.drawCircle(Offset(midX, midPeak), dotR, paint);
+    canvas.drawCircle(Offset(rightX, sidePeak), dotR, paint);
   }
+
+  @override
+  bool shouldRepaint(covariant _CrownPainter oldDelegate) =>
+      oldDelegate.color != color;
 }
