@@ -188,7 +188,7 @@ class _CookbooksScreenState extends State<CookbooksScreen>
 
   Widget _buildPopulatedState(HomeController controller) {
     return SingleChildScrollView(
-      padding: EdgeInsets.only(
+      padding: const EdgeInsets.only(
         bottom: AppDimensions.bottomNavHeight + AppSpacing.xxl,
       ),
       child: Column(
@@ -410,14 +410,14 @@ class _CookbooksScreenState extends State<CookbooksScreen>
             child: Container(
               width: AppDimensions.fabSize,
               height: AppDimensions.fabSize,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppColors.primary,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
                     color: AppColors.primaryShadow,
                     blurRadius: 20,
-                    offset: const Offset(0, 8),
+                    offset: Offset(0, 8),
                     spreadRadius: -4,
                   ),
                 ],
@@ -467,7 +467,7 @@ class _CookbooksScreenState extends State<CookbooksScreen>
                         child: Container(
                           width: 32,
                           height: 32,
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             color: AppColors.primary,
                             shape: BoxShape.circle,
                           ),
@@ -723,11 +723,11 @@ class _CookbooksScreenState extends State<CookbooksScreen>
                       borderRadius: BorderRadius.circular(
                         AppDimensions.radiusButton,
                       ),
-                      boxShadow: [
+                      boxShadow: const [
                         BoxShadow(
                           color: AppColors.primaryShadow,
                           blurRadius: 30,
-                          offset: const Offset(0, 16),
+                          offset: Offset(0, 16),
                           spreadRadius: -10,
                         ),
                       ],
@@ -1032,7 +1032,7 @@ class ImportSourcePickerScreen extends StatelessWidget {
                       subtitle: 'Create manually',
                       onTap: () {
                         Navigator.pop(context);
-                        Get.to(() => RecipeEditorScreen());
+                        Get.to(() => const RecipeEditorScreen());
                       },
                     ),
                   ),
@@ -1217,6 +1217,7 @@ class _CookbookCard extends StatelessWidget {
       return Image.network(
         urls[index]!,
         fit: BoxFit.cover,
+        cacheWidth: 300,
         errorBuilder: (_, __, ___) => _placeholder(),
         loadingBuilder: (_, child, loading) {
           if (loading == null) return child;
@@ -1268,7 +1269,7 @@ class _RecipeCard extends StatelessWidget {
               child: Stack(
                 children: [
                   ClipRRect(
-                    borderRadius: BorderRadius.vertical(
+                    borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(AppDimensions.radiusLg - 1),
                     ),
                     child: _buildImage(),
@@ -1289,6 +1290,12 @@ class _RecipeCard extends StatelessWidget {
                         color: AppColors.textMedium,
                       ),
                     ),
+                  ),
+                  // Privacy badge (🔒 Private / 🌍 Public)
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: _PrivacyBadge(isPublic: recipe.isPublic),
                   ),
                 ],
               ),
@@ -1339,6 +1346,7 @@ class _RecipeCard extends StatelessWidget {
         width: double.infinity,
         height: double.infinity,
         fit: BoxFit.cover,
+        cacheWidth: 600,
         errorBuilder: (_, __, ___) => _imagePlaceholder(),
         loadingBuilder: (_, child, loading) {
           if (loading == null) return child;
@@ -1389,6 +1397,7 @@ class RecipeImage extends StatelessWidget {
       width: width ?? 50,
       height: height ?? 50,
       fit: BoxFit.cover,
+      cacheWidth: 150,
       errorBuilder: (_, __, ___) =>
           _ImagePlaceholder(width: width ?? 50, height: height ?? 50),
       loadingBuilder: (context, child, loadingProgress) {
@@ -1524,7 +1533,7 @@ class ImportRecipeBottomSheet extends StatelessWidget {
             title: 'Create from Scratch',
             subtitle: 'Write recipe manually',
             onTap: () {
-              Get.to(() => RecipeEditorScreen());
+              Get.to(() => const RecipeEditorScreen());
             },
           ),
         ],
@@ -1715,5 +1724,42 @@ class AnimatedBuilder extends AnimatedWidget {
   @override
   Widget build(BuildContext context) {
     return builder(context, child);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PRIVACY BADGE — 🔒 Private / 🌍 Public (used on My Recipes cards)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _PrivacyBadge extends StatelessWidget {
+  final bool isPublic;
+  const _PrivacyBadge({required this.isPublic});
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = isPublic ? const Color(0xFF1F7A5E) : const Color(0xFF5A5147);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(isPublic ? Icons.public : Icons.lock_outline_rounded,
+              size: 11, color: fg),
+          const SizedBox(width: 4),
+          Text(
+            isPublic ? 'Public' : 'Private',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              color: fg,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

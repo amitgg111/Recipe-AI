@@ -35,12 +35,12 @@ class _CookModeIngredientsScreenState extends State<CookModeIngredientsScreen> {
     super.initState();
     _ingredients = widget.ingredients ??
         [
-          CookIngredient(name: '1 can (400ml) coconut milk'),
-          CookIngredient(name: '1 can (400g) chickpeas, drained'),
-          CookIngredient(name: '2 tbsp red curry paste'),
-          CookIngredient(name: '1 tbsp olive oil'),
-          CookIngredient(name: '1 medium onion, diced'),
-          CookIngredient(name: '3 cloves garlic, minced'),
+          const CookIngredient(name: '1 can (400ml) coconut milk'),
+          const CookIngredient(name: '1 can (400g) chickpeas, drained'),
+          const CookIngredient(name: '2 tbsp red curry paste'),
+          const CookIngredient(name: '1 tbsp olive oil'),
+          const CookIngredient(name: '1 medium onion, diced'),
+          const CookIngredient(name: '3 cloves garlic, minced'),
         ];
   }
 

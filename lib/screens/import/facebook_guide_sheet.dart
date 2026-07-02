@@ -266,7 +266,7 @@ class _FacebookSlide1 extends StatelessWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.thumb_up_outlined,
+                          const Icon(Icons.thumb_up_outlined,
                               size: 20, color: AppColors.textMedium),
                           const SizedBox(width: 6),
                           Text(
@@ -284,7 +284,7 @@ class _FacebookSlide1 extends StatelessWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.chat_bubble_outline_rounded,
+                          const Icon(Icons.chat_bubble_outline_rounded,
                               size: 20, color: AppColors.textMedium),
                           const SizedBox(width: 6),
                           Text(
@@ -315,7 +315,7 @@ class _FacebookSlide1 extends StatelessWidget {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.share_rounded,
+                            const Icon(Icons.share_rounded,
                                 size: 20, color: AppColors.primary),
                             const SizedBox(width: 6),
                             Text(
@@ -335,7 +335,7 @@ class _FacebookSlide1 extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          Row(
+          const Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
@@ -347,7 +347,7 @@ class _FacebookSlide1 extends StatelessWidget {
                   color: AppColors.blueArrow,
                 ),
               ),
-              const SizedBox(width: 6),
+              SizedBox(width: 6),
               Icon(
                 Icons.arrow_upward_rounded,
                 size: 18,
@@ -370,7 +370,7 @@ class _FacebookSlide2 extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
+          const Text(
             'tap share to',
             style: TextStyle(
               fontSize: 26,
@@ -380,7 +380,7 @@ class _FacebookSlide2 extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Icon(
+          const Icon(
             Icons.arrow_downward_rounded,
             size: 24,
             color: AppColors.blueArrow,
@@ -424,7 +424,7 @@ class _FacebookSlide2 extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.search, size: 18, color: AppColors.textLight),
+                      const Icon(Icons.search, size: 18, color: AppColors.textLight),
                       const SizedBox(width: 8),
                       Text(
                         'Search',
@@ -477,7 +477,7 @@ class _FacebookSlide2 extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.upload_rounded,
                         size: 20,
                         color: AppColors.primary,
@@ -511,7 +511,7 @@ class _FacebookSlide3 extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
+          const Text(
             'tap Recipe AI',
             style: TextStyle(
               fontSize: 26,
@@ -521,7 +521,7 @@ class _FacebookSlide3 extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Icon(
+          const Icon(
             Icons.arrow_downward_rounded,
             size: 24,
             color: AppColors.blueArrow,

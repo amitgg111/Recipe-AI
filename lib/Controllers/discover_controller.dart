@@ -19,6 +19,12 @@ class DiscoverRecipe {
   final String? userAvatar;
   final DateTime? createdAt;
 
+  // Social engagement counters (stored on the recipe document).
+  final int likesCount;
+  final int commentsCount;
+  final int sharesCount;
+  final int savesCount;
+
   DiscoverRecipe({
     required this.id,
     required this.title,
@@ -36,6 +42,10 @@ class DiscoverRecipe {
     required this.userName,
     this.userAvatar,
     this.createdAt,
+    this.likesCount = 0,
+    this.commentsCount = 0,
+    this.sharesCount = 0,
+    this.savesCount = 0,
   });
 }
 
@@ -83,13 +93,15 @@ class DiscoverController extends GetxController {
             .collection('users')
             .doc(userDoc.id)
             .collection('recipes')
-            .where('isPublic', isEqualTo: true)
+            .where('visibility', isEqualTo: 'public')
             .orderBy('createdAt', descending: true)
             .limit(30)
             .get();
 
         for (final recipeDoc in recipesSnapshot.docs) {
           final data = recipeDoc.data();
+          // Never surface soft-deleted recipes in Discover.
+          if (data['isDeleted'] == true) continue;
           final imageUrl = data['imageUrl']?.toString();
 
           allRecipes.add(DiscoverRecipe(
@@ -109,6 +121,10 @@ class DiscoverController extends GetxController {
             userName: userName,
             userAvatar: userAvatar,
             createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+            likesCount: (data['likesCount'] as num?)?.toInt() ?? 0,
+            commentsCount: (data['commentsCount'] as num?)?.toInt() ?? 0,
+            sharesCount: (data['sharesCount'] as num?)?.toInt() ?? 0,
+            savesCount: (data['savesCount'] as num?)?.toInt() ?? 0,
           ));
         }
       }

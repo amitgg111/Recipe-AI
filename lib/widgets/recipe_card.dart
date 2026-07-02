@@ -79,7 +79,7 @@ class RecipeCard extends StatelessWidget {
               ),
             ),
             trailing ??
-                Icon(
+                const Icon(
                   Icons.chevron_right,
                   color: AppColors.textHint,
                   size: AppDimensions.iconMd,

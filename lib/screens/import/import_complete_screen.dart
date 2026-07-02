@@ -66,19 +66,19 @@ class ImportCompleteScreen extends StatelessWidget {
               child: Icon(Icons.restaurant, size: 64, color: Colors.white54),
             ),
           ),
-          Positioned.fill(
+          const Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    const Color(0x66140F0A),
+                    Color(0x66140F0A),
                     Colors.transparent,
                     Colors.transparent,
                     AppColors.background,
                   ],
-                  stops: const [0, 0.32, 0.64, 1.0],
+                  stops: [0, 0.32, 0.64, 1.0],
                 ),
               ),
             ),
@@ -108,11 +108,11 @@ class ImportCompleteScreen extends StatelessWidget {
                     color: const Color(0xF21F7A5E),
                     borderRadius: BorderRadius.circular(13),
                   ),
-                  child: Row(
+                  child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.check, color: Colors.white, size: 16),
-                      const SizedBox(width: 6),
+                      Icon(Icons.check, color: Colors.white, size: 16),
+                      SizedBox(width: 6),
                       Text('Imported', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.white)),
                     ],
                   ),
@@ -133,10 +133,10 @@ class ImportCompleteScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.warningBorder),
       ),
-      child: Row(
+      child: const Row(
         children: [
-          const Icon(Icons.auto_awesome, color: AppColors.gold, size: 18),
-          const SizedBox(width: 11),
+          Icon(Icons.auto_awesome, color: AppColors.gold, size: 18),
+          SizedBox(width: 11),
           Expanded(
             child: Text(
               'AI pulled this from Instagram. Check the details, then save.',
@@ -155,11 +155,11 @@ class ImportCompleteScreen extends StatelessWidget {
         color: AppColors.instagramBg,
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Row(
+      child: const Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.camera_alt, color: AppColors.instagram, size: 16),
-          const SizedBox(width: 6),
+          SizedBox(width: 6),
           Text('From Instagram · @recipe.app',
               style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.instagram)),
         ],
@@ -179,9 +179,9 @@ class ImportCompleteScreen extends StatelessWidget {
     );
   }
 
-  Widget _dot() => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 9),
-    child: Text('·', style: TextStyle(color: const Color(0xFFD8CFC0), fontSize: 16, fontWeight: FontWeight.w700)),
+  Widget _dot() => const Padding(
+    padding: EdgeInsets.symmetric(horizontal: 9),
+    child: Text('·', style: TextStyle(color: Color(0xFFD8CFC0), fontSize: 16, fontWeight: FontWeight.w700)),
   );
 
   Widget _infoChip(IconData icon, String label) {
@@ -190,24 +190,24 @@ class ImportCompleteScreen extends StatelessWidget {
       children: [
         Icon(icon, color: AppColors.primary, size: 18),
         const SizedBox(width: 5),
-        Text(label, style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.textBodyDark)),
+        Text(label, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.textBodyDark)),
       ],
     );
   }
 
   Widget _buildIngredientsCard() {
     final groups = [
-      _IngGroup('Curry base', [
+      const _IngGroup('Curry base', [
         _Ingredient('1 can', 'Coconut milk'),
         _Ingredient('2 cups', 'Chickpeas'),
         _Ingredient('1 tbsp', 'Curry paste'),
       ]),
-      _IngGroup('Seasonings', [
+      const _IngGroup('Seasonings', [
         _Ingredient('1 tsp', 'Turmeric'),
         _Ingredient('1 tsp', 'Cumin'),
         _Ingredient('½ tsp', 'Chili flakes'),
       ]),
-      _IngGroup('Toppings', [
+      const _IngGroup('Toppings', [
         _Ingredient('¼ cup', 'Fresh cilantro'),
         _Ingredient('1 tbsp', 'Lime juice'),
         _Ingredient('2 tbsp', 'Coconut cream'),
@@ -220,7 +220,7 @@ class ImportCompleteScreen extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0xFFEFE6D6)),
-        boxShadow: [BoxShadow(color: const Color(0x0F2A211B), blurRadius: 26, offset: const Offset(0, 12), spreadRadius: -22)],
+        boxShadow: const [BoxShadow(color: Color(0x0F2A211B), blurRadius: 26, offset: Offset(0, 12), spreadRadius: -22)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -232,7 +232,7 @@ class ImportCompleteScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                 decoration: BoxDecoration(color: AppColors.greenBgLight, borderRadius: BorderRadius.circular(10)),
-                child: Text('9 found', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.green)),
+                child: const Text('9 found', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.green)),
               ),
             ],
           ),
@@ -242,15 +242,15 @@ class ImportCompleteScreen extends StatelessWidget {
               padding: const EdgeInsets.only(top: 12, bottom: 8),
               child: Row(
                 children: [
-                  Container(width: 7, height: 7, decoration: BoxDecoration(color: AppColors.primary, shape: BoxShape.circle)),
+                  Container(width: 7, height: 7, decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle)),
                   const SizedBox(width: 8),
-                  Text(group.name, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textDark)),
+                  Text(group.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textDark)),
                 ],
               ),
             ),
             ...group.items.map((ing) => Container(
               padding: const EdgeInsets.symmetric(vertical: 9),
-              decoration: BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.divider))),
+              decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.divider))),
               child: Row(
                 children: [
                   Container(
@@ -261,9 +261,9 @@ class ImportCompleteScreen extends StatelessWidget {
                   const SizedBox(width: 12),
                   SizedBox(
                     width: 54,
-                    child: Text(ing.amount, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textDark)),
+                    child: Text(ing.amount, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textDark)),
                   ),
-                  Expanded(child: Text(ing.name, style: TextStyle(fontSize: 14, color: AppColors.textBodyDark))),
+                  Expanded(child: Text(ing.name, style: const TextStyle(fontSize: 14, color: AppColors.textBodyDark))),
                 ],
               ),
             )),
@@ -288,7 +288,7 @@ class ImportCompleteScreen extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0xFFEFE6D6)),
-        boxShadow: [BoxShadow(color: const Color(0x0F2A211B), blurRadius: 26, offset: const Offset(0, 12), spreadRadius: -22)],
+        boxShadow: const [BoxShadow(color: Color(0x0F2A211B), blurRadius: 26, offset: Offset(0, 12), spreadRadius: -22)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -300,14 +300,14 @@ class ImportCompleteScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                 decoration: BoxDecoration(color: AppColors.greenBgLight, borderRadius: BorderRadius.circular(10)),
-                child: Text('5 steps', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.green)),
+                child: const Text('5 steps', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.green)),
               ),
             ],
           ),
           const SizedBox(height: 10),
           ...steps.asMap().entries.map((e) => Container(
             padding: const EdgeInsets.fromLTRB(15, 9, 0, 9),
-            decoration: BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.divider))),
+            decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.divider))),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -315,13 +315,13 @@ class ImportCompleteScreen extends StatelessWidget {
                   width: 25, height: 25,
                   decoration: BoxDecoration(color: AppColors.redBg, borderRadius: BorderRadius.circular(8)),
                   alignment: Alignment.center,
-                  child: Text('${e.key + 1}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.primary)),
+                  child: Text('${e.key + 1}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.primary)),
                 ),
                 const SizedBox(width: 13),
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.only(top: 2),
-                    child: Text(e.value, style: TextStyle(fontSize: 14, height: 1.45, color: AppColors.textBodyMedium)),
+                    child: Text(e.value, style: const TextStyle(fontSize: 14, height: 1.45, color: AppColors.textBodyMedium)),
                   ),
                 ),
               ],
@@ -335,7 +335,7 @@ class ImportCompleteScreen extends StatelessWidget {
   Widget _buildBottomButton(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(22, 12, 22, 30),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.surface,
         border: Border(top: BorderSide(color: AppColors.divider)),
       ),

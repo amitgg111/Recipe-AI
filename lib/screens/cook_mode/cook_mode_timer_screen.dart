@@ -187,7 +187,7 @@ class _CookModeTimerScreenState extends State<CookModeTimerScreen>
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('🔥', style: const TextStyle(fontSize: 11)),
+                      const Text('🔥', style: TextStyle(fontSize: 11)),
                       const SizedBox(width: 4),
                       Text(
                         'SIMMERING',

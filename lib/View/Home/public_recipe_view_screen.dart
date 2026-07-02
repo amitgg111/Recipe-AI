@@ -4,6 +4,11 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:recipe_ai/Controllers/discover_controller.dart';
+import 'package:recipe_ai/Model/user_model.dart';
+import 'package:recipe_ai/Service/recipe_social_service.dart';
+import 'package:recipe_ai/Service/user_service.dart';
+import 'package:recipe_ai/View/Home/social/creator_profile_screen.dart';
+import 'package:recipe_ai/View/Home/social/social_widgets.dart';
 import 'package:recipe_ai/Controllers/home_controller.dart';
 import 'package:recipe_ai/Controllers/grocery_store_controller.dart';
 import 'package:recipe_ai/Controllers/cookbook_controller.dart';
@@ -72,9 +77,21 @@ class PublicRecipeViewScreen extends StatefulWidget {
 class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
   late int _initialServings;
   late int _servings;
-  int _rating = 0;
-  bool _following = false;
   final Set<int> _checked = {};
+
+  // Optimistic social state (instant UI; persisted in the background).
+  late int _likes = recipe.likesCount;
+  late int _saves = recipe.savesCount;
+  bool _liked = false;
+  bool _saved = false;
+  bool _busyLike = false;
+  bool _busySave = false;
+
+  // Ratings: the current user's rating + the aggregate (sum / count).
+  int _myRating = 0;
+  int _ratingSum = 0;
+  int _ratingCount = 0;
+  double get _avgRating => _ratingCount > 0 ? _ratingSum / _ratingCount : 0;
 
   DiscoverRecipe get recipe => widget.recipe;
 
@@ -88,7 +105,83 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
     }
     _initialServings = parsed <= 0 ? 2 : parsed;
     _servings = _initialServings;
+    _loadSocial();
   }
+
+  Future<void> _loadSocial() async {
+    try {
+      final liked = await RecipeSocialService.isLiked(recipe.userId, recipe.id);
+      final saved = await RecipeSocialService.isSaved(recipe.userId, recipe.id);
+      final myRating =
+          await RecipeSocialService.getMyRating(recipe.userId, recipe.id);
+      final doc =
+          await RecipeSocialService.recipeStream(recipe.userId, recipe.id).first;
+      final d = doc.data() ?? {};
+      if (mounted) {
+        setState(() {
+        _liked = liked;
+        _saved = saved;
+        _myRating = myRating;
+        _likes = (d['likesCount'] as num?)?.toInt() ?? _likes;
+        _saves = (d['savesCount'] as num?)?.toInt() ?? _saves;
+        _ratingSum = (d['ratingSum'] as num?)?.toInt() ?? 0;
+        _ratingCount = (d['ratingCount'] as num?)?.toInt() ?? 0;
+      });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _setRating(int r) async {
+    final old = _myRating;
+    if (old == r) return;
+    setState(() {
+      if (old == 0) {
+        _ratingCount += 1;
+        _ratingSum += r;
+      } else {
+        _ratingSum += (r - old);
+      }
+      _myRating = r;
+    });
+    try {
+      await RecipeSocialService.setRating(recipe.userId, recipe.id, r);
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+        if (old == 0) {
+          _ratingCount -= 1;
+          _ratingSum -= r;
+        } else {
+          _ratingSum -= (r - old);
+        }
+        _myRating = old;
+      });
+      }
+    }
+  }
+
+  Future<void> _toggleLike() async {
+    if (_busyLike) return;
+    _busyLike = true;
+    final target = !_liked;
+    setState(() {
+      _liked = target;
+      _likes += target ? 1 : -1;
+    });
+    try {
+      await RecipeSocialService.setLike(recipe.userId, recipe.id, target);
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+        _liked = !target;
+        _likes += target ? -1 : 1;
+      });
+      }
+    } finally {
+      _busyLike = false;
+    }
+  }
+
 
   String get _firstName =>
       recipe.userName.trim().isEmpty ? 'the author' : recipe.userName.split(' ').first;
@@ -123,6 +216,8 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                         const SizedBox(height: 16),
                         _buildAuthorCard(),
                         const SizedBox(height: _P.gap),
+                        _buildEngagementBar(),
+                        const SizedBox(height: _P.gap),
                         if (recipe.description != null &&
                             recipe.description!.trim().isNotEmpty) ...[
                           _buildNoteCard(),
@@ -137,8 +232,6 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                         _buildNutritionCard(),
                         const SizedBox(height: _P.gap),
                         _buildRateCard(),
-                        const SizedBox(height: _P.gap),
-                        _buildCommentsCard(),
                         const SizedBox(height: _P.gap),
                         _buildSaveButton(),
                       ],
@@ -203,6 +296,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
               ? CachedNetworkImage(
                   imageUrl: recipe.imageUrl!,
                   fit: BoxFit.cover,
+                  memCacheWidth: 900,
                   placeholder: (_, __) => _imgPh(),
                   errorWidget: (_, __, ___) => _imgPh(),
                 )
@@ -291,63 +385,80 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
 
   // ── Author card ─────────────────────────────────────────────────────────
   Widget _buildAuthorCard() {
+    final creatorId = recipe.userId;
+    void openProfile() {
+      if (creatorId.isEmpty) return;
+      Get.to(() => CreatorProfileScreen(
+            userId: creatorId,
+            fallbackName: recipe.userName,
+            fallbackAvatar: recipe.userAvatar,
+          ));
+    }
+
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: _cardDeco(),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 23,
-            backgroundColor: _P.borderInner,
-            backgroundImage:
-                (recipe.userAvatar != null && recipe.userAvatar!.isNotEmpty)
-                    ? CachedNetworkImageProvider(recipe.userAvatar!)
-                    : null,
-            child: (recipe.userAvatar == null || recipe.userAvatar!.isEmpty)
-                ? Text(
-                    recipe.userName.isNotEmpty
-                        ? recipe.userName[0].toUpperCase()
-                        : 'C',
-                    style: _f(16, FontWeight.w800, _P.textDark))
-                : null,
+          GestureDetector(
+            onTap: openProfile,
+            child: UserAvatar(
+              photoUrl: recipe.userAvatar,
+              initial: recipe.userName.isNotEmpty
+                  ? recipe.userName[0].toUpperCase()
+                  : 'C',
+              size: 46,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                    recipe.userName.isNotEmpty
-                        ? recipe.userName
-                        : 'Recipe creator',
-                    style: _f(15, FontWeight.w800, _P.textDark),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 2),
-                Text('Shared a public recipe',
-                    style: _f(12, FontWeight.w600, _P.textMedium)),
-              ],
-            ),
-          ),
-          GestureDetector(
-            onTap: () => setState(() => _following = !_following),
-            child: Container(
-              height: 36,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: _following ? _P.primary : Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _P.primary, width: 1.5),
+            child: GestureDetector(
+              onTap: openProfile,
+              behavior: HitTestBehavior.opaque,
+              child: StreamBuilder<UserModel?>(
+                stream: creatorId.isEmpty
+                    ? null
+                    : UserService.userStream(creatorId),
+                builder: (context, snap) {
+                  final u = snap.data;
+                  final name = u?.displayName ??
+                      (recipe.userName.isNotEmpty
+                          ? recipe.userName
+                          : 'Recipe creator');
+                  final sub = u != null
+                      ? '@${u.handle} · ${_fmtCount(u.followersCount)} followers'
+                      : 'Shared a public recipe';
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(name,
+                          style: _f(15, FontWeight.w800, _P.textDark),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
+                      const SizedBox(height: 2),
+                      Text(sub,
+                          style: _f(12, FontWeight.w600, _P.textMedium),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
+                    ],
+                  );
+                },
               ),
-              child: Text(_following ? 'Following' : 'Follow',
-                  style: _f(13, FontWeight.w700,
-                      _following ? Colors.white : _P.primary)),
             ),
           ),
+          if (creatorId.isNotEmpty) ...[
+            const SizedBox(width: 10),
+            FollowButton(targetUid: creatorId),
+          ],
         ],
       ),
     );
+  }
+
+  static String _fmtCount(int n) {
+    if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
+    if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}k';
+    return '$n';
   }
 
   // ── Author note ───────────────────────────────────────────────────────────
@@ -361,7 +472,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
         children: [
           Row(
             children: [
-              Icon(Icons.edit_outlined, size: 16, color: _P.primary),
+              const Icon(Icons.edit_outlined, size: 16, color: _P.primary),
               const SizedBox(width: 8),
               Text('Note from $_firstName',
                   style: _f(16, FontWeight.w800, _P.textDark)),
@@ -406,7 +517,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.shopping_cart_outlined, size: 18, color: _P.primary),
+                  const Icon(Icons.shopping_cart_outlined, size: 18, color: _P.primary),
                   const SizedBox(width: 9),
                   Text('Add all to groceries',
                       style: _f(14, FontWeight.w700, _P.primary)),
@@ -516,7 +627,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                 borderRadius: BorderRadius.circular(9),
               ),
               child:
-                  Icon(Icons.shopping_basket_outlined, size: 15, color: _P.gold),
+                  const Icon(Icons.shopping_basket_outlined, size: 15, color: _P.gold),
             ),
             const SizedBox(width: 12),
             if (parts.$1 != null) ...[
@@ -665,7 +776,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.workspace_premium_rounded, size: 18, color: _P.purple),
+                const Icon(Icons.workspace_premium_rounded, size: 18, color: _P.purple),
                 const SizedBox(width: 11),
                 Expanded(
                   child: Text.rich(
@@ -785,19 +896,34 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
         children: [
           Text('Cooked it? Rate this recipe',
               style: _f(16, FontWeight.w800, _P.textDark)),
+          if (_ratingCount > 0) ...[
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.star_rounded, size: 15, color: _P.star),
+                const SizedBox(width: 5),
+                Text(
+                  '${_avgRating.toStringAsFixed(1)}  ·  '
+                  '${_ratingCount == 1 ? '1 rating' : '$_ratingCount ratings'}',
+                  style: _f(12.5, FontWeight.w700, _P.textBody),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(5, (i) {
-              final filled = i < _rating;
+              final filled = i < _myRating;
               return GestureDetector(
-                onTap: () => setState(() => _rating = i + 1),
+                onTap: () => _setRating(i + 1),
                 behavior: HitTestBehavior.opaque,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 5),
                   child: Icon(
                     filled ? Icons.star_rounded : Icons.star_outline_rounded,
-                    size: 30,
+                    size: 32,
                     color: filled ? _P.star : const Color(0xFFE2D8C7),
                   ),
                 ),
@@ -805,54 +931,80 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
             }),
           ),
           const SizedBox(height: 9),
-          Text(_rating == 0 ? 'Tap a star to rate' : 'You rated $_rating / 5',
+          Text(_myRating == 0 ? 'Tap a star to rate' : 'You rated $_myRating / 5',
               style: _f(12, FontWeight.w600, const Color(0xFF9A938A))),
         ],
       ),
     );
   }
 
-  // ── Comments (visual) ───────────────────────────────────────────────────────
-  Widget _buildCommentsCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(_P.cardPad),
-      decoration: _cardDeco(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Comments', style: _f(18, FontWeight.w800, _P.textDark)),
-          const SizedBox(height: 14),
-          Text('Be the first to leave a comment.',
-              style: _f(13.5, FontWeight.w500, _P.textMedium)),
-          const SizedBox(height: 14),
-          Container(
-            decoration: BoxDecoration(
-              color: _P.surfaceLight,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _P.borderInner),
-            ),
-            padding: const EdgeInsets.fromLTRB(14, 6, 6, 6),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text('Add a comment…',
-                      style: _f(14, FontWeight.w500, _P.textHint)),
-                ),
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: _P.primary,
-                    borderRadius: BorderRadius.circular(11),
-                  ),
-                  child: const Icon(Icons.send_rounded,
-                      size: 18, color: Colors.white),
-                ),
-              ],
-            ),
+  // ── Engagement row — 3 stat cards (Likes / Saves / Ratings), like the HTML ──
+  Widget _buildEngagementBar() {
+    final ratingLabel = _ratingCount == 0
+        ? 'Ratings'
+        : (_ratingCount == 1 ? '1 rating' : '$_ratingCount ratings');
+    return Row(
+      children: [
+        Expanded(
+          child: _statCard(
+            icon:
+                _liked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+            iconColor: _P.primary,
+            value: '$_likes',
+            label: 'Likes',
+            onTap: _toggleLike,
           ),
-        ],
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _statCard(
+            icon:
+                _saved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+            iconColor: _P.green,
+            value: '$_saves',
+            label: 'Saves',
+            onTap: _saveToCookbook,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _statCard(
+            icon: Icons.star_rounded,
+            iconColor: _P.star,
+            value: _ratingCount == 0 ? '—' : _avgRating.toStringAsFixed(1),
+            label: ratingLabel,
+            onTap: () {},
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _statCard({
+    required IconData icon,
+    required Color iconColor,
+    required String value,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 13),
+        decoration: _cardDeco(),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 22, color: iconColor),
+            const SizedBox(height: 5),
+            Text(value, style: _f(15, FontWeight.w800, _P.textDark)),
+            Text(label,
+                style: _f(11, FontWeight.w600, const Color(0xFF9A938A)),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis),
+          ],
+        ),
       ),
     );
   }
@@ -906,7 +1058,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
         instructions: recipe.instructions,
         ingredientSections: const [],
         instructionSections: const [],
-        isPublic: true,
+        visibility: 'public',
       );
 
   void _share() {
@@ -927,6 +1079,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
       buf.writeln('${i + 1}. ${recipe.instructions[i]}');
     }
     Share.share(buf.toString(), subject: recipe.title);
+    RecipeSocialService.registerShare(recipe.userId, recipe.id);
   }
 
   void _addToGroceries() {
@@ -949,14 +1102,32 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
     );
   }
 
-  void _saveToCookbook() {
+  Future<void> _saveToCookbook() async {
+    if (_busySave) return;
+    _busySave = true;
+    // Public recipes belong to another user, so we first copy the recipe into
+    // the current user's own collection. The cookbook then references OUR copy
+    // (cookbooks resolve ids against the current user's recipes).
+    final copyId = await RecipeSocialService.saveCopyToMyRecipes(recipe);
+    _busySave = false;
+    if (copyId == null || !mounted) return;
+
+    // Reflect the save (counter + marker) if not already saved.
+    if (!_saved) {
+      setState(() {
+        _saved = true;
+        _saves += 1;
+      });
+      RecipeSocialService.setSave(recipe.userId, recipe.id, true);
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => CookbookPickerSheet(
         cookbookController: Get.find<CookbookController>(),
-        recipeId: recipe.id,
+        recipeId: copyId,
         recipeImageUrl: recipe.imageUrl,
       ),
     );

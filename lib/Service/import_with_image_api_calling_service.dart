@@ -188,7 +188,18 @@ class RecipeImportService {
               .toList(),
           'ingredients': recipe.ingredients,
           'instructions': recipe.instructions,
+          // Privacy: AI / photo-imported recipes are private by default.
+          'visibility': 'private',
+          'isPublic': false,
+          'ownerId': uid,
+          'isDeleted': false,
+          'likesCount': 0,
+          'commentsCount': 0,
+          'savesCount': 0,
+          'sharesCount': 0,
+          'viewsCount': 0,
           'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
         });
 
     final recipeModel = RecipeModel(
@@ -245,7 +256,10 @@ class RecipeImportService {
     }
   }
 
-  static Future<void> _runImport({
+  /// Runs an import behind the processing screen. Returns `true` when the
+  /// import completed successfully (and the complete/review screen is shown),
+  /// or `false` when it failed (processing dismissed + error snackbar).
+  static Future<bool> _runImport({
     required List<String> loadingSteps,
     required String errorMessage,
     required Future<void> Function() import,
@@ -257,6 +271,7 @@ class RecipeImportService {
 
     try {
       await import();
+      return true;
     } catch (e, stack) {
       log('Import error: $e');
       log(stack.toString());
@@ -268,6 +283,7 @@ class RecipeImportService {
         message: errorMessage,
         type: SnackbarType.error,
       );
+      return false;
     }
   }
 
@@ -487,8 +503,8 @@ class RecipeImportService {
     return Map<String, dynamic>.from(data['recipe']);
   }
 
-  static Future<void> importRecipeFromName(String recipeName) async {
-    await _runImport(
+  static Future<bool> importRecipeFromName(String recipeName) async {
+    return _runImport(
       loadingSteps: const [
         'Searching recipe...',
         'Generating ingredients...',

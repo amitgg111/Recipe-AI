@@ -62,7 +62,7 @@ class _ImportProcessingScreenState extends State<ImportProcessingScreen>
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.restaurant, color: AppColors.primary, size: 20),
+                  const Icon(Icons.restaurant, color: AppColors.primary, size: 20),
                   const SizedBox(width: 6),
                   Text('Recipe AI', style: AppTextStyles.navLabel.copyWith(fontWeight: FontWeight.w800)),
                 ],
@@ -155,7 +155,7 @@ class _ImportProcessingScreenState extends State<ImportProcessingScreen>
                 end: Alignment(0.5, 1),
                 colors: [AppColors.primaryLight, AppColors.primary],
               ),
-              boxShadow: [BoxShadow(color: AppColors.primaryShadow, blurRadius: 30, offset: const Offset(0, 16), spreadRadius: -10)],
+              boxShadow: const [BoxShadow(color: AppColors.primaryShadow, blurRadius: 30, offset: Offset(0, 16), spreadRadius: -10)],
             ),
             child: const Icon(Icons.restaurant, color: Colors.white, size: 36),
           ),
@@ -166,9 +166,9 @@ class _ImportProcessingScreenState extends State<ImportProcessingScreen>
 
   Widget _buildTomato() => Container(
     width: 30, height: 30,
-    decoration: BoxDecoration(
+    decoration: const BoxDecoration(
       shape: BoxShape.circle,
-      gradient: RadialGradient(center: const Alignment(-0.36, -0.4), colors: [const Color(0xFFFF6F52), const Color(0xFFE5402A)]),
+      gradient: RadialGradient(center: Alignment(-0.36, -0.4), colors: [Color(0xFFFF6F52), Color(0xFFE5402A)]),
     ),
   );
 
@@ -176,20 +176,20 @@ class _ImportProcessingScreenState extends State<ImportProcessingScreen>
     width: 32, height: 24,
     decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(12),
-      gradient: RadialGradient(center: const Alignment(-0.36, -0.4), colors: [const Color(0xFFFFE05A), const Color(0xFFEBAE14)]),
+      gradient: const RadialGradient(center: Alignment(-0.36, -0.4), colors: [Color(0xFFFFE05A), Color(0xFFEBAE14)]),
     ),
   );
 
   Widget _buildHerb() => Container(
     width: 26, height: 26,
-    decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFF54B069)),
+    decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF54B069)),
   );
 
   Widget _buildEgg() => Container(
     width: 28, height: 30,
     decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(14),
-      gradient: RadialGradient(center: const Alignment(-0.3, -0.4), colors: [Colors.white, const Color(0xFFEFE6D6)]),
+      gradient: const RadialGradient(center: Alignment(-0.3, -0.4), colors: [Colors.white, Color(0xFFEFE6D6)]),
     ),
   );
 
@@ -243,7 +243,7 @@ class _ImportProcessingScreenState extends State<ImportProcessingScreen>
           ),
         ),
         const SizedBox(width: 11),
-        Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+        Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textDark)),
       ],
     );
   }

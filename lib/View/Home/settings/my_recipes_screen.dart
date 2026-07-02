@@ -1,0 +1,379 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:recipe_ai/Controllers/home_controller.dart';
+import 'package:recipe_ai/View/Home/recipe_detail_screen.dart';
+import 'package:recipe_ai/View/Home/settings/settings_common.dart';
+import 'package:recipe_ai/Widget/custom_snackbar.dart';
+import 'package:recipe_ai/theme/app_colors.dart';
+
+class MyRecipesScreen extends StatefulWidget {
+  const MyRecipesScreen({super.key});
+
+  @override
+  State<MyRecipesScreen> createState() => _MyRecipesScreenState();
+}
+
+class _MyRecipesScreenState extends State<MyRecipesScreen> {
+  final HomeController _home = Get.find<HomeController>();
+  int _filter = 0; // 0 all, 1 public, 2 private
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Obx(() {
+          final all = _home.recipes;
+          final publicCount = all.where((r) => r.isPublic).length;
+          final privateCount = all.length - publicCount;
+
+          var list = all.where((r) {
+            if (_filter == 1 && !r.isPublic) return false;
+            if (_filter == 2 && r.isPublic) return false;
+            if (_query.isNotEmpty &&
+                !r.title.toLowerCase().contains(_query.toLowerCase())) {
+              return false;
+            }
+            return true;
+          }).toList();
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 4, 18, 0),
+                child: SettingsUi.header('My recipes'),
+              ),
+              const SizedBox(height: 14),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                child: _searchBar(),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 34,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  children: [
+                    _chip('All · ${all.length}', 0),
+                    const SizedBox(width: 8),
+                    _chip('Public · $publicCount', 1,
+                        icon: Icons.public_rounded, iconColor: AppColors.green),
+                    const SizedBox(width: 8),
+                    _chip('Private · $privateCount', 2,
+                        icon: Icons.lock_outline_rounded,
+                        iconColor: AppColors.textMedium),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: list.isEmpty
+                    ? _empty()
+                    : ListView(
+                        padding: const EdgeInsets.fromLTRB(18, 0, 18, 28),
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 15),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(color: AppColors.surfaceBorder),
+                            ),
+                            child: Column(
+                              children: [
+                                for (var i = 0; i < list.length; i++)
+                                  _recipeRow(list[i], i != list.length - 1),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
+            ],
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _searchBar() {
+    return Container(
+      height: 46,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.surfaceBorderLight),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.search_rounded, size: 20, color: AppColors.textHint),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              onChanged: (v) => setState(() => _query = v),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textDark,
+              ),
+              decoration: const InputDecoration(
+                isDense: true,
+                filled: false,
+                hintText: 'Search my recipes',
+                hintStyle: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textHint,
+                ),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                errorBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
+                focusedErrorBorder: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _chip(String label, int index, {IconData? icon, Color? iconColor}) {
+    final active = _filter == index;
+    return GestureDetector(
+      onTap: () => setState(() => _filter = index),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
+        decoration: BoxDecoration(
+          color: active ? AppColors.primary : AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: active ? AppColors.primary : AppColors.surfaceBorder,
+          ),
+        ),
+        child: Row(
+          children: [
+            if (icon != null && !active) ...[
+              Icon(icon, size: 14, color: iconColor),
+              const SizedBox(width: 5),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: active ? FontWeight.w800 : FontWeight.w700,
+                color: active ? Colors.white : AppColors.textBodyDark,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _recipeRow(RecipeModel recipe, bool showDivider) {
+    return Column(
+      children: [
+        InkWell(
+          onTap: () => Get.to(() => RecipeDetailScreen(recipe: recipe)),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 11),
+            child: Row(
+              children: [
+                _thumb(recipe.imageUrl),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        recipe.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textDark,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        recipe.category?.isNotEmpty == true
+                            ? recipe.category!
+                            : 'Recipe',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textMedium,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _visibilityBadge(recipe.isPublic),
+                GestureDetector(
+                  onTap: () => _showOptions(recipe),
+                  child: const Padding(
+                    padding: EdgeInsets.only(left: 2),
+                    child: Icon(Icons.more_horiz_rounded,
+                        size: 20, color: AppColors.iconLight),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (showDivider)
+          const Divider(height: 1, thickness: 1, color: AppColors.divider),
+      ],
+    );
+  }
+
+  Widget _thumb(String? url) {
+    return Container(
+      width: 50,
+      height: 50,
+      decoration: BoxDecoration(
+        color: AppColors.shimmerBase,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: (url != null && url.startsWith('http'))
+          ? CachedNetworkImage(
+              imageUrl: url,
+              fit: BoxFit.cover,
+              memCacheWidth: 150,
+              errorWidget: (_, __, ___) =>
+                  const Icon(Icons.restaurant_rounded, color: Colors.white),
+            )
+          : const Icon(Icons.restaurant_rounded, color: Colors.white),
+    );
+  }
+
+  Widget _visibilityBadge(bool isPublic) {
+    return Container(
+      width: 30,
+      height: 30,
+      decoration: BoxDecoration(
+        color: isPublic ? AppColors.greenBgLight : const Color(0xFFF2EEE6),
+        borderRadius: BorderRadius.circular(9),
+      ),
+      child: Icon(
+        isPublic ? Icons.public_rounded : Icons.lock_outline_rounded,
+        size: 16,
+        color: isPublic ? AppColors.green : AppColors.textMedium,
+      ),
+    );
+  }
+
+  void _showOptions(RecipeModel recipe) {
+    final makePublic = !recipe.isPublic;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        margin: EdgeInsets.only(
+          left: 12,
+          right: 12,
+          bottom: 12 + MediaQuery.of(ctx).padding.bottom,
+        ),
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _sheetItem(
+              icon: Icons.open_in_new_rounded,
+              label: 'View recipe',
+              onTap: () {
+                Get.back();
+                Get.to(() => RecipeDetailScreen(recipe: recipe));
+              },
+            ),
+            _sheetItem(
+              icon: makePublic
+                  ? Icons.public_rounded
+                  : Icons.lock_outline_rounded,
+              label: makePublic ? 'Make public' : 'Make private',
+              color: makePublic ? AppColors.green : AppColors.textDark,
+              onTap: () async {
+                Get.back();
+                await _home.updateRecipeVisibility(recipe.id, makePublic);
+                CustomSnackbar.show(
+                  title: makePublic ? 'Now public' : 'Now private',
+                  message: makePublic
+                      ? 'This recipe is visible in Discover.'
+                      : 'This recipe is only visible to you.',
+                  type: SnackbarType.success,
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _sheetItem({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    Color color = AppColors.textDark,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+        child: Row(
+          children: [
+            Icon(icon, size: 21, color: color),
+            const SizedBox(width: 14),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _empty() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.menu_book_rounded,
+              size: 40, color: AppColors.iconLight),
+          const SizedBox(height: 12),
+          Text(
+            _query.isNotEmpty ? 'No matches' : 'No recipes here yet',
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textDark,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

@@ -64,8 +64,8 @@ class CookbookDetailScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
+                    const Padding(
+                      padding: EdgeInsets.symmetric(
                         horizontal: AppSpacing.xl,
                       ),
                       child: AppSearchBar(hintText: 'Search recipes'),
@@ -135,7 +135,7 @@ class CookbookDetailScreen extends StatelessWidget {
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.access_time_rounded,
                     size: 14,
                     color: AppColors.textLight,
@@ -143,7 +143,7 @@ class CookbookDetailScreen extends StatelessWidget {
                   const SizedBox(width: 4),
                   Text(recipe.time, style: AppTextStyles.smallLabel),
                   const SizedBox(width: 8),
-                  Icon(
+                  const Icon(
                     Icons.chevron_right,
                     color: AppColors.textHint,
                     size: AppDimensions.iconMd,

@@ -352,13 +352,13 @@ class _AuthScreenState extends State<AuthScreen>
                                         ? Colors.white
                                         : const Color(0xFF1A1A1A),
                                   ),
-                                  child: Row(
+                                  child: const Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       // Google G icon built from coloured letters
-                                      const _GoogleIcon(),
-                                      const SizedBox(width: 10),
-                                      const CustomText(
+                                      _GoogleIcon(),
+                                      SizedBox(width: 10),
+                                      CustomText(
                                         'Continue with Google',
 
                                         fontSize: 15,

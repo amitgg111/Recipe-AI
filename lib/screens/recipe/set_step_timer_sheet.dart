@@ -65,8 +65,8 @@ class _SetStepTimerSheetState extends State<SetStepTimerSheet> {
                 child: Container(
                   width: 34,
                   height: 34,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF4F1EA),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF4F1EA),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(

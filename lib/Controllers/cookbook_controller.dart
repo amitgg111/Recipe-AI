@@ -1,5 +1,6 @@
 
 
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -39,17 +40,37 @@ class CookbookController extends GetxController {
   final RxList<CookbookModel> cookbooks = <CookbookModel>[].obs;
   final RxBool isLoading = false.obs;
 
+  StreamSubscription? _authSub;
+  StreamSubscription? _cookbooksSub;
+
   @override
   void onInit() {
     super.onInit();
-    fetchCookbooks();
+    // Re-fetch on every auth change (fixes empty data right after first login,
+    // since this permanent controller is created before the user signs in).
+    _authSub = AuthService.authStateChanges.listen((user) {
+      if (user != null) {
+        fetchCookbooks();
+      } else {
+        _cookbooksSub?.cancel();
+        cookbooks.clear();
+      }
+    });
+  }
+
+  @override
+  void onClose() {
+    _authSub?.cancel();
+    _cookbooksSub?.cancel();
+    super.onClose();
   }
 
   void fetchCookbooks() {
     final uid = AuthService.currentUser?.uid;
     if (uid == null) return;
 
-    FirebaseFirestore.instance
+    _cookbooksSub?.cancel();
+    _cookbooksSub = FirebaseFirestore.instance
         .collection("users")
         .doc(uid)
         .collection("cookbooks")
@@ -151,8 +172,9 @@ class CookbookController extends GetxController {
   Future<void> addRecipeToCookbook(
     String cookbookId,
     String recipeId,
-    String? recipeImageUrl,
-  ) async {
+    String? recipeImageUrl, {
+    bool showToast = true,
+  }) async {
     try {
       final uid = AuthService.currentUser?.uid;
       if (uid == null) throw Exception("User not logged in");
@@ -168,11 +190,13 @@ class CookbookController extends GetxController {
       final existingIds = List<String>.from(data['recipeIds'] ?? []);
 
       if (existingIds.contains(recipeId)) {
-        CustomSnackbar.show(
-          title: 'Already Added',
-          message: 'Recipe is already in this cookbook',
-          type: SnackbarType.error,
-        );
+        if (showToast) {
+          CustomSnackbar.show(
+            title: 'Already Added',
+            message: 'Recipe is already in this cookbook',
+            type: SnackbarType.error,
+          );
+        }
         return;
       }
 
@@ -191,25 +215,30 @@ class CookbookController extends GetxController {
 
       await ref.update(updateData);
 
-      CustomSnackbar.show(
-        title: 'Added',
-        message: 'Recipe added to cookbook',
-        type: SnackbarType.success,
-      );
+      if (showToast) {
+        CustomSnackbar.show(
+          title: 'Added',
+          message: 'Recipe added to cookbook',
+          type: SnackbarType.success,
+        );
+      }
     } catch (e) {
       log("Add recipe to cookbook error => $e");
-      CustomSnackbar.show(
-        title: 'Error',
-        message: 'Failed to add recipe',
-        type: SnackbarType.error,
-      );
+      if (showToast) {
+        CustomSnackbar.show(
+          title: 'Error',
+          message: 'Failed to add recipe',
+          type: SnackbarType.error,
+        );
+      }
     }
   }
 
   Future<void> removeRecipeFromCookbook(
     String cookbookId,
-    String recipeId,
-  ) async {
+    String recipeId, {
+    bool showToast = true,
+  }) async {
     try {
       final uid = AuthService.currentUser?.uid;
       if (uid == null) throw Exception("User not logged in");
@@ -224,18 +253,22 @@ class CookbookController extends GetxController {
             "recipeCount": FieldValue.increment(-1),
           });
 
-      CustomSnackbar.show(
-        title: 'Removed',
-        message: 'Recipe removed from cookbook',
-        type: SnackbarType.success,
-      );
+      if (showToast) {
+        CustomSnackbar.show(
+          title: 'Removed',
+          message: 'Recipe removed from cookbook',
+          type: SnackbarType.success,
+        );
+      }
     } catch (e) {
       log("Remove recipe error => $e");
-      CustomSnackbar.show(
-        title: 'Error',
-        message: 'Failed to remove recipe',
-        type: SnackbarType.error,
-      );
+      if (showToast) {
+        CustomSnackbar.show(
+          title: 'Error',
+          message: 'Failed to remove recipe',
+          type: SnackbarType.error,
+        );
+      }
     }
   }
 }

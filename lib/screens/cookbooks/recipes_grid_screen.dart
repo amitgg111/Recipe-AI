@@ -93,7 +93,7 @@ class _RecipesGridScreenState extends State<RecipesGridScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.bolt_rounded,
                           size: 16,
                           color: AppColors.gold,
@@ -197,11 +197,11 @@ class _RecipesGridScreenState extends State<RecipesGridScreen> {
         decoration: BoxDecoration(
           color: AppColors.primary,
           borderRadius: BorderRadius.circular(30),
-          boxShadow: [
+          boxShadow: const [
             BoxShadow(
               color: AppColors.primaryShadow,
               blurRadius: 24,
-              offset: const Offset(0, 10),
+              offset: Offset(0, 10),
               spreadRadius: -6,
             ),
           ],
@@ -252,9 +252,9 @@ class _RecipeGridCard extends StatelessWidget {
                 Container(
                   height: 104,
                   width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF5EDE0),
-                    borderRadius: const BorderRadius.vertical(
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF5EDE0),
+                    borderRadius: BorderRadius.vertical(
                       top: Radius.circular(AppDimensions.radiusLg - 1),
                     ),
                   ),
@@ -307,7 +307,7 @@ class _RecipeGridCard extends StatelessWidget {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.access_time_rounded,
                         size: 14,
                         color: AppColors.textLight,

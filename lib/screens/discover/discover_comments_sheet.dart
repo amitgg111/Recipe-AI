@@ -45,31 +45,31 @@ class _CommentsContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final comments = [
-      _CommentData(
+      const _CommentData(
         name: 'Alex Kim',
         initials: 'AK',
         timeAgo: '1h ago',
         text: 'Made this last night and it was incredible! The red pepper flakes really make it.',
       ),
-      _CommentData(
+      const _CommentData(
         name: 'Maria Lopez',
         initials: 'ML',
         timeAgo: '3h ago',
         text: 'Can I substitute penne for rigatoni? Looks so good!',
       ),
-      _CommentData(
+      const _CommentData(
         name: 'Tom Wilson',
         initials: 'TW',
         timeAgo: '6h ago',
         text: 'Added some Italian sausage and it was next level! My whole family loved it.',
       ),
-      _CommentData(
+      const _CommentData(
         name: 'Priya Sharma',
         initials: 'PS',
         timeAgo: '8h ago',
         text: 'This is now a weekly staple in our house. Thank you for sharing!',
       ),
-      _CommentData(
+      const _CommentData(
         name: 'James Chen',
         initials: 'JC',
         timeAgo: '1d ago',

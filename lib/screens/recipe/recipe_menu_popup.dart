@@ -65,11 +65,11 @@ class _RecipeMenuContentState extends State<_RecipeMenuContent> {
                   child: Container(
                     width: 16,
                     height: 16,
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: AppColors.surface,
                       border: Border(
-                        left: BorderSide(color: const Color(0xFFEFE6D6)),
-                        top: BorderSide(color: const Color(0xFFEFE6D6)),
+                        left: BorderSide(color: Color(0xFFEFE6D6)),
+                        top: BorderSide(color: Color(0xFFEFE6D6)),
                       ),
                     ),
                   ),

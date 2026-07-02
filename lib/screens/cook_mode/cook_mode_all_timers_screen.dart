@@ -27,21 +27,21 @@ class CookModeAllTimersScreen extends StatelessWidget {
   List<ActiveTimer> get _timers =>
       timers ??
       [
-        ActiveTimer(
+        const ActiveTimer(
           label: 'Simmering',
           stepLabel: 'Step 3',
           timeRemaining: '2:14',
           totalTime: '10:00',
           progress: 0.78,
         ),
-        ActiveTimer(
+        const ActiveTimer(
           label: 'Roasting',
           stepLabel: 'Step 1',
           timeRemaining: '8:32',
           totalTime: '15:00',
           progress: 0.43,
         ),
-        ActiveTimer(
+        const ActiveTimer(
           label: 'Resting',
           stepLabel: 'Step 2',
           timeRemaining: '1:05',

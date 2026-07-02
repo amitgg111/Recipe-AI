@@ -141,7 +141,7 @@ class CookModeStepScreen extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.access_time, size: 20, color: AppColors.primary),
+            const Icon(Icons.access_time, size: 20, color: AppColors.primary),
             const SizedBox(width: 8),
             Text(
               '$timerLabel · $timerDuration',

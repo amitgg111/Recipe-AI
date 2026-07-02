@@ -395,7 +395,12 @@ class RecipeEditorController extends GetxController {
             ? instructionSections.map((s) => s.toMap()).toList()
             : [InstructionSection(steps: instructions.toList()).toMap()],
 
+        // Privacy: recipes are private by default. `visibility` is canonical;
+        // `isPublic` is kept in sync for backward compatibility.
         "isPublic": isPublic.value,
+        "visibility": isPublic.value ? 'public' : 'private',
+        "ownerId": uid,
+        "updatedAt": FieldValue.serverTimestamp(),
       };
       log("FINAL IMAGE URL => $imageUrl");
       final collection = FirebaseFirestore.instance
@@ -405,23 +410,19 @@ class RecipeEditorController extends GetxController {
 
       if (isEdit) {
         await collection.doc(recipe!.id).update(recipeData);
-        log("UPDATED DATA => $recipeData");
-      } else {
-        await collection.add({
-          ...recipeData,
-          "createdAt": FieldValue.serverTimestamp(),
-        });
-      }
-      if (isEdit) {
-        await collection.doc(recipe!.id).update(recipeData);
-
         Get.back(result: {...recipeData, "id": recipe!.id});
       } else {
+        // New recipes start private with zeroed engagement counters.
         await collection.add({
           ...recipeData,
           "createdAt": FieldValue.serverTimestamp(),
+          "isDeleted": false,
+          "likesCount": 0,
+          "commentsCount": 0,
+          "savesCount": 0,
+          "sharesCount": 0,
+          "viewsCount": 0,
         });
-
         Get.back();
       }
 

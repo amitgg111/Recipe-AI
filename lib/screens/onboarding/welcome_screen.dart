@@ -103,24 +103,24 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          Positioned.fill(
+          const Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: RadialGradient(
                   center: Alignment.topCenter,
                   radius: 1.2,
-                  colors: [const Color(0x15F2623E), Colors.transparent],
+                  colors: [Color(0x15F2623E), Colors.transparent],
                 ),
               ),
             ),
           ),
-          Positioned.fill(
+          const Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: RadialGradient(
                   center: Alignment.bottomLeft,
                   radius: 1.0,
-                  colors: [const Color(0x101F7A5E), Colors.transparent],
+                  colors: [Color(0x101F7A5E), Colors.transparent],
                 ),
               ),
             ),
@@ -176,8 +176,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           height: 1.08,
                           letterSpacing: -1.0,
                         ),
-                        children: [
-                          const TextSpan(text: 'Cook '),
+                        children: const [
+                          TextSpan(text: 'Cook '),
                           TextSpan(
                             text: 'anything',
                             style: TextStyle(
@@ -185,7 +185,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                               fontStyle: FontStyle.normal,
                             ),
                           ),
-                          const TextSpan(text: ',\nwithout the chaos'),
+                          TextSpan(text: ',\nwithout the chaos'),
                         ],
                       ),
                     ),
@@ -224,7 +224,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                       child: const WelcomeCookingAnimation(),
                     ),
                   ),
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
                   // Get Started button
                   _animatedSlide(
                     _buttonFade,
@@ -363,8 +363,8 @@ class _WelcomeBodyState extends State<WelcomeBody>
                   height: 1.08,
                   letterSpacing: -1.0,
                 ),
-                children: [
-                  const TextSpan(text: 'Cook '),
+                children: const [
+                  TextSpan(text: 'Cook '),
                   TextSpan(
                     text: 'anything',
                     style: TextStyle(
@@ -372,7 +372,7 @@ class _WelcomeBodyState extends State<WelcomeBody>
                       fontStyle: FontStyle.italic,
                     ),
                   ),
-                  const TextSpan(text: ',\nwithout the chaos'),
+                  TextSpan(text: ',\nwithout the chaos'),
                 ],
               ),
             ),

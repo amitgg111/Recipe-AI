@@ -40,7 +40,7 @@ class _CookbooksHomeScreenState extends State<CookbooksHomeScreen> {
                 _buildTopBar(),
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: EdgeInsets.only(
+                    padding: const EdgeInsets.only(
                       bottom: AppDimensions.bottomNavHeight + AppSpacing.xxl,
                     ),
                     child: Column(
@@ -49,8 +49,8 @@ class _CookbooksHomeScreenState extends State<CookbooksHomeScreen> {
                         const SizedBox(height: AppSpacing.md),
                         _buildSegmentedRow(),
                         const SizedBox(height: AppSpacing.lg),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
+                        const Padding(
+                          padding: EdgeInsets.symmetric(
                             horizontal: AppSpacing.xl,
                           ),
                           child: AppSearchBar(hintText: 'Search cookbooks'),
@@ -197,14 +197,14 @@ class _CookbooksHomeScreenState extends State<CookbooksHomeScreen> {
         child: Container(
           width: AppDimensions.fabSize,
           height: AppDimensions.fabSize,
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             color: AppColors.primary,
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
                 color: AppColors.primaryShadow,
                 blurRadius: 20,
-                offset: const Offset(0, 8),
+                offset: Offset(0, 8),
                 spreadRadius: -4,
               ),
             ],

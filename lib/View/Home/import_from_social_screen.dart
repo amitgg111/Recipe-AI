@@ -430,11 +430,11 @@ class _SocialGuideScreenState extends State<SocialGuideScreen> {
                     borderRadius: BorderRadius.circular(
                       AppDimensions.radiusButton,
                     ),
-                    boxShadow: [
+                    boxShadow: const [
                       BoxShadow(
                         color: AppColors.primaryShadow,
                         blurRadius: 30,
-                        offset: const Offset(0, 16),
+                        offset: Offset(0, 16),
                         spreadRadius: -10,
                       ),
                     ],

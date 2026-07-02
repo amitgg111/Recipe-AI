@@ -735,11 +735,11 @@ class _PrimaryActionButton extends StatelessWidget {
               ? AppColors.primary.withValues(alpha: 0.7)
               : AppColors.primary,
           borderRadius: BorderRadius.circular(AppDimensions.radiusButton),
-          boxShadow: [
+          boxShadow: const [
             BoxShadow(
               color: AppColors.primaryShadow,
               blurRadius: 30,
-              offset: const Offset(0, 16),
+              offset: Offset(0, 16),
               spreadRadius: -10,
             ),
           ],

@@ -82,7 +82,7 @@ class _EditCookbookSheetState extends State<EditCookbookSheet> {
                   child: Container(
                     width: 34,
                     height: 34,
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: AppColors.tabBg,
                       shape: BoxShape.circle,
                     ),
@@ -147,7 +147,7 @@ class _EditCookbookSheetState extends State<EditCookbookSheet> {
                         margin: const EdgeInsets.only(right: 14),
                         width: 24,
                         height: 24,
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: AppColors.surfaceBorder,
                           shape: BoxShape.circle,
                         ),

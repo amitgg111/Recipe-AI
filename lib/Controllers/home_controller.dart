@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:firebase_storage/firebase_storage.dart';
@@ -26,7 +27,13 @@ class RecipeModel {
   final List<String> instructions;
   final List<IngredientSection> ingredientSections;
   final List<InstructionSection> instructionSections;
-  final bool isPublic;
+
+  /// "private" | "public" — canonical privacy field. [isPublic] mirrors it.
+  final String visibility;
+  final bool isDeleted;
+
+  /// False when the document had no `visibility` field yet (needs migration).
+  final bool visibilityWasStored;
 
   RecipeModel({
     required this.id,
@@ -45,8 +52,12 @@ class RecipeModel {
     required this.instructions,
     required this.ingredientSections,
     required this.instructionSections,
-    this.isPublic = false,
+    this.visibility = 'private',
+    this.isDeleted = false,
+    this.visibilityWasStored = true,
   });
+
+  bool get isPublic => visibility == 'public';
 
   factory RecipeModel.fromDocument(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>? ?? {};
@@ -69,7 +80,10 @@ class RecipeModel {
       instructions: parsed.instructions,
       ingredientSections: parsed.ingredientSections,
       instructionSections: parsed.instructionSections,
-      isPublic: data['isPublic'] == true,
+      visibility: (data['visibility'] as String?) ??
+          (data['isPublic'] == true ? 'public' : 'private'),
+      isDeleted: data['isDeleted'] == true,
+      visibilityWasStored: data.containsKey('visibility'),
     );
   }
   double get servingCount {
@@ -87,17 +101,45 @@ class HomeController extends GetxController {
   final RxList<RecipeModel> recipes = <RecipeModel>[].obs;
   final RxBool isLoading = true.obs;
   final RxList<CookbookModel> cookbooks = <CookbookModel>[].obs;
+
+  StreamSubscription? _authSub;
+  StreamSubscription? _recipesSub;
+  StreamSubscription? _cookbooksSub;
+
   @override
   void onInit() {
     super.onInit();
-    fetchRecipes();
-    fetchCookbooks();
+    // Re-fetch whenever auth changes. This fixes the case where the controller
+    // is created (permanent) before the user has logged in — authStateChanges
+    // emits the current user immediately and again on every sign-in/out.
+    _authSub = AuthService.authStateChanges.listen((user) {
+      if (user != null) {
+        fetchRecipes();
+        fetchCookbooks();
+      } else {
+        _recipesSub?.cancel();
+        _cookbooksSub?.cancel();
+        recipes.clear();
+        cookbooks.clear();
+        isLoading.value = false;
+      }
+    });
+  }
+
+  @override
+  void onClose() {
+    _authSub?.cancel();
+    _recipesSub?.cancel();
+    _cookbooksSub?.cancel();
+    super.onClose();
   }
 
   void fetchCookbooks() {
     final uid = AuthService.currentUser?.uid;
+    if (uid == null) return;
 
-    FirebaseFirestore.instance
+    _cookbooksSub?.cancel();
+    _cookbooksSub = FirebaseFirestore.instance
         .collection("users")
         .doc(uid)
         .collection("cookbooks")
@@ -115,8 +157,10 @@ class HomeController extends GetxController {
       isLoading.value = false;
       return;
     }
+    isLoading.value = true;
+    _recipesSub?.cancel();
 
-    FirebaseFirestore.instance
+    _recipesSub = FirebaseFirestore.instance
         .collection('users')
         .doc(uid)
         .collection('recipes')
@@ -126,6 +170,7 @@ class HomeController extends GetxController {
           (snapshot) {
             recipes.value = snapshot.docs
                 .map((doc) => RecipeModel.fromDocument(doc))
+                .where((r) => !r.isDeleted)
                 .toList();
             isLoading.value = false;
           },
@@ -187,7 +232,8 @@ class HomeController extends GetxController {
     }
   }
 
-  /// Updates only the public/private visibility of a recipe in Firestore.
+  /// Owner-only: change a recipe's privacy. Writes the canonical [visibility]
+  /// field plus the mirrored [isPublic] flag and an [updatedAt] stamp.
   Future<void> updateRecipeVisibility(String recipeId, bool isPublic) async {
     try {
       final uid = AuthService.currentUser?.uid;
@@ -198,9 +244,33 @@ class HomeController extends GetxController {
           .doc(uid)
           .collection('recipes')
           .doc(recipeId)
-          .update({'isPublic': isPublic});
+          .update({
+            'visibility': isPublic ? 'public' : 'private',
+            'isPublic': isPublic,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
     } catch (e) {
       log("Visibility update error: $e");
+    }
+  }
+
+  /// Silent migration: back-fill the `visibility` field on legacy documents
+  /// that predate the privacy system (called when a recipe is opened).
+  Future<void> migrateVisibility(String recipeId, String visibility) async {
+    try {
+      final uid = AuthService.currentUser?.uid;
+      if (uid == null) return;
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('recipes')
+          .doc(recipeId)
+          .update({
+            'visibility': visibility,
+            'isPublic': visibility == 'public',
+          });
+    } catch (_) {
+      // best-effort; never blocks the UI
     }
   }
 }

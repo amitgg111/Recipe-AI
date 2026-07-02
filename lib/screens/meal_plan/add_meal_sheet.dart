@@ -43,19 +43,19 @@ class _AddMealSheetState extends State<AddMealSheet> {
   int _selectedMealType = 2; // Dinner selected
 
   final _mealTypes = [
-    _MealType('Breakfast', const Color(0xFFFCF3DE), const Color(0xFF7A5B12)),
-    _MealType('Lunch', const Color(0xFFEAF6F0), const Color(0xFF1F5E42)),
-    _MealType('Dinner', AppColors.blue, Colors.white),
-    _MealType('Snack', const Color(0xFFFCEAE3), const Color(0xFF9B3417)),
+    const _MealType('Breakfast', Color(0xFFFCF3DE), Color(0xFF7A5B12)),
+    const _MealType('Lunch', Color(0xFFEAF6F0), Color(0xFF1F5E42)),
+    const _MealType('Dinner', AppColors.blue, Colors.white),
+    const _MealType('Snack', Color(0xFFFCEAE3), Color(0xFF9B3417)),
   ];
 
   final _recipes = [
-    _RecipeData('Spicy Tomato Rigatoni', '35 min'),
-    _RecipeData('Crispy Honey Garlic Salmon', '25 min'),
-    _RecipeData('Rainbow Buddha Bowl', '20 min'),
-    _RecipeData('Lemon Herb Chicken', '40 min'),
-    _RecipeData('Mushroom Risotto', '45 min'),
-    _RecipeData('Thai Green Curry', '30 min'),
+    const _RecipeData('Spicy Tomato Rigatoni', '35 min'),
+    const _RecipeData('Crispy Honey Garlic Salmon', '25 min'),
+    const _RecipeData('Rainbow Buddha Bowl', '20 min'),
+    const _RecipeData('Lemon Herb Chicken', '40 min'),
+    const _RecipeData('Mushroom Risotto', '45 min'),
+    const _RecipeData('Thai Green Curry', '30 min'),
   ];
 
   int? _selectedRecipe;
@@ -84,7 +84,7 @@ class _AddMealSheetState extends State<AddMealSheet> {
                 child: Container(
                   width: 32,
                   height: 32,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: AppColors.surfaceBorder,
                     shape: BoxShape.circle,
                   ),
@@ -99,8 +99,8 @@ class _AddMealSheetState extends State<AddMealSheet> {
         _buildMealTypeChips(),
         const SizedBox(height: 16),
         // Search bar
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20),
           child: AppSearchBar(hintText: 'Search your recipes'),
         ),
         const SizedBox(height: 14),
@@ -215,7 +215,7 @@ class _AddMealSheetState extends State<AddMealSheet> {
                 color: AppColors.surfaceBorder,
                 borderRadius: BorderRadius.circular(11),
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.restaurant,
                 size: 22,
                 color: AppColors.textLight,

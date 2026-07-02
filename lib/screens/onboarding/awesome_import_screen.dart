@@ -315,7 +315,7 @@ class _AwesomeImportScreenState extends State<AwesomeImportScreen>
     // Each icon is 44x44
     final icons = <_OrbitIcon>[
       // Top center: Instagram (gradient)
-      _OrbitIcon(
+      const _OrbitIcon(
         left: 96,
         top: -4,
         icon: Icons.camera_alt,
@@ -324,36 +324,36 @@ class _AwesomeImportScreenState extends State<AwesomeImportScreen>
         iconColor: Colors.white,
       ),
       // Right: TikTok
-      _OrbitIcon(
+      const _OrbitIcon(
         left: 191,
         top: 65,
         icon: Icons.music_note,
-        bgColor: const Color(0xFF1F1F24),
+        bgColor: Color(0xFF1F1F24),
         iconColor: Colors.white,
       ),
       // Bottom-right: YouTube
-      _OrbitIcon(
+      const _OrbitIcon(
         left: 155,
         top: 177,
         icon: Icons.play_arrow,
-        bgColor: const Color(0xFFFCE2E0),
-        iconColor: const Color(0xFFDD3B33),
+        bgColor: Color(0xFFFCE2E0),
+        iconColor: Color(0xFFDD3B33),
       ),
       // Bottom-left: Facebook
-      _OrbitIcon(
+      const _OrbitIcon(
         left: 37,
         top: 177,
         icon: Icons.chat_bubble,
-        bgColor: const Color(0xFFE4ECFB),
-        iconColor: const Color(0xFF2D6FE0),
+        bgColor: Color(0xFFE4ECFB),
+        iconColor: Color(0xFF2D6FE0),
       ),
       // Left: Pinterest
-      _OrbitIcon(
+      const _OrbitIcon(
         left: 1,
         top: 65,
         icon: Icons.push_pin,
-        bgColor: const Color(0xFFFCE4EE),
-        iconColor: const Color(0xFFC13584),
+        bgColor: Color(0xFFFCE4EE),
+        iconColor: Color(0xFFC13584),
       ),
     ];
 
@@ -662,7 +662,7 @@ class _AwesomeImportBodyState extends State<AwesomeImportBody>
 
   List<Widget> _buildFloatingIcons() {
     final icons = <_OrbitIcon>[
-      _OrbitIcon(
+      const _OrbitIcon(
         left: 96,
         top: -4,
         icon: Icons.camera_alt,
@@ -670,33 +670,33 @@ class _AwesomeImportBodyState extends State<AwesomeImportBody>
         bgColor: Colors.white,
         iconColor: Colors.white,
       ),
-      _OrbitIcon(
+      const _OrbitIcon(
         left: 191,
         top: 65,
         icon: Icons.music_note,
-        bgColor: const Color(0xFF1F1F24),
+        bgColor: Color(0xFF1F1F24),
         iconColor: Colors.white,
       ),
-      _OrbitIcon(
+      const _OrbitIcon(
         left: 155,
         top: 177,
         icon: Icons.play_arrow,
-        bgColor: const Color(0xFFFCE2E0),
-        iconColor: const Color(0xFFDD3B33),
+        bgColor: Color(0xFFFCE2E0),
+        iconColor: Color(0xFFDD3B33),
       ),
-      _OrbitIcon(
+      const _OrbitIcon(
         left: 37,
         top: 177,
         icon: Icons.chat_bubble,
-        bgColor: const Color(0xFFE4ECFB),
-        iconColor: const Color(0xFF2D6FE0),
+        bgColor: Color(0xFFE4ECFB),
+        iconColor: Color(0xFF2D6FE0),
       ),
-      _OrbitIcon(
+      const _OrbitIcon(
         left: 1,
         top: 65,
         icon: Icons.push_pin,
-        bgColor: const Color(0xFFFCE4EE),
-        iconColor: const Color(0xFFC13584),
+        bgColor: Color(0xFFFCE4EE),
+        iconColor: Color(0xFFC13584),
       ),
     ];
 
@@ -772,7 +772,7 @@ class _DashedCirclePainter extends CustomPainter {
       ..strokeWidth = 1.5;
 
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = 100.0; // 200/2 = 100 for the dashed circle
+    const radius = 100.0; // 200/2 = 100 for the dashed circle
 
     const dashCount = 40;
     const dashArc = (2 * math.pi) / dashCount;
@@ -780,7 +780,7 @@ class _DashedCirclePainter extends CustomPainter {
 
     for (int i = 0; i < dashCount; i++) {
       final startAngle = i * dashArc;
-      final sweepAngle = dashArc * (1 - gapFraction);
+      const sweepAngle = dashArc * (1 - gapFraction);
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: radius),
         startAngle,
@@ -808,11 +808,11 @@ class _DashedLinesPainter extends CustomPainter {
 
     // Planet center positions (left + 22, top + 22 for 44x44 icons)
     final planetCenters = [
-      Offset(96 + 22, -4 + 22),   // Instagram: top center
-      Offset(191 + 22, 65 + 22),  // TikTok: right
-      Offset(155 + 22, 177 + 22), // YouTube: bottom-right
-      Offset(37 + 22, 177 + 22),  // Facebook: bottom-left
-      Offset(1 + 22, 65 + 22),    // Pinterest: left
+      const Offset(96 + 22, -4 + 22),   // Instagram: top center
+      const Offset(191 + 22, 65 + 22),  // TikTok: right
+      const Offset(155 + 22, 177 + 22), // YouTube: bottom-right
+      const Offset(37 + 22, 177 + 22),  // Facebook: bottom-left
+      const Offset(1 + 22, 65 + 22),    // Pinterest: left
     ];
 
     for (final target in planetCenters) {

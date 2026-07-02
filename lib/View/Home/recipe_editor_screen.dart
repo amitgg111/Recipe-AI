@@ -173,7 +173,7 @@ class _PhotoBasicsCard extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.add_a_photo_outlined,
+                      const Icon(Icons.add_a_photo_outlined,
                           size: 30, color: AppColors.textHint),
                       const SizedBox(height: 6),
                       Text('Add photo',
@@ -207,7 +207,7 @@ class _PhotoBasicsCard extends StatelessWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.photo_camera_outlined,
+                              const Icon(Icons.photo_camera_outlined,
                                   size: 15, color: _E.primary),
                               const SizedBox(width: 6),
                               Text('Change photo',
@@ -407,7 +407,7 @@ class _AddItemButton extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.add, size: 15, color: _E.primary),
+            const Icon(Icons.add, size: 15, color: _E.primary),
             const SizedBox(width: 6),
             Text(label, style: _f(13, FontWeight.w700, _E.primary)),
           ],
@@ -432,7 +432,7 @@ class _AddGroupButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.add, size: 16, color: _E.primary),
+            const Icon(Icons.add, size: 16, color: _E.primary),
             const SizedBox(width: 7),
             Text('Add group', style: _f(13, FontWeight.w700, _E.textDark)),
           ],

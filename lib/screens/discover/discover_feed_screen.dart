@@ -74,8 +74,8 @@ class _DiscoverFeedScreenState extends State<DiscoverFeedScreen> {
                 children: [
                   _buildTopBar(),
                   const SizedBox(height: 14),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20),
                     child: AppSearchBar(hintText: 'Search community recipes'),
                   ),
                   const SizedBox(height: 16),
@@ -101,7 +101,7 @@ class _DiscoverFeedScreenState extends State<DiscoverFeedScreen> {
       padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
       child: Row(
         children: [
-          Icon(Icons.restaurant_rounded, color: AppColors.primary, size: 22),
+          const Icon(Icons.restaurant_rounded, color: AppColors.primary, size: 22),
           const SizedBox(width: 8),
           Text(
             'Recipe AI',
@@ -116,7 +116,7 @@ class _DiscoverFeedScreenState extends State<DiscoverFeedScreen> {
             ),
             child: Row(
               children: [
-                Icon(Icons.auto_awesome, size: 14, color: AppColors.gold),
+                const Icon(Icons.auto_awesome, size: 14, color: AppColors.gold),
                 const SizedBox(width: 4),
                 Text(
                   '4/5',
@@ -269,7 +269,7 @@ class _DiscoverFeedScreenState extends State<DiscoverFeedScreen> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.schedule, size: 13, color: AppColors.textMedium),
+                          const Icon(Icons.schedule, size: 13, color: AppColors.textMedium),
                           const SizedBox(width: 4),
                           Text(
                             post.cookTime,
@@ -318,7 +318,7 @@ class _DiscoverFeedScreenState extends State<DiscoverFeedScreen> {
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
             child: Row(
               children: [
-                Icon(Icons.favorite, size: 22, color: AppColors.primary),
+                const Icon(Icons.favorite, size: 22, color: AppColors.primary),
                 const SizedBox(width: 5),
                 Text(
                   '${post.likes}',
@@ -327,7 +327,7 @@ class _DiscoverFeedScreenState extends State<DiscoverFeedScreen> {
                   ),
                 ),
                 const SizedBox(width: 18),
-                Icon(Icons.chat_bubble_outline, size: 20, color: AppColors.textMedium),
+                const Icon(Icons.chat_bubble_outline, size: 20, color: AppColors.textMedium),
                 const SizedBox(width: 5),
                 Text(
                   '${post.comments}',
@@ -336,9 +336,9 @@ class _DiscoverFeedScreenState extends State<DiscoverFeedScreen> {
                   ),
                 ),
                 const SizedBox(width: 18),
-                Icon(Icons.send_outlined, size: 20, color: AppColors.textMedium),
+                const Icon(Icons.send_outlined, size: 20, color: AppColors.textMedium),
                 const Spacer(),
-                Icon(Icons.bookmark_border, size: 22, color: AppColors.textMedium),
+                const Icon(Icons.bookmark_border, size: 22, color: AppColors.textMedium),
               ],
             ),
           ),
@@ -351,9 +351,9 @@ class _DiscoverFeedScreenState extends State<DiscoverFeedScreen> {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         shape: BoxShape.circle,
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           colors: [Color(0xFFF2623E), Color(0xFFFF8763)],
         ),
       ),

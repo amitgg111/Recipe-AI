@@ -382,7 +382,7 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
             onTap: () {},
             child: Row(
               children: [
-                Icon(Icons.add, size: 16, color: AppColors.primary),
+                const Icon(Icons.add, size: 16, color: AppColors.primary),
                 const SizedBox(width: 4),
                 Text(
                   'Add ingredient',
@@ -405,7 +405,7 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
-          Icon(Icons.drag_handle, size: 18, color: const Color(0xFFCFC5B6)),
+          const Icon(Icons.drag_handle, size: 18, color: Color(0xFFCFC5B6)),
           const SizedBox(width: 6),
           SizedBox(
             width: 56,
@@ -474,7 +474,7 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
           const SizedBox(width: 6),
           GestureDetector(
             onTap: () {},
-            child: Icon(Icons.delete_outline, size: 20, color: AppColors.red),
+            child: const Icon(Icons.delete_outline, size: 20, color: AppColors.red),
           ),
         ],
       ),
@@ -508,7 +508,7 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.drag_handle, size: 18, color: const Color(0xFFCFC5B6)),
+          const Icon(Icons.drag_handle, size: 18, color: Color(0xFFCFC5B6)),
           const SizedBox(width: 6),
           Container(
             width: 25,
@@ -564,7 +564,7 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
                   onTap: () => SetStepTimerSheet.show(context, stepNumber: index + 1),
                   child: Row(
                     children: [
-                      Icon(Icons.timer_outlined, size: 14, color: AppColors.primary),
+                      const Icon(Icons.timer_outlined, size: 14, color: AppColors.primary),
                       const SizedBox(width: 4),
                       Text(
                         'Add timer',
@@ -583,7 +583,7 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
           const SizedBox(width: 8),
           GestureDetector(
             onTap: () {},
-            child: Icon(Icons.delete_outline, size: 20, color: AppColors.red),
+            child: const Icon(Icons.delete_outline, size: 20, color: AppColors.red),
           ),
         ],
       ),
@@ -613,7 +613,7 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.add, size: 18, color: AppColors.primary),
+                const Icon(Icons.add, size: 18, color: AppColors.primary),
                 const SizedBox(width: 6),
                 Text(
                   label,
@@ -644,7 +644,7 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.delete_outline, size: 20, color: AppColors.red),
+            const Icon(Icons.delete_outline, size: 20, color: AppColors.red),
             const SizedBox(width: 8),
             Text(
               'Delete recipe',

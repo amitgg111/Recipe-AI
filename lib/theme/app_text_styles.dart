@@ -146,7 +146,7 @@ class AppTextStyles {
   static TextStyle sectionHeader = _base.copyWith(
     fontSize: 13,
     fontWeight: FontWeight.w600,
-    color: Color(0xFF8C887E),
+    color: const Color(0xFF8C887E),
     letterSpacing: 0.65,
   );
 

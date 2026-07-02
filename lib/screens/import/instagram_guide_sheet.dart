@@ -206,7 +206,7 @@ class _Slide1 extends StatelessWidget {
                     Container(
                       width: 32,
                       height: 32,
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: AppColors.surfaceBorder,
                         shape: BoxShape.circle,
                       ),
@@ -239,14 +239,14 @@ class _Slide1 extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 // Action icons row
-                Row(
+                const Row(
                   children: [
                     Icon(Icons.favorite_border_rounded,
                         size: 24, color: AppColors.textDark),
-                    const SizedBox(width: 14),
+                    SizedBox(width: 14),
                     Icon(Icons.chat_bubble_outline_rounded,
                         size: 22, color: AppColors.textDark),
-                    const SizedBox(width: 14),
+                    SizedBox(width: 14),
                     // Send icon with arrow
                     Stack(
                       clipBehavior: Clip.none,
@@ -268,7 +268,7 @@ class _Slide1 extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const Spacer(),
+                    Spacer(),
                     Icon(Icons.bookmark_border_rounded,
                         size: 24, color: AppColors.textDark),
                   ],
@@ -290,7 +290,7 @@ class _Slide2 extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
+          const Text(
             'tap share to',
             style: TextStyle(
               fontSize: 26,
@@ -337,8 +337,8 @@ class _Slide2 extends StatelessWidget {
                         Container(
                           width: 48,
                           height: 48,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF0EAE0),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFF0EAE0),
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -372,7 +372,7 @@ class _Slide3 extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
+          const Text(
             'tap Recipe AI',
             style: TextStyle(
               fontSize: 26,

@@ -46,10 +46,10 @@ class ImportFromWebScreen extends StatelessWidget {
     BuildContext context,
   ) {
     return Container(
-      padding: EdgeInsets.all(10),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: AppTheme.surface(context),
-        border: Border(bottom: BorderSide(color: Color(0xFFE4E2DC))),
+        border: const Border(bottom: BorderSide(color: Color(0xFFE4E2DC))),
       ),
       child: Row(
         children: [
@@ -209,7 +209,7 @@ class ImportFromWebScreen extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                   const SizedBox(height: 4),
-                  CustomText(
+                  const CustomText(
                     "Browse any recipe website and import instantly",
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
@@ -679,10 +679,10 @@ class _RecipePreviewSheetState extends State<_RecipePreviewSheet> {
             ),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.only(left: 20, bottom: 16),
+        const Padding(
+          padding: EdgeInsets.only(left: 20, bottom: 16),
           child: Row(
-            children: const [
+            children: [
               Icon(Icons.info_outline, size: 16, color: Colors.grey),
               SizedBox(width: 6),
               CustomText('Report mistake', color: Colors.grey),

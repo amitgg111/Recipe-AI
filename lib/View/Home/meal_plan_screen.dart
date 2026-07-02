@@ -9,6 +9,7 @@ import 'package:recipe_ai/View/Home/recipe_detail_screen.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/app_search_bar.dart';
+import 'package:share_plus/share_plus.dart';
 
 class _S {
   static const bg = AppColors.background;
@@ -19,10 +20,15 @@ class _S {
   static const textHint = AppColors.textHint;
   static const primary = AppColors.primary;
 
-  static const breakfastColor = Color(0xFFF59E0B);
-  static const lunchColor = Color(0xFF10B981);
-  static const dinnerColor = Color(0xFF6366F1);
-  static const snackColor = Color(0xFFEF4444);
+  static const cardBorder = Color(0xFFEFE6D6);
+  static const toggleBg = Color(0xFFF1EBDF);
+  static const dash = Color(0xFFD8CFBE);
+  static const purple = Color(0xFF8B5CF6);
+  // Meal-type colours (matched to the HTML)
+  static const breakfastColor = Color(0xFFC0860F);
+  static const lunchColor = Color(0xFF1F7A5E);
+  static const dinnerColor = Color(0xFF2D6FE0);
+  static const snackColor = Color(0xFFE0481F);
 
   static Color mealColor(String type) {
     switch (type) {
@@ -74,6 +80,31 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
   final MealPlanController controller = Get.find<MealPlanController>();
   final HomeController homeController = Get.find<HomeController>();
   int _viewIndex = 0; // 0 = Day, 1 = Month
+  Worker? _monthWorker;
+
+  @override
+  void initState() {
+    super.initState();
+    // Fetch the visible month's data reactively (not inside build) — only when
+    // the month actually changes and only while the month view is showing.
+    _monthWorker = ever<DateTime>(controller.selectedDate, (date) {
+      if (_viewIndex == 1) _ensureMonthFetched(date);
+    });
+  }
+
+  @override
+  void dispose() {
+    _monthWorker?.dispose();
+    super.dispose();
+  }
+
+  /// Fetches the month's meals once per distinct month (dedupes queries).
+  void _ensureMonthFetched(DateTime date) {
+    final monthKey = date.year * 100 + date.month;
+    if (_lastFetchedMonth == monthKey) return;
+    _lastFetchedMonth = monthKey;
+    controller.fetchMonthMealPlans(DateTime(date.year, date.month));
+  }
 
   static const _dayLetters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   static const _dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -139,16 +170,10 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
           ),
 
           // ── Body ──
+          // No full-screen loader: the day/month views populate reactively via
+          // their own scoped Obx, so background refreshes never blank the UI.
           Expanded(
-            child: Obx(() {
-              if (controller.isLoading.value) {
-                return const Center(
-                  child: CircularProgressIndicator(color: _S.primary),
-                );
-              }
-              if (_viewIndex == 1) return _buildMonthView();
-              return _buildDayView();
-            }),
+            child: _viewIndex == 1 ? _buildMonthView() : _buildDayView(),
           ),
         ],
       ),
@@ -159,10 +184,10 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
 
   Widget _buildViewToggle() {
     return Container(
-      height: 34,
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: AppColors.tabBg,
-        borderRadius: BorderRadius.circular(10),
+        color: _S.toggleBg,
+        borderRadius: BorderRadius.circular(11),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -174,32 +199,33 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
   Widget _toggleTab(String label, int index) {
     final sel = _viewIndex == index;
     return GestureDetector(
-      onTap: () => setState(() => _viewIndex = index),
+      onTap: () {
+        setState(() => _viewIndex = index);
+        if (index == 1) _ensureMonthFetched(controller.selectedDate.value);
+      },
+      behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        margin: const EdgeInsets.all(3),
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: sel ? _S.card : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           boxShadow: sel
               ? [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.06),
-                    blurRadius: 4,
+                    color: const Color(0xFF2A211B).withValues(alpha: 0.12),
+                    blurRadius: 3,
                     offset: const Offset(0, 1),
                   ),
                 ]
               : [],
         ),
-        child: Center(
-          child: Text(
-            label,
-            style: _S.f(
-              13,
-              sel ? FontWeight.w700 : FontWeight.w500,
-              sel ? _S.textDark : _S.textHint,
-            ),
+        child: Text(
+          label,
+          style: _S.f(
+            12.5,
+            sel ? FontWeight.w700 : FontWeight.w600,
+            sel ? _S.textDark : _S.textHint,
           ),
         ),
       ),
@@ -240,6 +266,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
             ),
             _menuItem(Icons.share_outlined, 'Share meal plan', false, () {
               Navigator.pop(context);
+              _shareMealPlan();
             }),
             _menuItem(
               Icons.delete_outline_rounded,
@@ -254,16 +281,32 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
         );
       },
       child: Container(
-        width: 34,
-        height: 34,
+        width: 38,
+        height: 38,
         decoration: BoxDecoration(
           color: _S.card,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: _S.border),
         ),
-        child: const Icon(Icons.more_horiz, size: 18, color: _S.textDark),
+        child: const Icon(Icons.more_horiz, size: 20, color: _S.textDark),
       ),
     );
+  }
+
+  // Share the selected week's plan as text.
+  void _shareMealPlan() {
+    final days = controller.getDaysOfWeek(controller.selectedWeekStart.value);
+    final buf = StringBuffer('My meal plan\n');
+    for (final day in days) {
+      final meals = controller.getMealsForDate(day);
+      if (meals.isEmpty) continue;
+      buf.writeln('\n${_dayNames[day.weekday - 1]} ${day.day} '
+          '${_shortMonths[day.month - 1]}');
+      for (final m in meals) {
+        buf.writeln('• ${m.mealType}: ${m.recipeTitle}');
+      }
+    }
+    Share.share(buf.toString(), subject: 'My meal plan');
   }
 
   PopupMenuItem _menuItem(
@@ -298,43 +341,14 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
         children: [
           // ── Week strip (single row) ──
           _buildWeekStrip(days, sel),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
-          // ── Add to groceries button ──
+          // ── Nutrition upgrade card (Plus) ──
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: GestureDetector(
-              onTap: () => CustomSnackbar.show(
-                title: 'Groceries',
-                message: 'Week added to grocery list',
-                type: SnackbarType.success,
-              ),
-              child: Container(
-                width: double.infinity,
-                height: 44,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: _S.primary, width: 1.5),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.shopping_cart_outlined,
-                      size: 18,
-                      color: _S.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Add this week to groceries',
-                      style: _S.f(14, FontWeight.w700, _S.primary),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            child: _buildNutritionUpgradeCard(),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
           // ── Meal sections ──
           Expanded(
@@ -354,84 +368,146 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
     });
   }
 
+  // ── Nutrition upgrade card (Plus, visual) ──
+
+  Widget _buildNutritionUpgradeCard() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: _S.card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE0D2F7)),
+        boxShadow: [
+          BoxShadow(
+            color: _S.purple.withValues(alpha: 0.28),
+            blurRadius: 26,
+            offset: const Offset(0, 12),
+            spreadRadius: -22,
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF8B5CF6), Color(0xFF6D3BD4)],
+              ),
+            ),
+            child: const Icon(Icons.workspace_premium_rounded,
+                size: 20, color: Colors.white),
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("See today's nutrition",
+                    style: _S.f(13.5, FontWeight.w800, _S.textDark)),
+                const SizedBox(height: 1),
+                Text('Calories & macros across all meals',
+                    style: _S.f(11.5, FontWeight.w600, _S.textMed),
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(11),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF8B5CF6), Color(0xFF6D3BD4)],
+              ),
+            ),
+            child: Text('Unlock', style: _S.f(11, FontWeight.w800, Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ── Week strip: < M T W T F S S > with dates below, single row ──
 
   Widget _buildWeekStrip(List<DateTime> days, DateTime selected) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14),
       child: Row(
         children: [
-          // Left arrow
-          GestureDetector(
-            onTap: controller.previousWeek,
-            child: Padding(
-              padding: const EdgeInsets.all(4),
-              child: Icon(Icons.chevron_left, size: 22, color: _S.textHint),
-            ),
-          ),
-
-          // 7 day columns
-          ...List.generate(7, (i) {
-            final day = days[i];
-            final isSel = controller.isSameDay(day, selected);
-            final isToday = controller.isToday(day);
-
-            return Expanded(
-              child: GestureDetector(
-                onTap: () => controller.selectDate(day),
-                child: Column(
-                  children: [
-                    // Day letter
-                    Text(
-                      _dayLetters[i],
-                      style: _S.f(12, FontWeight.w600, _S.textHint),
-                    ),
-                    const SizedBox(height: 6),
-                    // Date number (circled if selected/today)
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isSel
-                            ? _S.primary
-                            : isToday
-                            ? _S.primary.withValues(alpha: 0.12)
-                            : Colors.transparent,
-                        border: isToday && !isSel
-                            ? Border.all(color: _S.primary, width: 1.5)
-                            : null,
+          _weekArrow(Icons.chevron_left, controller.previousWeek),
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: List.generate(7, (i) {
+                final day = days[i];
+                final isSel = controller.isSameDay(day, selected);
+                return GestureDetector(
+                  onTap: () => controller.selectDate(day),
+                  behavior: HitTestBehavior.opaque,
+                  child: Column(
+                    children: [
+                      Text(
+                        _dayLetters[i],
+                        style: _S.f(11,
+                            isSel ? FontWeight.w800 : FontWeight.w700,
+                            isSel ? _S.primary : _S.textHint),
                       ),
-                      child: Center(
-                        child: Text(
-                          '${day.day}',
-                          style: _S.f(
-                            14,
-                            FontWeight.w700,
-                            isSel
-                                ? Colors.white
-                                : isToday
-                                ? _S.primary
-                                : _S.textDark,
+                      const SizedBox(height: 4),
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          color: isSel ? _S.primary : _S.card,
+                          border: isSel
+                              ? null
+                              : Border.all(color: _S.cardBorder),
+                          boxShadow: isSel
+                              ? [
+                                  BoxShadow(
+                                    color: _S.primary.withValues(alpha: 0.7),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 8),
+                                    spreadRadius: -8,
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${day.day}',
+                            style: _S.f(13, FontWeight.w800,
+                                isSel ? Colors.white : _S.textDark),
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }),
-
-          // Right arrow
-          GestureDetector(
-            onTap: controller.nextWeek,
-            child: Padding(
-              padding: const EdgeInsets.all(4),
-              child: Icon(Icons.chevron_right, size: 22, color: _S.textHint),
+                    ],
+                  ),
+                );
+              }),
             ),
           ),
+          _weekArrow(Icons.chevron_right, controller.nextWeek),
         ],
+      ),
+    );
+  }
+
+  Widget _weekArrow(IconData icon, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: 26,
+        height: 52,
+        child: Icon(icon, size: 22, color: _S.textHint),
       ),
     );
   }
@@ -445,48 +521,48 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 14),
+        const SizedBox(height: 10),
         // Section header: colored dot + label
         Row(
           children: [
             Container(
-              width: 10,
-              height: 10,
+              width: 9,
+              height: 9,
               decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             ),
             const SizedBox(width: 8),
             Text(
               mealType.toUpperCase(),
-              style: _S.f(12, FontWeight.w800, color),
+              style: _S.f(13, FontWeight.w800, color),
             ),
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 7),
 
         // Meal cards
         for (final meal in meals) _buildMealCard(meal),
 
-        // + Add button (full width, prominent)
+        // + Add button (dashed)
         GestureDetector(
           onTap: () => _showAddMealSheet(date, mealType),
-          child: Container(
-            width: double.infinity,
-            height: 44,
-            decoration: BoxDecoration(
-              color: _S.card,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _S.border),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.add, size: 18, color: _S.primary),
-                const SizedBox(width: 6),
-                Text(
-                  'Add ${mealType.toLowerCase()}',
-                  style: _S.f(14, FontWeight.w600, _S.primary),
+          child: CustomPaint(
+            painter: const _DashRectPainter(_S.dash, 13),
+            child: SizedBox(
+              width: double.infinity,
+              height: 46,
+              child: Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.add, size: 18, color: _S.primary),
+                    const SizedBox(width: 7),
+                    Text(
+                      'Add ${mealType.toLowerCase()}',
+                      style: _S.f(13, FontWeight.w700, _S.textMed),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -497,90 +573,98 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
   // ── Meal card (image + title + time + 3-dot) ──
 
   Widget _buildMealCard(MealPlanItem meal) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.fromLTRB(10, 10, 6, 10),
-      decoration: BoxDecoration(
-        color: _S.card,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _S.border),
-      ),
-      child: Row(
-        children: [
-          // Round recipe image
-          ClipOval(
-            child: SizedBox(
-              width: 46,
-              height: 46,
-              child:
-                  meal.recipeImageUrl != null && meal.recipeImageUrl!.isNotEmpty
-                  ? CachedNetworkImage(
-                      imageUrl: meal.recipeImageUrl!,
-                      fit: BoxFit.cover,
-                      placeholder: (_, __) =>
-                          Container(color: AppColors.shimmerBase),
-                      errorWidget: (_, __, ___) => Container(
-                        color: AppColors.shimmerBase,
-                        child: const Icon(
-                          Icons.restaurant,
-                          size: 20,
-                          color: AppColors.shimmerHighlight,
-                        ),
-                      ),
-                    )
-                  : Container(
-                      color: _S.mealColor(meal.mealType).withValues(alpha: 0.1),
-                      child: Icon(
-                        _S.mealIcon(meal.mealType),
-                        size: 22,
-                        color: _S.mealColor(meal.mealType),
-                      ),
-                    ),
+    return GestureDetector(
+      onTap: () => _openRecipe(meal),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: _S.card,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _S.cardBorder),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF2A211B).withValues(alpha: 0.16),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+              spreadRadius: -18,
             ),
-          ),
-          const SizedBox(width: 12),
-
-          // Title + time
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  meal.recipeTitle,
-                  style: _S.f(14, FontWeight.w700, _S.textDark),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 3),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.access_time_rounded,
-                      size: 13,
-                      color: _S.textHint,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      _getMealTime(meal),
-                      style: _S.f(12, FontWeight.w500, _S.textHint),
-                    ),
-                  ],
-                ),
-              ],
+          ],
+        ),
+        child: Row(
+          children: [
+            _mealImage(meal, 50),
+            const SizedBox(width: 11),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    meal.recipeTitle,
+                    style: _S.f(13.5, FontWeight.w700, _S.textDark),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      const Icon(Icons.access_time_rounded, size: 13, color: _S.textHint),
+                      const SizedBox(width: 5),
+                      Text(_getMealTime(meal),
+                          style: _S.f(11.5, FontWeight.w600, _S.textMed)),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-
-          // 3-dot menu
-          GestureDetector(
-            onTap: () => _showMealOptions(meal),
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Icon(Icons.more_horiz, size: 18, color: _S.textHint),
+            GestureDetector(
+              onTap: () => _showMealOptions(meal),
+              behavior: HitTestBehavior.opaque,
+              child: const Padding(
+                padding: EdgeInsets.all(6),
+                child: Icon(Icons.more_horiz, size: 18, color: Color(0xFFC7BCAC)),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
+  }
+
+  // Square recipe thumbnail used by day & month meal cards.
+  Widget _mealImage(MealPlanItem meal, double size) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(11),
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: meal.recipeImageUrl != null && meal.recipeImageUrl!.isNotEmpty
+            ? CachedNetworkImage(
+                imageUrl: meal.recipeImageUrl!,
+                fit: BoxFit.cover,
+                memCacheWidth: (size * 3).round(),
+                placeholder: (_, __) => Container(color: const Color(0xFFEDE5D7)),
+                errorWidget: (_, __, ___) => Container(
+                  color: const Color(0xFFEDE5D7),
+                  child: Icon(_S.mealIcon(meal.mealType),
+                      size: 20, color: _S.mealColor(meal.mealType)),
+                ),
+              )
+            : Container(
+                color: _S.mealColor(meal.mealType).withValues(alpha: 0.1),
+                child: Icon(_S.mealIcon(meal.mealType),
+                    size: 22, color: _S.mealColor(meal.mealType)),
+              ),
+      ),
+    );
+  }
+
+  void _openRecipe(MealPlanItem meal) {
+    final recipe =
+        homeController.recipes.firstWhereOrNull((r) => r.id == meal.recipeId);
+    if (recipe != null) {
+      Get.to(() => RecipeDetailScreen(recipe: recipe));
+    }
   }
 
   String _getMealTime(MealPlanItem meal) {
@@ -601,57 +685,42 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
 
   int? _lastFetchedMonth;
 
+  // The month view is built ONCE per Day/Month toggle. Only the small reactive
+  // sub-sections below (month-nav, grid, selected-date header, selected meals)
+  // are wrapped in their own scoped Obx, so selecting a day or editing a meal
+  // rebuilds only the affected section — never the whole scroll view.
   Widget _buildMonthView() {
-    return Obx(() {
-      final selDate = controller.selectedDate.value;
-      final viewMonth = DateTime(selDate.year, selDate.month);
-      final firstDay = DateTime(viewMonth.year, viewMonth.month, 1);
-      final daysInMonth = DateTime(viewMonth.year, viewMonth.month + 1, 0).day;
-      final startWeekday = firstDay.weekday;
-
-      final monthKey = viewMonth.year * 100 + viewMonth.month;
-      if (_lastFetchedMonth != monthKey) {
-        _lastFetchedMonth = monthKey;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          controller.fetchMonthMealPlans(viewMonth);
-        });
-      }
-
-      final selectedMeals = controller.getMonthMealsForDate(selDate);
-
-      return SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(0, 0, 0, 20),
-        child: Column(
-          children: [
-            // ── Calendar card ──
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
-              decoration: BoxDecoration(
-                color: _S.card,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  // Month nav: < June 2026 >
-                  Row(
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(0, 0, 0, 20),
+      child: Column(
+        children: [
+          // ── Calendar card ──
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
+            decoration: BoxDecoration(
+              color: _S.card,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                // Month nav: < June 2026 >  (reactive on selectedDate)
+                Obx(() {
+                  final selDate = controller.selectedDate.value;
+                  final viewMonth = DateTime(selDate.year, selDate.month);
+                  return Row(
                     children: [
                       GestureDetector(
-                        onTap: () {
-                          final prev = DateTime(
-                            selDate.year,
-                            selDate.month - 1,
-                            1,
-                          );
-                          controller.selectDate(prev);
-                        },
+                        onTap: () => controller.selectDate(
+                          DateTime(selDate.year, selDate.month - 1, 1),
+                        ),
                         child: Container(
                           width: 32,
                           height: 32,
@@ -673,14 +742,9 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                       ),
                       const Spacer(),
                       GestureDetector(
-                        onTap: () {
-                          final next = DateTime(
-                            selDate.year,
-                            selDate.month + 1,
-                            1,
-                          );
-                          controller.selectDate(next);
-                        },
+                        onTap: () => controller.selectDate(
+                          DateTime(selDate.year, selDate.month + 1, 1),
+                        ),
                         child: Container(
                           width: 32,
                           height: 32,
@@ -696,40 +760,60 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                         ),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 16),
+                  );
+                }),
+                const SizedBox(height: 16),
 
-                  // Day headers: M T W T F S S
-                  Row(
-                    children: _dayLetters
-                        .map(
-                          (d) => Expanded(
-                            child: Center(
-                              child: Text(
-                                d,
-                                style: _S.f(12, FontWeight.w600, _S.textHint),
-                              ),
+                // Day headers: M T W T F S S  (static)
+                Row(
+                  children: _dayLetters
+                      .map(
+                        (d) => Expanded(
+                          child: Center(
+                            child: Text(
+                              d,
+                              style: _S.f(12, FontWeight.w600, _S.textHint),
                             ),
                           ),
-                        )
-                        .toList(),
-                  ),
-                  const SizedBox(height: 8),
+                        ),
+                      )
+                      .toList(),
+                ),
+                const SizedBox(height: 8),
 
-                  // Calendar grid with meal color dots
-                  _buildCalendarGrid(
+                // Calendar grid  (reactive on selectedDate + month meals)
+                Obx(() {
+                  final selDate = controller.selectedDate.value;
+                  final viewMonth = DateTime(selDate.year, selDate.month);
+                  final firstDay = DateTime(viewMonth.year, viewMonth.month, 1);
+                  final daysInMonth =
+                      DateTime(viewMonth.year, viewMonth.month + 1, 0).day;
+                  final startWeekday = firstDay.weekday;
+
+                  // Precompute meal-types per date ONCE (O(N)) instead of
+                  // scanning the whole list for each of the 42 cells (O(42·N)).
+                  final typesByDate = <String, Set<String>>{};
+                  for (final m in controller.monthMealPlanItems) {
+                    (typesByDate[m.date] ??= <String>{}).add(m.mealType);
+                  }
+
+                  return _buildCalendarGrid(
                     firstDay,
                     daysInMonth,
                     startWeekday,
                     selDate,
-                  ),
-                ],
-              ),
+                    typesByDate,
+                  );
+                }),
+              ],
             ),
-            const SizedBox(height: 20),
+          ),
+          const SizedBox(height: 20),
 
-            // ── Selected date header + Add meal button ──
-            Padding(
+          // ── Selected date header + Add meal button ──  (reactive)
+          Obx(() {
+            final selDate = controller.selectedDate.value;
+            return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
@@ -764,12 +848,16 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 14),
+            );
+          }),
+          const SizedBox(height: 14),
 
-            // ── Meal cards for selected date ──
-            if (selectedMeals.isEmpty)
-              Padding(
+          // ── Meal cards for selected date ──  (reactive on selectedDate + meals)
+          Obx(() {
+            final selDate = controller.selectedDate.value;
+            final selectedMeals = controller.getMonthMealsForDate(selDate);
+            if (selectedMeals.isEmpty) {
+              return Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
                   vertical: 30,
@@ -794,53 +882,54 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                     ),
                   ],
                 ),
-              )
-            else
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
+              );
+            }
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                children: [
+                  for (final meal in selectedMeals) _buildMonthMealCard(meal),
+                ],
+              ),
+            );
+          }),
+
+          const SizedBox(height: 16),
+
+          // ── Auto-fill my week button ──  (static)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: GestureDetector(
+              onTap: () => _showAutoFillSheet(),
+              child: Container(
+                width: double.infinity,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF4EEFD),
+                  borderRadius: BorderRadius.circular(13),
+                  border: Border.all(color: const Color(0xFFE0D2F7)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    for (final meal in selectedMeals) _buildMonthMealCard(meal),
+                    const Icon(
+                      Icons.workspace_premium_rounded,
+                      size: 18,
+                      color: _S.purple,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Auto-fill my week',
+                      style: _S.f(13.5, FontWeight.w700, const Color(0xFF7A4FC0)),
+                    ),
                   ],
                 ),
               ),
-
-            const SizedBox(height: 16),
-
-            // ── Auto-fill my week button ──
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: GestureDetector(
-                onTap: () => _showAutoFillSheet(),
-                child: Container(
-                  width: double.infinity,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.auto_awesome_rounded,
-                        size: 18,
-                        color: AppColors.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Auto-fill my week',
-                        style: _S.f(14, FontWeight.w700, AppColors.primary),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
             ),
-          ],
-        ),
-      );
-    });
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildCalendarGrid(
@@ -848,6 +937,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
     int daysInMonth,
     int startWeekday,
     DateTime selected,
+    Map<String, Set<String>> typesByDate,
   ) {
     final now = DateTime.now();
     final rows = <Widget>[];
@@ -866,75 +956,14 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
         }
 
         final date = DateTime(firstDay.year, firstDay.month, dayNum);
-        final isSel = controller.isSameDay(date, selected);
-        final isToday = controller.isSameDay(date, now);
-        final mealTypesForDate = controller.getMealTypesForDate(date);
-
+        final dateStr = controller.formatDatePublic(date);
         rowChildren.add(
-          Expanded(
-            child: GestureDetector(
-              onTap: () => controller.selectDate(date),
-              child: SizedBox(
-                height: 48,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Date number
-                    Container(
-                      width: 30,
-                      height: 30,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isSel
-                            ? _S.primary
-                            : isToday
-                            ? _S.primary.withValues(alpha: 0.1)
-                            : Colors.transparent,
-                      ),
-                      child: Center(
-                        child: Text(
-                          '$dayNum',
-                          style: _S.f(
-                            13,
-                            isToday || isSel
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                            isSel
-                                ? Colors.white
-                                : isToday
-                                ? _S.primary
-                                : _S.textDark,
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Meal color dots row
-                    if (mealTypesForDate.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            for (final type in MealPlanController.mealTypes)
-                              if (mealTypesForDate.contains(type))
-                                Container(
-                                  width: 5,
-                                  height: 5,
-                                  margin: const EdgeInsets.symmetric(
-                                    horizontal: 1,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: _S.mealColor(type),
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
+          _DayCell(
+            dayNum: dayNum,
+            isSelected: controller.isSameDay(date, selected),
+            isToday: controller.isSameDay(date, now),
+            mealTypes: typesByDate[dateStr] ?? const <String>{},
+            onTap: () => controller.selectDate(date),
           ),
         );
       }
@@ -960,39 +989,8 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
         ),
         child: Row(
           children: [
-            // Round recipe image
-            ClipOval(
-              child: SizedBox(
-                width: 46,
-                height: 46,
-                child:
-                    meal.recipeImageUrl != null &&
-                        meal.recipeImageUrl!.isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: meal.recipeImageUrl!,
-                        fit: BoxFit.cover,
-                        placeholder: (_, __) =>
-                            Container(color: AppColors.shimmerBase),
-                        errorWidget: (_, __, ___) => Container(
-                          color: AppColors.shimmerBase,
-                          child: const Icon(
-                            Icons.restaurant,
-                            size: 20,
-                            color: AppColors.shimmerHighlight,
-                          ),
-                        ),
-                      )
-                    : Container(
-                        color: color.withValues(alpha: 0.1),
-                        child: Icon(
-                          _S.mealIcon(meal.mealType),
-                          size: 22,
-                          color: color,
-                        ),
-                      ),
-              ),
-            ),
-            const SizedBox(width: 12),
+            _mealImage(meal, 48),
+            const SizedBox(width: 11),
 
             // Meal type label + title + time
             Expanded(
@@ -1013,7 +1011,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                   const SizedBox(height: 2),
                   Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.access_time_rounded,
                         size: 12,
                         color: _S.textHint,
@@ -1032,8 +1030,8 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
             // 3-dot
             GestureDetector(
               onTap: () => _showMealOptions(meal),
-              child: Padding(
-                padding: const EdgeInsets.all(8),
+              child: const Padding(
+                padding: EdgeInsets.all(8),
                 child: Icon(Icons.more_horiz, size: 18, color: _S.textHint),
               ),
             ),
@@ -1108,6 +1106,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                           ? CachedNetworkImage(
                               imageUrl: meal.recipeImageUrl!,
                               fit: BoxFit.cover,
+                              memCacheWidth: 150,
                             )
                           : Container(
                               color: _S
@@ -1322,6 +1321,100 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// CALENDAR DAY CELL
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// A single calendar day cell. Extracted into its own widget so the grid stays
+/// cheap to rebuild and each cell is a small, self-contained subtree.
+class _DayCell extends StatelessWidget {
+  final int dayNum;
+  final bool isSelected;
+  final bool isToday;
+  final Set<String> mealTypes;
+  final VoidCallback onTap;
+
+  const _DayCell({
+    required this.dayNum,
+    required this.isSelected,
+    required this.isToday,
+    required this.mealTypes,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isSel = isSelected;
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: SizedBox(
+          height: 48,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Date number
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: isSel ? _S.primary : Colors.transparent,
+                  boxShadow: isSel
+                      ? [
+                          BoxShadow(
+                            color: _S.primary.withValues(alpha: 0.7),
+                            blurRadius: 16,
+                            offset: const Offset(0, 8),
+                            spreadRadius: -8,
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Center(
+                  child: Text(
+                    '$dayNum',
+                    style: _S.f(
+                      13,
+                      isSel || isToday ? FontWeight.w800 : FontWeight.w600,
+                      isSel
+                          ? Colors.white
+                          : isToday
+                          ? _S.primary
+                          : _S.textDark,
+                    ),
+                  ),
+                ),
+              ),
+              // Meal color dots row
+              if (mealTypes.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      for (final type in MealPlanController.mealTypes)
+                        if (mealTypes.contains(type))
+                          Container(
+                            width: 5,
+                            height: 5,
+                            margin: const EdgeInsets.symmetric(horizontal: 1),
+                            decoration: BoxDecoration(
+                              color: _S.mealColor(type),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // ADD MEAL BOTTOM SHEET
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -1470,7 +1563,7 @@ class _AddMealSheetState extends State<_AddMealSheet> {
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                 itemCount: recipes.length,
                 separatorBuilder: (_, __) =>
-                    Divider(height: 1, color: _S.border),
+                    const Divider(height: 1, color: _S.border),
                 itemBuilder: (_, i) {
                   final recipe = recipes[i];
                   return Padding(
@@ -1488,6 +1581,7 @@ class _AddMealSheetState extends State<_AddMealSheet> {
                                 ? CachedNetworkImage(
                                     imageUrl: recipe.imageUrl!,
                                     fit: BoxFit.cover,
+                                    memCacheWidth: 150,
                                   )
                                 : Container(
                                     color: AppColors.shimmerBase,
@@ -1845,4 +1939,37 @@ class _AutoFillSheetState extends State<_AutoFillSheet> {
       ),
     );
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Dashed rounded-rectangle border painter (for "Add meal" buttons)
+// ═══════════════════════════════════════════════════════════════════════════════
+class _DashRectPainter extends CustomPainter {
+  final Color color;
+  final double radius;
+  const _DashRectPainter(this.color, this.radius);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+    final rrect = RRect.fromRectAndRadius(
+        Offset.zero & size, Radius.circular(radius));
+    final path = Path()..addRRect(rrect);
+    const dash = 6.0, gap = 4.0;
+    for (final metric in path.computeMetrics()) {
+      double d = 0;
+      while (d < metric.length) {
+        canvas.drawPath(
+            metric.extractPath(d, (d + dash).clamp(0, metric.length)), paint);
+        d += dash + gap;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashRectPainter old) =>
+      old.color != color || old.radius != radius;
 }

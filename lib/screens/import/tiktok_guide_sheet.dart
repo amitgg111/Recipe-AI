@@ -300,7 +300,7 @@ class _TikTokSlide1 extends StatelessWidget {
                           ),
                         ),
                         // Blue arrow + text
-                        Positioned(
+                        const Positioned(
                           left: -70,
                           top: 6,
                           child: Row(
@@ -315,7 +315,7 @@ class _TikTokSlide1 extends StatelessWidget {
                                   color: AppColors.blueArrow,
                                 ),
                               ),
-                              const SizedBox(width: 4),
+                              SizedBox(width: 4),
                               Icon(
                                 Icons.arrow_forward_rounded,
                                 size: 16,
@@ -346,7 +346,7 @@ class _TikTokSlide2 extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
+          const Text(
             'tap share to',
             style: TextStyle(
               fontSize: 26,
@@ -356,7 +356,7 @@ class _TikTokSlide2 extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Icon(
+          const Icon(
             Icons.arrow_downward_rounded,
             size: 24,
             color: AppColors.blueArrow,
@@ -400,7 +400,7 @@ class _TikTokSlide2 extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.search, size: 18, color: AppColors.textLight),
+                      const Icon(Icons.search, size: 18, color: AppColors.textLight),
                       const SizedBox(width: 8),
                       Text(
                         'Search',
@@ -453,7 +453,7 @@ class _TikTokSlide2 extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.upload_rounded,
                         size: 20,
                         color: AppColors.primary,
@@ -487,7 +487,7 @@ class _TikTokSlide3 extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
+          const Text(
             'tap Recipe AI',
             style: TextStyle(
               fontSize: 26,
@@ -497,7 +497,7 @@ class _TikTokSlide3 extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Icon(
+          const Icon(
             Icons.arrow_downward_rounded,
             size: 24,
             color: AppColors.blueArrow,

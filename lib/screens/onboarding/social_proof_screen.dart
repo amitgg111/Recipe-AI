@@ -72,8 +72,8 @@ class _SocialProofScreenState extends State<SocialProofScreen> {
                     height: 1.15,
                     letterSpacing: -0.54,
                   ),
-                  children: [
-                    const TextSpan(text: "We've helped\n"),
+                  children: const [
+                    TextSpan(text: "We've helped\n"),
                     TextSpan(
                       text: '10+ million cooks',
                       style: TextStyle(color: AppColors.primary),
@@ -193,7 +193,7 @@ class _SocialProofScreenState extends State<SocialProofScreen> {
                         ),
                       ),
                       // Quote mark - positioned absolute, top -22, left 22
-                      Positioned(
+                      const Positioned(
                         top: -22,
                         left: 22,
                         child: Text(
@@ -251,8 +251,8 @@ class SocialProofBody extends StatelessWidget {
                 height: 1.15,
                 letterSpacing: -0.54,
               ),
-              children: [
-                const TextSpan(text: "We've helped\n"),
+              children: const [
+                TextSpan(text: "We've helped\n"),
                 TextSpan(
                   text: '10+ million cooks',
                   style: TextStyle(color: AppColors.primary),
@@ -372,7 +372,7 @@ class SocialProofBody extends StatelessWidget {
                     ),
                   ),
                   // Quote mark - positioned absolute, top -22, left 22
-                  Positioned(
+                  const Positioned(
                     top: -22,
                     left: 22,
                     child: Text(

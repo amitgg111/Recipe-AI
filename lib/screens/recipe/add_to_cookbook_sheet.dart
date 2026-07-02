@@ -213,7 +213,7 @@ class _AddToCookbookSheetState extends State<AddToCookbookSheet> {
                   style: BorderStyle.solid,
                 ),
               ),
-              child: Icon(Icons.add, size: 20, color: AppColors.primary),
+              child: const Icon(Icons.add, size: 20, color: AppColors.primary),
             ),
             const SizedBox(width: 14),
             Text(

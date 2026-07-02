@@ -90,9 +90,9 @@ class _RecipeSourcesScreenState extends State<RecipeSourcesScreen> {
                 title: 'Social media',
                 isSelected: _selected.contains(0),
                 onTap: () => _toggle(0),
-                trailing: Row(
+                trailing: const Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: const [
+                  children: [
                     _SocialBadge(
                       icon: Icons.camera_alt,
                       color: Color(0xFFC13584),
@@ -125,9 +125,9 @@ class _RecipeSourcesScreenState extends State<RecipeSourcesScreen> {
                 title: 'Recipe websites',
                 isSelected: _selected.contains(1),
                 onTap: () => _toggle(1),
-                trailing: Row(
+                trailing: const Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: const [
+                  children: [
                     _SocialBadge(
                       icon: Icons.public,
                       color: Color(0xFF2F7AB5),
@@ -148,9 +148,9 @@ class _RecipeSourcesScreenState extends State<RecipeSourcesScreen> {
                 title: 'Printed / handwritten',
                 isSelected: _selected.contains(2),
                 onTap: () => _toggle(2),
-                trailing: Row(
+                trailing: const Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: const [
+                  children: [
                     _SocialBadge(
                       icon: Icons.menu_book,
                       color: Color(0xFFE0552F),
@@ -241,9 +241,9 @@ class _RecipeSourcesBodyState extends State<RecipeSourcesBody> {
             title: 'Social media',
             isSelected: _selected.contains(0),
             onTap: () => _toggle(0),
-            trailing: Row(
+            trailing: const Row(
               mainAxisSize: MainAxisSize.min,
-              children: const [
+              children: [
                 _SocialBadge(
                   icon: Icons.camera_alt,
                   color: Color(0xFFC13584),
@@ -276,9 +276,9 @@ class _RecipeSourcesBodyState extends State<RecipeSourcesBody> {
             title: 'Recipe websites',
             isSelected: _selected.contains(1),
             onTap: () => _toggle(1),
-            trailing: Row(
+            trailing: const Row(
               mainAxisSize: MainAxisSize.min,
-              children: const [
+              children: [
                 _SocialBadge(
                   icon: Icons.public,
                   color: Color(0xFF2F7AB5),
@@ -299,9 +299,9 @@ class _RecipeSourcesBodyState extends State<RecipeSourcesBody> {
             title: 'Printed / handwritten',
             isSelected: _selected.contains(2),
             onTap: () => _toggle(2),
-            trailing: Row(
+            trailing: const Row(
               mainAxisSize: MainAxisSize.min,
-              children: const [
+              children: [
                 _SocialBadge(
                   icon: Icons.menu_book,
                   color: Color(0xFFE0552F),

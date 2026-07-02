@@ -28,7 +28,8 @@ class AppBottomNav extends StatelessWidget {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
-          height: AppDimensions.bottomNavHeight,
+          height: AppDimensions.bottomNavHeight +
+              MediaQuery.of(context).padding.bottom,
           decoration: const BoxDecoration(
             color: AppColors.bottomNavBg,
             border: Border(

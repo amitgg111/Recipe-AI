@@ -89,7 +89,7 @@ class CustomSnackbar {
                 },
                 child: Text(
                   actionText,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
                   ),
@@ -104,16 +104,16 @@ class CustomSnackbar {
   static _SnackbarConfig _getConfig(SnackbarType type) {
     switch (type) {
       case SnackbarType.success:
-        return _SnackbarConfig(color: Colors.green, icon: Icons.check_circle);
+        return const _SnackbarConfig(color: Colors.green, icon: Icons.check_circle);
 
       case SnackbarType.error:
-        return _SnackbarConfig(color: Colors.red, icon: Icons.error);
+        return const _SnackbarConfig(color: Colors.red, icon: Icons.error);
 
       case SnackbarType.warning:
-        return _SnackbarConfig(color: Colors.orange, icon: Icons.warning_amber);
+        return const _SnackbarConfig(color: Colors.orange, icon: Icons.warning_amber);
 
       case SnackbarType.info:
-        return _SnackbarConfig(color: Colors.blue, icon: Icons.info);
+        return const _SnackbarConfig(color: Colors.blue, icon: Icons.info);
     }
   }
 }

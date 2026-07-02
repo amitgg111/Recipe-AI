@@ -3,7 +3,7 @@ import 'package:recipe_ai/View/Home/cookbooks_screen.dart';
 import 'package:recipe_ai/View/Home/discover_screen.dart';
 import 'package:recipe_ai/View/Home/groceries_screen.dart';
 import 'package:recipe_ai/View/Home/meal_plan_screen.dart';
-import 'package:recipe_ai/View/Home/profile_screen.dart';
+import 'package:recipe_ai/View/Home/settings_screen.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/app_bottom_nav.dart';
 
@@ -22,7 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
     const DiscoverScreen(),
     const MealPlanScreen(),
     GroceriesScreen(),
-    const ProfileScreen(),
+    const SettingsScreen(),
   ];
 
   @override

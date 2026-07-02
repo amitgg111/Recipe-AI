@@ -393,11 +393,11 @@ class CookbookRecipesScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(
                             AppDimensions.radiusButton,
                           ),
-                          boxShadow: [
+                          boxShadow: const [
                             BoxShadow(
                               color: AppColors.primaryShadow,
                               blurRadius: 30,
-                              offset: const Offset(0, 16),
+                              offset: Offset(0, 16),
                               spreadRadius: -10,
                             ),
                           ],
@@ -678,7 +678,7 @@ class _EmptyState extends StatelessWidget {
                           ),
                         ),
                         // Plate lines
-                        Icon(
+                        const Icon(
                           Icons.restaurant_rounded,
                           size: 36,
                           color: AppColors.iconLight,
@@ -763,11 +763,11 @@ class _EmptyState extends StatelessWidget {
                   borderRadius: BorderRadius.circular(
                     AppDimensions.radiusButton,
                   ),
-                  boxShadow: [
+                  boxShadow: const [
                     BoxShadow(
                       color: AppColors.primaryShadow,
                       blurRadius: 20,
-                      offset: const Offset(0, 10),
+                      offset: Offset(0, 10),
                       spreadRadius: -6,
                     ),
                   ],
@@ -804,8 +804,8 @@ class _RecipeList extends StatelessWidget {
       children: [
         const SizedBox(height: 16),
         // Search bar
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: AppSpacing.xl),
           child: AppSearchBar(hintText: 'Search recipes'),
         ),
         const SizedBox(height: 12),
@@ -930,6 +930,7 @@ class _RecipeListTile extends StatelessWidget {
         width: 74,
         height: 74,
         fit: BoxFit.cover,
+        cacheWidth: 222,
         errorBuilder: (_, __, ___) => _placeholder(),
         loadingBuilder: (_, child, loading) {
           if (loading == null) return child;

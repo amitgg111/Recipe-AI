@@ -9,6 +9,7 @@ import 'package:recipe_ai/Controllers/import_web_controller.dart';
 import 'package:recipe_ai/Controllers/meal_plan_controller.dart';
 import 'package:recipe_ai/Controllers/profile_controller.dart';
 import 'package:recipe_ai/Controllers/recipe_editor_controller.dart';
+import 'package:recipe_ai/Controllers/settings_controller.dart';
 import 'package:recipe_ai/Controllers/share_intent_service_controller.dart';
 import 'package:recipe_ai/Core/Routes/app_routes.dart';
 import 'package:recipe_ai/Core/Theme/app_theme_controller.dart';
@@ -90,6 +91,7 @@ void main() async {
   Get.put(RecipeEditorController(), permanent: true);
   Get.put(ProfileController(), permanent: true);
   Get.put(CookbookController(), permanent: true);
+  Get.put(SettingsController(), permanent: true);
 
   final shareService = Get.put(ShareIntentService(), permanent: true);
 
@@ -109,7 +111,7 @@ class MyApp extends StatelessWidget {
       theme: new_theme.AppTheme.light,
       darkTheme: new_theme.AppTheme.light,
       themeMode: ThemeMode.light,
-      home: SplashScreen(),
+      home: const SplashScreen(),
       getPages: [
         // Onboarding
         GetPage(name: AppRoutes.onboarding, page: () => const WelcomeScreen()),

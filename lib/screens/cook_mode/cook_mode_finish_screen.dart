@@ -37,41 +37,41 @@ class _CookModeFinishScreenState extends State<CookModeFinishScreen>
   int _selectedRating = 4;
 
   final List<_ConfettiPiece> _confettiPieces = [
-    _ConfettiPiece(
+    const _ConfettiPiece(
       color: AppColors.primary,
       size: 11,
       rotation: 20,
       shape: _ConfettiShape.square,
       left: 0.08,
       top: 0.12,
-      duration: const Duration(milliseconds: 3800),
+      duration: Duration(milliseconds: 3800),
     ),
-    _ConfettiPiece(
+    const _ConfettiPiece(
       color: AppColors.green,
       size: 9,
       rotation: 0,
       shape: _ConfettiShape.circle,
       left: 0.85,
       top: 0.08,
-      duration: const Duration(milliseconds: 4200),
+      duration: Duration(milliseconds: 4200),
     ),
-    _ConfettiPiece(
-      color: const Color(0xFFE0481F),
+    const _ConfettiPiece(
+      color: Color(0xFFE0481F),
       size: 8,
       rotation: 45,
       shape: _ConfettiShape.square,
       left: 0.92,
       top: 0.22,
-      duration: const Duration(milliseconds: 3400),
+      duration: Duration(milliseconds: 3400),
     ),
-    _ConfettiPiece(
+    const _ConfettiPiece(
       color: AppColors.primary,
       size: 12,
       rotation: -15,
       shape: _ConfettiShape.square,
       left: 0.12,
       top: 0.25,
-      duration: const Duration(milliseconds: 4400),
+      duration: Duration(milliseconds: 4400),
     ),
   ];
 
@@ -79,10 +79,8 @@ class _CookModeFinishScreenState extends State<CookModeFinishScreen>
   void initState() {
     super.initState();
     _confettiControllers = _confettiPieces.map((piece) {
-      return AnimationController(
-        vsync: this,
-        duration: piece.duration,
-      )..repeat(reverse: true);
+      return AnimationController(vsync: this, duration: piece.duration)
+        ..repeat(reverse: true);
     }).toList();
 
     _confettiAnimations = _confettiControllers.asMap().entries.map((entry) {
@@ -92,9 +90,10 @@ class _CookModeFinishScreenState extends State<CookModeFinishScreen>
       Future.delayed(Duration(milliseconds: index * 300), () {
         if (mounted) controller.forward();
       });
-      return Tween<double>(begin: 0, end: 12).animate(
-        CurvedAnimation(parent: controller, curve: Curves.easeInOut),
-      );
+      return Tween<double>(
+        begin: 0,
+        end: 12,
+      ).animate(CurvedAnimation(parent: controller, curve: Curves.easeInOut));
     }).toList();
   }
 
@@ -254,11 +253,7 @@ class _CookModeFinishScreenState extends State<CookModeFinishScreen>
                 shape: BoxShape.circle,
                 border: Border.all(color: AppColors.background, width: 4),
               ),
-              child: const Icon(
-                Icons.check,
-                size: 24,
-                color: Colors.white,
-              ),
+              child: const Icon(Icons.check, size: 24, color: Colors.white),
             ),
           ),
         ],
@@ -305,7 +300,7 @@ class _CookModeFinishScreenState extends State<CookModeFinishScreen>
 
   Widget _buildTitle() {
     return Text(
-      'Bon appétit! 🎉',
+      'Enjoy Your Meal! 🍽️',
       style: GoogleFonts.plusJakartaSans(
         fontSize: 30,
         fontWeight: FontWeight.w800,
@@ -390,7 +385,7 @@ class _CookModeFinishScreenState extends State<CookModeFinishScreen>
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.share_outlined, size: 18, color: AppColors.textDark),
+            const Icon(Icons.share_outlined, size: 18, color: AppColors.textDark),
             const SizedBox(width: 8),
             Text(
               'Share your dish',

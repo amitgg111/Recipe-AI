@@ -75,8 +75,8 @@ class _CookbookDetailMenuScreenState extends State<CookbookDetailMenuScreen> {
                           ),
                         ),
                         const SizedBox(height: AppSpacing.lg),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
+                        const Padding(
+                          padding: EdgeInsets.symmetric(
                             horizontal: AppSpacing.xl,
                           ),
                           child: AppSearchBar(hintText: 'Search recipes'),
@@ -263,7 +263,7 @@ class _CookbookDetailMenuScreenState extends State<CookbookDetailMenuScreen> {
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.access_time_rounded,
                     size: 14,
                     color: AppColors.textLight,
@@ -271,7 +271,7 @@ class _CookbookDetailMenuScreenState extends State<CookbookDetailMenuScreen> {
                   const SizedBox(width: 4),
                   Text(recipe.time, style: AppTextStyles.smallLabel),
                   const SizedBox(width: 8),
-                  Icon(
+                  const Icon(
                     Icons.chevron_right,
                     color: AppColors.textHint,
                     size: AppDimensions.iconMd,

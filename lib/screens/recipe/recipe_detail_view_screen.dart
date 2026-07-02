@@ -178,7 +178,7 @@ class _RecipeDetailViewScreenState extends State<RecipeDetailViewScreen> {
           const SizedBox(height: 8),
           Row(
             children: [
-              Icon(Icons.language, size: 14, color: AppColors.textMedium),
+              const Icon(Icons.language, size: 14, color: AppColors.textMedium),
               const SizedBox(width: 5),
               Text(
                 'From cookpad.com',
@@ -202,7 +202,7 @@ class _RecipeDetailViewScreenState extends State<RecipeDetailViewScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.language, size: 13, color: AppColors.green),
+                  const Icon(Icons.language, size: 13, color: AppColors.green),
                   const SizedBox(width: 5),
                   Text(
                     'Public',
@@ -449,7 +449,7 @@ class _RecipeDetailViewScreenState extends State<RecipeDetailViewScreen> {
                   ],
                 ),
               ),
-              Icon(
+              const Icon(
                 Icons.chevron_right_rounded,
                 size: 22,
                 color: AppColors.textMedium,
@@ -543,7 +543,7 @@ class _RecipeDetailViewScreenState extends State<RecipeDetailViewScreen> {
               width: 34,
               height: 34,
               alignment: Alignment.center,
-              child: Icon(Icons.remove, size: 18, color: AppColors.textDark),
+              child: const Icon(Icons.remove, size: 18, color: AppColors.textDark),
             ),
           ),
           Padding(
@@ -563,7 +563,7 @@ class _RecipeDetailViewScreenState extends State<RecipeDetailViewScreen> {
               width: 34,
               height: 34,
               alignment: Alignment.center,
-              child: Icon(Icons.add, size: 18, color: AppColors.textDark),
+              child: const Icon(Icons.add, size: 18, color: AppColors.textDark),
             ),
           ),
         ],
@@ -646,7 +646,7 @@ class _RecipeDetailViewScreenState extends State<RecipeDetailViewScreen> {
                 color: const Color(0xFFFBF1E4),
                 borderRadius: BorderRadius.circular(7),
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.shopping_basket_outlined,
                 size: 15,
                 color: AppColors.primary,
@@ -854,7 +854,7 @@ class _RecipeDetailViewScreenState extends State<RecipeDetailViewScreen> {
               ),
               child: Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.workspace_premium_rounded,
                     size: 22,
                     color: AppColors.gold,

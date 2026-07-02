@@ -100,6 +100,11 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   void initState() {
     super.initState();
     _isPublic = recipe.isPublic;
+    // Migration: back-fill `visibility` on legacy docs when opened.
+    if (!recipe.visibilityWasStored) {
+      Get.find<HomeController>()
+          .migrateVisibility(recipe.id, recipe.visibility);
+    }
     int parsed = 2;
     if (recipe.servings != null) {
       final m = RegExp(r'\d+').firstMatch(recipe.servings!);
@@ -109,13 +114,26 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     _servings = _initialServings;
   }
 
-  // Flip public/private and persist to Firestore (used by the pill + menu).
+  // Ask for confirmation, then flip public/private (owner only).
   void _toggleVisibility() {
-    final next = !_isPublic;
-    setState(() => _isPublic = next);
-    Get.find<HomeController>().updateRecipeVisibility(recipe.id, next);
+    final makePublic = !_isPublic;
+    showDialog(
+      context: context,
+      builder: (ctx) => _VisibilityConfirmDialog(
+        makePublic: makePublic,
+        onConfirm: () {
+          Navigator.pop(ctx);
+          _applyVisibility(makePublic);
+        },
+      ),
+    );
+  }
+
+  void _applyVisibility(bool makePublic) {
+    setState(() => _isPublic = makePublic);
+    Get.find<HomeController>().updateRecipeVisibility(recipe.id, makePublic);
     CustomSnackbar.show(
-      title: next ? 'Recipe is now public' : 'Recipe is now private',
+      title: makePublic ? 'Recipe is now public' : 'Recipe is now private',
       type: SnackbarType.success,
     );
   }
@@ -253,6 +271,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               ? Image.network(
                   recipe.imageUrl!,
                   fit: BoxFit.cover,
+                  cacheWidth: 900,
                   errorBuilder: (_, __, ___) => _imagePlaceholder(),
                 )
               : _imagePlaceholder(),
@@ -326,7 +345,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.public, size: 15, color: _C.textHint),
+          const Icon(Icons.public, size: 15, color: _C.textHint),
           const SizedBox(width: 6),
           Flexible(
             child: Text(
@@ -535,7 +554,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.menu_book_rounded,
                             size: 15,
                             color: _C.primary,
@@ -558,7 +577,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.add, size: 16, color: _C.primary),
+                    const Icon(Icons.add, size: 16, color: _C.primary),
                     const SizedBox(width: 4),
                     Text(
                       'Add to cookbook',
@@ -593,7 +612,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 color: _C.noteBg,
                 borderRadius: BorderRadius.circular(11),
               ),
-              child: Icon(Icons.edit_outlined, size: 18, color: _C.primary),
+              child: const Icon(Icons.edit_outlined, size: 18, color: _C.primary),
             ),
             const SizedBox(width: 13),
             Expanded(
@@ -673,7 +692,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.shopping_cart_outlined,
                     size: 18,
                     color: _C.primary,
@@ -703,7 +722,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       ),
       child: Row(
         children: [
-          Icon(Icons.straighten_rounded, size: 16, color: _C.purple),
+          const Icon(Icons.straighten_rounded, size: 16, color: _C.purple),
           const SizedBox(width: 9),
           Expanded(
             child: Text(
@@ -924,7 +943,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 color: _C.goldBg,
                 borderRadius: BorderRadius.circular(9),
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.shopping_basket_outlined,
                 size: 15,
                 color: _C.gold,
@@ -1163,7 +1182,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
+                const Icon(
                   Icons.workspace_premium_rounded,
                   size: 18,
                   color: _C.purple,
@@ -1651,8 +1670,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         final isPublic = _isPublic;
         return InkWell(
           onTap: () {
+            Navigator.pop(context); // close the menu, then confirm
             _toggleVisibility();
-            setRow(() {});
           },
           child: Container(
             color: isPublic ? _C.greenBg : Colors.white,
@@ -1936,8 +1955,9 @@ class _MealPlanPickerSheetState extends State<_MealPlanPickerSheet> {
       List.generate(14, (i) => DateTime.now().add(Duration(days: i)));
   String _dayLabel(DateTime d) {
     final now = DateTime.now();
-    if (d.day == now.day && d.month == now.month && d.year == now.year)
+    if (d.day == now.day && d.month == now.month && d.year == now.year) {
       return 'Today';
+    }
     return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][d.weekday - 1];
   }
 
@@ -2183,7 +2203,7 @@ class _MealPlanPickerSheetState extends State<_MealPlanPickerSheet> {
 // COOKBOOK PICKER SHEET
 // ═══════════════════════════════════════════════════════════════════════════════
 
-class CookbookPickerSheet extends StatelessWidget {
+class CookbookPickerSheet extends StatefulWidget {
   final CookbookController cookbookController;
   final String recipeId;
   final String? recipeImageUrl;
@@ -2195,7 +2215,66 @@ class CookbookPickerSheet extends StatelessWidget {
     required this.recipeImageUrl,
   });
 
-  void _createAndAdd(BuildContext context) {
+  @override
+  State<CookbookPickerSheet> createState() => _CookbookPickerSheetState();
+}
+
+class _CookbookPickerSheetState extends State<CookbookPickerSheet> {
+  late final Set<String> _initial;
+  final Set<String> _selected = {};
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initial = widget.cookbookController.cookbooks
+        .where((c) => c.recipeIds.contains(widget.recipeId))
+        .map((c) => c.id)
+        .toSet();
+    _selected.addAll(_initial);
+  }
+
+  Future<void> _apply() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    final toAdd = _selected.difference(_initial);
+    final toRemove = _initial.difference(_selected);
+    for (final id in toAdd) {
+      await widget.cookbookController.addRecipeToCookbook(
+        id,
+        widget.recipeId,
+        widget.recipeImageUrl,
+        showToast: false,
+      );
+    }
+    for (final id in toRemove) {
+      await widget.cookbookController.removeRecipeFromCookbook(
+        id,
+        widget.recipeId,
+        showToast: false,
+      );
+    }
+    if (!mounted) return;
+    Navigator.pop(context, _selected.length);
+    if (toAdd.isNotEmpty) {
+      CustomSnackbar.show(
+        title: 'Saved',
+        message: toAdd.length == 1
+            ? 'Added to 1 cookbook'
+            : 'Added to ${toAdd.length} cookbooks',
+        type: SnackbarType.success,
+      );
+    } else if (toRemove.isNotEmpty) {
+      CustomSnackbar.show(
+        title: 'Updated',
+        message: 'Cookbook selection updated',
+        type: SnackbarType.success,
+      );
+    }
+  }
+
+  // Create a cookbook and auto-select it in the list.
+  void _createCookbook() {
     final tc = TextEditingController();
     showModalBottomSheet(
       context: context,
@@ -2215,10 +2294,8 @@ class CookbookPickerSheet extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Text(
-                    'New cookbook',
-                    style: _font(20, FontWeight.w800, _C.textDark),
-                  ),
+                  Text('New cookbook',
+                      style: _font(20, FontWeight.w800, _C.textDark)),
                   const Spacer(),
                   GestureDetector(
                     onTap: () => Navigator.pop(ctx),
@@ -2226,14 +2303,9 @@ class CookbookPickerSheet extends StatelessWidget {
                       width: 32,
                       height: 32,
                       decoration: const BoxDecoration(
-                        color: _C.primary,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.close,
-                        color: Colors.white,
-                        size: 18,
-                      ),
+                          color: _C.primary, shape: BoxShape.circle),
+                      child:
+                          const Icon(Icons.close, color: Colors.white, size: 18),
                     ),
                   ),
                 ],
@@ -2261,10 +2333,8 @@ class CookbookPickerSheet extends StatelessWidget {
                     disabledBorder: InputBorder.none,
                     errorBorder: InputBorder.none,
                     focusedErrorBorder: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   ),
                 ),
               ),
@@ -2274,27 +2344,21 @@ class CookbookPickerSheet extends StatelessWidget {
                   final name = tc.text.trim();
                   if (name.isEmpty) return;
                   Navigator.pop(ctx);
-                  Navigator.pop(context);
-                  await cookbookController.createCookbook(name);
+                  await widget.cookbookController.createCookbook(name);
                   await Future.delayed(const Duration(milliseconds: 800));
-                  final nb = cookbookController.cookbooks.firstWhereOrNull(
-                    (c) => c.name == name,
-                  );
-                  if (nb != null)
-                    cookbookController.addRecipeToCookbook(
-                      nb.id,
-                      recipeId,
-                      recipeImageUrl,
-                    );
+                  final nb = widget.cookbookController.cookbooks
+                      .firstWhereOrNull((c) => c.name == name);
+                  if (nb != null && mounted) {
+                    setState(() => _selected.add(nb.id));
+                  }
                 },
                 child: Container(
                   width: double.infinity,
                   height: AppDimensions.buttonHeight,
                   decoration: BoxDecoration(
                     color: _C.primary,
-                    borderRadius: BorderRadius.circular(
-                      AppDimensions.radiusButton,
-                    ),
+                    borderRadius:
+                        BorderRadius.circular(AppDimensions.radiusButton),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -2320,7 +2384,7 @@ class CookbookPickerSheet extends StatelessWidget {
         color: _C.card,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2338,9 +2402,15 @@ class CookbookPickerSheet extends StatelessWidget {
           const SizedBox(height: 14),
           Row(
             children: [
-              Text(
-                'Add to cookbook',
-                style: _font(18, FontWeight.w800, _C.textDark),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Add to cookbook',
+                      style: _font(18, FontWeight.w800, _C.textDark)),
+                  const SizedBox(height: 2),
+                  Text('Select one or more',
+                      style: _font(12.5, FontWeight.w500, _C.textMedium)),
+                ],
               ),
               const Spacer(),
               GestureDetector(
@@ -2352,97 +2422,94 @@ class CookbookPickerSheet extends StatelessWidget {
                     color: Colors.grey.shade200,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.close, size: 16, color: _C.textDark),
+                  child: const Icon(Icons.close, size: 16, color: _C.textDark),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 18),
-          Obx(() {
-            final cbs = cookbookController.cookbooks;
-            return ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: cbs.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 4),
-              itemBuilder: (_, i) {
-                final cb = cbs[i];
-                final added = cb.recipeIds.contains(recipeId);
-                return GestureDetector(
-                  onTap: added
-                      ? null
-                      : () {
-                          cookbookController.addRecipeToCookbook(
-                            cb.id,
-                            recipeId,
-                            recipeImageUrl,
-                          );
-                          Navigator.pop(context);
-                        },
-                  behavior: HitTestBehavior.opaque,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Row(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: SizedBox(
-                            width: 40,
-                            height: 40,
-                            child: RecipeImage(imageUrl: cb.imageUrl),
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Text(
-                            cb.name,
-                            style: _font(15, FontWeight.w600, _C.textDark),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Container(
-                          width: 22,
-                          height: 22,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: added ? _C.primary : Colors.transparent,
-                            border: added
-                                ? null
-                                : Border.all(color: _C.border, width: 1.5),
-                          ),
-                          child: added
-                              ? const Icon(
-                                  Icons.check,
-                                  color: Colors.white,
-                                  size: 14,
-                                )
-                              : null,
-                        ),
-                      ],
-                    ),
-                  ),
+          const SizedBox(height: 16),
+          Flexible(
+            child: Obx(() {
+              final cbs = widget.cookbookController.cookbooks;
+              if (cbs.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Text('No cookbooks yet — create one below.',
+                      style: _font(13.5, FontWeight.w500, _C.textMedium)),
                 );
-              },
-            );
-          }),
-          const SizedBox(height: 12),
+              }
+              return ListView.separated(
+                shrinkWrap: true,
+                itemCount: cbs.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 4),
+                itemBuilder: (_, i) {
+                  final cb = cbs[i];
+                  final selected = _selected.contains(cb.id);
+                  return GestureDetector(
+                    onTap: () => setState(() {
+                      selected ? _selected.remove(cb.id) : _selected.add(cb.id);
+                    }),
+                    behavior: HitTestBehavior.opaque,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Row(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: SizedBox(
+                              width: 40,
+                              height: 40,
+                              child: RecipeImage(imageUrl: cb.imageUrl),
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Text(
+                              cb.name,
+                              style: _font(15, FontWeight.w600, _C.textDark),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(7),
+                              color: selected ? _C.primary : Colors.transparent,
+                              border: selected
+                                  ? null
+                                  : Border.all(color: _C.borderInner, width: 2),
+                            ),
+                            child: selected
+                                ? const Icon(Icons.check,
+                                    color: Colors.white, size: 15)
+                                : null,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+            }),
+          ),
+          const SizedBox(height: 10),
           GestureDetector(
-            onTap: () => _createAndAdd(context),
+            onTap: _createCookbook,
+            behavior: HitTestBehavior.opaque,
             child: Row(
               children: [
-                Icon(Icons.add, size: 18, color: _C.primary),
+                const Icon(Icons.add, size: 18, color: _C.primary),
                 const SizedBox(width: 6),
-                Text(
-                  'new cookbook',
-                  style: _font(14, FontWeight.w600, _C.primary),
-                ),
+                Text('New cookbook',
+                    style: _font(14, FontWeight.w700, _C.primary)),
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
           GestureDetector(
-            onTap: () => Navigator.pop(context),
+            onTap: _apply,
             child: Container(
               width: double.infinity,
               height: AppDimensions.buttonHeight,
@@ -2451,7 +2518,19 @@ class CookbookPickerSheet extends StatelessWidget {
                 borderRadius: BorderRadius.circular(AppDimensions.radiusButton),
               ),
               child: Center(
-                child: Text('Close', style: AppTextStyles.buttonLabel),
+                child: _saving
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2),
+                      )
+                    : Text(
+                        _selected.isEmpty
+                            ? 'Done'
+                            : 'Save to ${_selected.length} cookbook${_selected.length == 1 ? '' : 's'}',
+                        style: AppTextStyles.buttonLabel,
+                      ),
               ),
             ),
           ),
@@ -2554,4 +2633,95 @@ void showDeleteRecipeDialog(RecipeModel recipe, HomeController controller) {
       ),
     ),
   );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// VISIBILITY CONFIRM DIALOG
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _VisibilityConfirmDialog extends StatelessWidget {
+  final bool makePublic;
+  final VoidCallback onConfirm;
+
+  const _VisibilityConfirmDialog(
+      {required this.makePublic, required this.onConfirm});
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = makePublic ? _C.green : _C.primary;
+    final title =
+        makePublic ? 'Make this recipe public?' : 'Make this recipe private?';
+    final body = makePublic
+        ? 'Everyone will be able to discover and view it.'
+        : 'Only you will be able to access it.';
+    final action = makePublic ? 'Make Public' : 'Make Private';
+
+    return Dialog(
+      backgroundColor: _C.card,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 40),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(makePublic ? Icons.public : Icons.lock_outline_rounded,
+                  color: accent, size: 28),
+            ),
+            const SizedBox(height: 20),
+            Text(title, style: _font(18, FontWeight.w800, _C.textDark)),
+            const SizedBox(height: 10),
+            Text(body,
+                textAlign: TextAlign.center,
+                style: _font(13.5, FontWeight.w400, _C.textMedium, h: 1.5)),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      height: 48,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: _C.border),
+                        borderRadius:
+                            BorderRadius.circular(AppDimensions.radiusButton),
+                      ),
+                      child:
+                          Text('Cancel', style: _font(15, FontWeight.w700, _C.textDark)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: onConfirm,
+                    child: Container(
+                      height: 48,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: accent,
+                        borderRadius:
+                            BorderRadius.circular(AppDimensions.radiusButton),
+                      ),
+                      child: Text(action,
+                          style: _font(15, FontWeight.w700, Colors.white)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

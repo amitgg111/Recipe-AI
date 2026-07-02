@@ -142,8 +142,8 @@ class _CookbooksEmptyScreenState extends State<CookbooksEmptyScreen>
                         color: AppColors.textDark,
                         letterSpacing: -0.2,
                       ),
-                      children: [
-                        const TextSpan(text: 'Recipe '),
+                      children: const [
+                        TextSpan(text: 'Recipe '),
                         TextSpan(
                           text: 'AI',
                           style: TextStyle(color: AppColors.primary),
@@ -592,7 +592,7 @@ class _DashedCirclePainter extends CustomPainter {
 
     for (int i = 0; i < dashCount; i++) {
       final startAngle = i * dashArc;
-      final sweepAngle = dashArc * (1 - gapFraction);
+      const sweepAngle = dashArc * (1 - gapFraction);
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: radius),
         startAngle,

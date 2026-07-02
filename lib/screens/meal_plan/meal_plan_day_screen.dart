@@ -16,13 +16,13 @@ class _MealPlanDayScreenState extends State<MealPlanDayScreen> {
   int _viewMode = 0; // 0 = Day, 1 = Month
 
   final _weekDays = [
-    _DayData('M', '23'),
-    _DayData('T', '24'),
-    _DayData('W', '25'),
-    _DayData('T', '26'),
-    _DayData('F', '27'),
-    _DayData('S', '28'),
-    _DayData('S', '29'),
+    const _DayData('M', '23'),
+    const _DayData('T', '24'),
+    const _DayData('W', '25'),
+    const _DayData('T', '26'),
+    const _DayData('F', '27'),
+    const _DayData('S', '28'),
+    const _DayData('S', '29'),
   ];
 
   @override
@@ -47,22 +47,22 @@ class _MealPlanDayScreenState extends State<MealPlanDayScreen> {
                     'BREAKFAST',
                     AppColors.gold,
                     [
-                      _RecipeItem('Avocado Toast with Eggs', '15 min'),
+                      const _RecipeItem('Avocado Toast with Eggs', '15 min'),
                     ],
                   ),
                   _buildMealSection(
                     'LUNCH',
                     AppColors.green,
                     [
-                      _RecipeItem('Mediterranean Quinoa Salad', '20 min'),
-                      _RecipeItem('Lemon Herb Chicken Wrap', '10 min'),
+                      const _RecipeItem('Mediterranean Quinoa Salad', '20 min'),
+                      const _RecipeItem('Lemon Herb Chicken Wrap', '10 min'),
                     ],
                   ),
                   _buildMealSection(
                     'DINNER',
                     AppColors.blue,
                     [
-                      _RecipeItem('Spicy Tomato Rigatoni', '35 min'),
+                      const _RecipeItem('Spicy Tomato Rigatoni', '35 min'),
                     ],
                   ),
                   _buildMealSection(
@@ -237,7 +237,7 @@ class _MealPlanDayScreenState extends State<MealPlanDayScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.shopping_cart_outlined, size: 18, color: AppColors.primary),
+              const Icon(Icons.shopping_cart_outlined, size: 18, color: AppColors.primary),
               const SizedBox(width: 8),
               Text(
                 'Add this week to groceries',
@@ -311,7 +311,7 @@ class _MealPlanDayScreenState extends State<MealPlanDayScreen> {
               color: AppColors.surfaceBorder,
               borderRadius: BorderRadius.circular(11),
             ),
-            child: Icon(
+            child: const Icon(
               Icons.restaurant,
               size: 22,
               color: AppColors.textLight,
@@ -332,7 +332,7 @@ class _MealPlanDayScreenState extends State<MealPlanDayScreen> {
                 const SizedBox(height: 3),
                 Row(
                   children: [
-                    Icon(Icons.schedule, size: 13, color: AppColors.textLight),
+                    const Icon(Icons.schedule, size: 13, color: AppColors.textLight),
                     const SizedBox(width: 4),
                     Text(
                       recipe.time,
@@ -346,7 +346,7 @@ class _MealPlanDayScreenState extends State<MealPlanDayScreen> {
               ],
             ),
           ),
-          Icon(Icons.more_vert, size: 20, color: AppColors.textLight),
+          const Icon(Icons.more_vert, size: 20, color: AppColors.textLight),
         ],
       ),
     );
@@ -369,7 +369,7 @@ class _MealPlanDayScreenState extends State<MealPlanDayScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.add, size: 18, color: AppColors.primary),
+            const Icon(Icons.add, size: 18, color: AppColors.primary),
             const SizedBox(width: 6),
             Text(
               'Add $mealType',

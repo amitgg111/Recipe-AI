@@ -225,11 +225,11 @@ class _CookbookDetailEmptyScreenState extends State<CookbookDetailEmptyScreen>
                         borderRadius: BorderRadius.circular(
                           AppDimensions.radiusIconLg,
                         ),
-                        boxShadow: [
+                        boxShadow: const [
                           BoxShadow(
                             color: AppColors.primaryShadow,
                             blurRadius: 12,
-                            offset: const Offset(0, 4),
+                            offset: Offset(0, 4),
                           ),
                         ],
                       ),

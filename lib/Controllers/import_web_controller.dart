@@ -302,7 +302,18 @@ class ImportWebController extends GetxController {
             'ingredients': recipe.ingredients,
             'instructions': recipe.instructions,
 
+            // Privacy: imported recipes are private by default.
+            'visibility': 'private',
+            'isPublic': false,
+            'ownerId': uid,
+            'isDeleted': false,
+            'likesCount': 0,
+            'commentsCount': 0,
+            'savesCount': 0,
+            'sharesCount': 0,
+            'viewsCount': 0,
             'createdAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
           });
 
       if (freeRecipesLeft.value > 0) {
