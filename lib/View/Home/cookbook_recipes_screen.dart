@@ -331,7 +331,14 @@ class CookbookRecipesScreen extends StatelessWidget {
                         decoration: InputDecoration(
                           hintText: 'Cookbook name',
                           hintStyle: AppTextStyles.inputHint,
+                          filled: false,
+                          isDense: false,
                           border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
+                          errorBorder: InputBorder.none,
+                          focusedErrorBorder: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 14,

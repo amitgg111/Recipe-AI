@@ -122,7 +122,14 @@ class _EditCookbookSheetState extends State<EditCookbookSheet> {
                       maxLength: _maxChars,
                       style: AppTextStyles.bodyLarge,
                       decoration: InputDecoration(
+                        filled: false,
+                        isDense: false,
                         border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
+                        errorBorder: InputBorder.none,
+                        focusedErrorBorder: InputBorder.none,
                         counterText: '',
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 18,

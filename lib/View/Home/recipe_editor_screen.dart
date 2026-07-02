@@ -8,6 +8,42 @@ import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_dimensions.dart';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Design constants — matched to the HTML "Recipe detail (edit)" design
+// ─────────────────────────────────────────────────────────────────────────────
+class _E {
+  static const bg = AppColors.background;
+  static const card = Colors.white;
+  static const border = Color(0xFFEFE6D6);
+  static const fieldBg = Color(0xFFFBF7F0);
+  static const fieldBorder = Color(0xFFE7DECE);
+  static const primary = AppColors.primary;
+  static const textDark = Color(0xFF2A211B);
+  static const label = Color(0xFF9A938A);
+  static const grip = Color(0xFFCFC5B6);
+  static const trash = Color(0xFFD08B7E);
+  static const rowLine = Color(0xFFF0ECE4);
+  static const redText = Color(0xFFE0481F);
+}
+
+TextStyle _f(double s, FontWeight w, Color c, {double? h, double? ls}) =>
+    GoogleFonts.plusJakartaSans(
+        fontSize: s, fontWeight: w, color: c, height: h, letterSpacing: ls);
+
+BoxDecoration _cardDeco() => BoxDecoration(
+      color: _E.card,
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: _E.border),
+      boxShadow: [
+        BoxShadow(
+          color: const Color(0xFF2A211B).withValues(alpha: 0.16),
+          blurRadius: 26,
+          offset: const Offset(0, 12),
+          spreadRadius: -22,
+        ),
+      ],
+    );
+
 class RecipeEditorScreen extends StatelessWidget {
   final RecipeModel? recipe;
 
@@ -19,75 +55,27 @@ class RecipeEditorScreen extends StatelessWidget {
       RecipeEditorController(recipe: recipe),
       tag: recipe?.id ?? 'new_recipe',
     );
+    final isEdit = recipe != null;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: _E.bg,
       body: SafeArea(
         child: Column(
           children: [
-            _buildTopBar(context, controller),
+            _buildTopBar(context, controller, isEdit),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ── Image ──────────────────────────────────────────
-                    _ImageSection(controller: controller),
-                    const SizedBox(height: 24),
-
-                    // ── Title ─────────────────────────────────────────
-                    _label('LABEL'),
-                    const SizedBox(height: 6),
-                    _buildTextField(
-                      controller: controller.titleController,
-                      hint: 'Recipe name',
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                    ),
-                    const SizedBox(height: 20),
-
-                    // ── Details row ───────────────────────────────────
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildMiniField(
-                            label: 'SERVINGS',
-                            controller: controller.servingsController,
-                            hint: '4',
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _buildMiniField(
-                            label: 'PREP TIME',
-                            controller: controller.prepTimeController,
-                            hint: '15 min',
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _buildMiniField(
-                            label: 'COOK TIME',
-                            controller: controller.cookTimeController,
-                            hint: '25 min',
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 28),
-
-                    // ── Ingredients ───────────────────────────────────
-                    _IngredientsEditor(controller: controller, recipe: recipe),
-                    const SizedBox(height: 28),
-
-                    // ── Instructions ──────────────────────────────────
-                    _InstructionsEditor(controller: controller, recipe: recipe),
-                    const SizedBox(height: 28),
-
-                    // ── Visibility toggle ────────────────────────────
-                    _VisibilityToggle(controller: controller),
-                    const SizedBox(height: 40),
+                    _PhotoBasicsCard(controller: controller),
+                    const SizedBox(height: 16),
+                    _IngredientsEditor(controller: controller),
+                    const SizedBox(height: 14),
+                    _InstructionsEditor(controller: controller),
+                    const SizedBox(height: 16),
+                    if (isEdit) _DeleteButton(recipe: recipe!),
                   ],
                 ),
               ),
@@ -98,259 +86,255 @@ class RecipeEditorScreen extends StatelessWidget {
     );
   }
 
-  // ── Top bar ──────────────────────────────────────────────────────────────────
-
-  Widget _buildTopBar(BuildContext context, RecipeEditorController controller) {
+  // ── Top bar (X · Edit recipe · Save) ──────────────────────────────────────
+  Widget _buildTopBar(
+      BuildContext context, RecipeEditorController controller, bool isEdit) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
-      child: Row(
-        children: [
-          // Close button
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.surfaceBorderLight),
-              ),
-              child: const Icon(Icons.close, size: 18, color: AppColors.textDark),
-            ),
-          ),
-          const Spacer(),
-          Text(
-            'Edit recipe',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textDark,
-            ),
-          ),
-          const Spacer(),
-          // Save pill
-          Obx(() {
-            return GestureDetector(
-              onTap: controller.isSaving.value ? null : controller.saveRecipe,
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 14),
+      child: SizedBox(
+        height: 44,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            GestureDetector(
+              onTap: () => Navigator.pop(context),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(20),
+                  color: _E.card,
+                  borderRadius: BorderRadius.circular(13),
+                  border: Border.all(color: const Color(0xFFEFEDE6)),
                 ),
-                child: controller.isSaving.value
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : Text(
-                        'Save',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
+                child: const Icon(Icons.close, size: 19, color: _E.textDark),
               ),
-            );
-          }),
-        ],
-      ),
-    );
-  }
-
-  // ── Shared helpers ───────────────────────────────────────────────────────────
-
-  static Widget _label(String text) {
-    return Text(
-      text,
-      style: GoogleFonts.plusJakartaSans(
-        fontSize: 11,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 0.8,
-        color: AppColors.textHint,
-      ),
-    );
-  }
-
-  static Widget _buildTextField({
-    required TextEditingController controller,
-    required String hint,
-    int maxLines = 1,
-    double fontSize = 15,
-    FontWeight fontWeight = FontWeight.w500,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.surfaceBorderLight),
-      ),
-      child: TextField(
-        controller: controller,
-        maxLines: maxLines,
-        style: GoogleFonts.plusJakartaSans(
-          fontSize: fontSize,
-          fontWeight: fontWeight,
-          color: AppColors.textDark,
-        ),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: GoogleFonts.plusJakartaSans(
-            fontSize: fontSize - 1,
-            fontWeight: FontWeight.w400,
-            color: AppColors.textHint,
-          ),
-          border: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        ),
-      ),
-    );
-  }
-
-  static Widget _buildMiniField({
-    required String label,
-    required TextEditingController controller,
-    required String hint,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _label(label),
-        const SizedBox(height: 6),
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.surfaceBorderLight),
-          ),
-          child: TextField(
-            controller: controller,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textDark,
             ),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: GoogleFonts.plusJakartaSans(
-                fontSize: 13,
-                fontWeight: FontWeight.w400,
-                color: AppColors.textHint,
-              ),
-              border: InputBorder.none,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-            ),
-          ),
+            Text(isEdit ? 'Edit recipe' : 'New recipe',
+                style: _f(17, FontWeight.w800, _E.textDark)),
+            Obx(() {
+              return GestureDetector(
+                onTap: controller.isSaving.value ? null : controller.saveRecipe,
+                child: Container(
+                  height: 40,
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: _E.primary,
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: controller.isSaving.value
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2))
+                      : Text('Save', style: _f(14, FontWeight.w700, Colors.white)),
+                ),
+              );
+            }),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// IMAGE SECTION
+// PHOTO + BASICS CARD (image, title, servings, total time)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-class _ImageSection extends StatelessWidget {
+class _PhotoBasicsCard extends StatelessWidget {
   final RecipeEditorController controller;
-
-  const _ImageSection({required this.controller});
+  const _PhotoBasicsCard({required this.controller});
 
   @override
   Widget build(BuildContext context) {
-    return Obx(() {
-      final hasImage = controller.imageFile.value != null ||
-          controller.imagePath.value.isNotEmpty;
-
-      Widget imageWidget;
-      if (controller.imageFile.value != null) {
-        imageWidget =
-            Image.file(controller.imageFile.value!, fit: BoxFit.cover);
-      } else if (controller.imagePath.value.isNotEmpty) {
-        final p = controller.imagePath.value;
-        imageWidget = p.startsWith('http')
-            ? Image.network(p, fit: BoxFit.cover)
-            : Image.file(File(p), fit: BoxFit.cover);
-      } else {
-        imageWidget = Container(
-          color: const Color(0xFFF0E6D6),
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.add_a_photo_outlined,
-                    size: 36, color: AppColors.textHint),
-                const SizedBox(height: 8),
-                Text(
-                  'Add photo',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textMedium,
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: _cardDeco(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Image + change photo
+          Obx(() {
+            Widget img;
+            if (controller.imageFile.value != null) {
+              img = Image.file(controller.imageFile.value!, fit: BoxFit.cover);
+            } else if (controller.imagePath.value.isNotEmpty) {
+              final p = controller.imagePath.value;
+              img = p.startsWith('http')
+                  ? Image.network(p, fit: BoxFit.cover)
+                  : Image.file(File(p), fit: BoxFit.cover);
+            } else {
+              img = Container(
+                color: const Color(0xFFF0E6D6),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.add_a_photo_outlined,
+                          size: 30, color: AppColors.textHint),
+                      const SizedBox(height: 6),
+                      Text('Add photo',
+                          style: _f(13, FontWeight.w600, AppColors.textMedium)),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          ),
-        );
-      }
-
-      return GestureDetector(
-        onTap: controller.pickImage,
-        child: Container(
-          height: 190,
-          width: double.infinity,
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.surfaceBorderLight),
-          ),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              imageWidget,
-              if (hasImage) Container(color: Colors.black.withValues(alpha: 0.2)),
-              if (hasImage)
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.camera_alt_outlined,
-                            size: 15, color: Colors.white),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Change photo',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
+              );
+            }
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: SizedBox(
+                height: 140,
+                width: double.infinity,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    img,
+                    Positioned(
+                      right: 10,
+                      bottom: 10,
+                      child: GestureDetector(
+                        onTap: controller.pickImage,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.94),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.photo_camera_outlined,
+                                  size: 15, color: _E.primary),
+                              const SizedBox(width: 6),
+                              Text('Change photo',
+                                  style: _f(13, FontWeight.w700, _E.textDark)),
+                            ],
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
+                  ],
                 ),
+              ),
+            );
+          }),
+          const SizedBox(height: 16),
+          // Title
+          _fieldLabel('Title'),
+          const SizedBox(height: 7),
+          _FocusField(
+            controller: controller.titleController,
+            hint: 'Recipe name',
+            height: 48,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            focused: true,
+          ),
+          const SizedBox(height: 14),
+          // Servings + total time
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _fieldLabel('Servings'),
+                    const SizedBox(height: 7),
+                    _FocusField(
+                      controller: controller.servingsController,
+                      hint: '2',
+                      height: 46,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _fieldLabel('Total time'),
+                    const SizedBox(height: 7),
+                    _FocusField(
+                      controller: controller.totalTimeController,
+                      hint: '35 min',
+                      height: 46,
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _fieldLabel(String t) => Text(t.toUpperCase(),
+      style: _f(12, FontWeight.w700, _E.label, ls: 0.5));
+}
+
+// A field styled like the HTML inputs (optionally showing the focused ring).
+class _FocusField extends StatelessWidget {
+  final TextEditingController controller;
+  final String hint;
+  final double height;
+  final double fontSize;
+  final FontWeight fontWeight;
+  final bool focused;
+
+  const _FocusField({
+    required this.controller,
+    required this.hint,
+    this.height = 46,
+    this.fontSize = 15,
+    this.fontWeight = FontWeight.w700,
+    this.focused = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: height,
+      decoration: BoxDecoration(
+        color: _E.fieldBg,
+        borderRadius: BorderRadius.circular(11),
+        border: Border.all(
+          color: focused ? _E.primary : _E.fieldBorder,
+          width: focused ? 1.5 : 1,
         ),
-      );
-    });
+        boxShadow: focused
+            ? [
+                BoxShadow(
+                  color: _E.primary.withValues(alpha: 0.1),
+                  blurRadius: 0,
+                  spreadRadius: 3,
+                ),
+              ]
+            : null,
+      ),
+      alignment: Alignment.centerLeft,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      child: TextField(
+        controller: controller,
+        style: _f(fontSize, fontWeight, _E.textDark),
+        cursorColor: _E.primary,
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: _f(fontSize, FontWeight.w400, AppColors.textHint),
+          isDense: true,
+          filled: false,
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          contentPadding: EdgeInsets.zero,
+        ),
+      ),
+    );
   }
 }
 
@@ -362,31 +346,12 @@ class _DragDots extends StatelessWidget {
   const _DragDots();
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 12,
-      height: 20,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          for (int r = 0; r < 3; r++) ...[
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(width: 3, height: 3, decoration: BoxDecoration(color: AppColors.textHint.withValues(alpha: 0.35), shape: BoxShape.circle)),
-                const SizedBox(width: 3),
-                Container(width: 3, height: 3, decoration: BoxDecoration(color: AppColors.textHint.withValues(alpha: 0.35), shape: BoxShape.circle)),
-              ],
-            ),
-            if (r < 2) const SizedBox(height: 2),
-          ],
-        ],
-      ),
-    );
+    return const Icon(Icons.drag_indicator_rounded, size: 18, color: _E.grip);
   }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARED: Section header (orange dot + bold name)
+// SHARED: Section header (orange dot + name field)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class _SectionHeader extends StatelessWidget {
@@ -395,24 +360,27 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: 8, bottom: 10),
+      padding: const EdgeInsets.only(top: 4, bottom: 7),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            width: 7, height: 7,
-            decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
+            width: 6,
+            height: 6,
+            decoration:
+                BoxDecoration(color: _E.primary, borderRadius: BorderRadius.circular(3)),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 7),
           Expanded(
             child: Container(
-              padding: const EdgeInsets.only(bottom: 6),
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: AppColors.surfaceBorderLight, width: 1)),
+              height: 34,
+              alignment: Alignment.centerLeft,
+              padding: const EdgeInsets.symmetric(horizontal: 11),
+              decoration: BoxDecoration(
+                color: _E.fieldBg,
+                borderRadius: BorderRadius.circular(9),
+                border: Border.all(color: _E.fieldBorder),
               ),
-              child: Text(name, style: GoogleFonts.plusJakartaSans(
-                fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textDark,
-              )),
+              child: Text(name, style: _f(13, FontWeight.w800, _E.textDark)),
             ),
           ),
         ],
@@ -422,7 +390,7 @@ class _SectionHeader extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARED: Add button (+ Add ingredient / + Add step)
+// SHARED: "+ Add ingredient / step" text button
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class _AddItemButton extends StatelessWidget {
@@ -433,15 +401,15 @@ class _AddItemButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: Padding(
-        padding: const EdgeInsets.only(top: 8, bottom: 6, left: 4),
+        padding: const EdgeInsets.only(left: 22, top: 2, bottom: 8),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.add, size: 16, color: AppColors.primary),
+            Icon(Icons.add, size: 15, color: _E.primary),
             const SizedBox(width: 6),
-            Text(label, style: GoogleFonts.plusJakartaSans(
-              fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.primary,
-            )),
+            Text(label, style: _f(13, FontWeight.w700, _E.primary)),
           ],
         ),
       ),
@@ -450,7 +418,7 @@ class _AddItemButton extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARED: Add group button (centered, bordered pill)
+// SHARED: "+ Add group" dashed button
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class _AddGroupButton extends StatelessWidget {
@@ -458,67 +426,87 @@ class _AddGroupButton extends StatelessWidget {
   const _AddGroupButton({required this.onTap});
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.surfaceBorderLight),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.add, size: 16, color: AppColors.primary),
-              const SizedBox(width: 6),
-              Text('Add group', style: GoogleFonts.plusJakartaSans(
-                fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.primary,
-              )),
-            ],
-          ),
+    return GestureDetector(
+      onTap: onTap,
+      child: DottedBorderBox(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.add, size: 16, color: _E.primary),
+            const SizedBox(width: 7),
+            Text('Add group', style: _f(13, FontWeight.w700, _E.textDark)),
+          ],
         ),
       ),
     );
   }
 }
 
+// A rounded rectangle with a dashed border.
+class DottedBorderBox extends StatelessWidget {
+  final Widget child;
+  const DottedBorderBox({super.key, required this.child});
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _DashedRectPainter(),
+      child: SizedBox(
+        height: 40,
+        width: double.infinity,
+        child: Center(child: child),
+      ),
+    );
+  }
+}
+
+class _DashedRectPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFFD8CFBE)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+    final rrect = RRect.fromRectAndRadius(
+        Offset.zero & size, const Radius.circular(10));
+    final path = Path()..addRRect(rrect);
+    const dash = 6.0, gap = 4.0;
+    for (final metric in path.computeMetrics()) {
+      double d = 0;
+      while (d < metric.length) {
+        canvas.drawPath(
+            metric.extractPath(d, (d + dash).clamp(0, metric.length)), paint);
+        d += dash + gap;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
-// INGREDIENTS EDITOR — section-grouped, pixel-perfect
+// INGREDIENTS EDITOR — section-grouped
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class _IngredientsEditor extends StatelessWidget {
   final RecipeEditorController controller;
-  final RecipeModel? recipe;
-
-  const _IngredientsEditor({required this.controller, this.recipe});
+  const _IngredientsEditor({required this.controller});
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
       final sections = controller.ingredientSections;
-
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(14, 16, 14, 16),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.surfaceBorderLight),
-        ),
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+        decoration: _cardDeco(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Ingredients', style: GoogleFonts.plusJakartaSans(
-              fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textDark,
-            )),
-            const SizedBox(height: 14),
-
-            for (int si = 0; si < sections.length; si++) ...[
-              _buildSection(si, sections[si]),
-            ],
-
-            const SizedBox(height: 14),
+            Text('Ingredients', style: _f(16, FontWeight.w800, _E.textDark)),
+            const SizedBox(height: 10),
+            for (int si = 0; si < sections.length; si++)
+              _buildSection(context, si, sections[si]),
             _AddGroupButton(onTap: () => _showAddGroupSheet()),
           ],
         ),
@@ -526,77 +514,96 @@ class _IngredientsEditor extends StatelessWidget {
     });
   }
 
-  Widget _buildSection(int sectionIdx, dynamic section) {
+  Widget _buildSection(BuildContext context, int sectionIdx, dynamic section) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (section.name != null && section.name!.isNotEmpty)
           _SectionHeader(name: section.name!),
-
         for (int i = 0; i < section.items.length; i++)
-          _ingredientCard(sectionIdx, i, section.items[i]),
-
-        _AddItemButton(label: 'Add ingredient', onTap: () => _showAddItemSheet(sectionIdx)),
-        const SizedBox(height: 6),
+          _ingredientRow(sectionIdx, i, section.items[i]),
+        _AddItemButton(
+            label: 'Add ingredient',
+            onTap: () => _showAddItemSheet(sectionIdx)),
       ],
     );
   }
 
-  Widget _ingredientCard(int sectionIdx, int itemIdx, String text) {
+  Widget _ingredientRow(int sectionIdx, int itemIdx, String text) {
     final parts = _parseQty(text);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 6),
-      padding: const EdgeInsets.fromLTRB(8, 10, 6, 10),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.surfaceBorderLight),
-      ),
-      child: Row(
-        children: [
-          const _DragDots(),
-          const SizedBox(width: 10),
-          // Quantity
-          if (parts.$1.isNotEmpty) ...[
+    return GestureDetector(
+      onTap: () => _showEditItemSheet(sectionIdx, itemIdx, text),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 6),
+        height: 40,
+        decoration: BoxDecoration(
+          color: _E.card,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: _E.fieldBorder),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Row(
+          children: [
+            const SizedBox(width: 22, child: Center(child: _DragDots())),
+            _vLine(),
             SizedBox(
-              width: 52,
-              child: Text(parts.$1, style: GoogleFonts.plusJakartaSans(
-                fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textDark,
-              )),
+              width: 56,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Text(parts.$1,
+                    style: _f(13, FontWeight.w700, _E.textDark),
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
+              ),
+            ),
+            _vLine(),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Text(parts.$2,
+                    style: _f(14, FontWeight.w500, _E.textDark),
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
+              ),
+            ),
+            _vLine(),
+            GestureDetector(
+              onTap: () =>
+                  controller.removeIngredientFromSection(sectionIdx, itemIdx),
+              behavior: HitTestBehavior.opaque,
+              child: const SizedBox(
+                width: 34,
+                child: Icon(Icons.delete_outline_rounded, size: 18, color: _E.trash),
+              ),
             ),
           ],
-          // Name
-          Expanded(
-            child: Text(
-              parts.$2,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.textBody, height: 1.35,
-              ),
-              maxLines: 2, overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          // Delete (trash icon)
-          GestureDetector(
-            onTap: () => controller.removeIngredientFromSection(sectionIdx, itemIdx),
-            child: const Padding(
-              padding: EdgeInsets.all(6),
-              child: Icon(Icons.delete_outline_rounded, size: 20, color: AppColors.primary),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
   void _showAddItemSheet(int sectionIdx) {
-    final textCtrl = TextEditingController();
+    final tc = TextEditingController();
     Get.bottomSheet(
       _EditorBottomSheet(
         title: 'Add ingredient',
         hint: 'e.g. 2 cups flour',
-        textController: textCtrl,
-        onConfirm: () => controller.addIngredientToSection(sectionIdx, textCtrl.text),
+        textController: tc,
+        onConfirm: () => controller.addIngredientToSection(sectionIdx, tc.text),
+      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+    );
+  }
+
+  void _showEditItemSheet(int sectionIdx, int itemIdx, String current) {
+    final tc = TextEditingController(text: current);
+    Get.bottomSheet(
+      _EditorBottomSheet(
+        title: 'Edit ingredient',
+        hint: 'e.g. 2 cups flour',
+        textController: tc,
+        buttonLabel: 'Save',
+        onConfirm: () =>
+            controller.updateIngredientInSection(sectionIdx, itemIdx, tc.text),
       ),
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -604,15 +611,15 @@ class _IngredientsEditor extends StatelessWidget {
   }
 
   void _showAddGroupSheet() {
-    final textCtrl = TextEditingController();
+    final tc = TextEditingController();
     Get.bottomSheet(
       _EditorBottomSheet(
         title: 'Add group',
         hint: 'e.g. For the sauce',
-        textController: textCtrl,
+        textController: tc,
         buttonLabel: 'Add group',
         onConfirm: () {
-          final name = textCtrl.text.trim();
+          final name = tc.text.trim();
           if (name.isNotEmpty) controller.addIngredientGroup(name);
         },
       ),
@@ -641,42 +648,31 @@ class _IngredientsEditor extends StatelessWidget {
   }
 }
 
+Widget _vLine() => Container(width: 1, color: _E.rowLine);
+
 // ═══════════════════════════════════════════════════════════════════════════════
-// INSTRUCTIONS EDITOR — section-grouped, pixel-perfect
+// INSTRUCTIONS EDITOR — section-grouped
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class _InstructionsEditor extends StatelessWidget {
   final RecipeEditorController controller;
-  final RecipeModel? recipe;
-
-  const _InstructionsEditor({required this.controller, this.recipe});
+  const _InstructionsEditor({required this.controller});
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
       final sections = controller.instructionSections;
-
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(14, 16, 14, 16),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.surfaceBorderLight),
-        ),
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+        decoration: _cardDeco(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Instructions', style: GoogleFonts.plusJakartaSans(
-              fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textDark,
-            )),
-            const SizedBox(height: 14),
-
-            for (int si = 0; si < sections.length; si++) ...[
+            Text('Instructions', style: _f(16, FontWeight.w800, _E.textDark)),
+            const SizedBox(height: 10),
+            for (int si = 0; si < sections.length; si++)
               _buildSection(si, sections[si], sections),
-            ],
-
-            const SizedBox(height: 14),
             _AddGroupButton(onTap: () => _showAddGroupSheet()),
           ],
         ),
@@ -689,85 +685,99 @@ class _InstructionsEditor extends StatelessWidget {
     for (int i = 0; i < sectionIdx; i++) {
       stepNum += (sections[i].steps as List).length;
     }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (section.name != null && section.name!.isNotEmpty)
           _SectionHeader(name: section.name!),
-
         for (int i = 0; i < section.steps.length; i++)
-          _stepCard(sectionIdx, i, stepNum + i, section.steps[i]),
-
-        _AddItemButton(label: 'Add step', onTap: () => _showAddStepSheet(sectionIdx)),
-        const SizedBox(height: 6),
+          _stepRow(sectionIdx, i, stepNum + i, section.steps[i]),
+        _AddItemButton(
+            label: 'Add step', onTap: () => _showAddStepSheet(sectionIdx)),
       ],
     );
   }
 
-  Widget _stepCard(int sectionIdx, int stepIdx, int stepNumber, String text) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 6),
-      padding: const EdgeInsets.fromLTRB(8, 10, 6, 10),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.surfaceBorderLight),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: const _DragDots(),
+  Widget _stepRow(int sectionIdx, int stepIdx, int stepNumber, String text) {
+    return GestureDetector(
+      onTap: () => _showEditStepSheet(sectionIdx, stepIdx, text),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 6),
+        constraints: const BoxConstraints(minHeight: 46),
+        decoration: BoxDecoration(
+          color: _E.card,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: _E.fieldBorder),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(width: 22, child: Center(child: _DragDots())),
+              _vLine(),
+              SizedBox(
+                width: 24,
+                child: Center(
+                  child: Text('$stepNumber',
+                      style: _f(12, FontWeight.w800, _E.primary)),
+                ),
+              ),
+              _vLine(),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(text,
+                        style: _f(13.5, FontWeight.w500, _E.textDark, h: 1.4)),
+                  ),
+                ),
+              ),
+              _vLine(),
+              GestureDetector(
+                onTap: () =>
+                    controller.removeInstructionFromSection(sectionIdx, stepIdx),
+                behavior: HitTestBehavior.opaque,
+                child: const SizedBox(
+                  width: 34,
+                  child: Icon(Icons.delete_outline_rounded,
+                      size: 18, color: _E.trash),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          // Step number circle
-          Container(
-            width: 26, height: 26,
-            margin: const EdgeInsets.only(top: 2),
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text('$stepNumber', style: GoogleFonts.plusJakartaSans(
-                fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white,
-              )),
-            ),
-          ),
-          const SizedBox(width: 10),
-          // Instruction text
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 3),
-              child: Text(text, style: GoogleFonts.plusJakartaSans(
-                fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.textBody, height: 1.45,
-              )),
-            ),
-          ),
-          // Delete
-          GestureDetector(
-            onTap: () => controller.removeInstructionFromSection(sectionIdx, stepIdx),
-            child: const Padding(
-              padding: EdgeInsets.all(6),
-              child: Icon(Icons.delete_outline_rounded, size: 20, color: AppColors.primary),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
   void _showAddStepSheet(int sectionIdx) {
-    final textCtrl = TextEditingController();
+    final tc = TextEditingController();
     Get.bottomSheet(
       _EditorBottomSheet(
         title: 'Add step',
         hint: 'Describe this cooking step...',
-        textController: textCtrl,
+        textController: tc,
         maxLines: 4,
-        onConfirm: () => controller.addInstructionToSection(sectionIdx, textCtrl.text),
+        onConfirm: () => controller.addInstructionToSection(sectionIdx, tc.text),
+      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+    );
+  }
+
+  void _showEditStepSheet(int sectionIdx, int stepIdx, String current) {
+    final tc = TextEditingController(text: current);
+    Get.bottomSheet(
+      _EditorBottomSheet(
+        title: 'Edit step',
+        hint: 'Describe this cooking step...',
+        textController: tc,
+        maxLines: 4,
+        buttonLabel: 'Save',
+        onConfirm: () =>
+            controller.updateInstructionInSection(sectionIdx, stepIdx, tc.text),
       ),
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -775,15 +785,15 @@ class _InstructionsEditor extends StatelessWidget {
   }
 
   void _showAddGroupSheet() {
-    final textCtrl = TextEditingController();
+    final tc = TextEditingController();
     Get.bottomSheet(
       _EditorBottomSheet(
         title: 'Add group',
         hint: 'e.g. For the dough',
-        textController: textCtrl,
+        textController: tc,
         buttonLabel: 'Add group',
         onConfirm: () {
-          final name = textCtrl.text.trim();
+          final name = tc.text.trim();
           if (name.isNotEmpty) controller.addInstructionGroup(name);
         },
       ),
@@ -794,103 +804,119 @@ class _InstructionsEditor extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// ═══════════════════════════════════════════════════════════════════════════════
-// VISIBILITY TOGGLE — Public / Private
+// DELETE RECIPE BUTTON
 // ═══════════════════════════════════════════════════════════════════════════════
 
-class _VisibilityToggle extends StatelessWidget {
-  final RecipeEditorController controller;
-  const _VisibilityToggle({required this.controller});
+class _DeleteButton extends StatelessWidget {
+  final RecipeModel recipe;
+  const _DeleteButton({required this.recipe});
+
+  void _confirm(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 40),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                      color: const Color(0xFFFEE2E2),
+                      borderRadius: BorderRadius.circular(16)),
+                  child: const Icon(Icons.delete_outline_rounded,
+                      color: Colors.red, size: 28),
+                ),
+                const SizedBox(height: 20),
+                Text('Delete this recipe?',
+                    style: _f(18, FontWeight.w800, _E.textDark)),
+                const SizedBox(height: 10),
+                Text(
+                  'Are you sure you want to delete "${recipe.title}"? This action cannot be undone.',
+                  textAlign: TextAlign.center,
+                  style: _f(13.5, FontWeight.w400, AppColors.textMedium, h: 1.5),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => Navigator.pop(ctx),
+                        child: Container(
+                          height: 48,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: _E.border),
+                            borderRadius:
+                                BorderRadius.circular(AppDimensions.radiusButton),
+                          ),
+                          child: Text('Cancel',
+                              style: _f(15, FontWeight.w700, _E.textDark)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () async {
+                          Navigator.pop(ctx);
+                          Navigator.pop(context);
+                          await Get.find<HomeController>().deleteRecipe(recipe);
+                        },
+                        child: Container(
+                          height: 48,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(
+                                  AppDimensions.radiusButton)),
+                          child: Text('Delete',
+                              style: _f(15, FontWeight.w700, Colors.white)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Obx(() {
-      final isPublic = controller.isPublic.value;
-      return Container(
+    return GestureDetector(
+      onTap: () => _confirm(context),
+      child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(16),
+        height: 50,
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.surfaceBorderLight),
+          color: const Color(0xFFFFF3EF),
+          borderRadius: BorderRadius.circular(13),
+          border: Border.all(color: const Color(0xFFF0D6CE)),
         ),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: isPublic
-                    ? AppColors.greenBgLight
-                    : AppColors.surfaceLight,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                isPublic ? Icons.public_rounded : Icons.lock_outline_rounded,
-                size: 20,
-                color: isPublic ? AppColors.green : AppColors.textHint,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    isPublic ? 'Public recipe' : 'Private recipe',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textDark,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    isPublic
-                        ? 'Visible to everyone on Discover'
-                        : 'Only visible to you',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textMedium,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            GestureDetector(
-              onTap: () => controller.isPublic.value = !isPublic,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 50,
-                height: 28,
-                padding: const EdgeInsets.all(3),
-                decoration: BoxDecoration(
-                  color: isPublic ? AppColors.green : AppColors.surfaceBorderLight,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: AnimatedAlign(
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeInOut,
-                  alignment: isPublic ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Container(
-                    width: 22,
-                    height: 22,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            const Icon(Icons.delete_outline_rounded, size: 19, color: _E.redText),
+            const SizedBox(width: 8),
+            Text('Delete recipe', style: _f(15, FontWeight.w700, _E.redText)),
           ],
         ),
-      );
-    });
+      ),
+    );
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
 // SHARED BOTTOM SHEET for add/edit
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -918,24 +944,16 @@ class _EditorBottomSheet extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
         decoration: const BoxDecoration(
-          color: AppColors.surface,
+          color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
             Row(
               children: [
-                Text(
-                  title,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textDark,
-                  ),
-                ),
+                Text(title, style: _f(18, FontWeight.w800, _E.textDark)),
                 const Spacer(),
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
@@ -943,47 +961,39 @@ class _EditorBottomSheet extends StatelessWidget {
                     width: 30,
                     height: 30,
                     decoration: const BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    child:
-                        const Icon(Icons.close, color: Colors.white, size: 16),
+                        color: _E.primary, shape: BoxShape.circle),
+                    child: const Icon(Icons.close, color: Colors.white, size: 16),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            // Text field
             Container(
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: _E.fieldBg,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.surfaceBorderLight),
+                border: Border.all(color: _E.primary, width: 1.5),
               ),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
               child: TextField(
                 controller: textController,
                 maxLines: maxLines,
                 autofocus: true,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textDark,
-                ),
+                cursorColor: _E.primary,
+                style: _f(15, FontWeight.w500, _E.textDark),
                 decoration: InputDecoration(
                   hintText: hint,
-                  hintStyle: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    color: AppColors.textHint,
-                  ),
+                  hintStyle: _f(14, FontWeight.w400, AppColors.textHint),
+                  isDense: true,
+                  filled: false,
                   border: InputBorder.none,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
                 ),
               ),
             ),
             const SizedBox(height: 16),
-            // Confirm button
             GestureDetector(
               onTap: () {
                 onConfirm();
@@ -993,16 +1003,11 @@ class _EditorBottomSheet extends StatelessWidget {
                 width: double.infinity,
                 height: AppDimensions.buttonHeight,
                 decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius:
-                      BorderRadius.circular(AppDimensions.radiusButton),
+                  color: _E.primary,
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusButton),
                 ),
                 child: Center(
-                  child: Text(
-                    buttonLabel,
-                    style: AppTextStyles.buttonLabel,
-                  ),
-                ),
+                    child: Text(buttonLabel, style: AppTextStyles.buttonLabel)),
               ),
             ),
           ],

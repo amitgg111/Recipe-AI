@@ -93,7 +93,10 @@ class _CookbooksScreenState extends State<CookbooksScreen>
   Widget _buildTopBar() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.xl, AppSpacing.md, AppSpacing.xl, 0,
+        AppSpacing.xl,
+        AppSpacing.md,
+        AppSpacing.xl,
+        0,
       ),
       child: Row(
         children: [
@@ -131,7 +134,8 @@ class _CookbooksScreenState extends State<CookbooksScreen>
                 Text(
                   '5/5',
                   style: AppTextStyles.chipLabel.copyWith(
-                    color: AppColors.gold, fontSize: 13,
+                    color: AppColors.gold,
+                    fontSize: 13,
                   ),
                 ),
               ],
@@ -165,7 +169,8 @@ class _CookbooksScreenState extends State<CookbooksScreen>
               'Your cookbook is empty for now. Save your first recipe and it\'ll have a cozy home right here.',
               textAlign: TextAlign.center,
               style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textBody, height: 1.5,
+                color: AppColors.textBody,
+                height: 1.5,
               ),
             ),
             const SizedBox(height: AppSpacing.xxl),
@@ -209,8 +214,9 @@ class _CookbooksScreenState extends State<CookbooksScreen>
                     height: AppDimensions.appBarButtonSize,
                     decoration: BoxDecoration(
                       color: AppColors.surface,
-                      borderRadius:
-                          BorderRadius.circular(AppDimensions.radiusMd),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusMd,
+                      ),
                       border: Border.all(color: AppColors.surfaceBorderLight),
                     ),
                     child: const Icon(
@@ -250,10 +256,14 @@ class _CookbooksScreenState extends State<CookbooksScreen>
       case 1: // Oldest first
         return sorted.reversed.toList();
       case 2: // Name A-Z
-        sorted.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        sorted.sort(
+          (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+        );
         return sorted;
       case 3: // Name Z-A
-        sorted.sort((a, b) => b.name.toLowerCase().compareTo(a.name.toLowerCase()));
+        sorted.sort(
+          (a, b) => b.name.toLowerCase().compareTo(a.name.toLowerCase()),
+        );
         return sorted;
       default:
         return sorted;
@@ -267,7 +277,8 @@ class _CookbooksScreenState extends State<CookbooksScreen>
       if (cookbooks.isEmpty) {
         return Padding(
           padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.xl, vertical: 40,
+            horizontal: AppSpacing.xl,
+            vertical: 40,
           ),
           child: Center(
             child: Text(
@@ -315,10 +326,14 @@ class _CookbooksScreenState extends State<CookbooksScreen>
       case 1: // Oldest first
         return sorted.reversed.toList();
       case 2: // Name A-Z
-        sorted.sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+        sorted.sort(
+          (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
+        );
         return sorted;
       case 3: // Name Z-A
-        sorted.sort((a, b) => b.title.toLowerCase().compareTo(a.title.toLowerCase()));
+        sorted.sort(
+          (a, b) => b.title.toLowerCase().compareTo(a.title.toLowerCase()),
+        );
         return sorted;
       default:
         return sorted;
@@ -331,7 +346,8 @@ class _CookbooksScreenState extends State<CookbooksScreen>
       if (recipes.isEmpty) {
         return Padding(
           padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.xl, vertical: 40,
+            horizontal: AppSpacing.xl,
+            vertical: 40,
           ),
           child: Center(
             child: Text(
@@ -426,9 +442,7 @@ class _CookbooksScreenState extends State<CookbooksScreen>
               padding: const EdgeInsets.fromLTRB(24, 12, 24, 30),
               decoration: const BoxDecoration(
                 color: AppColors.surface,
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(28),
-                ),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -458,7 +472,9 @@ class _CookbooksScreenState extends State<CookbooksScreen>
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
-                            Icons.close, color: Colors.white, size: 18,
+                            Icons.close,
+                            color: Colors.white,
+                            size: 18,
                           ),
                         ),
                       ),
@@ -532,10 +548,7 @@ class _CookbooksScreenState extends State<CookbooksScreen>
               ),
               const SizedBox(height: 20),
               // Title
-              Text(
-                'Add to Recipe AI',
-                style: AppTextStyles.screenTitle,
-              ),
+              Text('Add to Recipe AI', style: AppTextStyles.screenTitle),
               const SizedBox(height: 6),
               Text(
                 'Import from anywhere',
@@ -633,7 +646,9 @@ class _CookbooksScreenState extends State<CookbooksScreen>
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
-                          Icons.close, color: Colors.white, size: 18,
+                          Icons.close,
+                          color: Colors.white,
+                          size: 18,
                         ),
                       ),
                     ),
@@ -641,20 +656,13 @@ class _CookbooksScreenState extends State<CookbooksScreen>
                 ),
                 const SizedBox(height: 8),
                 // Title
-                Text(
-                  'New cookbook',
-                  style: AppTextStyles.screenTitle,
-                ),
+                Text('New cookbook', style: AppTextStyles.screenTitle),
                 const SizedBox(height: 20),
                 // Name label
-                Text(
-                  'Title',
-                  style: AppTextStyles.inputLabel,
-                ),
+                Text('Title', style: AppTextStyles.inputLabel),
                 const SizedBox(height: 8),
                 // Text field
                 Container(
-                  height: AppDimensions.inputHeight,
                   decoration: BoxDecoration(
                     color: AppColors.surface,
                     borderRadius: BorderRadius.circular(11),
@@ -670,13 +678,22 @@ class _CookbooksScreenState extends State<CookbooksScreen>
                   child: TextField(
                     controller: nameController,
                     autofocus: true,
+
                     style: AppTextStyles.inputText,
                     decoration: InputDecoration(
                       hintText: 'e.g. Weeknight Dinners',
                       hintStyle: AppTextStyles.inputHint,
+                      filled: false,
+                      isDense: false,
                       border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
+                      errorBorder: InputBorder.none,
+                      focusedErrorBorder: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 14,
+                        horizontal: 16,
+                        vertical: 14,
                       ),
                     ),
                   ),
@@ -703,8 +720,9 @@ class _CookbooksScreenState extends State<CookbooksScreen>
                     height: AppDimensions.buttonHeight,
                     decoration: BoxDecoration(
                       color: AppColors.primary,
-                      borderRadius:
-                          BorderRadius.circular(AppDimensions.radiusButton),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusButton,
+                      ),
                       boxShadow: [
                         BoxShadow(
                           color: AppColors.primaryShadow,
@@ -719,8 +737,10 @@ class _CookbooksScreenState extends State<CookbooksScreen>
                       children: [
                         const Icon(Icons.add, color: Colors.white, size: 20),
                         const SizedBox(width: 8),
-                        Text('Create cookbook',
-                            style: AppTextStyles.buttonLabel),
+                        Text(
+                          'Create cookbook',
+                          style: AppTextStyles.buttonLabel,
+                        ),
                       ],
                     ),
                   ),
@@ -765,7 +785,9 @@ class _SortOption extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isSelected ? AppColors.primary : AppColors.surfaceBorder,
+                  color: isSelected
+                      ? AppColors.primary
+                      : AppColors.surfaceBorder,
                   width: isSelected ? 6 : 2,
                 ),
               ),
@@ -846,7 +868,9 @@ class _AddMenuOption extends StatelessWidget {
               ),
             ),
             const Icon(
-              Icons.arrow_forward_ios, size: 16, color: AppColors.textHint,
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: AppColors.textHint,
             ),
           ],
         ),
@@ -880,7 +904,8 @@ class ImportSourcePickerScreen extends StatelessWidget {
                     onTap: () => Navigator.pop(context),
                     child: const Icon(
                       Icons.arrow_back_ios_new_rounded,
-                      size: 20, color: AppColors.textDark,
+                      size: 20,
+                      color: AppColors.textDark,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -938,10 +963,7 @@ class ImportSourcePickerScreen extends StatelessWidget {
                             const Color(0xFFE1306C),
                           ),
                           const SizedBox(width: 8),
-                          _socialIcon(
-                            Icons.music_note_rounded,
-                            Colors.black,
-                          ),
+                          _socialIcon(Icons.music_note_rounded, Colors.black),
                           const SizedBox(width: 8),
                           _socialIcon(
                             Icons.facebook_rounded,
@@ -1141,9 +1163,7 @@ class _CookbookCard extends StatelessWidget {
                 border: Border.all(color: AppColors.surfaceBorder),
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(
-                  AppDimensions.radiusLg - 1,
-                ),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusLg - 1),
                 child: _buildImageGrid(),
               ),
             ),
@@ -1211,9 +1231,7 @@ class _CookbookCard extends StatelessWidget {
     return Container(
       color: AppColors.background,
       child: const Center(
-        child: Icon(
-          Icons.image_outlined, color: AppColors.iconLight, size: 24,
-        ),
+        child: Icon(Icons.image_outlined, color: AppColors.iconLight, size: 24),
       ),
     );
   }
@@ -1267,7 +1285,8 @@ class _RecipeCard extends StatelessWidget {
                       ),
                       child: const Icon(
                         Icons.favorite_border_rounded,
-                        size: 14, color: AppColors.textMedium,
+                        size: 14,
+                        color: AppColors.textMedium,
                       ),
                     ),
                   ),
@@ -1294,7 +1313,8 @@ class _RecipeCard extends StatelessWidget {
                     children: [
                       const Icon(
                         Icons.access_time_rounded,
-                        size: 14, color: AppColors.textLight,
+                        size: 14,
+                        color: AppColors.textLight,
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -1374,7 +1394,9 @@ class RecipeImage extends StatelessWidget {
       loadingBuilder: (context, child, loadingProgress) {
         if (loadingProgress == null) return child;
         return _ImagePlaceholder(
-          width: width ?? 50, height: height ?? 50, showLoader: true,
+          width: width ?? 50,
+          height: height ?? 50,
+          showLoader: true,
         );
       },
     );
@@ -1401,7 +1423,8 @@ class _ImagePlaceholder extends StatelessWidget {
       alignment: Alignment.center,
       child: showLoader
           ? const SizedBox(
-              width: 22, height: 22,
+              width: 22,
+              height: 22,
               child: CircularProgressIndicator(strokeWidth: 2),
             )
           : Icon(
@@ -1440,7 +1463,8 @@ class ImportRecipeBottomSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 50, height: 5,
+            width: 50,
+            height: 5,
             decoration: BoxDecoration(
               color: Colors.grey.shade300,
               borderRadius: BorderRadius.circular(20),
@@ -1528,7 +1552,8 @@ class _ImportOptionTile extends StatelessWidget {
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(vertical: 6),
       leading: Container(
-        width: 52, height: 52,
+        width: 52,
+        height: 52,
         decoration: BoxDecoration(
           color: AppColors.primary.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(14),
@@ -1576,11 +1601,13 @@ class _PhotoImportLoadingOverlayState extends State<PhotoImportLoadingOverlay>
     super.initState();
     _steps = widget.steps;
     _pulse = AnimationController(
-      vsync: this, duration: const Duration(milliseconds: 900),
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
     )..repeat(reverse: true);
-    _scale = Tween<double>(begin: 0.92, end: 1.08).animate(
-      CurvedAnimation(parent: _pulse, curve: Curves.easeInOut),
-    );
+    _scale = Tween<double>(
+      begin: 0.92,
+      end: 1.08,
+    ).animate(CurvedAnimation(parent: _pulse, curve: Curves.easeInOut));
     _tickStep();
   }
 
@@ -1613,7 +1640,8 @@ class _PhotoImportLoadingOverlayState extends State<PhotoImportLoadingOverlay>
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.18),
-                blurRadius: 32, offset: const Offset(0, 12),
+                blurRadius: 32,
+                offset: const Offset(0, 12),
               ),
             ],
           ),
@@ -1623,16 +1651,20 @@ class _PhotoImportLoadingOverlayState extends State<PhotoImportLoadingOverlay>
               ScaleTransition(
                 scale: _scale,
                 child: Container(
-                  width: 80, height: 80,
+                  width: 80,
+                  height: 80,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [AppColors.primary, AppColors.primaryLight],
-                      begin: Alignment.topLeft, end: Alignment.bottomRight,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(22),
                   ),
                   child: const Icon(
-                    Icons.auto_awesome, color: Colors.white, size: 38,
+                    Icons.auto_awesome,
+                    color: Colors.white,
+                    size: 38,
                   ),
                 ),
               ),

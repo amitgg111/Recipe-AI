@@ -186,4 +186,21 @@ class HomeController extends GetxController {
       );
     }
   }
+
+  /// Updates only the public/private visibility of a recipe in Firestore.
+  Future<void> updateRecipeVisibility(String recipeId, bool isPublic) async {
+    try {
+      final uid = AuthService.currentUser?.uid;
+      if (uid == null) return;
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('recipes')
+          .doc(recipeId)
+          .update({'isPublic': isPublic});
+    } catch (e) {
+      log("Visibility update error: $e");
+    }
+  }
 }

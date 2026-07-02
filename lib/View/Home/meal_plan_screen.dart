@@ -851,7 +851,6 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
   ) {
     final now = DateTime.now();
     final rows = <Widget>[];
-    int dayCounter = 1;
     final totalCells = startWeekday - 1 + daysInMonth;
     final totalRows = (totalCells / 7).ceil();
 

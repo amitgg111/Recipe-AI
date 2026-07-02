@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/Controllers/cookbook_controller.dart';
 import 'package:recipe_ai/Controllers/home_controller.dart';
-import 'package:recipe_ai/View/Home/cookbooks_screen.dart';
 import 'package:recipe_ai/View/Home/recipe_detail_screen.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/app_logo.dart';
@@ -408,8 +407,9 @@ class ImportCompleteScreen extends StatelessWidget {
   }
 
   List<Widget> _buildIngredients() {
-    final hasAnySections = recipe.ingredientSections
-        .any((s) => s.items.isNotEmpty);
+    final hasAnySections = recipe.ingredientSections.any(
+      (s) => s.items.isNotEmpty,
+    );
 
     if (hasAnySections) {
       final widgets = <Widget>[];
@@ -436,14 +436,13 @@ class ImportCompleteScreen extends StatelessWidget {
       return widgets;
     }
 
-    return recipe.ingredients
-        .map((ing) => _IngredientRow(text: ing))
-        .toList();
+    return recipe.ingredients.map((ing) => _IngredientRow(text: ing)).toList();
   }
 
   List<Widget> _buildInstructions() {
-    final hasSectionSteps = recipe.instructionSections
-        .any((s) => s.steps.isNotEmpty);
+    final hasSectionSteps = recipe.instructionSections.any(
+      (s) => s.steps.isNotEmpty,
+    );
 
     if (hasSectionSteps) {
       final widgets = <Widget>[];

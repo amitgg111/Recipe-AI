@@ -261,9 +261,19 @@ class _AppSearchBarState extends State<AppSearchBar> {
                         decoration: InputDecoration(
                           hintText: widget.hintText,
                           hintStyle: widget.hintStyle ?? defaultHintStyle,
-                          border: InputBorder.none,
+                          // The outer AnimatedContainer already draws the only
+                          // border. Strip the inner field border in EVERY state
+                          // (incl. focused/error) so it can't inherit the global
+                          // InputDecorationTheme outline and create a double
+                          // border. filled:false keeps the container's bg.
+                          filled: false,
                           isDense: false,
+                          border: InputBorder.none,
                           enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
+                          errorBorder: InputBorder.none,
+                          focusedErrorBorder: InputBorder.none,
                           contentPadding: EdgeInsets.zero,
                         ),
                       ),

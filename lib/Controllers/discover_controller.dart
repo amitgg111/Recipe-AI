@@ -1,6 +1,5 @@
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:recipe_ai/Service/auth_service.dart';
 
 class DiscoverRecipe {
   final String id;
@@ -70,7 +69,6 @@ class DiscoverController extends GetxController {
     try {
       isLoading.value = true;
 
-      final currentUid = AuthService.currentUser?.uid;
       final usersSnapshot =
           await FirebaseFirestore.instance.collection('users').get();
 

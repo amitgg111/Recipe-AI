@@ -76,7 +76,11 @@ class ImportFromWebScreen extends StatelessWidget {
                   textInputAction: TextInputAction.search,
                   decoration: const InputDecoration(
                     hintText: 'Search or enter website',
+                    filled: false,
+                    isDense: false,
                     border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
                     isCollapsed: true,
                     hintStyle: TextStyle(
                       color: Color(0xFF817C75),
