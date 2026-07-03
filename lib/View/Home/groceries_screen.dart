@@ -7,6 +7,7 @@ import 'package:recipe_ai/Controllers/home_controller.dart';
 import 'package:recipe_ai/View/Home/home_screen.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:recipe_ai/widgets/sliding_segmented.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Design constants (matched to the HTML "Groceries" design)
@@ -198,29 +199,31 @@ class GroceriesScreen extends StatelessWidget {
   }
 
   Widget _buildToggle() {
-    return Row(
-      children: [
-        _toggleChip('By meal', true),
-        const SizedBox(width: 7),
-        _toggleChip('By category', false),
-      ],
-    );
-  }
-
-  Widget _toggleChip(String label, bool meal) {
-    final on = _byMeal.value == meal;
-    return GestureDetector(
-      onTap: () => _byMeal.value = meal,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        decoration: BoxDecoration(
-          color: on ? _G.primary : _G.card,
-          borderRadius: BorderRadius.circular(20),
-          border: on ? null : Border.all(color: _G.chipBorder),
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: SlidingSegmented(
+        labels: const ['By meal', 'By category'],
+        selectedIndex: _byMeal.value ? 0 : 1,
+        onChanged: (i) => _byMeal.value = i == 0,
+        trackColor: _G.progressBg,
+        pillColor: _G.card,
+        trackRadius: 11,
+        pillRadius: 8,
+        trackPadding: 3,
+        hPad: 12,
+        vPad: 6,
+        pillShadow: [
+          BoxShadow(
+            color: _G.textDark.withValues(alpha: 0.12),
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          ),
+        ],
+        style: (active) => _G.f(
+          12.5,
+          active ? FontWeight.w700 : FontWeight.w600,
+          active ? _G.textDark : _G.textHint,
         ),
-        child: Text(label,
-            style: _G.f(12.5, on ? FontWeight.w800 : FontWeight.w700,
-                on ? Colors.white : _G.textBody)),
       ),
     );
   }

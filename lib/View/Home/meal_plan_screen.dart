@@ -6,6 +6,7 @@ import 'package:recipe_ai/Controllers/home_controller.dart';
 import 'package:recipe_ai/Controllers/meal_plan_controller.dart';
 import 'package:recipe_ai/Model/meal_plan_model.dart';
 import 'package:recipe_ai/View/Home/recipe_detail_screen.dart';
+import 'package:recipe_ai/widgets/sliding_segmented.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/app_search_bar.dart';
@@ -21,7 +22,6 @@ class _S {
   static const primary = AppColors.primary;
 
   static const cardBorder = Color(0xFFEFE6D6);
-  static const toggleBg = Color(0xFFF1EBDF);
   static const dash = Color(0xFFD8CFBE);
   static const purple = Color(0xFF8B5CF6);
   // Meal-type colours (matched to the HTML)
@@ -183,52 +183,13 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
   // ═══════════════════════ DAY / MONTH TOGGLE ═══════════════════════
 
   Widget _buildViewToggle() {
-    return Container(
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: _S.toggleBg,
-        borderRadius: BorderRadius.circular(11),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [_toggleTab('Day', 0), _toggleTab('Month', 1)],
-      ),
-    );
-  }
-
-  Widget _toggleTab(String label, int index) {
-    final sel = _viewIndex == index;
-    return GestureDetector(
-      onTap: () {
+    return SlidingSegmented.standard(
+      labels: const ['Day', 'Month'],
+      selectedIndex: _viewIndex,
+      onChanged: (index) {
         setState(() => _viewIndex = index);
         if (index == 1) _ensureMonthFetched(controller.selectedDate.value);
       },
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: sel ? _S.card : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: sel
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFF2A211B).withValues(alpha: 0.12),
-                    blurRadius: 3,
-                    offset: const Offset(0, 1),
-                  ),
-                ]
-              : [],
-        ),
-        child: Text(
-          label,
-          style: _S.f(
-            12.5,
-            sel ? FontWeight.w700 : FontWeight.w600,
-            sel ? _S.textDark : _S.textHint,
-          ),
-        ),
-      ),
     );
   }
 

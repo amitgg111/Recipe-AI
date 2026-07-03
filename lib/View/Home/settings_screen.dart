@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/Controllers/profile_controller.dart';
 import 'package:recipe_ai/Controllers/settings_controller.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
@@ -13,6 +14,7 @@ import 'package:recipe_ai/View/Home/settings/send_feedback_screen.dart';
 import 'package:recipe_ai/View/Home/settings/settings_common.dart';
 import 'package:recipe_ai/View/Home/settings/upgrade_plus_screen.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
+import 'package:recipe_ai/widgets/sliding_segmented.dart';
 
 /// The "More" tab (bottom-nav index 4). Settings hub matching the HTML design.
 class SettingsScreen extends StatelessWidget {
@@ -323,50 +325,29 @@ class SettingsScreen extends StatelessWidget {
       label: 'Units',
       showChevron: false,
       trailing: Obx(
-        () => Container(
-          padding: const EdgeInsets.all(2),
-          decoration: BoxDecoration(
-            color: AppColors.tabBg,
-            borderRadius: BorderRadius.circular(9),
-          ),
-          child: Row(
-            children: [
-              _unitChip('Metric', settings.units.value == 'Metric',
-                  () => settings.setUnits('Metric')),
-              _unitChip('US', settings.units.value == 'US',
-                  () => settings.setUnits('US')),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _unitChip(String label, bool active, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
-        decoration: BoxDecoration(
-          color: active ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(7),
-          boxShadow: active
-              ? [
-                  BoxShadow(
-                    color: AppColors.textDark.withValues(alpha: 0.12),
-                    blurRadius: 2,
-                    offset: const Offset(0, 1),
-                  ),
-                ]
-              : null,
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
+        () => SlidingSegmented(
+          labels: const ['Metric', 'US'],
+          selectedIndex: settings.units.value == 'US' ? 1 : 0,
+          onChanged: (i) => settings.setUnits(i == 0 ? 'Metric' : 'US'),
+          trackColor: AppColors.tabBg,
+          pillColor: Colors.white,
+          trackRadius: 9,
+          pillRadius: 7,
+          trackPadding: 2,
+          hPad: 11,
+          vPad: 5,
+          style: (active) => GoogleFonts.plusJakartaSans(
             fontSize: 11,
             fontWeight: active ? FontWeight.w800 : FontWeight.w700,
             color: active ? AppColors.textDark : AppColors.textLight,
           ),
+          pillShadow: [
+            BoxShadow(
+              color: AppColors.textDark.withValues(alpha: 0.12),
+              blurRadius: 2,
+              offset: const Offset(0, 1),
+            ),
+          ],
         ),
       ),
     );

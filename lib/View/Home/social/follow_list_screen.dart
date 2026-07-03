@@ -7,6 +7,7 @@ import 'package:recipe_ai/Service/user_service.dart';
 import 'package:recipe_ai/View/Home/social/creator_profile_screen.dart';
 import 'package:recipe_ai/View/Home/social/social_widgets.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
+import 'package:recipe_ai/widgets/sliding_segmented.dart';
 
 /// Followers / Following list for [userId], with a segmented toggle.
 class FollowListScreen extends StatefulWidget {
@@ -106,53 +107,13 @@ class _FollowListScreenState extends State<FollowListScreen> {
   }
 
   Widget _toggle() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 18),
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: AppColors.tabBg,
-        borderRadius: BorderRadius.circular(13),
-      ),
-      child: Row(
-        children: [
-          _tab('Followers', _followers, () => setState(() => _followers = true)),
-          _tab('Following', !_followers,
-              () => setState(() => _followers = false)),
-        ],
-      ),
-    );
-  }
-
-  Widget _tab(String label, bool active, VoidCallback onTap) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          height: 38,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: active ? AppColors.surface : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: active
-                ? [
-                    BoxShadow(
-                      color: AppColors.textDark.withValues(alpha: 0.1),
-                      blurRadius: 4,
-                      offset: const Offset(0, 1),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Text(
-            label,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 13.5,
-              fontWeight: active ? FontWeight.w800 : FontWeight.w600,
-              color: active ? AppColors.textDark : AppColors.textMedium,
-            ),
-          ),
-        ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 18),
+      child: SlidingSegmented.tabs(
+        labels: const ['Followers', 'Following'],
+        selectedIndex: _followers ? 0 : 1,
+        onChanged: (i) => setState(() => _followers = i == 0),
+        height: 38,
       ),
     );
   }

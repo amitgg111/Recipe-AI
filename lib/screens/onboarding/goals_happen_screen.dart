@@ -56,10 +56,7 @@ class _GoalsHappenScreenState extends State<GoalsHappenScreen> {
               ),
               const SizedBox(height: 12),
               // Progress dots (step 4 of 8, index 3)
-              const ProgressIndicatorDots(
-                totalSteps: 8,
-                currentStep: 3,
-              ),
+              const ProgressIndicatorDots(totalSteps: 8, currentStep: 3),
               // Title
               const SizedBox(height: 18),
               Text(
@@ -103,8 +100,9 @@ class _GoalsHappenScreenState extends State<GoalsHappenScreen> {
                           border: Border.all(color: AppColors.surfaceBorder),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF2A211B)
-                                  .withValues(alpha: 0.4),
+                              color: const Color(
+                                0xFF2A211B,
+                              ).withValues(alpha: 0.4),
                               blurRadius: 38,
                               offset: const Offset(0, 18),
                               spreadRadius: -24,
@@ -218,8 +216,9 @@ class _GoalsHappenScreenState extends State<GoalsHappenScreen> {
                               decoration: BoxDecoration(
                                 color: AppColors.greenBgLight,
                                 borderRadius: BorderRadius.circular(18),
-                                border:
-                                    Border.all(color: AppColors.greenBorder),
+                                border: Border.all(
+                                  color: AppColors.greenBorder,
+                                ),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,8 +268,7 @@ class _GoalsHappenScreenState extends State<GoalsHappenScreen> {
                               decoration: BoxDecoration(
                                 color: AppColors.goldBg,
                                 borderRadius: BorderRadius.circular(18),
-                                border:
-                                    Border.all(color: AppColors.goldBorder),
+                                border: Border.all(color: AppColors.goldBorder),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -322,7 +320,11 @@ class _GoalsHappenScreenState extends State<GoalsHappenScreen> {
               PrimaryButton(
                 label: 'Continue',
                 onPressed: () {
-                  Get.to(() => const WhenToCookScreen());
+                  Get.to(
+                    () => const WhenToCookScreen(),
+                    transition: Transition.rightToLeftWithFade,
+                    duration: const Duration(milliseconds: 350),
+                  );
                 },
               ),
             ],
@@ -389,8 +391,7 @@ class GoalsHappenBody extends StatelessWidget {
                       border: Border.all(color: AppColors.surfaceBorder),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF2A211B)
-                              .withValues(alpha: 0.4),
+                          color: const Color(0xFF2A211B).withValues(alpha: 0.4),
                           blurRadius: 38,
                           offset: const Offset(0, 18),
                           spreadRadius: -24,
@@ -504,8 +505,7 @@ class GoalsHappenBody extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: AppColors.greenBgLight,
                             borderRadius: BorderRadius.circular(18),
-                            border:
-                                Border.all(color: AppColors.greenBorder),
+                            border: Border.all(color: AppColors.greenBorder),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -555,8 +555,7 @@ class GoalsHappenBody extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: AppColors.goldBg,
                             borderRadius: BorderRadius.circular(18),
-                            border:
-                                Border.all(color: AppColors.goldBorder),
+                            border: Border.all(color: AppColors.goldBorder),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -629,14 +628,20 @@ class _ProgressChartPainter extends CustomPainter {
     final path = Path();
     path.moveTo(p(6, 82).dx, p(6, 82).dy);
     path.cubicTo(
-      p(60, 78).dx, p(60, 78).dy,
-      p(78, 52).dx, p(78, 52).dy,
-      p(120, 50).dx, p(120, 50).dy,
+      p(60, 78).dx,
+      p(60, 78).dy,
+      p(78, 52).dx,
+      p(78, 52).dy,
+      p(120, 50).dx,
+      p(120, 50).dy,
     );
     path.cubicTo(
-      p(166, 48).dx, p(166, 48).dy,
-      p(192, 22).dx, p(192, 22).dy,
-      p(274, 10).dx, p(274, 10).dy,
+      p(166, 48).dx,
+      p(166, 48).dy,
+      p(192, 22).dx,
+      p(192, 22).dy,
+      p(274, 10).dx,
+      p(274, 10).dy,
     );
 
     // Fill area below curve

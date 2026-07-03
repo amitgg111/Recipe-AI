@@ -86,7 +86,10 @@ class _SplashScreenState extends State<SplashScreen>
       final hasSeenOnboarding = box.read<bool>('hasSeenOnboarding') ?? false;
       if (!hasSeenOnboarding) {
         box.write('hasSeenOnboarding', true);
-        Get.off(() => const OnboardingFlowScreen());
+        Get.off(
+          () => const OnboardingFlowScreen(),
+          transition: Transition.noTransition,
+        );
       } else {
         Get.off(() => const AuthWrapper());
       }

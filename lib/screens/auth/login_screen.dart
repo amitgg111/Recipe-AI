@@ -11,7 +11,7 @@ import 'package:recipe_ai/widgets/app_logo.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_dimensions.dart';
 import 'package:recipe_ai/screens/auth/forgot_password_screen.dart';
-import 'package:recipe_ai/widgets/segmented_control.dart';
+import 'package:recipe_ai/widgets/sliding_segmented.dart';
 
 /// Combined Log in / Sign up screen.
 ///
@@ -257,10 +257,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 18),
 
                     // Segmented tabs (fixed — switches content, no navigation)
-                    SegmentedControl(
-                      segments: const ['Log in', 'Sign up'],
+                    SlidingSegmented.tabs(
+                      labels: const ['Log in', 'Sign up'],
                       selectedIndex: _tab,
                       onChanged: _setTab,
+                      height: 38,
                     ),
 
                     const SizedBox(height: 18),

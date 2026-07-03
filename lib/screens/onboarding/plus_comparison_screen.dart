@@ -209,7 +209,10 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                           child: GestureDetector(
                             onTap:
                                 widget.onClose ??
-                                () => Get.to(() => const TrialChooserScreen()),
+                                () => Get.to(
+                                  () => const TrialChooserScreen(),
+                                  transition: Transition.noTransition,
+                                ),
                             child: Container(
                               width: 34,
                               height: 34,
@@ -333,7 +336,10 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                             label: 'Start my free week',
                             onPressed:
                                 widget.onContinue ??
-                                () => Get.to(() => const TrialChooserScreen()),
+                                () => Get.to(
+                                  () => const TrialChooserScreen(),
+                                  transition: Transition.noTransition,
+                                ),
                             enableBob: true,
                           ),
                         ),

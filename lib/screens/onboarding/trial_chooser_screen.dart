@@ -101,7 +101,10 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
                     PrimaryButton.purple(
                       label: 'Redeem 7 days for ₹0.00',
                       onPressed: () =>
-                          Get.offAll(() => const CreateAccountScreen()),
+                          Get.offAll(
+                        () => const CreateAccountScreen(),
+                        transition: Transition.noTransition,
+                      ),
                     ),
                     const SizedBox(height: 10),
                     // Disclaimer
@@ -181,7 +184,10 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
             top: 14,
             right: 18,
             child: GestureDetector(
-              onTap: () => Get.offAll(() => const CreateAccountScreen()),
+              onTap: () => Get.offAll(
+                        () => const CreateAccountScreen(),
+                        transition: Transition.noTransition,
+                      ),
               child: Container(
                 width: 36,
                 height: 36,

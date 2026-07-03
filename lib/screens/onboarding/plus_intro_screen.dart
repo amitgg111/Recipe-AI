@@ -142,7 +142,10 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
                     GestureDetector(
                       onTap:
                           widget.onClose ??
-                          () => Get.to(() => const PlusComparisonScreen()),
+                          () => Get.to(
+                      () => const PlusComparisonScreen(),
+                      transition: Transition.noTransition,
+                    ),
                       child: Container(
                         width: 36,
                         height: 36,
@@ -424,7 +427,10 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
                 label: 'Try for ₹0.00',
                 onPressed:
                     widget.onContinue ??
-                    () => Get.to(() => const PlusComparisonScreen()),
+                    () => Get.to(
+                      () => const PlusComparisonScreen(),
+                      transition: Transition.noTransition,
+                    ),
               ),
             ],
           ),

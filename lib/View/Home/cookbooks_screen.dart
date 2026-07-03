@@ -15,7 +15,7 @@ import 'package:recipe_ai/widgets/app_logo.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_spacing.dart';
 import 'package:recipe_ai/theme/app_dimensions.dart';
-import 'package:recipe_ai/widgets/segmented_control.dart';
+import 'package:recipe_ai/widgets/sliding_segmented.dart';
 import 'package:recipe_ai/widgets/app_search_bar.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/widgets/empty_plate_illustration.dart';
@@ -200,10 +200,11 @@ class _CookbooksScreenState extends State<CookbooksScreen>
             child: Row(
               children: [
                 Expanded(
-                  child: SegmentedControl(
-                    segments: const ['Cookbooks', 'Recipes'],
+                  child: SlidingSegmented.tabs(
+                    labels: const ['Cookbooks', 'Recipes'],
                     selectedIndex: _selectedSegment,
                     onChanged: (i) => setState(() => _selectedSegment = i),
+                    height: 36,
                   ),
                 ),
                 const SizedBox(width: AppSpacing.md),

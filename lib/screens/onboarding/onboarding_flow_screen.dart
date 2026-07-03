@@ -47,9 +47,6 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
 
   int _page = 0;
 
-  /// 1 = moving forward, -1 = moving back. Drives the slide direction.
-  int _direction = 1;
-
   /// Whether the current step's selection is valid. Drives the Continue button
   /// enabled state in real time. Only the button rebuilds when this changes.
   final ValueNotifier<bool> _canContinue = ValueNotifier<bool>(true);
@@ -69,21 +66,22 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
     if (!_canContinue.value) return; // guard: no proceeding while invalid
     if (_page < _flowPages - 1) {
       setState(() {
-        _direction = 1;
         _page++;
       });
       // Each step opens with its default selection, so it starts valid.
       _canContinue.value = true;
     } else {
       // Step 12 done → continue to the existing Plus intro (steps 13–15).
-      Get.to(() => const PlusIntroScreen());
+      Get.to(
+        () => const PlusIntroScreen(),
+        transition: Transition.noTransition,
+      );
     }
   }
 
   void _onBack() {
     if (_page == 0) return;
     setState(() {
-      _direction = -1;
       _page--;
     });
     _canContinue.value = true;
@@ -153,7 +151,10 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
               ),
             ),
             GestureDetector(
-              onTap: () => Get.to(() => const LoginScreen()),
+              onTap: () => Get.to(
+                () => const LoginScreen(),
+                transition: Transition.noTransition,
+              ),
               child: Text(
                 'Log in',
                 style: GoogleFonts.plusJakartaSans(
@@ -201,35 +202,11 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
               ),
               const SizedBox(height: 6),
             ],
-            // Animated content area — only this swaps between steps.
+            // Content area — swaps instantly between steps (no transition).
             Expanded(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 350),
-                switchInCurve: Curves.easeOut,
-                switchOutCurve: Curves.easeIn,
-                transitionBuilder: (child, animation) {
-                  final slide = Tween<Offset>(
-                    begin: Offset(0.06 * _direction, 0),
-                    end: Offset.zero,
-                  ).animate(animation);
-                  return FadeTransition(
-                    opacity: animation,
-                    child: SlideTransition(position: slide, child: child),
-                  );
-                },
-                layoutBuilder: (currentChild, previousChildren) {
-                  return Stack(
-                    alignment: Alignment.topCenter,
-                    children: <Widget>[
-                      ...previousChildren,
-                      if (currentChild != null) currentChild,
-                    ],
-                  );
-                },
-                child: KeyedSubtree(
-                  key: ValueKey<int>(_page),
-                  child: _bodyFor(_page),
-                ),
+              child: KeyedSubtree(
+                key: ValueKey<int>(_page),
+                child: _bodyFor(_page),
               ),
             ),
             // Fixed bottom: CTA (+ optional footer).
