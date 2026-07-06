@@ -70,7 +70,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+                  padding: const EdgeInsets.fromLTRB(16, 2, 16, 12),
                   child: Row(
                     children: [
                       const AppLogo(size: 28),
@@ -435,7 +435,7 @@ class _RecipeCardState extends State<_RecipeCard> {
         border: Border.all(color: _D.border),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF2A211B).withValues(alpha: 0.2),
+            color: const Color(0xFF2A211B).withValues(alpha: 0.5),
             blurRadius: 40,
             offset: const Offset(0, 18),
             spreadRadius: -26,
@@ -595,7 +595,7 @@ class _RecipeCardState extends State<_RecipeCard> {
                             FontWeight.w800,
                             Colors.white,
                             h: 1.15,
-                            ls: -0.3,
+                            ls: -0.38,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -621,7 +621,7 @@ class _RecipeCardState extends State<_RecipeCard> {
                   count: _likes,
                   onTap: _toggleLike,
                 ),
-                const SizedBox(width: 18),
+                const SizedBox(width: 20),
                 _action(
                   icon: Icons.mode_comment_outlined,
                   color: _D.textDark,
@@ -635,11 +635,12 @@ class _RecipeCardState extends State<_RecipeCard> {
                     },
                   ),
                 ),
-                const SizedBox(width: 18),
+                const SizedBox(width: 20),
                 _action(
                   icon: Icons.send_outlined,
                   color: _D.textDark,
                   count: _shares,
+                  showCount: false,
                   onTap: _share,
                 ),
                 const Spacer(),
@@ -649,6 +650,7 @@ class _RecipeCardState extends State<_RecipeCard> {
                       : Icons.bookmark_border_rounded,
                   color: _saved ? _D.primary : _D.textDark,
                   count: _saves,
+                  showCount: false,
                   onTap: _openSaveSheet,
                 ),
               ],
@@ -664,6 +666,7 @@ class _RecipeCardState extends State<_RecipeCard> {
     required Color color,
     required int count,
     required VoidCallback onTap,
+    bool showCount = true,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -672,8 +675,8 @@ class _RecipeCardState extends State<_RecipeCard> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 22, color: color),
-          if (count > 0) ...[
-            const SizedBox(width: 6),
+          if (showCount && count > 0) ...[
+            const SizedBox(width: 7),
             Text('$count', style: _f(13, FontWeight.w700, _D.textBody)),
           ],
         ],

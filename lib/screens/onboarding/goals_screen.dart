@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
+import 'package:recipe_ai/Controllers/onboarding_controller.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/widgets/progress_indicator_dots.dart';
 import 'package:recipe_ai/screens/onboarding/thats_great_screen.dart';
@@ -19,13 +22,13 @@ class _GoalItem {
   final String label;
   final Color bgColor;
   final Color fgColor;
-  final IconData icon;
+  final String iconKey;
 
   const _GoalItem({
     required this.label,
     required this.bgColor,
     required this.fgColor,
-    required this.icon,
+    required this.iconKey,
   });
 }
 
@@ -36,39 +39,39 @@ class _GoalsScreenState extends State<GoalsScreen> {
   static const List<_GoalItem> _goals = [
     _GoalItem(
       label: 'Eat healthier',
-      bgColor: AppColors.greenBg,
-      fgColor: AppColors.green,
-      icon: Icons.restaurant,
+      bgColor: Color(0xFFDBF0E7),
+      fgColor: Color(0xFF1F7A5E),
+      iconKey: 'bowl',
     ),
     _GoalItem(
       label: 'Save money',
-      bgColor: AppColors.goldBg,
-      fgColor: AppColors.gold,
-      icon: Icons.account_balance_wallet,
+      bgColor: Color(0xFFFCEFD0),
+      fgColor: Color(0xFFC0860F),
+      iconKey: 'wallet',
     ),
     _GoalItem(
       label: 'Improve cooking skills',
       bgColor: Color(0xFFFCE3DB),
       fgColor: Color(0xFFE0552F),
-      icon: Icons.school,
+      iconKey: 'hat',
     ),
     _GoalItem(
       label: 'Organize recipes',
       bgColor: Color(0xFFE6E7FB),
       fgColor: Color(0xFF5559CE),
-      icon: Icons.folder,
+      iconKey: 'folder',
     ),
     _GoalItem(
       label: 'Plan out meals',
       bgColor: Color(0xFFE7F0DC),
       fgColor: Color(0xFF5E8A2C),
-      icon: Icons.calendar_today,
+      iconKey: 'cal',
     ),
     _GoalItem(
       label: 'Try new cuisines',
       bgColor: Color(0xFFF4E1F0),
       fgColor: Color(0xFFA23E8C),
-      icon: Icons.public,
+      iconKey: 'globe',
     ),
   ];
 
@@ -110,14 +113,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    'Recipe AI',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
-                    ),
-                  ),
+                  AppWordmark(fontSize: 16, fontWeight: FontWeight.w700),
                 ],
               ),
               const SizedBox(height: 12),
@@ -162,7 +158,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 15,
-                          vertical: 10  ,
+                          vertical: 10,
                         ),
                         decoration: BoxDecoration(
                           color: Colors.white,
@@ -180,11 +176,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
                                 borderRadius: BorderRadius.circular(13),
                               ),
                               child: Center(
-                                child: Icon(
-                                  goal.icon,
-                                  size: 20,
-                                  color: goal.fgColor,
-                                ),
+                                child: OnboardingLineIcon(goal.iconKey, color: goal.fgColor),
                               ),
                             ),
                             const SizedBox(width: 14),
@@ -192,8 +184,10 @@ class _GoalsScreenState extends State<GoalsScreen> {
                             Expanded(
                               child: Text(
                                 goal.label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 16,
+                                  fontSize: 14,
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.textDark,
                                 ),
@@ -262,52 +256,55 @@ class GoalsBody extends StatefulWidget {
 }
 
 class _GoalsBodyState extends State<GoalsBody> {
-  // Goals 0 and 1 are pre-selected
-  final Set<int> _selectedGoals = {0, 1};
+  final OnboardingController _c = Get.find<OnboardingController>();
+  // Restored from the shared controller so the choice survives navigating
+  // back and forth (and app restarts).
+  late Set<int> _selectedGoals;
 
   static const List<_GoalItem> _goals = [
     _GoalItem(
       label: 'Eat healthier',
-      bgColor: AppColors.greenBg,
-      fgColor: AppColors.green,
-      icon: Icons.restaurant,
+      bgColor: Color(0xFFDBF0E7),
+      fgColor: Color(0xFF1F7A5E),
+      iconKey: 'bowl',
     ),
     _GoalItem(
       label: 'Save money',
-      bgColor: AppColors.goldBg,
-      fgColor: AppColors.gold,
-      icon: Icons.account_balance_wallet,
+      bgColor: Color(0xFFFCEFD0),
+      fgColor: Color(0xFFC0860F),
+      iconKey: 'wallet',
     ),
     _GoalItem(
       label: 'Improve cooking skills',
       bgColor: Color(0xFFFCE3DB),
       fgColor: Color(0xFFE0552F),
-      icon: Icons.school,
+      iconKey: 'hat',
     ),
     _GoalItem(
       label: 'Organize recipes',
       bgColor: Color(0xFFE6E7FB),
       fgColor: Color(0xFF5559CE),
-      icon: Icons.folder,
+      iconKey: 'folder',
     ),
     _GoalItem(
       label: 'Plan out meals',
       bgColor: Color(0xFFE7F0DC),
       fgColor: Color(0xFF5E8A2C),
-      icon: Icons.calendar_today,
+      iconKey: 'cal',
     ),
     _GoalItem(
       label: 'Try new cuisines',
       bgColor: Color(0xFFF4E1F0),
       fgColor: Color(0xFFA23E8C),
-      icon: Icons.public,
+      iconKey: 'globe',
     ),
   ];
 
   @override
   void initState() {
     super.initState();
-    // Report the initial (default) validity after the first frame.
+    _selectedGoals = Set<int>.from(_c.goals);
+    // Report the restored validity after the first frame.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       widget.onValidityChanged?.call(_selectedGoals.isNotEmpty);
     });
@@ -321,6 +318,8 @@ class _GoalsBodyState extends State<GoalsBody> {
         _selectedGoals.add(index);
       }
     });
+    // Persist immediately (local now, Firebase after the user authenticates).
+    _c.setGoals(_selectedGoals);
     widget.onValidityChanged?.call(_selectedGoals.isNotEmpty);
   }
 
@@ -379,18 +378,14 @@ class _GoalsBodyState extends State<GoalsBody> {
                       children: [
                         // Icon container
                         Container(
-                          width: 42,
-                          height: 42,
+                          width: 38,
+                          height: 38,
                           decoration: BoxDecoration(
                             color: goal.bgColor,
                             borderRadius: BorderRadius.circular(13),
                           ),
                           child: Center(
-                            child: Icon(
-                              goal.icon,
-                              size: 20,
-                              color: goal.fgColor,
-                            ),
+                            child: OnboardingLineIcon(goal.iconKey, color: goal.fgColor),
                           ),
                         ),
                         const SizedBox(width: 14),
@@ -398,8 +393,10 @@ class _GoalsBodyState extends State<GoalsBody> {
                         Expanded(
                           child: Text(
                             goal.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.plusJakartaSans(
-                              fontSize: 16,
+                              fontSize: 14,
                               fontWeight: FontWeight.w600,
                               color: AppColors.textDark,
                             ),
@@ -408,8 +405,8 @@ class _GoalsBodyState extends State<GoalsBody> {
                         // Check circle
                         AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
-                          width: 26,
-                          height: 26,
+                          width: 22,
+                          height: 22,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: isSelected

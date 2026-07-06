@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
+import 'package:recipe_ai/utils/auth_error_mapper.dart';
 
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:recipe_ai/Widget/custom_text.dart';
@@ -29,12 +30,22 @@ class ForgotPasswordScreen extends StatelessWidget {
               height: 55,
               child: ElevatedButton(
                 onPressed: () async {
-                  await AuthService.forgotPassword(emailController.text.trim());
-                  CustomSnackbar.show(
-                    title: 'Info',
-                    message: 'Reset email sent',
-                    type: SnackbarType.info,
-                  );
+                  try {
+                    await AuthService.forgotPassword(
+                      emailController.text.trim(),
+                    );
+                    CustomSnackbar.show(
+                      title: 'Info',
+                      message: 'Reset email sent',
+                      type: SnackbarType.info,
+                    );
+                  } catch (e) {
+                    CustomSnackbar.show(
+                      title: 'Error',
+                      message: AuthErrorMapper.message(e),
+                      type: SnackbarType.error,
+                    );
+                  }
                 },
                 child: const CustomText("Send Reset Link"),
               ),

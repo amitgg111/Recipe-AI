@@ -4,10 +4,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:recipe_ai/Controllers/grocery_store_controller.dart';
 import 'package:recipe_ai/Controllers/home_controller.dart';
+import 'package:recipe_ai/Controllers/settings_controller.dart';
+import 'package:recipe_ai/Helper/unit_converter.dart';
 import 'package:recipe_ai/View/Home/home_screen.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:recipe_ai/widgets/sliding_segmented.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Design constants (matched to the HTML "Groceries" design)
@@ -41,8 +42,11 @@ class _G {
     'Flours & Sugars': '🧁',
     'Pantry': '🥫',
     'Meat & Seafood': '🥩',
+    'Grains & Pasta': '🍝',
     'Bakery': '🍞',
     'Frozen': '🧊',
+    'Beverages': '🥤',
+    'Snacks & Sweets': '🍫',
     'Household': '🧻',
     'Uncategorized': '🛒',
   };
@@ -58,12 +62,15 @@ const _kCategories = [
   'Fresh Produce',
   'Dairy, Eggs & Fridge',
   'Meat & Seafood',
+  'Grains & Pasta',
   'Pantry',
   'Herbs & Spices',
   'Oils & Vinegars',
   'Flours & Sugars',
   'Bakery',
   'Frozen',
+  'Beverages',
+  'Snacks & Sweets',
   'Household',
   'Uncategorized',
 ];
@@ -73,6 +80,7 @@ class GroceriesScreen extends StatelessWidget {
 
   final GroceryStore store = Get.find<GroceryStore>();
   final HomeController homeController = Get.find<HomeController>();
+  final SettingsController settings = Get.find<SettingsController>();
 
   // true = group by meal/recipe, false = group by category/aisle
   final RxBool _byMeal = true.obs;
@@ -85,10 +93,10 @@ class GroceriesScreen extends StatelessWidget {
       body: Column(
         children: [
           Padding(
-            padding: EdgeInsets.only(top: top + 10, left: 18, right: 18),
+            padding: EdgeInsets.only(top: top + 6, left: 18, right: 18),
             child: _buildHeader(context),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           Expanded(
             child: Obx(() {
               final items = store.items;
@@ -117,7 +125,7 @@ class GroceriesScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildProgress(done, total),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 18),
                     _buildToggle(),
                     const SizedBox(height: 16),
                     if (_byMeal.value)
@@ -199,30 +207,30 @@ class GroceriesScreen extends StatelessWidget {
   }
 
   Widget _buildToggle() {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: SlidingSegmented(
-        labels: const ['By meal', 'By category'],
-        selectedIndex: _byMeal.value ? 0 : 1,
-        onChanged: (i) => _byMeal.value = i == 0,
-        trackColor: _G.progressBg,
-        pillColor: _G.card,
-        trackRadius: 11,
-        pillRadius: 8,
-        trackPadding: 3,
-        hPad: 12,
-        vPad: 6,
-        pillShadow: [
-          BoxShadow(
-            color: _G.textDark.withValues(alpha: 0.12),
-            blurRadius: 3,
-            offset: const Offset(0, 1),
-          ),
-        ],
-        style: (active) => _G.f(
-          12.5,
-          active ? FontWeight.w700 : FontWeight.w600,
-          active ? _G.textDark : _G.textHint,
+    return Row(
+      children: [
+        _toggleChip('By meal', true),
+        const SizedBox(width: 7),
+        _toggleChip('By category', false),
+      ],
+    );
+  }
+
+  Widget _toggleChip(String label, bool meal) {
+    final on = _byMeal.value == meal;
+    return GestureDetector(
+      onTap: () => _byMeal.value = meal,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: on ? _G.primary : _G.card,
+          borderRadius: BorderRadius.circular(20),
+          border: on ? null : Border.all(color: _G.chipBorder),
+        ),
+        child: Text(
+          label,
+          style: _G.f(12.5, on ? FontWeight.w800 : FontWeight.w700,
+              on ? Colors.white : _G.textBody),
         ),
       ),
     );
@@ -432,7 +440,9 @@ class GroceriesScreen extends StatelessWidget {
           if (item.quantity.trim().isNotEmpty) ...[
             const SizedBox(width: 8),
             Text(
-              item.quantity,
+              // Convert the stored quantity to the active unit system on
+              // display (reactive via the enclosing Obx over store.items).
+              UnitConverter.applySystem(item.quantity, settings.unitSystem),
               style: _G
                   .f(13, FontWeight.w700,
                       checked ? const Color(0xFFC7BCAC) : _G.textMed)
@@ -493,9 +503,10 @@ class GroceriesScreen extends StatelessWidget {
             const SizedBox(height: 20),
             GestureDetector(
               onTap: () {
-                HomeScreen.activeIndex = 2;
                 Get.offUntil(
-                  MaterialPageRoute(builder: (_) => const HomeScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => const HomeScreen(initialIndex: 2),
+                  ),
                   (r) => r.isFirst,
                 );
               },
@@ -560,41 +571,58 @@ class GroceriesScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 92,
-              height: 92,
+              width: 96,
+              height: 96,
               decoration: BoxDecoration(
-                color: _G.noteBg,
+                color: _G.card,
                 borderRadius: BorderRadius.circular(28),
+                border: Border.all(color: _G.border),
+                boxShadow: [
+                  BoxShadow(
+                    color: _G.textDark.withValues(alpha: 0.25),
+                    blurRadius: 32,
+                    offset: const Offset(0, 16),
+                    spreadRadius: -18,
+                  ),
+                ],
               ),
               child: const Icon(Icons.shopping_cart_outlined,
-                  size: 44, color: _G.primary),
+                  size: 42, color: _G.primary),
             ),
             const SizedBox(height: 22),
-            Text('Your grocery list is empty',
-                style: _G.f(19, FontWeight.w800, _G.textDark)),
+            Text('Your list is empty',
+                style: _G.f(23, FontWeight.w800, _G.textDark, ls: -0.4)),
             const SizedBox(height: 8),
             Text(
-              'Add items yourself or send ingredients here straight from a recipe.',
+              "Pull ingredients from your meal plan or add items yourself — we'll keep everything tidy for the store.",
               textAlign: TextAlign.center,
-              style: _G.f(13.5, FontWeight.w500, _G.textMed, h: 1.5),
+              style: _G.f(14.5, FontWeight.w500, _G.textMed, h: 1.5),
             ),
             const SizedBox(height: 22),
             GestureDetector(
               onTap: () => _showAddItemSheet(context),
               child: Container(
                 height: 50,
-                padding: const EdgeInsets.symmetric(horizontal: 26),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: _G.primary,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(13),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _G.primary.withValues(alpha: 0.6),
+                      blurRadius: 24,
+                      offset: const Offset(0, 12),
+                      spreadRadius: -10,
+                    ),
+                  ],
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Icon(Icons.add, color: Colors.white, size: 20),
                     const SizedBox(width: 8),
-                    Text('Add item',
+                    Text('Add first ingredient',
                         style: _G.f(15, FontWeight.w700, Colors.white)),
                   ],
                 ),
@@ -941,6 +969,10 @@ class GroceriesScreen extends StatelessWidget {
     final nameCtrl = TextEditingController();
     final qtyCtrl = TextEditingController();
     final category = 'Uncategorized'.obs;
+    // Mirror the name field into an Rx so the category auto-detect preview
+    // rebuilds live as the user types (Obx can't observe a plain controller).
+    final nameRx = ''.obs;
+    nameCtrl.addListener(() => nameRx.value = nameCtrl.text);
 
     showModalBottomSheet(
       context: context,
@@ -949,6 +981,7 @@ class GroceriesScreen extends StatelessWidget {
       builder: (ctx) => _ItemFormSheet(
         title: 'Add an item',
         nameCtrl: nameCtrl,
+        nameRx: nameRx,
         qtyCtrl: qtyCtrl,
         category: category,
         buttonLabel: 'Add to list',
@@ -981,6 +1014,8 @@ class GroceriesScreen extends StatelessWidget {
     final nameCtrl = TextEditingController(text: item.name);
     final qtyCtrl = TextEditingController(text: item.quantity);
     final category = item.aisle.obs;
+    final nameRx = item.name.obs;
+    nameCtrl.addListener(() => nameRx.value = nameCtrl.text);
 
     showModalBottomSheet(
       context: context,
@@ -989,6 +1024,7 @@ class GroceriesScreen extends StatelessWidget {
       builder: (ctx) => _ItemFormSheet(
         title: 'Edit item',
         nameCtrl: nameCtrl,
+        nameRx: nameRx,
         qtyCtrl: qtyCtrl,
         category: category,
         buttonLabel: 'Save changes',
@@ -1185,6 +1221,7 @@ class _MoreMenuButton extends StatelessWidget {
 class _ItemFormSheet extends StatelessWidget {
   final String title;
   final TextEditingController nameCtrl;
+  final RxString nameRx;
   final TextEditingController qtyCtrl;
   final RxString category;
   final String buttonLabel;
@@ -1195,6 +1232,7 @@ class _ItemFormSheet extends StatelessWidget {
   const _ItemFormSheet({
     required this.title,
     required this.nameCtrl,
+    required this.nameRx,
     required this.qtyCtrl,
     required this.category,
     required this.buttonLabel,
@@ -1271,9 +1309,10 @@ class _ItemFormSheet extends StatelessWidget {
                       GestureDetector(
                         onTap: onPickCategory,
                         child: Obx(() {
+                          final typed = nameRx.value.trim();
                           final cat = category.value == 'Uncategorized' &&
-                                  nameCtrl.text.trim().isNotEmpty
-                              ? autoDetect(nameCtrl.text.trim())
+                                  typed.isNotEmpty
+                              ? autoDetect(typed)
                               : category.value;
                           return Container(
                             height: 50,

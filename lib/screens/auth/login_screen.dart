@@ -1,9 +1,11 @@
 import 'package:flutter/gestures.dart';
+import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
+import 'package:recipe_ai/utils/validators.dart';
+import 'package:recipe_ai/utils/auth_error_mapper.dart';
 import 'package:recipe_ai/View/Auth/auth_wrapper.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
@@ -47,6 +49,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _obscurePassword = true;
   bool _isLoading = false;
+  // Terms & Privacy agreement checkbox on the sign-up form — checked (on) by
+  // default; the user can uncheck it to disable account creation.
+  bool _agreedToTerms = true;
+
+  // Inline validation errors (null = nothing shown under the field).
+  String? _loginEmailError;
+  String? _loginPasswordError;
+  String? _signupNameError;
+  String? _signupEmailError;
+  String? _signupPasswordError;
 
   @override
   void initState() {
@@ -61,6 +73,15 @@ class _LoginScreenState extends State<LoginScreen> {
     ]) {
       f.addListener(() => setState(() {}));
     }
+  }
+
+  @override
+  void deactivate() {
+    // Any navigation that removes this screen from the tree (back, Get.offAll,
+    // replace, page transition) clears the fields so nothing typed persists to
+    // the next visit.
+    _clearAllControllers();
+    super.deactivate();
   }
 
   @override
@@ -85,38 +106,81 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() {
       _direction = index > _tab ? 1 : -1;
       _tab = index;
+      _clearAllControllers();
     });
   }
 
-  // ── Business logic (unchanged from the original two screens) ──────────────
+  /// Reset every auth field and its inline error. Called when the login/sign-up
+  /// tab changes and whenever this screen leaves the tree (navigation / page
+  /// transition), so no typed data lingers between tabs or across visits.
+  void _clearAllControllers() {
+    _loginEmailController.clear();
+    _loginPasswordController.clear();
+    _signupNameController.clear();
+    _signupEmailController.clear();
+    _signupPasswordController.clear();
+    _loginEmailError = null;
+    _loginPasswordError = null;
+    _signupNameError = null;
+    _signupEmailError = null;
+    _signupPasswordError = null;
+  }
+
+  // ── Validation (rules live in Validators; UI only renders the result) ─────
+
+  // Drives the enabled state of each primary button. Login checks email format
+  // + password presence only (never enforce strength rules on existing
+  // accounts); sign-up enforces the full strong-password policy.
+  bool get _isLoginValid =>
+      Validators.email(_loginEmailController.text) == null &&
+      Validators.loginPassword(_loginPasswordController.text) == null;
+
+  bool get _isSignupValid =>
+      Validators.name(_signupNameController.text) == null &&
+      Validators.email(_signupEmailController.text) == null &&
+      Validators.password(_signupPasswordController.text) == null;
+
+  // Live field validation while typing. We suppress the "required" message for
+  // an empty field (don't nag before the user starts) but surface format /
+  // strength errors immediately. Always calls setState so the button's
+  // enabled state stays in sync with the current input.
+  void _live(
+    String value,
+    String? Function(String?) validator,
+    void Function(String?) setError,
+  ) {
+    setState(() => setError(value.isEmpty ? null : validator(value)));
+  }
+
+  // ── Business logic ────────────────────────────────────────────────────────
 
   Future<void> _onLogin() async {
-    final email = _loginEmailController.text.trim();
-    final password = _loginPasswordController.text.trim();
+    if (_isLoading) return; // prevent duplicate requests / double taps
+    FocusScope.of(context).unfocus(); // dismiss the keyboard on submit
 
-    if (email.isEmpty || password.isEmpty) {
-      CustomSnackbar.show(
-        title: 'Missing fields',
-        message: 'Please fill in all required fields',
-        type: SnackbarType.error,
-      );
+    // Validate everything (incl. required) before any Firebase call.
+    final emailErr = Validators.email(_loginEmailController.text);
+    final passErr = Validators.loginPassword(_loginPasswordController.text);
+    if (emailErr != null || passErr != null) {
+      setState(() {
+        _loginEmailError = emailErr;
+        _loginPasswordError = passErr;
+      });
       return;
     }
 
     setState(() => _isLoading = true);
     try {
-      await AuthService.signIn(email: email, password: password);
-      Get.offAll(() => const AuthWrapper());
-    } on FirebaseAuthException catch (e) {
-      CustomSnackbar.show(
-        title: 'Error',
-        message: e.message ?? 'Authentication error',
-        type: SnackbarType.error,
+      // AuthService trims the email internally; passwords are never logged.
+      await AuthService.signIn(
+        email: _loginEmailController.text,
+        password: _loginPasswordController.text,
       );
+      Get.offAll(() => const AuthWrapper());
     } catch (e) {
       CustomSnackbar.show(
-        title: 'Error',
-        message: e.toString(),
+        title: 'Login failed',
+        message: AuthErrorMapper.message(e),
         type: SnackbarType.error,
       );
     } finally {
@@ -125,33 +189,38 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _onCreateAccount() async {
-    final name = _signupNameController.text.trim();
-    final email = _signupEmailController.text.trim();
-    final password = _signupPasswordController.text.trim();
+    if (_isLoading) return; // prevent duplicate account creation / double taps
+    FocusScope.of(context).unfocus();
 
-    if (name.isEmpty || email.isEmpty || password.isEmpty) {
-      CustomSnackbar.show(
-        title: 'Missing fields',
-        message: 'Please fill in all required fields',
-        type: SnackbarType.error,
-      );
+    final nameErr = Validators.name(_signupNameController.text);
+    final emailErr = Validators.email(_signupEmailController.text);
+    final passErr = Validators.password(_signupPasswordController.text);
+    if (nameErr != null || emailErr != null || passErr != null) {
+      setState(() {
+        _signupNameError = nameErr;
+        _signupEmailError = emailErr;
+        _signupPasswordError = passErr;
+      });
       return;
     }
 
     setState(() => _isLoading = true);
     try {
-      await AuthService.signUp(name: name, email: email, password: password);
-      Get.offAll(() => const AuthWrapper());
-    } on FirebaseAuthException catch (e) {
-      CustomSnackbar.show(
-        title: 'Error',
-        message: e.message ?? 'Authentication error',
-        type: SnackbarType.error,
+      await AuthService.signUp(
+        name: _signupNameController.text,
+        email: _signupEmailController.text,
+        password: _signupPasswordController.text,
       );
+      CustomSnackbar.show(
+        title: 'Welcome!',
+        message: 'Your account has been created.',
+        type: SnackbarType.success,
+      );
+      Get.offAll(() => const AuthWrapper());
     } catch (e) {
       CustomSnackbar.show(
-        title: 'Error',
-        message: e.toString(),
+        title: 'Sign up failed',
+        message: AuthErrorMapper.message(e),
         type: SnackbarType.error,
       );
     } finally {
@@ -160,22 +229,17 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _onGoogleSignIn() async {
+    if (_isLoading) return; // prevent duplicate login requests
+    FocusScope.of(context).unfocus();
     setState(() => _isLoading = true);
     try {
       final userCred = await AuthService.signInWithGoogle();
-      if (userCred == null) {
-        CustomSnackbar.show(
-          title: 'Cancelled',
-          message: 'Google sign-in was cancelled',
-          type: SnackbarType.error,
-        );
-      } else {
-        Get.offAll(() => const AuthWrapper());
-      }
+      if (userCred == null) return; // user cancelled the picker — stay silent
+      Get.offAll(() => const AuthWrapper());
     } catch (e) {
       CustomSnackbar.show(
-        title: 'Error',
-        message: e.toString(),
+        title: 'Google sign-in failed',
+        message: AuthErrorMapper.message(e),
         type: SnackbarType.error,
       );
     } finally {
@@ -184,17 +248,34 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _onAppleSignIn() async {
-    CustomSnackbar.show(
-      title: 'Coming Soon',
-      message: 'Apple sign-in will be available soon',
-      type: SnackbarType.info,
-    );
+    if (_isLoading) return; // prevent duplicate login requests
+    FocusScope.of(context).unfocus();
+    setState(() => _isLoading = true);
+    try {
+      final result = await AuthService.signInWithApple();
+      if (result.cancelled) return; // user backed out — stay silent
+      if (result.success) {
+        Get.offAll(() => const AuthWrapper());
+      } else {
+        CustomSnackbar.show(
+          title: 'Apple sign-in failed',
+          message: result.errorMessage ?? 'Could not sign in with Apple',
+          type: SnackbarType.error,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   void _onForgotPassword() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
-    );
+    FocusScope.of(context).unfocus();
+    // Clear before navigating away (push over) — deactivate() only fires when
+    // this screen is removed, not when another route is pushed on top of it.
+    setState(_clearAllControllers);
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()));
   }
 
   // ── UI ────────────────────────────────────────────────────────────────────
@@ -211,7 +292,8 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              minHeight: MediaQuery.of(context).size.height -
+              minHeight:
+                  MediaQuery.of(context).size.height -
                   MediaQuery.of(context).padding.top -
                   MediaQuery.of(context).padding.bottom,
             ),
@@ -275,8 +357,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       layoutBuilder: _topLeftLayout,
                       child: KeyedSubtree(
                         key: ValueKey('form$_tab'),
-                        child:
-                            _tab == 0 ? _buildLoginForm() : _buildSignupForm(),
+                        child: _tab == 0
+                            ? _buildLoginForm()
+                            : _buildSignupForm(),
                       ),
                     ),
 
@@ -360,9 +443,15 @@ class _LoginScreenState extends State<LoginScreen> {
         _buildTextField(
           controller: _loginEmailController,
           focusNode: _loginEmailFocus,
-          hint: 'avery@gmail.com',
+          hint: 'Enter The Email',
           prefixIcon: Icons.mail_outline_rounded,
           keyboardType: TextInputType.emailAddress,
+          errorText: _loginEmailError,
+          onChanged: (v) =>
+              _live(v, Validators.email, (e) => _loginEmailError = e),
+          textInputAction: TextInputAction.next,
+          onSubmitted: () =>
+              FocusScope.of(context).requestFocus(_loginPasswordFocus),
         ),
         const SizedBox(height: 16),
         _buildLabel('Password'),
@@ -374,6 +463,14 @@ class _LoginScreenState extends State<LoginScreen> {
           prefixIcon: Icons.lock_outline_rounded,
           obscure: _obscurePassword,
           suffixIcon: _eyeToggle(),
+          errorText: _loginPasswordError,
+          onChanged: (v) => _live(
+            v,
+            Validators.loginPassword,
+            (e) => _loginPasswordError = e,
+          ),
+          textInputAction: TextInputAction.done,
+          onSubmitted: () => _onLogin(),
         ),
         const SizedBox(height: 10),
         Align(
@@ -394,7 +491,8 @@ class _LoginScreenState extends State<LoginScreen> {
         _PrimaryActionButton(
           label: 'Log in',
           isLoading: _isLoading,
-          onTap: _isLoading ? null : _onLogin,
+          enabled: _isLoginValid,
+          onTap: _onLogin,
         ),
         const SizedBox(height: 18),
         const _OrDivider(),
@@ -414,8 +512,15 @@ class _LoginScreenState extends State<LoginScreen> {
         _buildTextField(
           controller: _signupNameController,
           focusNode: _signupNameFocus,
-          hint: 'Avery Rhodes',
+          hint: 'Enter The Name',
           prefixIcon: Icons.person_outline_rounded,
+          keyboardType: TextInputType.name,
+          errorText: _signupNameError,
+          onChanged: (v) =>
+              _live(v, Validators.name, (e) => _signupNameError = e),
+          textInputAction: TextInputAction.next,
+          onSubmitted: () =>
+              FocusScope.of(context).requestFocus(_signupEmailFocus),
         ),
         const SizedBox(height: 11),
         _buildLabel('Email'),
@@ -423,9 +528,15 @@ class _LoginScreenState extends State<LoginScreen> {
         _buildTextField(
           controller: _signupEmailController,
           focusNode: _signupEmailFocus,
-          hint: 'avery@gmail.com',
+          hint: 'Enter the name',
           prefixIcon: Icons.mail_outline_rounded,
           keyboardType: TextInputType.emailAddress,
+          errorText: _signupEmailError,
+          onChanged: (v) =>
+              _live(v, Validators.email, (e) => _signupEmailError = e),
+          textInputAction: TextInputAction.next,
+          onSubmitted: () =>
+              FocusScope.of(context).requestFocus(_signupPasswordFocus),
         ),
         const SizedBox(height: 11),
         _buildLabel('Password'),
@@ -437,50 +548,89 @@ class _LoginScreenState extends State<LoginScreen> {
           prefixIcon: Icons.lock_outline_rounded,
           obscure: _obscurePassword,
           suffixIcon: _eyeToggle(),
+          errorText: _signupPasswordError,
+          onChanged: (v) =>
+              _live(v, Validators.password, (e) => _signupPasswordError = e),
+          textInputAction: TextInputAction.done,
+          onSubmitted: () => _onCreateAccount(),
         ),
         const SizedBox(height: 16),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Agreement checkbox — checked (on) by default.
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => setState(() => _agreedToTerms = !_agreedToTerms),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: _agreedToTerms
+                      ? AppColors.primary
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: _agreedToTerms
+                        ? AppColors.primary
+                        : const Color(0xFFCBBFA8),
+                    width: 1.5,
+                  ),
+                ),
+                child: _agreedToTerms
+                    ? const Icon(Icons.check_rounded,
+                        size: 14, color: Colors.white)
+                    : null,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text.rich(
+                TextSpan(
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w400,
+                    color: const Color(0xFFA8A092),
+                    height: 1.5,
+                  ),
+                  children: [
+                    const TextSpan(text: 'By continuing you agree to our '),
+                    TextSpan(
+                      text: 'Terms',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF8A7E70),
+                        height: 1.5,
+                      ),
+                    ),
+                    const TextSpan(text: ' & '),
+                    TextSpan(
+                      text: 'Privacy Policy',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF8A7E70),
+                        height: 1.5,
+                      ),
+                    ),
+                    const TextSpan(text: '.'),
+                  ],
+                ),
+                textAlign: TextAlign.left,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
         _PrimaryActionButton(
           label: 'Create account',
           isLoading: _isLoading,
-          onTap: _isLoading ? null : _onCreateAccount,
+          enabled: _isSignupValid && _agreedToTerms,
+          onTap: _onCreateAccount,
         ),
-        const SizedBox(height: 12),
-        Center(
-          child: Text.rich(
-            TextSpan(
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 11.5,
-                fontWeight: FontWeight.w400,
-                color: const Color(0xFFA8A092),
-                height: 1.5,
-              ),
-              children: [
-                const TextSpan(text: 'By continuing you agree to our '),
-                TextSpan(
-                  text: 'Terms',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF8A7E70),
-                    height: 1.5,
-                  ),
-                ),
-                const TextSpan(text: ' & '),
-                TextSpan(
-                  text: 'Privacy Policy',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF8A7E70),
-                    height: 1.5,
-                  ),
-                ),
-                const TextSpan(text: '.'),
-              ],
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ),
+
         const SizedBox(height: 14),
         const _OrDivider(),
         const SizedBox(height: 14),
@@ -499,9 +649,7 @@ class _LoginScreenState extends State<LoginScreen> {
           color: const Color(0xFF8A7E70),
         ),
         children: [
-          TextSpan(
-            text: isLogin ? 'New here? ' : 'Already have an account? ',
-          ),
+          TextSpan(text: isLogin ? 'New here? ' : 'Already have an account? '),
           TextSpan(
             text: isLogin ? 'Create an account' : 'Log in',
             style: GoogleFonts.plusJakartaSans(
@@ -523,7 +671,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Expanded(
           child: _SocialButton(
             label: 'Google',
-            onTap: _onGoogleSignIn,
+            onTap: _isLoading ? null : _onGoogleSignIn,
             leading: Container(
               width: 20,
               height: 20,
@@ -545,7 +693,10 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: _SocialButton(label: 'Apple', onTap: _onAppleSignIn),
+          child: _SocialButton(
+            label: 'Apple',
+            onTap: _isLoading ? null : _onAppleSignIn,
+          ),
         ),
       ],
     );
@@ -583,73 +734,104 @@ class _LoginScreenState extends State<LoginScreen> {
     TextInputType keyboardType = TextInputType.text,
     bool obscure = false,
     Widget? suffixIcon,
+    String? errorText,
+    ValueChanged<String>? onChanged,
+    TextInputAction textInputAction = TextInputAction.next,
+    VoidCallback? onSubmitted,
   }) {
     final isFocused = focusNode.hasFocus;
+    final hasError = errorText != null && errorText.isNotEmpty;
 
-    return Container(
-      height: AppDimensions.inputHeight,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(11),
-        border: Border.all(
-          color: isFocused ? AppColors.primary : const Color(0xFFEAE0CF),
-          width: isFocused ? 1.5 : 1,
-        ),
-        boxShadow: isFocused
-            ? [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  blurRadius: 0,
-                  spreadRadius: 3,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          height: AppDimensions.inputHeight,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(11),
+            border: Border.all(
+              color: hasError
+                  ? const Color(0xFFDC2626)
+                  : isFocused
+                  ? AppColors.primary
+                  : const Color(0xFFEAE0CF),
+              width: isFocused || hasError ? 1.5 : 1,
+            ),
+            boxShadow: isFocused
+                ? [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      blurRadius: 0,
+                      spreadRadius: 3,
+                    ),
+                  ]
+                : null,
+          ),
+          child: TextField(
+            controller: controller,
+            focusNode: focusNode,
+            obscureText: obscure,
+            keyboardType: keyboardType,
+            textInputAction: textInputAction,
+            onChanged: onChanged,
+            onSubmitted: onSubmitted == null ? null : (_) => onSubmitted(),
+            style: AppTextStyles.inputText,
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: AppTextStyles.inputHint,
+              prefixIcon: Padding(
+                padding: const EdgeInsets.only(left: 14, right: 10),
+                child: Icon(
+                  prefixIcon,
+                  size: 20,
+                  color: isFocused ? AppColors.primary : AppColors.textHint,
                 ),
-              ]
-            : null,
-      ),
-      child: TextField(
-        controller: controller,
-        focusNode: focusNode,
-        obscureText: obscure,
-        keyboardType: keyboardType,
-        style: AppTextStyles.inputText,
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: AppTextStyles.inputHint,
-          prefixIcon: Padding(
-            padding: const EdgeInsets.only(left: 14, right: 10),
-            child: Icon(
-              prefixIcon,
-              size: 20,
-              color: isFocused ? AppColors.primary : AppColors.textHint,
+              ),
+              prefixIconConstraints: const BoxConstraints(
+                minWidth: 0,
+                minHeight: 0,
+              ),
+              suffixIcon: suffixIcon != null
+                  ? Padding(
+                      padding: const EdgeInsets.only(right: 14),
+                      child: suffixIcon,
+                    )
+                  : null,
+              suffixIconConstraints: const BoxConstraints(
+                minWidth: 0,
+                minHeight: 0,
+              ),
+              filled: false,
+              isDense: false,
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              disabledBorder: InputBorder.none,
+              errorBorder: InputBorder.none,
+              focusedErrorBorder: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 0,
+              ),
             ),
           ),
-          prefixIconConstraints: const BoxConstraints(
-            minWidth: 0,
-            minHeight: 0,
-          ),
-          suffixIcon: suffixIcon != null
-              ? Padding(
-                  padding: const EdgeInsets.only(right: 14),
-                  child: suffixIcon,
-                )
-              : null,
-          suffixIconConstraints: const BoxConstraints(
-            minWidth: 0,
-            minHeight: 0,
-          ),
-          filled: false,
-          isDense: false,
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-          disabledBorder: InputBorder.none,
-          errorBorder: InputBorder.none,
-          focusedErrorBorder: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 14,
-            vertical: 0,
-          ),
         ),
-      ),
+        // Inline validation error, shown only when present.
+        if (hasError)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 4),
+            child: Text(
+              errorText,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFFDC2626),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -666,24 +848,9 @@ class _AppLogo extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: 30,
-          height: 30,
-          decoration: BoxDecoration(
-            color: AppColors.primary,
-            borderRadius: BorderRadius.circular(9),
-          ),
-          child: const AppLogoMark(size: 20),
-        ),
+        const AppLogo(size: 30),
         const SizedBox(width: 8),
-        Text(
-          'Recipe AI',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: AppColors.primary,
-          ),
-        ),
+        AppWordmark(fontSize: 16, fontWeight: FontWeight.w700),
       ],
     );
   }
@@ -718,23 +885,30 @@ class _PrimaryActionButton extends StatelessWidget {
   final String label;
   final VoidCallback? onTap;
   final bool isLoading;
+  final bool enabled;
   const _PrimaryActionButton({
     required this.label,
     required this.onTap,
     this.isLoading = false,
+    this.enabled = true,
   });
 
   @override
   Widget build(BuildContext context) {
+    // Disabled while loading or while the form is invalid; taps are ignored
+    // and the button dims to signal the state.
+    final bool disabled = isLoading || !enabled;
     return GestureDetector(
-      onTap: onTap,
+      onTap: disabled ? null : onTap,
       child: Container(
         width: double.infinity,
         height: AppDimensions.buttonHeight,
         decoration: BoxDecoration(
           color: isLoading
               ? AppColors.primary.withValues(alpha: 0.7)
-              : AppColors.primary,
+              : enabled
+              ? AppColors.primary
+              : AppColors.primary.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(AppDimensions.radiusButton),
           boxShadow: const [
             BoxShadow(
@@ -769,9 +943,7 @@ class _OrDivider extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Expanded(
-          child: Divider(color: Color(0xFFE7DECE), thickness: 1),
-        ),
+        const Expanded(child: Divider(color: Color(0xFFE7DECE), thickness: 1)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
@@ -783,9 +955,7 @@ class _OrDivider extends StatelessWidget {
             ),
           ),
         ),
-        const Expanded(
-          child: Divider(color: Color(0xFFE7DECE), thickness: 1),
-        ),
+        const Expanded(child: Divider(color: Color(0xFFE7DECE), thickness: 1)),
       ],
     );
   }
@@ -793,14 +963,10 @@ class _OrDivider extends StatelessWidget {
 
 class _SocialButton extends StatelessWidget {
   final String label;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final Widget? leading;
 
-  const _SocialButton({
-    required this.label,
-    required this.onTap,
-    this.leading,
-  });
+  const _SocialButton({required this.label, required this.onTap, this.leading});
 
   @override
   Widget build(BuildContext context) {
@@ -816,10 +982,7 @@ class _SocialButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (leading != null) ...[
-              leading!,
-              const SizedBox(width: 8),
-            ],
+            if (leading != null) ...[leading!, const SizedBox(width: 8)],
             Text(
               label,
               style: GoogleFonts.plusJakartaSans(

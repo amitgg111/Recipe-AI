@@ -24,8 +24,8 @@ class AppBackButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
           border: Border.all(color: AppColors.surfaceBorderLight),
         ),
-        child: const Icon(
-          Icons.arrow_back_ios_new_rounded,
+        child: Icon(
+          icon,
           size: 18,
           color: AppColors.textDark,
         ),

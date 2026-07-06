@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
+import 'package:recipe_ai/Controllers/onboarding_controller.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/screens/onboarding/setting_up_screen.dart';
 
@@ -60,14 +62,7 @@ class _AgeScreenState extends State<AgeScreen> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    'Recipe AI',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
-                    ),
-                  ),
+                  AppWordmark(fontSize: 16, fontWeight: FontWeight.w700),
                 ],
               ),
               // Title
@@ -186,7 +181,14 @@ class AgeBody extends StatefulWidget {
 }
 
 class _AgeBodyState extends State<AgeBody> {
-  int _selectedIndex = 1; // "25-34" selected by default
+  final OnboardingController _c = Get.find<OnboardingController>();
+  late int _selectedIndex; // restored from the shared controller
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = _c.age.value;
+  }
 
   static const _ageRanges = [
     '24 and under',
@@ -237,7 +239,10 @@ class _AgeBodyState extends State<AgeBody> {
                 bottom: index < _ageRanges.length - 1 ? 12 : 0,
               ),
               child: GestureDetector(
-                onTap: () => setState(() => _selectedIndex = index),
+                onTap: () {
+                  setState(() => _selectedIndex = index);
+                  _c.setAge(index);
+                },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   padding: const EdgeInsets.symmetric(

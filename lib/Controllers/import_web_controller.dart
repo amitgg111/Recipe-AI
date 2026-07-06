@@ -279,8 +279,9 @@ class ImportWebController extends GetxController {
             'title': recipe.title,
             'description': recipe.description,
 
-            // Firebase Storage URL
-            'imageUrl': recipe.imageUrl,
+            // Firebase Storage URL (fall back to the scraped URL only if the
+            // re-upload failed, so a saved recipe always has a usable image).
+            'imageUrl': firebaseImageUrl ?? recipe.imageUrl,
 
             'sourceUrl': recipe.sourceUrl,
             'prepTime': recipe.prepTime,

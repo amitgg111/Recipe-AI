@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
+import 'package:recipe_ai/widgets/app_wordmark.dart';
 
 class ImportProcessingScreen extends StatefulWidget {
   const ImportProcessingScreen({super.key});
@@ -64,7 +65,7 @@ class _ImportProcessingScreenState extends State<ImportProcessingScreen>
                 children: [
                   const Icon(Icons.restaurant, color: AppColors.primary, size: 20),
                   const SizedBox(width: 6),
-                  Text('Recipe AI', style: AppTextStyles.navLabel.copyWith(fontWeight: FontWeight.w800)),
+                  const AppWordmark(fontSize: 17, fontWeight: FontWeight.w800),
                 ],
               ),
               const SizedBox(height: 46),

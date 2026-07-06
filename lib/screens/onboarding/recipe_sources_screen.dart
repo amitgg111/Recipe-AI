@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:recipe_ai/widgets/app_wordmark.dart';
+import 'package:get/get.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
+import 'package:recipe_ai/Controllers/onboarding_controller.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/widgets/progress_indicator_dots.dart';
@@ -49,24 +52,18 @@ class _RecipeSourcesScreenState extends State<RecipeSourcesScreen> {
                       color: AppColors.primary,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.restaurant, color: Colors.white, size: 16),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Recipe AI',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
+                    child: const Icon(
+                      Icons.restaurant,
+                      color: Colors.white,
+                      size: 16,
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  AppWordmark(fontSize: 16, fontWeight: FontWeight.w700),
                 ],
               ),
               const SizedBox(height: 10),
-              const ProgressIndicatorDots(
-                totalSteps: 8,
-                currentStep: 7,
-              ),
+              const ProgressIndicatorDots(totalSteps: 8, currentStep: 7),
               // Title
               const SizedBox(height: 16),
               Text(
@@ -94,25 +91,25 @@ class _RecipeSourcesScreenState extends State<RecipeSourcesScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     _SocialBadge(
-                      icon: Icons.camera_alt,
+                      iconKey: 'camera',
                       color: Color(0xFFC13584),
                       bg: Color(0xFFFCE4EE),
                     ),
                     SizedBox(width: 6),
                     _SocialBadge(
-                      icon: Icons.music_note,
+                      iconKey: 'music',
                       color: Color(0xFF1F1F24),
                       bg: Color(0xFFECECEF),
                     ),
                     SizedBox(width: 6),
                     _SocialBadge(
-                      icon: Icons.chat_bubble,
+                      iconKey: 'chat',
                       color: Color(0xFF2D6FE0),
                       bg: Color(0xFFE4ECFB),
                     ),
                     SizedBox(width: 6),
                     _SocialBadge(
-                      icon: Icons.push_pin,
+                      iconKey: 'pin',
                       color: Color(0xFFDD3B33),
                       bg: Color(0xFFFCE2E0),
                     ),
@@ -129,13 +126,13 @@ class _RecipeSourcesScreenState extends State<RecipeSourcesScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     _SocialBadge(
-                      icon: Icons.public,
+                      iconKey: 'globe',
                       color: Color(0xFF2F7AB5),
                       bg: Color(0xFFDCEBF4),
                     ),
                     SizedBox(width: 6),
                     _SocialBadge(
-                      icon: Icons.search,
+                      iconKey: 'search',
                       color: Color(0xFF6B6359),
                       bg: Color(0xFFF0EEE9),
                     ),
@@ -152,13 +149,13 @@ class _RecipeSourcesScreenState extends State<RecipeSourcesScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     _SocialBadge(
-                      icon: Icons.menu_book,
+                      iconKey: 'book',
                       color: Color(0xFFE0552F),
                       bg: Color(0xFFFCE3DB),
                     ),
                     SizedBox(width: 6),
                     _SocialBadge(
-                      icon: Icons.edit,
+                      iconKey: 'pencil',
                       color: Color(0xFF5E8A2C),
                       bg: Color(0xFFE7F0DC),
                     ),
@@ -191,11 +188,14 @@ class RecipeSourcesBody extends StatefulWidget {
 }
 
 class _RecipeSourcesBodyState extends State<RecipeSourcesBody> {
-  final Set<int> _selected = {0};
+  final OnboardingController _c = Get.find<OnboardingController>();
+  // Restored from the shared controller so it survives back/forward navigation.
+  late Set<int> _selected;
 
   @override
   void initState() {
     super.initState();
+    _selected = Set<int>.from(_c.recipeSources);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       widget.onValidityChanged?.call(_selected.isNotEmpty);
     });
@@ -209,6 +209,8 @@ class _RecipeSourcesBodyState extends State<RecipeSourcesBody> {
         _selected.add(index);
       }
     });
+    // Persist immediately (local now, Firebase after the user authenticates).
+    _c.setRecipeSources(_selected);
     widget.onValidityChanged?.call(_selected.isNotEmpty);
   }
 
@@ -223,10 +225,12 @@ class _RecipeSourcesBodyState extends State<RecipeSourcesBody> {
           Text(
             'Where do you get your\nrecipes from?',
             textAlign: TextAlign.center,
-            style: AppTextStyles.sectionTitle.copyWith(
-              fontSize: 25,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textDark,
               height: 1.18,
-              letterSpacing: -0.5,
+              letterSpacing: -0.50,
             ),
           ),
           const SizedBox(height: 8),
@@ -245,25 +249,25 @@ class _RecipeSourcesBodyState extends State<RecipeSourcesBody> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 _SocialBadge(
-                  icon: Icons.camera_alt,
+                  iconKey: 'camera',
                   color: Color(0xFFC13584),
                   bg: Color(0xFFFCE4EE),
                 ),
                 SizedBox(width: 6),
                 _SocialBadge(
-                  icon: Icons.music_note,
+                  iconKey: 'music',
                   color: Color(0xFF1F1F24),
                   bg: Color(0xFFECECEF),
                 ),
                 SizedBox(width: 6),
                 _SocialBadge(
-                  icon: Icons.chat_bubble,
+                  iconKey: 'chat',
                   color: Color(0xFF2D6FE0),
                   bg: Color(0xFFE4ECFB),
                 ),
                 SizedBox(width: 6),
                 _SocialBadge(
-                  icon: Icons.push_pin,
+                  iconKey: 'pin',
                   color: Color(0xFFDD3B33),
                   bg: Color(0xFFFCE2E0),
                 ),
@@ -280,13 +284,13 @@ class _RecipeSourcesBodyState extends State<RecipeSourcesBody> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 _SocialBadge(
-                  icon: Icons.public,
+                  iconKey: 'globe',
                   color: Color(0xFF2F7AB5),
                   bg: Color(0xFFDCEBF4),
                 ),
                 SizedBox(width: 6),
                 _SocialBadge(
-                  icon: Icons.search,
+                  iconKey: 'search',
                   color: Color(0xFF6B6359),
                   bg: Color(0xFFF0EEE9),
                 ),
@@ -303,13 +307,13 @@ class _RecipeSourcesBodyState extends State<RecipeSourcesBody> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 _SocialBadge(
-                  icon: Icons.menu_book,
+                  iconKey: 'book',
                   color: Color(0xFFE0552F),
                   bg: Color(0xFFFCE3DB),
                 ),
                 SizedBox(width: 6),
                 _SocialBadge(
-                  icon: Icons.edit,
+                  iconKey: 'pencil',
                   color: Color(0xFF5E8A2C),
                   bg: Color(0xFFE7F0DC),
                 ),
@@ -363,10 +367,7 @@ class _SourceCard extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              title,
-              style: AppTextStyles.bodyLarge,
-            ),
+            Text(title, style: AppTextStyles.bodyLarge),
             trailing,
           ],
         ),
@@ -375,19 +376,78 @@ class _SourceCard extends StatelessWidget {
   }
 }
 
+/// One 28×28 rounded badge holding a stroke line-icon, rendered from the exact
+/// SVG path data used by the HTML mock (outline style, 24-unit viewBox,
+/// stroke-width 1.9, round caps/joins) so it matches the design pixel-for-pixel.
 class _SocialBadge extends StatelessWidget {
-  final IconData icon;
+  final String iconKey;
   final Color color;
   final Color bg;
 
   const _SocialBadge({
-    required this.icon,
+    required this.iconKey,
     required this.color,
     required this.bg,
   });
 
+  // Icon geometry copied verbatim from the HTML `I` icon set (viewBox 0 0 24).
+  // `{c}` is substituted with the icon colour for filled sub-shapes. The second
+  // value is the render size in px (matching the HTML `sv(..., size)` calls).
+  static const Map<String, ({String body, double size})> _icons = {
+    'camera': (
+      body:
+          '<rect x="3" y="7" width="18" height="13" rx="4"/><circle cx="12" cy="13.5" r="3.4"/><circle cx="17" cy="10.5" r="1" fill="{c}" stroke="none"/>',
+      size: 22,
+    ),
+    'music': (
+      body:
+          '<circle cx="7" cy="18" r="2.6"/><circle cx="17" cy="16" r="2.6"/><path d="M9.6 18V5l9.4-2v13"/>',
+      size: 22,
+    ),
+    'chat': (
+      body:
+          '<path d="M4 6a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-4 4z"/>',
+      size: 22,
+    ),
+    'pin': (
+      body: '<circle cx="12" cy="10" r="7"/><path d="M12 17v4"/>',
+      size: 18,
+    ),
+    'globe': (
+      body:
+          '<circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c2.5 2.4 2.5 13.6 0 16M12 4c-2.5 2.4-2.5 13.6 0 16"/>',
+      size: 20,
+    ),
+    'search': (
+      body: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+      size: 22,
+    ),
+    'book': (
+      body:
+          '<path d="M5 4h12a1 1 0 0 1 1 1v15H7a2 2 0 0 1-2-2z"/><path d="M5 17a2 2 0 0 1 2-2h11"/>',
+      size: 22,
+    ),
+    'pencil': (
+      body:
+          '<path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M13.5 6.5l3 3"/>',
+      size: 18,
+    ),
+  };
+
+  static String _hex(Color c) {
+    int ch(double v) => (v * 255).round().clamp(0, 255);
+    String h(int v) => v.toRadixString(16).padLeft(2, '0');
+    return '#${h(ch(c.r))}${h(ch(c.g))}${h(ch(c.b))}';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final def = _icons[iconKey]!;
+    final hex = _hex(color);
+    final svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" '
+        'stroke="$hex" stroke-width="1.9" stroke-linecap="round" '
+        'stroke-linejoin="round">${def.body.replaceAll('{c}', hex)}</svg>';
     return Container(
       width: 28,
       height: 28,
@@ -395,9 +455,8 @@ class _SocialBadge extends StatelessWidget {
         color: bg,
         borderRadius: BorderRadius.circular(9),
       ),
-      child: Center(
-        child: Icon(icon, size: 14, color: color),
-      ),
+      alignment: Alignment.center,
+      child: SvgPicture.string(svg, width: def.size, height: def.size),
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_dimensions.dart';
@@ -103,10 +104,7 @@ class _DiscoverFeedScreenState extends State<DiscoverFeedScreen> {
         children: [
           const Icon(Icons.restaurant_rounded, color: AppColors.primary, size: 22),
           const SizedBox(width: 8),
-          Text(
-            'Recipe AI',
-            style: AppTextStyles.listTitle.copyWith(fontSize: 18),
-          ),
+          AppWordmark(fontSize: 18),
           const Spacer(),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),

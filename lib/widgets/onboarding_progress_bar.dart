@@ -25,7 +25,7 @@ class OnboardingProgressBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final fraction = (currentStep / totalSteps).clamp(0.0, 1.0);
     return SizedBox(
-      height: 46,
+      height: 38,
       child: Row(
         children: [
           if (showBackButton) ...[
@@ -52,24 +52,16 @@ class _OnboardingBackButton extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        width: 46,
-        height: 46,
+        width: 38,
+        height: 38,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.surfaceBorder),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF2A211B).withValues(alpha: 0.08),
-              blurRadius: 14,
-              offset: const Offset(0, 6),
-              spreadRadius: -6,
-            ),
-          ],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFEDE3D2)),
         ),
         child: const Icon(
           Icons.arrow_back_ios_new,
-          size: 18,
+          size: 15,
           color: AppColors.textDark,
         ),
       ),
@@ -85,14 +77,14 @@ class _ProgressTrack extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(3),
       child: Stack(
         children: [
-          // Inactive track
+          // Inactive track (warm beige, matching the HTML).
           Container(
-            height: 8,
+            height: 6,
             width: double.infinity,
-            color: const Color(0xFFEAEAEA),
+            color: const Color(0xFFEDE3D0),
           ),
           // Active fill (animates smoothly when [fraction] changes)
           Positioned.fill(
@@ -107,7 +99,7 @@ class _ProgressTrack extends StatelessWidget {
                   child: Container(
                     decoration: BoxDecoration(
                       color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(3),
                     ),
                   ),
                 );

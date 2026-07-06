@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
+import 'package:recipe_ai/Controllers/onboarding_controller.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/widgets/progress_indicator_dots.dart';
 import 'package:recipe_ai/screens/onboarding/notifications_screen.dart';
@@ -52,22 +54,12 @@ class _WhenToCookScreenState extends State<WhenToCookScreen> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    'Recipe AI',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
-                    ),
-                  ),
+                  AppWordmark(fontSize: 16, fontWeight: FontWeight.w700),
                 ],
               ),
               const SizedBox(height: 12),
               // Progress dots (step 5 of 8, index 4)
-              const ProgressIndicatorDots(
-                totalSteps: 8,
-                currentStep: 4,
-              ),
+              const ProgressIndicatorDots(totalSteps: 8, currentStep: 4),
               // Title
               const SizedBox(height: 16),
               Padding(
@@ -78,7 +70,7 @@ class _WhenToCookScreenState extends State<WhenToCookScreen> {
                       'When do you usually think about what to cook?',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 24,
+                        fontSize: 22,
                         fontWeight: FontWeight.w800,
                         color: AppColors.textDark,
                         height: 1.2,
@@ -160,7 +152,7 @@ class _WhenToCookScreenState extends State<WhenToCookScreen> {
                                 child: Text(
                                   _options[index],
                                   style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 16,
+                                    fontSize: 15,
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.textDark,
                                     height: 1.3,
@@ -203,7 +195,14 @@ class WhenToCookBody extends StatefulWidget {
 }
 
 class _WhenToCookBodyState extends State<WhenToCookBody> {
-  int selectedIndex = 0; // First option selected by default
+  final OnboardingController _c = Get.find<OnboardingController>();
+  late int selectedIndex; // restored from the shared controller
+
+  @override
+  void initState() {
+    super.initState();
+    selectedIndex = _c.whenToCook.value;
+  }
 
   final List<String> _options = [
     'In the morning, I like to plan ahead',
@@ -227,7 +226,7 @@ class _WhenToCookBodyState extends State<WhenToCookBody> {
                   'When do you usually think about what to cook?',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 24,
+                    fontSize: 18,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textDark,
                     height: 1.2,
@@ -239,7 +238,7 @@ class _WhenToCookBodyState extends State<WhenToCookBody> {
                   "We'll check in at the right moment, not a random one.",
                   textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14.5,
+                    fontSize: 12,
                     fontWeight: FontWeight.w500,
                     color: AppColors.textMedium,
                     height: 1.5,
@@ -262,17 +261,13 @@ class _WhenToCookBodyState extends State<WhenToCookBody> {
                       setState(() {
                         selectedIndex = index;
                       });
+                      _c.setWhenToCook(index);
                     },
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: isSelected
-                              ? AppColors.primary
-                              : AppColors.surfaceBorder,
-                        ),
                       ),
                       child: Row(
                         children: [
@@ -309,8 +304,8 @@ class _WhenToCookBodyState extends State<WhenToCookBody> {
                             child: Text(
                               _options[index],
                               style: GoogleFonts.plusJakartaSans(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
                                 color: AppColors.textDark,
                                 height: 1.3,
                               ),

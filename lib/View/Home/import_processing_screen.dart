@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -97,15 +98,7 @@ class ImportProcessingScreenState extends State<ImportProcessingScreen>
                   children: [
                     const AppLogo(size: 34),
                     const SizedBox(width: 9),
-                    Text(
-                      'Recipe AI',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.2,
-                        color: AppColors.textDark,
-                      ),
-                    ),
+                    AppWordmark(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: -0.2),
                   ],
                 ),
                 const SizedBox(height: 38),

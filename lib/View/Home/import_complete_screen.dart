@@ -530,16 +530,19 @@ class ImportCompleteScreen extends StatelessWidget {
       return _SourceInfo('TikTok', 'From TikTok$suffix',
           AppColors.tiktokBg, AppColors.tiktok, Icons.music_note_rounded);
     }
-    // Text / name → "From text to generate"
-    if (s.contains('recipe_name') || s.contains('generated') ||
-        s.contains('text') || s.isEmpty) {
+    // Text / name → "From text to generate" (never for real URLs, which must
+    // fall through to the http branch below).
+    if (!s.startsWith('http') &&
+        (s.contains('recipe_name') || s.contains('generated') ||
+            s.contains('text') || s.isEmpty)) {
       return _SourceInfo('a recipe name', 'From text to generate',
           AppColors.purpleBg, AppColors.purple, Icons.auto_awesome_rounded,
           logo: true);
     }
     // Photo / video / other social media → "From image/video to generate"
-    if (s.contains('image') || s.contains('video') || s.contains('gemini') ||
-        s.contains('photo') || s.contains('social') || s.contains('media')) {
+    if (!s.startsWith('http') &&
+        (s.contains('image') || s.contains('video') || s.contains('gemini') ||
+            s.contains('photo') || s.contains('social') || s.contains('media'))) {
       return _SourceInfo('a photo or video', 'From image/video to generate',
           AppColors.redBg, AppColors.primary, Icons.movie_creation_rounded);
     }

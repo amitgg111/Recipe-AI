@@ -51,6 +51,16 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
     _titleController.dispose();
     _servingsController.dispose();
     _timeController.dispose();
+    for (final g in _ingredientGroups) {
+      g.nameController.dispose();
+      for (final i in g.items) {
+        i.amountController.dispose();
+        i.nameController.dispose();
+      }
+    }
+    for (final ins in _instructions) {
+      ins.textController.dispose();
+    }
     super.dispose();
   }
 
@@ -347,7 +357,7 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
                     border: Border.all(color: AppColors.unselectedBorder),
                   ),
                   child: TextField(
-                    controller: TextEditingController(text: group.name),
+                    controller: group.nameController,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -417,7 +427,7 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
                 border: Border.all(color: AppColors.unselectedBorder),
               ),
               child: TextField(
-                controller: TextEditingController(text: item.amount),
+                controller: item.amountController,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -448,7 +458,7 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
                 border: Border.all(color: AppColors.unselectedBorder),
               ),
               child: TextField(
-                controller: TextEditingController(text: item.name),
+                controller: item.nameController,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
@@ -539,7 +549,7 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
                     border: Border.all(color: AppColors.unselectedBorder),
                   ),
                   child: TextField(
-                    controller: TextEditingController(text: instruction.text),
+                    controller: instruction.textController,
                     maxLines: null,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 14,
@@ -679,16 +689,26 @@ class _DashedBorderPainter extends CustomPainter {
 class _EditIngredientGroup {
   String name;
   List<_EditIngredient> items;
-  _EditIngredientGroup({required this.name, required this.items});
+  // One controller per field, created once and disposed with the screen — so
+  // typed edits survive rebuilds and controllers don't leak on each build.
+  final TextEditingController nameController;
+  _EditIngredientGroup({required this.name, required this.items})
+      : nameController = TextEditingController(text: name);
 }
 
 class _EditIngredient {
   String amount;
   String name;
-  _EditIngredient({required this.amount, required this.name});
+  final TextEditingController amountController;
+  final TextEditingController nameController;
+  _EditIngredient({required this.amount, required this.name})
+      : amountController = TextEditingController(text: amount),
+        nameController = TextEditingController(text: name);
 }
 
 class _EditInstruction {
   String text;
-  _EditInstruction(this.text);
+  final TextEditingController textController;
+  _EditInstruction(this.text)
+      : textController = TextEditingController(text: text);
 }

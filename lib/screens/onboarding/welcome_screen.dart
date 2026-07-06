@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -30,6 +31,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   late final Animation<double> _buttonFade;
   late final Animation<Offset> _buttonSlide;
   late final Animation<double> _loginFade;
+  late final Animation<double> _sheenAnimation;
+
+  late final AnimationController _sheenController;
 
   @override
   void initState() {
@@ -51,6 +55,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         parent: _entranceController,
         curve: const Interval(0.28, 0.58, curve: Curves.elasticOut),
       ),
+    );
+
+    _sheenAnimation = Tween<double>(begin: -1.0, end: 2.0).animate(
+      CurvedAnimation(parent: _sheenController, curve: Curves.easeInOut),
     );
     _buttonFade = _fade(0.70, 0.90);
     _buttonSlide = _slide(const Offset(0, 0.3), 0.70, 0.90);
@@ -80,6 +88,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   @override
   void dispose() {
     _entranceController.dispose();
+    _sheenController.dispose();
+
     super.dispose();
   }
 
@@ -138,26 +148,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Center(
-                            child: AppLogoMark(size: 22),
-                          ),
-                        ),
+                        const AppLogo(size: 32),
                         const SizedBox(width: 10),
-                        Text(
-                          'Recipe AI',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.textDark,
-                          ),
-                        ),
+                        AppWordmark(fontSize: 22, fontWeight: FontWeight.w800),
                       ],
                     ),
                   ),
@@ -226,17 +219,50 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                   ),
                   const SizedBox(height: 10),
                   // Get Started button
-                  _animatedSlide(
-                    _buttonFade,
-                    _buttonSlide,
-                    PrimaryButton(
-                      label: 'Get Started',
-                      enableSheen: false,
+                  // _animatedSlide(
+                  // _buttonFade,
+                  // _buttonSlide,
+                  Stack(
+                    children: [
+                      PrimaryButton(
+                        label: 'Get Started',
+                        enableSheen: false,
 
-                      height: 54,
-                      onPressed: () => Get.to(() => const SocialProofScreen()),
-                    ),
+                        height: 54,
+                        onPressed: () =>
+                            Get.to(() => const SocialProofScreen()),
+                      ),
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: ClipRect(
+                            child: AnimatedBuilder(
+                              animation: _sheenAnimation,
+                              builder: (context, _) {
+                                return FractionalTranslation(
+                                  translation: Offset(_sheenAnimation.value, 0),
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.centerLeft,
+                                        end: Alignment.centerRight,
+                                        colors: [
+                                          Colors.white.withValues(alpha: 0),
+                                          Colors.white.withValues(alpha: 0.22),
+                                          Colors.white.withValues(alpha: 0),
+                                        ],
+                                        stops: const [0.35, 0.5, 0.65],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
+                  // ),
                   const SizedBox(height: 16),
                   // Login link
                   AnimatedBuilder(
@@ -316,87 +342,97 @@ class _WelcomeBodyState extends State<WelcomeBody>
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: AnimatedBuilder(
-        animation: _fade,
-        builder: (context, child) =>
-            Opacity(opacity: _fade.value, child: child),
-        child: Column(
-          children: [
-            const SizedBox(height: 24),
-            // Logo
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Center(
-                    child: AppLogoMark(size: 22),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  'Recipe AI',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textDark,
-                  ),
-                ),
-              ],
+    return Stack(
+      children: [
+        // Background glows — same as the HTML Welcome screen (warm orange from
+        // the top, soft green from the bottom-left).
+        const Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment(0, -0.78),
+                radius: 1.1,
+                colors: [Color(0x29F2623E), Colors.transparent],
+                stops: [0.0, 0.7],
+              ),
             ),
-            const SizedBox(height: 32),
-            // Title
-            RichText(
-              textAlign: TextAlign.center,
-              text: TextSpan(
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 33,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textDark,
-                  height: 1.08,
-                  letterSpacing: -1.0,
+          ),
+        ),
+        const Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment(-0.85, 0.85),
+                radius: 0.85,
+                colors: [Color(0x1F1F7A5E), Colors.transparent],
+                stops: [0.0, 0.7],
+              ),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: AnimatedBuilder(
+            animation: _fade,
+            builder: (context, child) =>
+                Opacity(opacity: _fade.value, child: child),
+            child: Column(
+              children: [
+                const SizedBox(height: 24),
+                // Logo
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const AppLogo(size: 32),
+                    const SizedBox(width: 10),
+                    AppWordmark(fontSize: 22, fontWeight: FontWeight.w800),
+                  ],
                 ),
-                children: const [
-                  TextSpan(text: 'Cook '),
-                  TextSpan(
-                    text: 'anything',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontStyle: FontStyle.italic,
+                const SizedBox(height: 32),
+                // Title
+                RichText(
+                  textAlign: TextAlign.center,
+                  text: TextSpan(
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textDark,
+                      height: 1.08,
+                      letterSpacing: -1.0,
+                    ),
+                    children: const [
+                      TextSpan(text: 'Cook '),
+                      TextSpan(
+                        text: 'anything',
+                        style: TextStyle(color: AppColors.primary),
+                      ),
+                      TextSpan(text: ',\nwithout the chaos'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                // Subtitle
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Text(
+                    'Import any recipe, build smart shopping lists, and plan your week — like a pro.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textMedium,
+                      height: 1.5,
                     ),
                   ),
-                  TextSpan(text: ',\nwithout the chaos'),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            // Subtitle
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Text(
-                'Import any recipe, build smart shopping lists, and plan your week — like a pro.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 15.5,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textMedium,
-                  height: 1.5,
                 ),
-              ),
+                const SizedBox(height: 16),
+                // Animation area
+                const Expanded(child: WelcomeCookingAnimation()),
+              ],
             ),
-            const SizedBox(height: 16),
-            // Animation area
-            const Expanded(child: WelcomeCookingAnimation()),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -877,7 +913,7 @@ class _WelcomeCookingAnimationState extends State<WelcomeCookingAnimation>
               label,
               style: const TextStyle(
                 fontSize: 13.5,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.bold,
                 color: Color(0xFF2A211B),
               ),
             ),

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:recipe_ai/widgets/app_wordmark.dart';
 
 /// Which social platform's first slide to show.
 enum GuidePlatform { instagram, tiktok, facebook }
@@ -754,14 +755,7 @@ class _SocialGuideAnimationState extends State<SocialGuideAnimation>
                             ),
                           ),
                           const SizedBox(height: 5),
-                          Text(
-                            'Recipe AI',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                              color: const Color(0xFF2A211B),
-                            ),
-                          ),
+                          const AppWordmark(fontSize: 9, fontWeight: FontWeight.w700),
                         ],
                       ),
                       _circle(

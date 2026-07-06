@@ -51,7 +51,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyCiKLH91Rp8C0uGv9lOyBSqh6i1q5Fl9xo',
-    appId: '1:727358456642:android:c40a285865c2473b2d7edb',
+    appId: '1:727358456642:android:da5215140f62e3a92d7edb',
     messagingSenderId: '727358456642',
     projectId: 'recipeai-32ae9',
     storageBucket: 'recipeai-32ae9.firebasestorage.app',
@@ -59,10 +59,12 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyDkzk_Qfs_5oMRVb95UjVWbo3cYZyaNHys',
-    appId: '1:727358456642:ios:4522aa4ec690be312d7edb',
+    appId: '1:727358456642:ios:5b41f99f9db894e82d7edb',
     messagingSenderId: '727358456642',
     projectId: 'recipeai-32ae9',
     storageBucket: 'recipeai-32ae9.firebasestorage.app',
-    iosBundleId: 'com.example.recipeAi',
+    androidClientId: '727358456642-2aa231ehgui2r0oq1ofidikht7kadmd0.apps.googleusercontent.com',
+    iosClientId: '727358456642-fu9np8taebtusp876kpgjo2u737n2ek3.apps.googleusercontent.com',
+    iosBundleId: 'com.ai.recipe.community',
   );
 }

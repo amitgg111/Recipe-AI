@@ -77,25 +77,46 @@ class GroceryStore extends GetxController {
         });
   }
 
+  bool _saving = false;
+  bool _savePending = false;
+
   Future<void> _saveToFirebase() async {
-    final uid = AuthService.currentUser?.uid;
-    if (uid == null) return;
-
-    final batch = _firestore.batch();
-    final ref = _firestore.collection('users').doc(uid).collection('groceries');
-
-    // Clear existing
-    final existing = await ref.get();
-    for (final doc in existing.docs) {
-      batch.delete(doc.reference);
+    // Single-flight guard: if a save is already running, flag that another is
+    // needed and let the in-flight one re-run once when it finishes. This
+    // coalesces overlapping saves so two concurrent read-delete-readd batches
+    // can never race and duplicate the whole grocery list in Firestore.
+    if (_saving) {
+      _savePending = true;
+      return;
     }
+    _saving = true;
+    try {
+      final uid = AuthService.currentUser?.uid;
+      if (uid == null) return;
 
-    // Add all items
-    for (final item in items) {
-      batch.set(ref.doc(), item.toMap());
+      final batch = _firestore.batch();
+      final ref =
+          _firestore.collection('users').doc(uid).collection('groceries');
+
+      // Clear existing
+      final existing = await ref.get();
+      for (final doc in existing.docs) {
+        batch.delete(doc.reference);
+      }
+
+      // Add all items
+      for (final item in items) {
+        batch.set(ref.doc(), item.toMap());
+      }
+
+      await batch.commit();
+    } finally {
+      _saving = false;
+      if (_savePending) {
+        _savePending = false;
+        await _saveToFirebase();
+      }
     }
-
-    await batch.commit();
   }
 
   // ── Aisle keyword map ──────────────────────────────────────────────────────
@@ -174,26 +195,86 @@ class GroceryStore extends GetxController {
     // Pantry
     'cashew': 'Pantry',
     'almond': 'Pantry',
-    'rice': 'Pantry',
-    'dal': 'Pantry',
-    'lentil': 'Pantry',
-    'pasta': 'Pantry',
-    'noodle': 'Pantry',
     'tomato paste': 'Pantry',
     'coconut milk': 'Pantry',
     'stock': 'Pantry',
     'broth': 'Pantry',
     'soy sauce': 'Pantry',
     'bread': 'Pantry',
+    // Grains & Pasta
+    'rice': 'Grains & Pasta',
+    'pasta': 'Grains & Pasta',
+    'noodle': 'Grains & Pasta',
+    'spaghetti': 'Grains & Pasta',
+    'macaroni': 'Grains & Pasta',
+    'dal': 'Grains & Pasta',
+    'lentil': 'Grains & Pasta',
+    'oats': 'Grains & Pasta',
+    'quinoa': 'Grains & Pasta',
+    'couscous': 'Grains & Pasta',
+    'barley': 'Grains & Pasta',
+    // Meat & Seafood (existing aisle — previously had no detection keywords)
+    'chicken': 'Meat & Seafood',
+    'beef': 'Meat & Seafood',
+    'pork': 'Meat & Seafood',
+    'lamb': 'Meat & Seafood',
+    'mutton': 'Meat & Seafood',
+    'turkey': 'Meat & Seafood',
+    'bacon': 'Meat & Seafood',
+    'sausage': 'Meat & Seafood',
+    'mince': 'Meat & Seafood',
+    'steak': 'Meat & Seafood',
+    'salmon': 'Meat & Seafood',
+    'tuna': 'Meat & Seafood',
+    'shrimp': 'Meat & Seafood',
+    'prawn': 'Meat & Seafood',
+    'fish': 'Meat & Seafood',
+    // Bakery (existing aisle — previously had no detection keywords)
+    'bun': 'Bakery',
+    'bagel': 'Bakery',
+    'croissant': 'Bakery',
+    'tortilla': 'Bakery',
+    'baguette': 'Bakery',
+    'muffin': 'Bakery',
+    // Frozen (existing aisle — previously had no detection keywords)
+    'frozen': 'Frozen',
+    'ice cream': 'Frozen',
+    // Beverages
+    'juice': 'Beverages',
+    'soda': 'Beverages',
+    'cola': 'Beverages',
+    'coffee': 'Beverages',
+    'sparkling water': 'Beverages',
+    'wine': 'Beverages',
+    'beer': 'Beverages',
+    // Snacks & Sweets
+    'chocolate': 'Snacks & Sweets',
+    'candy': 'Snacks & Sweets',
+    'cookie': 'Snacks & Sweets',
+    'biscuit': 'Snacks & Sweets',
+    'chips': 'Snacks & Sweets',
+    'crisps': 'Snacks & Sweets',
+    // Household (existing aisle — previously had no detection keywords)
+    'foil': 'Household',
+    'napkin': 'Household',
+    'detergent': 'Household',
+    'paper towel': 'Household',
   };
 
   static const List<String> _aisleOrder = [
     'Fresh Produce',
+    'Meat & Seafood',
     'Dairy, Eggs & Fridge',
+    'Bakery',
+    'Grains & Pasta',
     'Herbs & Spices',
     'Oils & Vinegars',
     'Flours & Sugars',
     'Pantry',
+    'Frozen',
+    'Beverages',
+    'Snacks & Sweets',
+    'Household',
     'Uncategorized',
   ];
 
@@ -282,6 +363,22 @@ class GroceryStore extends GetxController {
   //   _saveToFirebase();
   // }
   void addFromRecipe(String recipeId, List<String> ingredients) {
+    // Requirements 6/7/12 — adding the SAME recipe again must UPDATE its
+    // grocery items with the latest (serving-scaled) quantities instead of
+    // creating duplicates. We:
+    //   1. remember the checked/unchecked state of this recipe's current items
+    //      (keyed by ingredient name) so the user's progress is preserved,
+    //   2. remove this recipe's existing items,
+    //   3. re-add them from the latest ingredient list, restoring checked state.
+    // Items from OTHER recipes are never touched.
+    final previousChecked = <String, bool>{};
+    for (final item in items) {
+      if (item.recipeId == recipeId) {
+        previousChecked[item.name.toLowerCase()] = item.checked;
+      }
+    }
+    items.removeWhere((item) => item.recipeId == recipeId);
+
     for (final raw in ingredients) {
       final (name, qty) = parseIngredient(raw);
 
@@ -291,6 +388,7 @@ class GroceryStore extends GetxController {
           quantity: qty,
           aisle: detectAisle(raw),
           recipeId: recipeId,
+          checked: previousChecked[name.toLowerCase()] ?? false,
         ),
       );
     }
@@ -315,6 +413,9 @@ class GroceryStore extends GetxController {
   //   _saveToFirebase();
   // }
   Future<void> toggleItem(GroceryItem item) async {
+    // Ignore taps while this item's check animation/save is already in flight —
+    // otherwise a rapid second tap re-enters and fires a duplicate delayed save.
+    if (item.animating) return;
     if (!item.checked) {
       item.animating = true;
       items.refresh();

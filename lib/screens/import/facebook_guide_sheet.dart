@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:flutter/material.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
@@ -583,14 +584,7 @@ class _FacebookSlide3 extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    Text(
-                      'Recipe AI',
-                      style: AppTextStyles.smallLabel.copyWith(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textDark,
-                      ),
-                    ),
+                    AppWordmark(fontSize: 11, fontWeight: FontWeight.w700),
                   ],
                 ),
                 // Chat - blue

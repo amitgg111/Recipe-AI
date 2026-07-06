@@ -52,9 +52,12 @@ class AppLogo extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(size * 0.32),
+        // Exact reproduction of the HTML `linear-gradient(160deg,#FF8763,#F2623E)`:
+        // the light stop sits toward the top-left, the dark stop bottom-right.
+        // 160° → end direction (sin160°, -cos160°) = (0.342, 0.940).
         gradient: const LinearGradient(
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
+          begin: Alignment(-0.342, -0.940),
+          end: Alignment(0.342, 0.940),
           colors: [Color(0xFFFF8763), Color(0xFFF2623E)],
         ),
         boxShadow: [

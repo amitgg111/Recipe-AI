@@ -7,12 +7,17 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:727358456642:android:c40a285865c2473b2d7edb",
+        "mobilesdk_app_id": "1:727358456642:android:da5215140f62e3a92d7edb",
         "android_client_info": {
-          "package_name": "com.example.recipe_ai"
+          "package_name": "com.ai.recipe.community"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "727358456642-sbo26tsg8hheo66og2r0d661j490f8op.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCiKLH91Rp8C0uGv9lOyBSqh6i1q5Fl9xo"
@@ -20,7 +25,63 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "727358456642-sbo26tsg8hheo66og2r0d661j490f8op.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "727358456642-7ui6gavai27gegq0vapf1sjpdqft039l.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.recipeAi"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:727358456642:android:c40a285865c2473b2d7edb",
+        "android_client_info": {
+          "package_name": "com.example.recipe_ai"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "727358456642-2aa231ehgui2r0oq1ofidikht7kadmd0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.recipe_ai",
+            "certificate_hash": "0e4db6cf6d21f885496d43b74b3d9fee6ecffea6"
+          }
+        },
+        {
+          "client_id": "727358456642-sbo26tsg8hheo66og2r0d661j490f8op.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCiKLH91Rp8C0uGv9lOyBSqh6i1q5Fl9xo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "727358456642-sbo26tsg8hheo66og2r0d661j490f8op.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "727358456642-7ui6gavai27gegq0vapf1sjpdqft039l.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.recipeAi"
+              }
+            }
+          ]
         }
       }
     }

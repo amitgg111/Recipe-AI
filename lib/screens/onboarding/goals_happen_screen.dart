@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
@@ -44,14 +45,7 @@ class _GoalsHappenScreenState extends State<GoalsHappenScreen> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    'Recipe AI',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
-                    ),
-                  ),
+                  AppWordmark(fontSize: 16, fontWeight: FontWeight.w700),
                 ],
               ),
               const SizedBox(height: 12),
@@ -339,8 +333,38 @@ class _GoalsHappenScreenState extends State<GoalsHappenScreen> {
 // GoalsHappenBody — content-only widget for single-screen onboarding
 // ─────────────────────────────────────────────────────────────────────────────
 
-class GoalsHappenBody extends StatelessWidget {
+class GoalsHappenBody extends StatefulWidget {
   const GoalsHappenBody({super.key});
+
+  @override
+  State<GoalsHappenBody> createState() => _GoalsHappenBodyState();
+}
+
+class _GoalsHappenBodyState extends State<GoalsHappenBody>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _chartController;
+  late final Animation<double> _chartAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    // The progress curve draws in left → right on entry.
+    _chartController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+    _chartAnim = CurvedAnimation(
+      parent: _chartController,
+      curve: Curves.easeInOutCubic,
+    );
+    _chartController.forward();
+  }
+
+  @override
+  void dispose() {
+    _chartController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -354,7 +378,7 @@ class GoalsHappenBody extends StatelessWidget {
             "Let's make your\ngoals happen!",
             textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 26,
+              fontSize: 21,
               fontWeight: FontWeight.w800,
               color: AppColors.textDark,
               height: 1.15,
@@ -365,10 +389,10 @@ class GoalsHappenBody extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Text(
-              "You want to save money and eat healthier — we'll help you get there.",
+              "You want to save money and eat healthier —we'll help you get there.",
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
-                fontSize: 15,
+                fontSize: 11,
                 fontWeight: FontWeight.w500,
                 color: AppColors.textMedium,
                 height: 1.5,
@@ -447,9 +471,14 @@ class GoalsHappenBody extends StatelessWidget {
                         // Chart
                         SizedBox(
                           height: 92,
-                          child: CustomPaint(
-                            size: const Size(double.infinity, 92),
-                            painter: _ProgressChartPainter(),
+                          child: AnimatedBuilder(
+                            animation: _chartAnim,
+                            builder: (context, _) => CustomPaint(
+                              size: const Size(double.infinity, 92),
+                              painter: _ProgressChartPainter(
+                                progress: _chartAnim.value,
+                              ),
+                            ),
                           ),
                         ),
                         // Week labels
@@ -538,7 +567,7 @@ class GoalsHappenBody extends StatelessWidget {
                               Text(
                                 'Balanced, fresh meals',
                                 style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 12,
+                                  fontSize: 10,
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.greenText,
                                 ),
@@ -553,7 +582,7 @@ class GoalsHappenBody extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.all(15),
                           decoration: BoxDecoration(
-                            color: AppColors.goldBg,
+                            color: const Color(0xFFFCF3DE),
                             borderRadius: BorderRadius.circular(18),
                             border: Border.all(color: AppColors.goldBorder),
                           ),
@@ -588,7 +617,7 @@ class GoalsHappenBody extends StatelessWidget {
                               Text(
                                 'Cook more, waste less',
                                 style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 12,
+                                  fontSize: 10,
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.goldText,
                                 ),
@@ -616,6 +645,11 @@ class GoalsHappenBody extends StatelessWidget {
 ///   Mid-circle at (120,50): r4, white fill, #F2623E stroke 2.5
 ///   End-circle at (274,10): r5, #F2623E fill
 class _ProgressChartPainter extends CustomPainter {
+  /// 0 → 1: how much of the curve is drawn (used for the entrance animation).
+  final double progress;
+
+  _ProgressChartPainter({this.progress = 1.0});
+
   @override
   void paint(Canvas canvas, Size size) {
     // Map SVG viewBox (280x92) to actual canvas size
@@ -644,45 +678,58 @@ class _ProgressChartPainter extends CustomPainter {
       p(274, 10).dy,
     );
 
-    // Fill area below curve
-    final fillPath = Path.from(path);
-    fillPath.lineTo(p(274, 90).dx, p(274, 90).dy);
-    fillPath.lineTo(p(6, 90).dx, p(6, 90).dy);
-    fillPath.close();
+    // Extract only the drawn fraction of the curve (left → right reveal).
+    final t = progress.clamp(0.0, 1.0);
+    final metric = path.computeMetrics().first;
+    final drawn = metric.extractPath(0, metric.length * t);
+    final endX =
+        metric.getTangentForOffset(metric.length * t)?.position.dx ??
+        p(6, 82).dx;
+    final baseY = p(6, 90).dy;
 
+    // Fill area below the drawn portion of the curve.
+    final fillPath = Path.from(drawn)
+      ..lineTo(endX, baseY)
+      ..lineTo(p(6, 90).dx, baseY)
+      ..close();
     final fillPaint = Paint()
       ..color = const Color(0xFFF2623E).withValues(alpha: 0.09)
       ..style = PaintingStyle.fill;
     canvas.drawPath(fillPath, fillPaint);
 
-    // Stroke the curve
+    // Stroke the drawn curve.
     final linePaint = Paint()
       ..color = const Color(0xFFF2623E)
       ..strokeWidth = 3
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
-    canvas.drawPath(path, linePaint);
+    canvas.drawPath(drawn, linePaint);
 
-    // Mid-point circle at (120, 50) — white fill, orange stroke
+    // Mid-point circle at (120, 50) — appears once the reveal reaches it.
     final midCenter = p(120, 50);
-    final midBgPaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(midCenter, 4 * sx, midBgPaint);
-    final midStrokePaint = Paint()
-      ..color = const Color(0xFFF2623E)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5;
-    canvas.drawCircle(midCenter, 4 * sx, midStrokePaint);
+    if (endX >= midCenter.dx - 0.5) {
+      canvas.drawCircle(midCenter, 4 * sx, Paint()..color = Colors.white);
+      canvas.drawCircle(
+        midCenter,
+        4 * sx,
+        Paint()
+          ..color = const Color(0xFFF2623E)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.5,
+      );
+    }
 
-    // End-point circle at (274, 10) — solid orange fill
-    final endCenter = p(274, 10);
-    final endPaint = Paint()
-      ..color = const Color(0xFFF2623E)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(endCenter, 5 * sx, endPaint);
+    // End-point circle at (274, 10) — appears at the end.
+    if (t >= 0.999) {
+      canvas.drawCircle(
+        p(274, 10),
+        5 * sx,
+        Paint()..color = const Color(0xFFF2623E),
+      );
+    }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _ProgressChartPainter oldDelegate) =>
+      oldDelegate.progress != progress;
 }

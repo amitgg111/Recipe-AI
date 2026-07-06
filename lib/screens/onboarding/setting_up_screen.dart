@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -206,14 +207,7 @@ class _SettingUpScreenState extends State<SettingUpScreen>
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    'Recipe AI',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
-                    ),
-                  ),
+                  AppWordmark(fontSize: 16, fontWeight: FontWeight.w700),
                 ],
               ),
               // Title
@@ -222,7 +216,7 @@ class _SettingUpScreenState extends State<SettingUpScreen>
                 'We’re setting everything\nup for you',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 26,
+                  fontSize: 22,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textDark,
                   letterSpacing: -0.52,
@@ -530,7 +524,12 @@ class _SettingUpScreenState extends State<SettingUpScreen>
 /// Renders the logo, title, frying-pan animation, spinner and cycling
 /// loading messages (no progress dots, no CTA button).
 class SettingUpBody extends StatefulWidget {
-  const SettingUpBody({super.key});
+  /// True once setup is finished. Swaps the spinner + cycling loading message
+  /// for a "done" checkmark + confirmation text (the parent reveals the
+  /// Continue button at the same moment).
+  final bool ready;
+
+  const SettingUpBody({super.key, this.ready = false});
 
   @override
   State<SettingUpBody> createState() => _SettingUpBodyState();
@@ -696,7 +695,7 @@ class _SettingUpBodyState extends State<SettingUpBody>
             'We’re setting everything\nup for you',
             textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 26,
+              fontSize: 22,
               fontWeight: FontWeight.w800,
               color: AppColors.textDark,
               letterSpacing: -0.52,
@@ -889,15 +888,24 @@ class _SettingUpBodyState extends State<SettingUpBody>
                       ),
                       // Sparkle: top 20px, right 36px, primary, floaty
                       AnimatedBuilder(
-                        animation: _sparkleY,
+                        animation: _sparkleController,
                         builder: (context, _) {
+                          final tw = _sparkleController.value;
                           return Positioned(
                             top: 20 + _sparkleY.value,
                             right: 36,
-                            child: const Icon(
-                              Icons.auto_awesome,
-                              color: AppColors.primary,
-                              size: 20,
+                            // Twinkle: gentle scale pulse + slight wobble on top
+                            // of the existing float.
+                            child: Transform.rotate(
+                              angle: tw * 0.6,
+                              child: Transform.scale(
+                                scale: 0.82 + 0.36 * tw,
+                                child: const Icon(
+                                  Icons.auto_awesome,
+                                  color: AppColors.primary,
+                                  size: 20,
+                                ),
+                              ),
                             ),
                           );
                         },
@@ -905,41 +913,76 @@ class _SettingUpBodyState extends State<SettingUpBody>
                     ],
                   ),
                 ),
-                // Loading indicator
-                Column(
-                  children: [
-                    // Spinner
-                    AnimatedBuilder(
-                      animation: _spinnerController,
-                      builder: (context, _) {
-                        return Transform.rotate(
-                          angle: _spinnerController.value * 2 * math.pi,
-                          child: SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CustomPaint(
-                              painter: _SpinnerPainter(),
+                // Loading indicator → swaps to a "done" state once ready.
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 350),
+                  child: widget.ready
+                      ? Column(
+                          key: const ValueKey('done'),
+                          children: [
+                            // Done checkmark
+                            Container(
+                              width: 34,
+                              height: 34,
+                              decoration: const BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.check_rounded,
+                                color: Colors.white,
+                                size: 22,
+                              ),
                             ),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 14),
-                    // Rotating messages
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 400),
-                      child: Text(
-                        _messages[_messageIndex],
-                        key: ValueKey<int>(_messageIndex),
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textMedium,
+                            const SizedBox(height: 14),
+                            Text(
+                              'You’re all set!',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textDark,
+                              ),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          key: const ValueKey('loading'),
+                          children: [
+                            // Spinner
+                            AnimatedBuilder(
+                              animation: _spinnerController,
+                              builder: (context, _) {
+                                return Transform.rotate(
+                                  angle:
+                                      _spinnerController.value * 2 * math.pi,
+                                  child: SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CustomPaint(
+                                      painter: _SpinnerPainter(),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 14),
+                            // Rotating messages
+                            AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 400),
+                              child: Text(
+                                _messages[_messageIndex],
+                                key: ValueKey<int>(_messageIndex),
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textMedium,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ),
-                  ],
                 ),
               ],
             ),

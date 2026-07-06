@@ -1,8 +1,10 @@
 import 'package:flutter/gestures.dart';
+import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
+import 'package:recipe_ai/utils/auth_error_mapper.dart';
 import 'package:recipe_ai/View/Auth/auth_wrapper.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
@@ -21,22 +23,16 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   bool _isLoading = false;
 
   Future<void> _onGoogleContinue() async {
+    if (_isLoading) return; // prevent duplicate login requests
     setState(() => _isLoading = true);
     try {
       final userCred = await AuthService.signInWithGoogle();
-      if (userCred == null) {
-        CustomSnackbar.show(
-          title: 'Cancelled',
-          message: 'Google sign-in was cancelled',
-          type: SnackbarType.error,
-        );
-      } else {
-        Get.offAll(() => const AuthWrapper());
-      }
+      if (userCred == null) return; // user cancelled the picker — stay silent
+      Get.offAll(() => const AuthWrapper());
     } catch (e) {
       CustomSnackbar.show(
-        title: 'Error',
-        message: e.toString(),
+        title: 'Google sign-in failed',
+        message: AuthErrorMapper.message(e),
         type: SnackbarType.error,
       );
     } finally {
@@ -45,11 +41,23 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   }
 
   Future<void> _onAppleContinue() async {
-    CustomSnackbar.show(
-      title: 'Coming Soon',
-      message: 'Apple sign-in will be available soon',
-      type: SnackbarType.info,
-    );
+    if (_isLoading) return; // prevent duplicate login requests
+    setState(() => _isLoading = true);
+    try {
+      final result = await AuthService.signInWithApple();
+      if (result.cancelled) return; // user backed out — stay silent
+      if (result.success) {
+        Get.offAll(() => const AuthWrapper());
+      } else {
+        CustomSnackbar.show(
+          title: 'Sign in failed',
+          message: result.errorMessage ?? 'Could not sign in with Apple',
+          type: SnackbarType.error,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   void _onOtherOptions() {
@@ -81,25 +89,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      alignment: Alignment.center,
-                      child: const AppLogoMark(size: 19),
-                    ),
+                    const AppLogo(size: 28),
                     const SizedBox(width: 8),
-                    Text(
-                      'Recipe AI',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
-                      ),
-                    ),
+                    AppWordmark(fontSize: 16, fontWeight: FontWeight.w700),
                   ],
                 ),
               ),
@@ -112,26 +104,17 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   GestureDetector(
                     onTap: () => Navigator.of(context).maybePop(),
                     child: Container(
-                      width: 46,
-                      height: 46,
+                      width: 38,
+                      height: 38,
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.surfaceBorder),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF2A211B)
-                                .withValues(alpha: 0.08),
-                            blurRadius: 14,
-                            offset: const Offset(0, 6),
-                            spreadRadius: -6,
-                          ),
-                        ],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFEDE3D2)),
                       ),
                       alignment: Alignment.center,
                       child: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        size: 16,
+                        Icons.arrow_back_ios_new,
+                        size: 15,
                         color: AppColors.textDark,
                       ),
                     ),
@@ -139,10 +122,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   const SizedBox(width: 14),
                   Expanded(
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(3),
                       child: Container(
-                        height: 8,
-                        color: const Color(0xFFEAEAEA),
+                        height: 6,
+                        color: const Color(0xFFEDE3D0),
                         child: FractionallySizedBox(
                           alignment: Alignment.centerLeft,
                           widthFactor: 1.0,
@@ -224,7 +207,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               // Continue with Apple button
               _OutlinedAuthButton(
                 label: 'Continue with Apple',
-                onTap: _onAppleContinue,
+                onTap: _isLoading ? null : _onAppleContinue,
                 leading: const Icon(
                   Icons.apple,
                   size: 20,

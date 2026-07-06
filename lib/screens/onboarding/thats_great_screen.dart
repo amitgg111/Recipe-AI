@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -30,10 +31,7 @@ class _ThatsGreatScreenState extends State<ThatsGreatScreen>
       vsync: this,
     )..repeat(reverse: true);
     _floatAnimation = Tween<double>(begin: 0, end: -8).animate(
-      CurvedAnimation(
-        parent: _floatController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _floatController, curve: Curves.easeInOut),
     );
   }
 
@@ -71,22 +69,12 @@ class _ThatsGreatScreenState extends State<ThatsGreatScreen>
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    'Recipe AI',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
-                    ),
-                  ),
+                  AppWordmark(fontSize: 16, fontWeight: FontWeight.w700),
                 ],
               ),
               const SizedBox(height: 12),
               // Progress dots (step 3 of 8, index 2)
-              const ProgressIndicatorDots(
-                totalSteps: 8,
-                currentStep: 2,
-              ),
+              const ProgressIndicatorDots(totalSteps: 8, currentStep: 2),
               // Title area
               const SizedBox(height: 18),
               Text(
@@ -185,8 +173,7 @@ class _ThatsGreatScreenState extends State<ThatsGreatScreen>
                               animation: _floatController,
                               builder: (context, child) {
                                 return Transform.translate(
-                                  offset:
-                                      Offset(0, _floatAnimation.value),
+                                  offset: Offset(0, _floatAnimation.value),
                                   child: child,
                                 );
                               },
@@ -198,8 +185,9 @@ class _ThatsGreatScreenState extends State<ThatsGreatScreen>
                                   borderRadius: BorderRadius.circular(14),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(0xFF2A211B)
-                                          .withValues(alpha: 0.45),
+                                      color: const Color(
+                                        0xFF2A211B,
+                                      ).withValues(alpha: 0.45),
                                       blurRadius: 24,
                                       offset: const Offset(0, 12),
                                       spreadRadius: -12,
@@ -233,8 +221,9 @@ class _ThatsGreatScreenState extends State<ThatsGreatScreen>
                         border: Border.all(color: AppColors.surfaceBorder),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF2A211B)
-                                .withValues(alpha: 0.08),
+                            color: const Color(
+                              0xFF2A211B,
+                            ).withValues(alpha: 0.08),
                             blurRadius: 16,
                             offset: const Offset(0, 4),
                           ),
@@ -264,7 +253,8 @@ class _ThatsGreatScreenState extends State<ThatsGreatScreen>
                                     5,
                                     (index) => Padding(
                                       padding: EdgeInsets.only(
-                                          right: index < 4 ? 2 : 0),
+                                        right: index < 4 ? 2 : 0,
+                                      ),
                                       child: const Icon(
                                         Icons.star,
                                         color: AppColors.starOrange,
@@ -281,16 +271,6 @@ class _ThatsGreatScreenState extends State<ThatsGreatScreen>
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.textDark,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                // Attribution
-                                Text(
-                                  'Leslie A. · member since 2024',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.textLight,
                                   ),
                                 ),
                               ],
@@ -329,9 +309,11 @@ class ThatsGreatBody extends StatefulWidget {
 }
 
 class _ThatsGreatBodyState extends State<ThatsGreatBody>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _floatController;
   late final Animation<double> _floatAnimation;
+  late final AnimationController _ringController;
+  late final Animation<double> _ringAnimation;
 
   @override
   void initState() {
@@ -342,16 +324,23 @@ class _ThatsGreatBodyState extends State<ThatsGreatBody>
       vsync: this,
     )..repeat(reverse: true);
     _floatAnimation = Tween<double>(begin: 0, end: -8).animate(
-      CurvedAnimation(
-        parent: _floatController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _floatController, curve: Curves.easeInOut),
     );
+    // Ring sweeps 0 → 92% on entry, with the number counting up alongside it.
+    _ringController = AnimationController(
+      duration: const Duration(milliseconds: 1400),
+      vsync: this,
+    );
+    _ringAnimation = Tween<double>(begin: 0, end: 0.92).animate(
+      CurvedAnimation(parent: _ringController, curve: Curves.easeOutCubic),
+    );
+    _ringController.forward();
   }
 
   @override
   void dispose() {
     _floatController.dispose();
+    _ringController.dispose();
     super.dispose();
   }
 
@@ -367,7 +356,7 @@ class _ThatsGreatBodyState extends State<ThatsGreatBody>
             "That's great!",
             textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 27,
+              fontSize: 24,
               fontWeight: FontWeight.w800,
               color: AppColors.textDark,
               letterSpacing: -0.54,
@@ -380,7 +369,7 @@ class _ThatsGreatBodyState extends State<ThatsGreatBody>
               "Here's what members just like you are achieving with Recipe AI.",
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
-                fontSize: 15,
+                fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: AppColors.textMedium,
                 height: 1.5,
@@ -400,56 +389,68 @@ class _ThatsGreatBodyState extends State<ThatsGreatBody>
                     alignment: Alignment.center,
                     clipBehavior: Clip.none,
                     children: [
-                      // Ring
-                      CustomPaint(
-                        size: const Size(210, 210),
-                        painter: _ProgressRingPainter(
-                          progress: 0.92,
-                          trackColor: const Color(0xFFF1E4CF),
-                          progressColor: AppColors.primary,
-                          strokeWidth: 18,
-                        ),
-                      ),
-                      // Center text
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          RichText(
-                            text: TextSpan(
-                              children: [
-                                TextSpan(
-                                  text: '92',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 48,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.textDark,
-                                    height: 1,
-                                    letterSpacing: -1.44,
-                                  ),
+                      // Animated ring + counting number
+                      AnimatedBuilder(
+                        animation: _ringAnimation,
+                        builder: (context, _) {
+                          final p = _ringAnimation.value;
+                          final pct = (p * 100).round();
+                          return Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              CustomPaint(
+                                size: const Size(220, 220),
+                                painter: _ProgressRingPainter(
+                                  progress: p,
+                                  trackColor: const Color(0xFFF1E4CF),
+                                  progressColor: AppColors.primary,
+                                  strokeWidth: 18,
                                 ),
-                                TextSpan(
-                                  text: '%',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.textDark,
-                                    height: 1,
+                              ),
+                              Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  RichText(
+                                    textAlign: TextAlign.center,
+                                    text: TextSpan(
+                                      children: [
+                                        TextSpan(
+                                          text: '$pct',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 35,
+                                            fontWeight: FontWeight.w800,
+                                            color: AppColors.textDark,
+                                            height: 1,
+                                            letterSpacing: -1.44,
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text: '%',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 35,
+                                            fontWeight: FontWeight.w800,
+                                            color: AppColors.textDark,
+                                            height: 1,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            'report saving money',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textMedium,
-                            ),
-                          ),
-                        ],
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    'report saving money',
+                                    textAlign: TextAlign.center,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textMedium,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          );
+                        },
                       ),
                       // Floating wallet icon - top-right
                       Positioned(
@@ -471,8 +472,9 @@ class _ThatsGreatBodyState extends State<ThatsGreatBody>
                               borderRadius: BorderRadius.circular(14),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF2A211B)
-                                      .withValues(alpha: 0.45),
+                                  color: const Color(
+                                    0xFF2A211B,
+                                  ).withValues(alpha: 0.45),
                                   blurRadius: 24,
                                   offset: const Offset(0, 12),
                                   spreadRadius: -12,
@@ -506,25 +508,17 @@ class _ThatsGreatBodyState extends State<ThatsGreatBody>
                     border: Border.all(color: AppColors.surfaceBorder),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF2A211B)
-                            .withValues(alpha: 0.08),
+                        color: const Color(0xFF2A211B).withValues(alpha: 0.08),
                         blurRadius: 16,
                         offset: const Offset(0, 4),
                       ),
                     ],
                   ),
                   child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       // Avatar
-                      Container(
-                        width: 42,
-                        height: 42,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFEADFCF),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
+                      _demoAvatar(),
                       const SizedBox(width: 13),
                       // Content column
                       Expanded(
@@ -537,7 +531,8 @@ class _ThatsGreatBodyState extends State<ThatsGreatBody>
                                 5,
                                 (index) => Padding(
                                   padding: EdgeInsets.only(
-                                      right: index < 4 ? 2 : 0),
+                                    right: index < 4 ? 2 : 0,
+                                  ),
                                   child: const Icon(
                                     Icons.star,
                                     color: AppColors.starOrange,
@@ -551,19 +546,9 @@ class _ThatsGreatBodyState extends State<ThatsGreatBody>
                             Text(
                               'Saved over \$1,200 this year cooking at home.',
                               style: GoogleFonts.plusJakartaSans(
-                                fontSize: 13,
+                                fontSize: 11,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.textDark,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            // Attribution
-                            Text(
-                              'Leslie A. · member since 2024',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textLight,
                               ),
                             ),
                           ],
@@ -658,3 +643,34 @@ class AnimatedBuilder extends AnimatedWidget {
     return builder(context, child);
   }
 }
+
+/// Demo reviewer avatar (42px) with a graceful fallback while loading / offline.
+Widget _demoAvatar() => ClipOval(
+  child: Image.network(
+    'https://i.pravatar.cc/120?img=45',
+    width: 42,
+    height: 42,
+    fit: BoxFit.cover,
+    loadingBuilder: (_, child, progress) =>
+        progress == null ? child : _avatarFallback,
+    errorBuilder: (_, __, ___) => _avatarFallback,
+  ),
+);
+
+final Widget _avatarFallback = Container(
+  width: 42,
+  height: 42,
+  alignment: Alignment.center,
+  decoration: const BoxDecoration(
+    color: Color(0xFFEADFCF),
+    shape: BoxShape.circle,
+  ),
+  child: const Text(
+    'L',
+    style: TextStyle(
+      fontSize: 17,
+      fontWeight: FontWeight.w700,
+      color: AppColors.textDark,
+    ),
+  ),
+);

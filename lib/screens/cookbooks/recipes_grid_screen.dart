@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_spacing.dart';
@@ -69,13 +70,7 @@ class _RecipesGridScreenState extends State<RecipesGridScreen> {
               ),
               child: Row(
                 children: [
-                  Text(
-                    'Recipe AI',
-                    style: AppTextStyles.cardTitle.copyWith(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
+                  AppWordmark(fontSize: 22, fontWeight: FontWeight.w800),
                   const Spacer(),
                   // Credits badge
                   Container(

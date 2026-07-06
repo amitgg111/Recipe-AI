@@ -1,9 +1,12 @@
 import 'dart:math' as math;
+import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
+import 'package:recipe_ai/widgets/app_logo.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/screens/onboarding/age_screen.dart';
 
@@ -55,9 +58,10 @@ class _AwesomeImportScreenState extends State<AwesomeImportScreen>
         vsync: this,
         duration: Duration(milliseconds: _floatDurations[i]),
       );
-      final animation = Tween<double>(begin: -8.0, end: 8.0).animate(
-        CurvedAnimation(parent: controller, curve: Curves.easeInOut),
-      );
+      final animation = Tween<double>(
+        begin: -8.0,
+        end: 8.0,
+      ).animate(CurvedAnimation(parent: controller, curve: Curves.easeInOut));
       _floatControllers.add(controller);
       _floatAnimations.add(animation);
 
@@ -88,34 +92,23 @@ class _AwesomeImportScreenState extends State<AwesomeImportScreen>
           padding: const EdgeInsets.fromLTRB(26, 8, 26, 26),
           child: Column(
             children: [
-              // Logo only (no progress dots for this screen)
-              Row(
+              // Logo only (no progress dots for this screen). Uses the shared
+              // brand mark so the header matches the animation centre exactly.
+              const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(Icons.restaurant, color: Colors.white, size: 16),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Recipe AI',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
-                    ),
-                  ),
+                  AppLogo(size: 28),
+                  SizedBox(width: 8),
+                  AppWordmark(fontSize: 16, fontWeight: FontWeight.w700),
                 ],
               ),
               // Badge
               const SizedBox(height: 14),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 13,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFCE3DB),
                   borderRadius: BorderRadius.circular(20),
@@ -154,16 +147,21 @@ class _AwesomeImportScreenState extends State<AwesomeImportScreen>
                     letterSpacing: -0.54,
                   ),
                   children: [
-                    const TextSpan(text: 'Import from '),
+                    const TextSpan(text: 'Import from ',),
                     TextSpan(
                       text: '95%',
-                      style: AppTextStyles.screenTitle.copyWith(
+                      style: GoogleFonts.plusJakartaSans(
                         fontSize: 27,
                         color: AppColors.primary,
                         letterSpacing: -0.54,
                       ),
                     ),
-                    const TextSpan(text: ' of sites'),
+                    TextSpan(
+                      text: ' of sites',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -174,9 +172,7 @@ class _AwesomeImportScreenState extends State<AwesomeImportScreen>
                 child: Text(
                   'Paste or share a link from anywhere — we turn it into a clean, cookable recipe.',
                   textAlign: TextAlign.center,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    height: 1.5,
-                  ),
+                  style: AppTextStyles.bodySmall.copyWith(height: 1.5),
                 ),
               ),
               // Orbital diagram
@@ -191,7 +187,10 @@ class _AwesomeImportScreenState extends State<AwesomeImportScreen>
               ),
               // Bottom "...and 1,000s more sites" badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 13,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
@@ -239,10 +238,7 @@ class _AwesomeImportScreenState extends State<AwesomeImportScreen>
 
   Widget _buildOrbitalDiagram() {
     return AnimatedBuilder(
-      animation: Listenable.merge([
-        _ringPulseController,
-        ..._floatControllers,
-      ]),
+      animation: Listenable.merge([_ringPulseController, ..._floatControllers]),
       builder: (context, child) {
         return Stack(
           clipBehavior: Clip.none,
@@ -273,35 +269,8 @@ class _AwesomeImportScreenState extends State<AwesomeImportScreen>
                 ),
               ),
             ),
-            // Center Recipe AI icon
-            Container(
-              width: 74,
-              height: 74,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment(-0.5, -0.8),
-                  end: Alignment(0.5, 0.8),
-                  colors: [
-                    Color(0xFFFF8763),
-                    Color(0xFFF2623E),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.35),
-                    blurRadius: 20,
-                    spreadRadius: 2,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.restaurant,
-                color: Colors.white,
-                size: 32,
-              ),
-            ),
+            // Centre tile — the app logo (static), matched to the HTML logoMark.
+            const _OrbitCenterLogo(),
             // Floating platform icons
             ..._buildFloatingIcons(),
           ],
@@ -318,7 +287,7 @@ class _AwesomeImportScreenState extends State<AwesomeImportScreen>
       const _OrbitIcon(
         left: 96,
         top: -4,
-        icon: Icons.camera_alt,
+        name: 'camera',
         isGradient: true,
         bgColor: Colors.white,
         iconColor: Colors.white,
@@ -327,7 +296,7 @@ class _AwesomeImportScreenState extends State<AwesomeImportScreen>
       const _OrbitIcon(
         left: 191,
         top: 65,
-        icon: Icons.music_note,
+        name: 'music',
         bgColor: Color(0xFF1F1F24),
         iconColor: Colors.white,
       ),
@@ -335,7 +304,7 @@ class _AwesomeImportScreenState extends State<AwesomeImportScreen>
       const _OrbitIcon(
         left: 155,
         top: 177,
-        icon: Icons.play_arrow,
+        name: 'play',
         bgColor: Color(0xFFFCE2E0),
         iconColor: Color(0xFFDD3B33),
       ),
@@ -343,7 +312,7 @@ class _AwesomeImportScreenState extends State<AwesomeImportScreen>
       const _OrbitIcon(
         left: 37,
         top: 177,
-        icon: Icons.chat_bubble,
+        name: 'chat',
         bgColor: Color(0xFFE4ECFB),
         iconColor: Color(0xFF2D6FE0),
       ),
@@ -351,7 +320,7 @@ class _AwesomeImportScreenState extends State<AwesomeImportScreen>
       const _OrbitIcon(
         left: 1,
         top: 65,
-        icon: Icons.push_pin,
+        name: 'pin',
         bgColor: Color(0xFFFCE4EE),
         iconColor: Color(0xFFC13584),
       ),
@@ -390,10 +359,12 @@ class _AwesomeImportScreenState extends State<AwesomeImportScreen>
               ),
             ],
           ),
-          child: Icon(
-            data.icon,
-            size: 20,
-            color: data.iconColor,
+          child: Center(
+            child: OnboardingLineIcon(
+              data.name,
+              color: data.iconColor,
+              size: 20,
+            ),
           ),
         ),
       );
@@ -447,9 +418,10 @@ class _AwesomeImportBodyState extends State<AwesomeImportBody>
         vsync: this,
         duration: Duration(milliseconds: _floatDurations[i]),
       );
-      final animation = Tween<double>(begin: -8.0, end: 8.0).animate(
-        CurvedAnimation(parent: controller, curve: Curves.easeInOut),
-      );
+      final animation = Tween<double>(
+        begin: -8.0,
+        end: 8.0,
+      ).animate(CurvedAnimation(parent: controller, curve: Curves.easeInOut));
       _floatControllers.add(controller);
       _floatAnimations.add(animation);
 
@@ -513,20 +485,34 @@ class _AwesomeImportBodyState extends State<AwesomeImportBody>
             textAlign: TextAlign.center,
             text: TextSpan(
               style: AppTextStyles.screenTitle.copyWith(
-                fontSize: 27,
+                fontSize: 24,
                 letterSpacing: -0.54,
+                fontWeight: FontWeight.bold,
               ),
               children: [
-                const TextSpan(text: 'Import from '),
+                TextSpan(
+                  text: 'Import from ',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 TextSpan(
                   text: '95%',
-                  style: AppTextStyles.screenTitle.copyWith(
-                    fontSize: 27,
+
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
                     color: AppColors.primary,
                     letterSpacing: -0.54,
                   ),
                 ),
-                const TextSpan(text: ' of sites'),
+                TextSpan(
+                  text: ' of sites',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
             ),
           ),
@@ -537,9 +523,7 @@ class _AwesomeImportBodyState extends State<AwesomeImportBody>
             child: Text(
               'Paste or share a link from anywhere — we turn it into a clean, cookable recipe.',
               textAlign: TextAlign.center,
-              style: AppTextStyles.bodySmall.copyWith(
-                height: 1.5,
-              ),
+              style: AppTextStyles.bodySmall.copyWith(height: 1.5),
             ),
           ),
           // Orbital diagram
@@ -594,15 +578,13 @@ class _AwesomeImportBodyState extends State<AwesomeImportBody>
 
   Widget _buildOrbitalDiagram() {
     return AnimatedBuilder(
-      animation: Listenable.merge([
-        _ringPulseController,
-        ..._floatControllers,
-      ]),
+      animation: Listenable.merge([_ringPulseController, ..._floatControllers]),
       builder: (context, child) {
         return Stack(
           clipBehavior: Clip.none,
           alignment: Alignment.center,
           children: [
+            // Dashed guide circle + connecting lines (static).
             CustomPaint(
               size: const Size(236, 236),
               painter: _DashedCirclePainter(),
@@ -611,6 +593,7 @@ class _AwesomeImportBodyState extends State<AwesomeImportBody>
               size: const Size(236, 236),
               painter: _DashedLinesPainter(),
             ),
+            // Pulsing ring behind the centre (static).
             Transform.scale(
               scale: _ringScaleAnimation.value,
               child: Opacity(
@@ -625,34 +608,9 @@ class _AwesomeImportBodyState extends State<AwesomeImportBody>
                 ),
               ),
             ),
-            Container(
-              width: 74,
-              height: 74,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment(-0.5, -0.8),
-                  end: Alignment(0.5, 0.8),
-                  colors: [
-                    Color(0xFFFF8763),
-                    Color(0xFFF2623E),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.35),
-                    blurRadius: 20,
-                    spreadRadius: 2,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.restaurant,
-                color: Colors.white,
-                size: 32,
-              ),
-            ),
+            // Centre tile — the app logo (static), matched to the HTML logoMark.
+            const _OrbitCenterLogo(),
+            // Platform icons float gently in place (matches the HTML).
             ..._buildFloatingIcons(),
           ],
         );
@@ -665,7 +623,7 @@ class _AwesomeImportBodyState extends State<AwesomeImportBody>
       const _OrbitIcon(
         left: 96,
         top: -4,
-        icon: Icons.camera_alt,
+        name: 'camera',
         isGradient: true,
         bgColor: Colors.white,
         iconColor: Colors.white,
@@ -673,28 +631,28 @@ class _AwesomeImportBodyState extends State<AwesomeImportBody>
       const _OrbitIcon(
         left: 191,
         top: 65,
-        icon: Icons.music_note,
+        name: 'music',
         bgColor: Color(0xFF1F1F24),
         iconColor: Colors.white,
       ),
       const _OrbitIcon(
         left: 155,
         top: 177,
-        icon: Icons.play_arrow,
+        name: 'play',
         bgColor: Color(0xFFFCE2E0),
         iconColor: Color(0xFFDD3B33),
       ),
       const _OrbitIcon(
         left: 37,
         top: 177,
-        icon: Icons.chat_bubble,
+        name: 'chat',
         bgColor: Color(0xFFE4ECFB),
         iconColor: Color(0xFF2D6FE0),
       ),
       const _OrbitIcon(
         left: 1,
         top: 65,
-        icon: Icons.push_pin,
+        name: 'pin',
         bgColor: Color(0xFFFCE4EE),
         iconColor: Color(0xFFC13584),
       ),
@@ -733,10 +691,12 @@ class _AwesomeImportBodyState extends State<AwesomeImportBody>
               ),
             ],
           ),
-          child: Icon(
-            data.icon,
-            size: 20,
-            color: data.iconColor,
+          child: Center(
+            child: OnboardingLineIcon(
+              data.name,
+              color: data.iconColor,
+              size: 20,
+            ),
           ),
         ),
       );
@@ -744,10 +704,43 @@ class _AwesomeImportBodyState extends State<AwesomeImportBody>
   }
 }
 
+/// The centre badge of the import orbital diagram — the orange gradient tile
+/// with the white outline chef-hat, matched exactly to the HTML `hatBig` mark
+/// (160deg gradient, radius 24, deep glow). Sits above the pulsing ring.
+class _OrbitCenterLogo extends StatelessWidget {
+  const _OrbitCenterLogo();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 74,
+      height: 74,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: const LinearGradient(
+          begin: Alignment(-0.342, -0.940),
+          end: Alignment(0.342, 0.940),
+          colors: [Color(0xFFFF8763), Color(0xFFF2623E)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFF2623E).withValues(alpha: 0.7),
+            blurRadius: 30,
+            offset: const Offset(0, 16),
+            spreadRadius: -10,
+          ),
+        ],
+      ),
+      alignment: Alignment.center,
+      child: const OnboardingLineIcon('hatBig', color: Colors.white, size: 44),
+    );
+  }
+}
+
 class _OrbitIcon {
   final double left;
   final double top;
-  final IconData icon;
+  final String name;
   final Color bgColor;
   final Color iconColor;
   final bool isGradient;
@@ -755,7 +748,7 @@ class _OrbitIcon {
   const _OrbitIcon({
     required this.left,
     required this.top,
-    required this.icon,
+    required this.name,
     required this.bgColor,
     required this.iconColor,
     this.isGradient = false,
@@ -808,11 +801,11 @@ class _DashedLinesPainter extends CustomPainter {
 
     // Planet center positions (left + 22, top + 22 for 44x44 icons)
     final planetCenters = [
-      const Offset(96 + 22, -4 + 22),   // Instagram: top center
-      const Offset(191 + 22, 65 + 22),  // TikTok: right
+      const Offset(96 + 22, -4 + 22), // Instagram: top center
+      const Offset(191 + 22, 65 + 22), // TikTok: right
       const Offset(155 + 22, 177 + 22), // YouTube: bottom-right
-      const Offset(37 + 22, 177 + 22),  // Facebook: bottom-left
-      const Offset(1 + 22, 65 + 22),    // Pinterest: left
+      const Offset(37 + 22, 177 + 22), // Facebook: bottom-left
+      const Offset(1 + 22, 65 + 22), // Pinterest: left
     ];
 
     for (final target in planetCenters) {

@@ -16,6 +16,9 @@ import 'package:recipe_ai/View/Home/cook_mode_screen.dart';
 import 'package:recipe_ai/View/Home/home_screen.dart';
 import 'package:recipe_ai/View/Home/recipe_detail_screen.dart' show CookbookPickerSheet;
 import 'package:recipe_ai/Helper/ingredient_scale_helper.dart';
+import 'package:recipe_ai/Helper/unit_converter.dart';
+import 'package:recipe_ai/Helper/instruction_scaler.dart';
+import 'package:recipe_ai/Controllers/settings_controller.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -78,6 +81,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
   late int _initialServings;
   late int _servings;
   final Set<int> _checked = {};
+  final SettingsController _settings = Get.find<SettingsController>();
 
   // Optimistic social state (instant UI; persisted in the background).
   late int _likes = recipe.likesCount;
@@ -503,7 +507,10 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          ..._buildIngredientRows(),
+          Obx(() => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: _buildIngredientRows(_settings.unitSystem),
+              )),
           const SizedBox(height: 14),
           GestureDetector(
             onTap: _addToGroceries,
@@ -530,12 +537,12 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
     );
   }
 
-  List<Widget> _buildIngredientRows() {
+  List<Widget> _buildIngredientRows(UnitSystem system) {
     final multiplier = _servings / _initialServings;
     final rows = <Widget>[];
     for (var i = 0; i < recipe.ingredients.length; i++) {
-      final scaled =
-          IngredientScaleHelper.scaleIngredient(recipe.ingredients[i], multiplier);
+      final scaled = UnitConverter.scaleAndConvert(
+          recipe.ingredients[i], multiplier, system);
       rows.add(_ingredientRow(scaled, i));
     }
     if (rows.isEmpty) {
@@ -680,8 +687,21 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                   style: _f(13, FontWeight.w500, _P.textHint)),
             )
           else
-            for (var i = 0; i < recipe.instructions.length; i++)
-              _instructionRow(i + 1, recipe.instructions[i]),
+            Obx(() {
+              final multiplier = _servings / _initialServings;
+              final system = _settings.unitSystem;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (var i = 0; i < recipe.instructions.length; i++)
+                    _instructionRow(
+                      i + 1,
+                      InstructionScaler.scale(
+                          recipe.instructions[i], multiplier, system),
+                    ),
+                ],
+              );
+            }),
         ],
       ),
     );
@@ -1093,9 +1113,10 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
       title: '${recipe.ingredients.length} ingredients added to groceries',
       actionText: 'View',
       onAction: () {
-        HomeScreen.activeIndex = 3;
         Get.offUntil(
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
+          MaterialPageRoute(
+            builder: (_) => const HomeScreen(initialIndex: 3),
+          ),
           (route) => route.isFirst,
         );
       },

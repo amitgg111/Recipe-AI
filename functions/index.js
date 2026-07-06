@@ -7,6 +7,9 @@ if (!admin.apps.length) {
   admin.initializeApp();
 }
 
+// Notification push triggers (gated by each user's Firestore prefs).
+Object.assign(exports, require("./notifications"));
+
 setGlobalOptions({
   maxInstances: 10,
 });
@@ -834,3 +837,25 @@ Important Instructions for Image:
 );
 
 
+// ── Email existence check ────────────────────────────────────────────────────
+// Returns whether an email is already registered. Used by "Forgot password" so
+// the app can show a clear "no account found" error even when Firebase email
+// enumeration protection is enabled (which deliberately hides existence from
+// the client). Runs server-side with the Admin SDK.
+exports.checkEmailRegistered = onCall(async (request) => {
+  const email = ((request.data && request.data.email) || "").toString().trim();
+  if (!email) {
+    return {registered: false};
+  }
+  try {
+    await admin.auth().getUserByEmail(email);
+    return {registered: true};
+  } catch (e) {
+    if (e && e.code === "auth/user-not-found") {
+      return {registered: false};
+    }
+    // Unknown error: do not block the flow — treat as registered so the normal
+    // reset-email path still runs.
+    return {registered: true};
+  }
+});

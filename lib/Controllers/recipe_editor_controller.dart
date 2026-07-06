@@ -82,6 +82,13 @@ class RecipeEditorController extends GetxController {
 
     if (recipe != null) {
       _loadRecipe();
+    } else {
+      // Seed one default unnamed section so the "Add ingredient" / "Add step"
+      // buttons render for a brand-new recipe (they only appear inside a
+      // section). An unnamed section shows no header and matches the save-time
+      // fallback, so the persisted shape is unchanged.
+      ingredientSections.assignAll([const IngredientSection(items: [])]);
+      instructionSections.assignAll([const InstructionSection(steps: [])]);
     }
   }
 

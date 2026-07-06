@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/app_logo.dart';
+import 'package:recipe_ai/widgets/crown_icon.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/screens/onboarding/plus_comparison_screen.dart';
@@ -143,9 +144,9 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
                       onTap:
                           widget.onClose ??
                           () => Get.to(
-                      () => const PlusComparisonScreen(),
-                      transition: Transition.noTransition,
-                    ),
+                            () => const PlusComparisonScreen(),
+                            transition: Transition.noTransition,
+                          ),
                       child: Container(
                         width: 36,
                         height: 36,
@@ -174,6 +175,7 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
                     Container(
                       width: 34,
                       height: 34,
+                      padding: const EdgeInsets.all(5),
                       decoration: BoxDecoration(
                         color: AppColors.purple,
                         borderRadius: BorderRadius.circular(11),
@@ -188,7 +190,7 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
                           ),
                         ],
                       ),
-                      child: const AppLogoMark(size: 23),
+                      child: const AppLogoMark(size: 13),
                     ),
                     const SizedBox(width: 9),
                     Text.rich(
@@ -220,7 +222,7 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
               Text(
                 'Recipe AI is free to use, but…',
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 15,
+                  fontSize: 12,
                   fontWeight: FontWeight.w500,
                   color: AppColors.textMedium,
                 ),
@@ -232,7 +234,7 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
                 textAlign: TextAlign.center,
                 text: TextSpan(
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 29,
+                    fontSize: 25,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textDark,
                     height: 1.2,
@@ -243,7 +245,7 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
                     TextSpan(
                       text: 'the full experience for 7 days, free!',
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 29,
+                        fontSize: 25,
                         fontWeight: FontWeight.w800,
                         color: AppColors.purple,
                         height: 1.2,
@@ -320,21 +322,14 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
                                         width: 80,
                                         height: 80,
                                         decoration: BoxDecoration(
-                                          gradient: const LinearGradient(
-                                            begin: Alignment(-0.17, -0.98),
-                                            end: Alignment(0.17, 0.98),
-                                            colors: [
-                                              Color(0xFF9466F2),
-                                              Color(0xFF7A45E0),
-                                            ],
-                                          ),
+                                          color: const Color(0xFF8B5CF6),
                                           borderRadius: BorderRadius.circular(
                                             26,
                                           ),
                                           boxShadow: [
                                             BoxShadow(
                                               color: const Color(
-                                                0xFF7A45E0,
+                                                0xFF8B5CF6,
                                               ).withValues(alpha: 0.7),
                                               blurRadius: 32,
                                               offset: const Offset(0, 18),
@@ -343,15 +338,7 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
                                           ],
                                         ),
                                         child: const Center(
-                                          child: SizedBox(
-                                            width: 38,
-                                            height: 30,
-                                            child: CustomPaint(
-                                              painter: _CrownPainter(
-                                                Colors.white,
-                                              ),
-                                            ),
-                                          ),
+                                          child: CrownIcon(size: 38),
                                         ),
                                       ),
                                       // "7 DAYS FREE" badge (pops in)
@@ -579,7 +566,7 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
         border: Border.all(color: AppColors.purpleBorder),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF7A45E0).withValues(alpha: 0.6),
+            color: const Color(0xFF8B5CF6).withValues(alpha: 0.6),
             blurRadius: 24,
             offset: const Offset(0, 12),
             spreadRadius: -18,
@@ -605,62 +592,3 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
   }
 }
 
-/// A simple 3-peak crown (matches the reference video's crown glyph).
-class _CrownPainter extends CustomPainter {
-  final Color color;
-  const _CrownPainter(this.color);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill
-      ..isAntiAlias = true;
-
-    final leftX = 0.10 * w;
-    final midX = 0.50 * w;
-    final rightX = 0.90 * w;
-    final vL = 0.30 * w;
-    final vR = 0.70 * w;
-
-    final midPeak = 0.10 * h;
-    final sidePeak = 0.30 * h;
-    final valley = 0.60 * h;
-    final baseTop = 0.64 * h;
-    final baseBot = 0.92 * h;
-
-    // Crown body (peaks + valleys).
-    final body = Path()
-      ..moveTo(leftX, sidePeak)
-      ..lineTo(vL, valley)
-      ..lineTo(midX, midPeak)
-      ..lineTo(vR, valley)
-      ..lineTo(rightX, sidePeak)
-      ..lineTo(rightX, baseTop)
-      ..lineTo(leftX, baseTop)
-      ..close();
-    canvas.drawPath(body, paint);
-
-    // Rounded base band.
-    final base = RRect.fromLTRBR(
-      0.05 * w,
-      baseTop - 0.03 * h,
-      0.95 * w,
-      baseBot,
-      Radius.circular(0.06 * w),
-    );
-    canvas.drawRRect(base, paint);
-
-    // Small rounded caps on the three peaks.
-    final dotR = 0.055 * w;
-    canvas.drawCircle(Offset(leftX, sidePeak), dotR, paint);
-    canvas.drawCircle(Offset(midX, midPeak), dotR, paint);
-    canvas.drawCircle(Offset(rightX, sidePeak), dotR, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _CrownPainter oldDelegate) =>
-      oldDelegate.color != color;
-}

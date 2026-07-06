@@ -323,7 +323,7 @@ class RecipeResponseParser {
 
   static String _cleanIngredientString(String raw) {
     return raw
-        .replaceAll(RegExp(r'\*\*(.*?)\*\*'), r'$1')
+        .replaceAllMapped(RegExp(r'\*\*(.*?)\*\*'), (m) => m.group(1)!)
         .replaceAll(RegExp(r'^\s*[-•*]\s*'), '')
         .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
@@ -331,8 +331,8 @@ class RecipeResponseParser {
 
   static String _cleanInstructionString(String raw) {
     var step = raw
-        .replaceAll(RegExp(r'\*\*(.*?)\*\*'), r'$1')
-        .replaceAll(RegExp(r'\*(.*?)\*'), r'$1')
+        .replaceAllMapped(RegExp(r'\*\*(.*?)\*\*'), (m) => m.group(1)!)
+        .replaceAllMapped(RegExp(r'\*(.*?)\*'), (m) => m.group(1)!)
         .trim();
     step = step.replaceFirst(
       RegExp(

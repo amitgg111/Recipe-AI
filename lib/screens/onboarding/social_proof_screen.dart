@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
@@ -44,22 +45,12 @@ class _SocialProofScreenState extends State<SocialProofScreen> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    'Recipe AI',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
-                    ),
-                  ),
+                  const AppWordmark(fontSize: 16, fontWeight: FontWeight.w700),
                 ],
               ),
               const SizedBox(height: 12),
               // Progress dots (step 1 of 8, index 0)
-              const ProgressIndicatorDots(
-                totalSteps: 8,
-                currentStep: 0,
-              ),
+              const ProgressIndicatorDots(totalSteps: 8, currentStep: 0),
               // Title area
               const SizedBox(height: 18),
               RichText(
@@ -110,8 +101,9 @@ class _SocialProofScreenState extends State<SocialProofScreen> {
                           border: Border.all(color: AppColors.surfaceBorder),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF2A211B)
-                                  .withValues(alpha: 0.4),
+                              color: const Color(
+                                0xFF2A211B,
+                              ).withValues(alpha: 0.4),
                               blurRadius: 50,
                               offset: const Offset(0, 26),
                               spreadRadius: -28,
@@ -129,7 +121,8 @@ class _SocialProofScreenState extends State<SocialProofScreen> {
                                 5,
                                 (index) => Padding(
                                   padding: EdgeInsets.only(
-                                      right: index < 4 ? 4 : 0),
+                                    right: index < 4 ? 4 : 0,
+                                  ),
                                   child: const Icon(
                                     Icons.star,
                                     color: AppColors.primary,
@@ -162,10 +155,7 @@ class _SocialProofScreenState extends State<SocialProofScreen> {
                             ),
                             // Divider
                             const SizedBox(height: 20),
-                            Container(
-                              height: 1,
-                              color: AppColors.divider,
-                            ),
+                            Container(height: 1, color: AppColors.divider),
                             const SizedBox(height: 18),
                             // Reviewer row
                             Row(
@@ -245,7 +235,7 @@ class SocialProofBody extends StatelessWidget {
             textAlign: TextAlign.center,
             text: TextSpan(
               style: GoogleFonts.plusJakartaSans(
-                fontSize: 27,
+                fontSize: 24,
                 fontWeight: FontWeight.w800,
                 color: AppColors.textDark,
                 height: 1.15,
@@ -267,7 +257,7 @@ class SocialProofBody extends StatelessWidget {
               'be more organized and save time in the kitchen',
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
-                fontSize: 15,
+                fontSize: 12,
                 fontWeight: FontWeight.w500,
                 color: AppColors.textMedium,
                 height: 1.5,
@@ -289,8 +279,7 @@ class SocialProofBody extends StatelessWidget {
                       border: Border.all(color: AppColors.surfaceBorder),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF2A211B)
-                              .withValues(alpha: 0.4),
+                          color: const Color(0xFF2A211B).withValues(alpha: 0.4),
                           blurRadius: 50,
                           offset: const Offset(0, 26),
                           spreadRadius: -28,
@@ -308,7 +297,8 @@ class SocialProofBody extends StatelessWidget {
                             5,
                             (index) => Padding(
                               padding: EdgeInsets.only(
-                                  right: index < 4 ? 4 : 0),
+                                right: index < 4 ? 4 : 0,
+                              ),
                               child: const Icon(
                                 Icons.star,
                                 color: AppColors.primary,
@@ -322,7 +312,7 @@ class SocialProofBody extends StatelessWidget {
                         Text(
                           'Life-changing for my recipe collection!',
                           style: GoogleFonts.plusJakartaSans(
-                            fontSize: 18,
+                            fontSize: 14,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textDark,
                             height: 1.25,
@@ -333,7 +323,7 @@ class SocialProofBody extends StatelessWidget {
                         Text(
                           'I used to screenshot recipes from Instagram and Pinterest, and they were always lost in my camera roll. Now I import them directly and keep everything organized in one place.',
                           style: GoogleFonts.plusJakartaSans(
-                            fontSize: 14.5,
+                            fontSize: 12,
                             fontWeight: FontWeight.w500,
                             color: AppColors.textBody,
                             height: 1.55,
@@ -341,27 +331,27 @@ class SocialProofBody extends StatelessWidget {
                         ),
                         // Divider
                         const SizedBox(height: 20),
-                        Container(
-                          height: 1,
-                          color: AppColors.divider,
-                        ),
+                        Container(height: 1, color: AppColors.divider),
                         const SizedBox(height: 18),
                         // Reviewer row
                         Row(
                           children: [
-                            Container(
-                              width: 42,
-                              height: 42,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFEADFCF),
-                                shape: BoxShape.circle,
+                            ClipOval(
+                              child: Image.network(
+                                'https://i.pravatar.cc/120?img=45',
+                                width: 40,
+                                height: 40,
+                                fit: BoxFit.cover,
+                                loadingBuilder: (_, child, progress) =>
+                                    progress == null ? child : _avatarFallback,
+                                errorBuilder: (_, __, ___) => _avatarFallback,
                               ),
                             ),
                             const SizedBox(width: 11),
                             Text(
                               'Leslie A.',
                               style: GoogleFonts.plusJakartaSans(
-                                fontSize: 15,
+                                fontSize: 13,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.textDark,
                               ),
@@ -395,3 +385,22 @@ class SocialProofBody extends StatelessWidget {
     );
   }
 }
+
+/// Placeholder shown while the demo reviewer avatar loads or if it fails.
+final Widget _avatarFallback = Container(
+  width: 42,
+  height: 42,
+  alignment: Alignment.center,
+  decoration: const BoxDecoration(
+    color: Color(0xFFEADFCF),
+    shape: BoxShape.circle,
+  ),
+  child: const Text(
+    'L',
+    style: TextStyle(
+      fontSize: 17,
+      fontWeight: FontWeight.w700,
+      color: AppColors.textDark,
+    ),
+  ),
+);

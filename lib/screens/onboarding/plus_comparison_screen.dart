@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/app_logo.dart';
+import 'package:recipe_ai/widgets/crown_icon.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/screens/onboarding/trial_chooser_screen.dart';
@@ -161,8 +162,9 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                           Container(
                             width: 34,
                             height: 34,
+                            padding: const EdgeInsets.all(5),
                             decoration: BoxDecoration(
-                              color: AppColors.primary,
+                              color: AppColors.purple,
                               borderRadius: BorderRadius.circular(11),
                               boxShadow: [
                                 BoxShadow(
@@ -175,7 +177,11 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                                 ),
                               ],
                             ),
-                            child: const AppLogoMark(size: 23),
+                            child: const AppLogoMark(
+                              size: 23,
+                              pleatColor: Color(0x808B5CF6),
+                              sparkleColor: Color(0xFFEBDBFF),
+                            ),
                           ),
                           const SizedBox(width: 9),
                           Text.rich(
@@ -193,7 +199,7 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 21,
                                     fontWeight: FontWeight.w800,
-                                    color: AppColors.primary,
+                                    color: AppColors.purple,
                                     letterSpacing: -0.42,
                                   ),
                                 ),
@@ -262,7 +268,7 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                                 const Icon(
                                   Icons.auto_awesome,
                                   size: 12,
-                                  color: Color(0xFF7A45E0),
+                                  color: Color(0xFF8B5CF6),
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
@@ -270,7 +276,7 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w800,
-                                    color: const Color(0xFF7A45E0),
+                                    color: const Color(0xFF8B5CF6),
                                     letterSpacing: 0.24,
                                   ),
                                 ),
@@ -301,7 +307,7 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 26,
                                     fontWeight: FontWeight.w800,
-                                    color: AppColors.primary,
+                                    color: AppColors.purple,
                                     height: 1.18,
                                     letterSpacing: -0.52,
                                   ),
@@ -326,41 +332,42 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                           ),
                         ),
                       ),
-                      const SizedBox(height: 24),
-                      // Button
-                      SlideTransition(
-                        position: _ctaSlide,
-                        child: FadeTransition(
-                          opacity: _ctaFade,
-                          child: PrimaryButton.purple(
-                            label: 'Start my free week',
-                            onPressed:
-                                widget.onContinue ??
-                                () => Get.to(
-                                  () => const TrialChooserScreen(),
-                                  transition: Transition.noTransition,
-                                ),
-                            enableBob: true,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      // Disclaimer
-                      FadeTransition(
-                        opacity: _discFade,
-                        child: Text(
-                          '7 days free · cancel anytime',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.textLighter,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
                       const SizedBox(height: 16),
                     ],
                   ),
+                ),
+              ),
+              // ── Fixed bottom CTA — pinned outside the scroll view so it is
+              // ALWAYS visible and never scrolls away (fixes the reported
+              // scrolling / hidden-button issue).
+              const SizedBox(height: 12),
+              SlideTransition(
+                position: _ctaSlide,
+                child: FadeTransition(
+                  opacity: _ctaFade,
+                  child: PrimaryButton.purple(
+                    label: 'Start my free week',
+                    onPressed:
+                        widget.onContinue ??
+                        () => Get.to(
+                          () => const TrialChooserScreen(),
+                          transition: Transition.noTransition,
+                        ),
+                    enableBob: true,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              FadeTransition(
+                opacity: _discFade,
+                child: Text(
+                  '7 days free · cancel anytime',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textLighter,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
               ),
             ],
@@ -481,7 +488,7 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                         freeVal,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 14,
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.bold,
                           color: isDash
                               ? const Color(0xFFD8D0C2)
                               : AppColors.textMedium,
@@ -500,11 +507,7 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
             width: 114,
             child: Container(
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment(-0.12, -0.99),
-                  end: Alignment(0.12, 0.99),
-                  colors: [Color(0xFF9466F2), Color(0xFF7A45E0)],
-                ),
+                color: Color(0xFF8B5CF6),
               ),
               child: Stack(
                 children: [
@@ -516,15 +519,11 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                         height: 56,
                         alignment: Alignment.bottomCenter,
                         padding: const EdgeInsets.only(bottom: 12),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            const Icon(
-                              Icons.workspace_premium,
-                              color: Colors.white,
-                              size: 14,
-                            ),
-                            const SizedBox(width: 4),
+                            const CrownIcon(size: 15),
+
                             Text(
                               'PLUS',
                               style: GoogleFonts.plusJakartaSans(
@@ -567,7 +566,7 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                                     plusVal,
                                     style: GoogleFonts.plusJakartaSans(
                                       fontSize: 13.5,
-                                      fontWeight: FontWeight.w800,
+                                      fontWeight: FontWeight.bold,
                                       color: Colors.white,
                                     ),
                                     textAlign: TextAlign.center,

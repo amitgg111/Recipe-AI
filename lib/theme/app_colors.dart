@@ -23,6 +23,8 @@ class AppColors {
   static const Color textLight = Color(0xFF9A938A);
   static const Color textLighter = Color(0xFFA8A092);
   static const Color textHint = Color(0xFFA89F90);
+  // Faint placeholder text inside inputs (lighter than [textHint]).
+  static const Color textHintLight = Color(0xFFC4BCAF);
   static const Color textSubtle = Color(0xFFB0A899);
   static const Color textBody = Color(0xFF6B6359);
   static const Color textBodyDark = Color(0xFF5A5147);

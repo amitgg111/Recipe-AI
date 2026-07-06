@@ -2,6 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CLIENT_ID</key>
+	<string>727358456642-fu9np8taebtusp876kpgjo2u737n2ek3.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.727358456642-fu9np8taebtusp876kpgjo2u737n2ek3</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>727358456642-2aa231ehgui2r0oq1ofidikht7kadmd0.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
 	<string>AIzaSyDkzk_Qfs_5oMRVb95UjVWbo3cYZyaNHys</string>
 	<key>GCM_SENDER_ID</key>
@@ -9,7 +15,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.recipeAi</string>
+	<string>com.ai.recipe.community</string>
 	<key>PROJECT_ID</key>
 	<string>recipeai-32ae9</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +31,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:727358456642:ios:4522aa4ec690be312d7edb</string>
+	<string>1:727358456642:ios:5b41f99f9db894e82d7edb</string>
 </dict>
 </plist>

@@ -60,11 +60,14 @@ class _S {
     }
   }
 
-  static TextStyle f(double size, FontWeight weight, Color color) {
+  static TextStyle f(double size, FontWeight weight, Color color,
+      {double? h, double? ls}) {
     return GoogleFonts.plusJakartaSans(
       fontSize: size,
       fontWeight: weight,
       color: color,
+      height: h,
+      letterSpacing: ls,
     );
   }
 }
@@ -155,9 +158,13 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
             ),
             child: Row(
               children: [
-                Text(
-                  'Meal Plan',
-                  style: _S.f(18, FontWeight.w800, _S.textDark),
+                Flexible(
+                  child: Text(
+                    'Meal Plan',
+                    style: _S.f(22, FontWeight.w800, _S.textDark, ls: -0.44),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
                 const Spacer(),
                 // Day / Month toggle
@@ -340,7 +347,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
         border: Border.all(color: const Color(0xFFE0D2F7)),
         boxShadow: [
           BoxShadow(
-            color: _S.purple.withValues(alpha: 0.28),
+            color: _S.purple.withValues(alpha: 0.4),
             blurRadius: 26,
             offset: const Offset(0, 12),
             spreadRadius: -22,
@@ -545,7 +552,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
           border: Border.all(color: _S.cardBorder),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF2A211B).withValues(alpha: 0.16),
+              color: const Color(0xFF2A211B).withValues(alpha: 0.4),
               blurRadius: 20,
               offset: const Offset(0, 8),
               spreadRadius: -18,
@@ -571,8 +578,12 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                     children: [
                       const Icon(Icons.access_time_rounded, size: 13, color: _S.textHint),
                       const SizedBox(width: 5),
-                      Text(_getMealTime(meal),
-                          style: _S.f(11.5, FontWeight.w600, _S.textMed)),
+                      Flexible(
+                        child: Text(_getMealTime(meal),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: _S.f(11.5, FontWeight.w600, _S.textMed)),
+                      ),
                     ],
                   ),
                 ],
@@ -658,15 +669,17 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
           // ── Calendar card ──
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
-            padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: _S.card,
               borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: _S.cardBorder),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
+                  color: const Color(0xFF2A211B).withValues(alpha: 0.4),
+                  blurRadius: 26,
+                  offset: const Offset(0, 12),
+                  spreadRadius: -22,
                 ),
               ],
             ),
@@ -683,23 +696,23 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                           DateTime(selDate.year, selDate.month - 1, 1),
                         ),
                         child: Container(
-                          width: 32,
-                          height: 32,
+                          width: 30,
+                          height: 30,
                           decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: _S.border),
+                            borderRadius: BorderRadius.circular(9),
+                            border: Border.all(color: _S.cardBorder),
                           ),
                           child: const Icon(
                             Icons.chevron_left,
                             size: 20,
-                            color: _S.textDark,
+                            color: Color(0xFF5A5147),
                           ),
                         ),
                       ),
                       const Spacer(),
                       Text(
                         '${_monthNames[viewMonth.month - 1]} ${viewMonth.year}',
-                        style: _S.f(16, FontWeight.w700, _S.textDark),
+                        style: _S.f(15, FontWeight.w800, _S.textDark),
                       ),
                       const Spacer(),
                       GestureDetector(
@@ -707,16 +720,16 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                           DateTime(selDate.year, selDate.month + 1, 1),
                         ),
                         child: Container(
-                          width: 32,
-                          height: 32,
+                          width: 30,
+                          height: 30,
                           decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: _S.border),
+                            borderRadius: BorderRadius.circular(9),
+                            border: Border.all(color: _S.cardBorder),
                           ),
                           child: const Icon(
                             Icons.chevron_right,
                             size: 20,
-                            color: _S.textDark,
+                            color: Color(0xFF5A5147),
                           ),
                         ),
                       ),
@@ -733,14 +746,14 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                           child: Center(
                             child: Text(
                               d,
-                              style: _S.f(12, FontWeight.w600, _S.textHint),
+                              style: _S.f(11, FontWeight.w800, _S.textHint),
                             ),
                           ),
                         ),
                       )
                       .toList(),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 2),
 
                 // Calendar grid  (reactive on selectedDate + month meals)
                 Obx(() {
@@ -778,30 +791,34 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
-                  Text(
-                    '${_dayNames[selDate.weekday - 1]}, ${selDate.day} ${_shortMonths[selDate.month - 1]}',
-                    style: _S.f(16, FontWeight.w700, _S.textDark),
+                  Expanded(
+                    child: Text(
+                      '${_dayNames[selDate.weekday - 1]}, ${selDate.day} ${_monthNames[selDate.month - 1]}',
+                      style: _S.f(16, FontWeight.w800, _S.textDark),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                  const Spacer(),
+                  const SizedBox(width: 8),
                   GestureDetector(
                     onTap: () => _showAddMealSheet(selDate, 'Breakfast'),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
+                        horizontal: 13,
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
                         color: _S.primary,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(11),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           const Icon(Icons.add, size: 16, color: Colors.white),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 5),
                           Text(
                             'Add meal',
-                            style: _S.f(13, FontWeight.w700, Colors.white),
+                            style: _S.f(12.5, FontWeight.w700, Colors.white),
                           ),
                         ],
                       ),
@@ -811,7 +828,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
               ),
             );
           }),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
 
           // ── Meal cards for selected date ──  (reactive on selectedDate + meals)
           Obx(() {
@@ -825,21 +842,74 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                 ),
                 child: Column(
                   children: [
-                    Icon(
-                      Icons.restaurant_menu_rounded,
-                      size: 48,
-                      color: _S.textHint.withValues(alpha: 0.3),
+                    Container(
+                      width: 72,
+                      height: 72,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: _S.card,
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(color: _S.cardBorder),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF2A211B).withValues(alpha: 0.35),
+                            blurRadius: 26,
+                            offset: const Offset(0, 12),
+                            spreadRadius: -20,
+                          ),
+                        ],
+                      ),
+                      child: Transform.scale(
+                        scale: 1.5,
+                        child: const Icon(
+                          Icons.calendar_today_rounded,
+                          size: 24,
+                          color: Color(0xFFD7BBA0),
+                        ),
+                      ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 14),
                     Text(
                       'No meals for this day',
-                      style: _S.f(15, FontWeight.w600, _S.textMed),
+                      style: _S.f(16, FontWeight.w800, _S.textDark),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Text(
                       'Add a recipe to breakfast, lunch, dinner or a snack.',
-                      style: _S.f(12, FontWeight.w500, _S.textHint),
+                      style: _S.f(13.5, FontWeight.w500, _S.textMed, h: 1.5),
                       textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    GestureDetector(
+                      onTap: () => _showAddMealSheet(selDate, 'Breakfast'),
+                      child: Container(
+                        height: 48,
+                        padding: const EdgeInsets.symmetric(horizontal: 22),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: _S.primary,
+                          borderRadius: BorderRadius.circular(13),
+                          boxShadow: [
+                            BoxShadow(
+                              color: _S.primary.withValues(alpha: 0.6),
+                              blurRadius: 24,
+                              offset: const Offset(0, 12),
+                              spreadRadius: -10,
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.add, size: 18, color: Colors.white),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Add a meal',
+                              style: _S.f(14, FontWeight.w700, Colors.white),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -942,11 +1012,19 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
       onTap: () => _showMealOptions(meal),
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.fromLTRB(10, 10, 6, 10),
+        padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: _S.card,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _S.border),
+          border: Border.all(color: _S.cardBorder),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF2A211B).withValues(alpha: 0.4),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+              spreadRadius: -18,
+            ),
+          ],
         ),
         child: Row(
           children: [
@@ -965,7 +1043,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                   const SizedBox(height: 2),
                   Text(
                     meal.recipeTitle,
-                    style: _S.f(14, FontWeight.w700, _S.textDark),
+                    style: _S.f(13.5, FontWeight.w700, _S.textDark),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -978,9 +1056,13 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                         color: _S.textHint,
                       ),
                       const SizedBox(width: 3),
-                      Text(
-                        _getMealTime(meal),
-                        style: _S.f(11, FontWeight.w500, _S.textHint),
+                      Flexible(
+                        child: Text(
+                          _getMealTime(meal),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: _S.f(11.5, FontWeight.w600, _S.textMed),
+                        ),
                       ),
                     ],
                   ),
@@ -993,7 +1075,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
               onTap: () => _showMealOptions(meal),
               child: const Padding(
                 padding: EdgeInsets.all(8),
-                child: Icon(Icons.more_horiz, size: 18, color: _S.textHint),
+                child: Icon(Icons.more_horiz, size: 18, color: Color(0xFFC7BCAC)),
               ),
             ),
           ],
@@ -1360,7 +1442,7 @@ class _DayCell extends StatelessWidget {
                             height: 5,
                             margin: const EdgeInsets.symmetric(horizontal: 1),
                             decoration: BoxDecoration(
-                              color: _S.mealColor(type),
+                              color: isSel ? _S.primary : _S.mealColor(type),
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -1437,6 +1519,8 @@ class _AddMealSheetState extends State<_AddMealSheet> {
                       child: Text(
                         'Add to ${widget.dayName}, $_selectedType',
                         style: _S.f(18, FontWeight.w800, _S.textDark),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     GestureDetector(
@@ -1460,36 +1544,41 @@ class _AddMealSheetState extends State<_AddMealSheet> {
                 const SizedBox(height: 14),
                 SizedBox(
                   height: 34,
-                  child: Row(
-                    children: MealPlanController.mealTypes.map((type) {
-                      final sel = type == _selectedType;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: GestureDetector(
-                          onTap: () => setState(() => _selectedType = type),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 7,
-                            ),
-                            decoration: BoxDecoration(
-                              color: sel
-                                  ? _S.mealColor(type)
-                                  : _S.mealColor(type).withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              type,
-                              style: _S.f(
-                                12,
-                                FontWeight.w700,
-                                sel ? Colors.white : _S.mealColor(type),
+                  // Horizontally scrollable so the four meal-type chips never
+                  // overflow on narrow phones (matches the auto-fill sheet).
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: MealPlanController.mealTypes.map((type) {
+                        final sel = type == _selectedType;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: GestureDetector(
+                            onTap: () => setState(() => _selectedType = type),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 7,
+                              ),
+                              decoration: BoxDecoration(
+                                color: sel
+                                    ? _S.mealColor(type)
+                                    : _S.mealColor(type).withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                type,
+                                style: _S.f(
+                                  12,
+                                  FontWeight.w700,
+                                  sel ? Colors.white : _S.mealColor(type),
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      );
-                    }).toList(),
+                        );
+                      }).toList(),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),

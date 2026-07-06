@@ -33,6 +33,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     photoController = TextEditingController(text: user.photoURL ?? '');
   }
 
+  @override
+  void dispose() {
+    nameController.dispose();
+    photoController.dispose();
+    super.dispose();
+  }
+
   Future<void> updateProfile() async {
     try {
       setState(() => isLoading = true);
@@ -49,6 +56,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         type: SnackbarType.success,
       );
 
+      if (!mounted) return;
       setState(() {});
     } catch (e) {
       CustomSnackbar.show(
@@ -57,7 +65,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         type: SnackbarType.error,
       );
     } finally {
-      setState(() => isLoading = false);
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
@@ -151,8 +159,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             const SizedBox(height: 16),
 
-            TextField(
+            TextFormField(
               enabled: false,
+              initialValue: currentUser.email ?? "",
               decoration: InputDecoration(
                 labelText: "Email",
                 prefixIcon: const Icon(Icons.email),
@@ -160,7 +169,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   borderRadius: BorderRadius.circular(14),
                 ),
               ),
-              controller: TextEditingController(text: currentUser.email ?? ""),
             ),
 
             const SizedBox(height: 25),

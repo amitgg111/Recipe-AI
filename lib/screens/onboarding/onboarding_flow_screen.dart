@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -8,6 +11,8 @@ import '../../theme/app_dimensions.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/onboarding_progress_bar.dart';
 import '../../widgets/button_shine_effect.dart';
+import '../../Controllers/onboarding_controller.dart';
+import '../../Service/notification_service.dart';
 
 import '../auth/login_screen.dart';
 import 'welcome_screen.dart';
@@ -45,14 +50,36 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
   /// The progress track spans the unified flow, so it is full on step 12.
   static const int _totalSteps = _flowPages;
 
+  /// Page index of the notifications step ("Step 07" in the UI).
+  static const int _notificationsPage = 6;
+
+  /// Page index of the "preparing" step ("Step 12" in the UI) — the final step.
+  static const int _settingUpPage = 11;
+
+  /// How long the "preparing" step waits before revealing its Continue button.
+  static const Duration _settingUpDelay = Duration(seconds: 3);
+
   int _page = 0;
 
   /// Whether the current step's selection is valid. Drives the Continue button
   /// enabled state in real time. Only the button rebuilds when this changes.
   final ValueNotifier<bool> _canContinue = ValueNotifier<bool>(true);
 
+  final OnboardingController _onb = Get.find<OnboardingController>();
+  final NotificationService _push = NotificationService.instance;
+
+  /// True while the notifications-permission request is in flight — prevents
+  /// duplicate prompts and double navigation, and drives the loading state.
+  bool _notifBusy = false;
+
+  /// The "preparing" step reveals its Continue button only after a short beat
+  /// so the setup animation can play. False until that delay elapses.
+  Timer? _settingUpTimer;
+  bool _settingUpReady = false;
+
   @override
   void dispose() {
+    _settingUpTimer?.cancel();
     _canContinue.dispose();
     super.dispose();
   }
@@ -64,12 +91,18 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
 
   void _onContinue() {
     if (!_canContinue.value) return; // guard: no proceeding while invalid
+    _advance();
+  }
+
+  /// Move to the next step (or hand off to the Plus intro after the last one).
+  void _advance() {
     if (_page < _flowPages - 1) {
       setState(() {
         _page++;
       });
       // Each step opens with its default selection, so it starts valid.
       _canContinue.value = true;
+      _syncSettingUpGate();
     } else {
       // Step 12 done → continue to the existing Plus intro (steps 13–15).
       Get.to(
@@ -79,12 +112,51 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
     }
   }
 
+  /// On the "preparing" step, hold the Continue button back for [_settingUpDelay]
+  /// so the setup animation can play, then reveal it. Restarts cleanly whenever
+  /// the user navigates onto (or back to) that step, and resets on every other.
+  void _syncSettingUpGate() {
+    _settingUpTimer?.cancel();
+    if (_page == _settingUpPage) {
+      _settingUpReady = false;
+      _settingUpTimer = Timer(_settingUpDelay, () {
+        if (mounted) setState(() => _settingUpReady = true);
+      });
+    } else {
+      _settingUpReady = false;
+    }
+  }
+
+  /// Complete the notifications step: optionally request the OS permission,
+  /// persist the choice (synced to Firebase on auth), then advance. Re-entrant
+  /// safe, so a double-tap can't fire two prompts or two navigations, and it
+  /// never leaves the user stuck — even on error the choice is recorded and the
+  /// flow moves on.
+  Future<void> _completeNotifications({required bool optIn}) async {
+    if (_notifBusy) return;
+    setState(() => _notifBusy = true);
+    bool granted = _push.hasPermission;
+    try {
+      if (optIn) {
+        final result = await _push.requestPermissionOnboarding();
+        granted = result.granted;
+      }
+    } catch (_) {
+      granted = _push.hasPermission;
+    } finally {
+      _onb.setNotificationChoice(optIn: optIn, granted: granted);
+      if (mounted) setState(() => _notifBusy = false);
+    }
+    if (mounted) _advance();
+  }
+
   void _onBack() {
     if (_page == 0) return;
     setState(() {
       _page--;
     });
     _canContinue.value = true;
+    _syncSettingUpGate();
   }
 
   // ---- Per-page content ----------------------------------------------------
@@ -104,9 +176,13 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
       case 5:
         return const WhenToCookBody();
       case 6:
-        return const NotificationsBody();
+        return NotificationsBody(
+          busy: _notifBusy,
+          onAllow: () => _completeNotifications(optIn: true),
+          onDeny: () => _completeNotifications(optIn: false),
+        );
       case 7:
-        return const HowDidYouHearBody();
+        return HowDidYouHearBody(onValidityChanged: _onValidityChanged);
       case 8:
         return RecipeSourcesBody(onValidityChanged: _onValidityChanged);
       case 9:
@@ -114,7 +190,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
       case 10:
         return const AgeBody();
       case 11:
-        return const SettingUpBody();
+        return SettingUpBody(ready: _settingUpReady);
       default:
         return const SizedBox.shrink();
     }
@@ -219,9 +295,27 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
                   ValueListenableBuilder<bool>(
                     valueListenable: _canContinue,
                     builder: (context, canContinue, _) {
+                      // The notifications step's positive CTA ("Help me stay on
+                      // track") opts the user in: request the permission, save,
+                      // then advance. Every other step just continues.
+                      final isNotifPage = _page == _notificationsPage;
+                      final busy = isNotifPage && _notifBusy;
+                      // The "preparing" step keeps the button in place (so the
+                      // layout doesn't shift) but hidden + untappable until the
+                      // 3s delay elapses, then fades it in.
+                      final hideForSetup =
+                          _page == _settingUpPage && !_settingUpReady;
+                      final VoidCallback? onPressed =
+                          !canContinue || busy || hideForSetup
+                              ? null
+                              : (isNotifPage
+                                  ? () => _completeNotifications(optIn: true)
+                                  : _onContinue);
                       return AnimatedOpacity(
-                        duration: const Duration(milliseconds: 200),
-                        opacity: canContinue ? 1.0 : 0.45,
+                        duration: const Duration(milliseconds: 300),
+                        opacity: hideForSetup
+                            ? 0.0
+                            : (canContinue ? 1.0 : 0.45),
                         // Premium white gloss sweep — shown ONLY on the Welcome
                         // screen's "Get Started" button (page 0). Overlays the
                         // button without changing its logic.
@@ -235,7 +329,8 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
                           child: PrimaryButton(
                             label: _ctaLabelFor(_page),
                             height: 54,
-                            onPressed: canContinue ? _onContinue : null,
+                            isLoading: busy,
+                            onPressed: onPressed,
                           ),
                         ),
                       );
@@ -258,27 +353,12 @@ class _AppNameLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return const Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Container(
-          width: 30,
-          height: 30,
-          decoration: BoxDecoration(
-            color: AppColors.primary,
-            borderRadius: BorderRadius.circular(9),
-          ),
-          child: const AppLogoMark(size: 20),
-        ),
-        const SizedBox(width: 9),
-        Text(
-          'Recipe AI',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            color: AppColors.textDark,
-          ),
-        ),
+        AppLogo(size: 30),
+        SizedBox(width: 9),
+        AppWordmark(fontSize: 20, fontWeight: FontWeight.w800),
       ],
     );
   }

@@ -146,6 +146,14 @@ class SettingsScreen extends StatelessWidget {
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: AppColors.surfaceBorder),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF2A211B).withValues(alpha: 0.4),
+              blurRadius: 26,
+              offset: const Offset(0, 12),
+              spreadRadius: -22,
+            ),
+          ],
         ),
         child: Row(
           children: [
@@ -203,9 +211,10 @@ class SettingsScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF8B5CF6).withValues(alpha: 0.38),
+              color: const Color(0xFF8B5CF6).withValues(alpha: 0.6),
               blurRadius: 30,
               offset: const Offset(0, 16),
+              spreadRadius: -16,
             ),
           ],
         ),

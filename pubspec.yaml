@@ -36,6 +36,9 @@ dependencies:
   cupertino_icons: ^1.0.8
   firebase_auth: ^6.5.3
   google_sign_in: ^6.2.1
+  # Sign in with Apple (native iOS + Firebase OAuth) and secure nonce hashing.
+  sign_in_with_apple: ^6.1.0
+  crypto: ^3.0.3
   cloud_firestore: ^6.6.0
   firebase_core: ^4.11.0
   get: ^4.7.3
@@ -51,10 +54,22 @@ dependencies:
   share_plus: ^12.0.2
   cloud_functions:
 
-  share_handler: 
+  # Receives content shared INTO the app (from the OS share sheet) on iOS +
+  # Android. Replaces share_handler, which does not compile on Xcode 26 / Swift 6.
+  receive_sharing_intent: ^1.8.1
   cached_network_image: ^3.4.1
   shimmer: ^3.0.0
   google_fonts: ^6.2.1
+  # Renders the onboarding line-icons from their exact SVG paths.
+  flutter_svg: ^2.0.10
+
+  # Push + local notifications
+  onesignal_flutter: ^5.3.4
+  flutter_local_notifications: ^18.0.1
+  timezone: ^0.9.4
+  flutter_timezone: ^3.0.1
+  app_settings: ^5.1.1
+  change_app_package_name: ^1.5.0
 
 dev_dependencies:
   flutter_test:

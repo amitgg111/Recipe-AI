@@ -249,7 +249,9 @@ class RecipeImportService {
           .child(fileName);
 
       await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
-      return ref.getDownloadURL();
+      // Await so a transient getDownloadURL() failure is caught here (returns
+      // null → recipe still saves without an image) instead of aborting import.
+      return await ref.getDownloadURL();
     } catch (e) {
       log('Image upload error: $e');
       return null;

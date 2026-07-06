@@ -10,10 +10,15 @@ import 'package:recipe_ai/Controllers/meal_plan_controller.dart';
 import 'package:recipe_ai/Controllers/profile_controller.dart';
 import 'package:recipe_ai/Controllers/recipe_editor_controller.dart';
 import 'package:recipe_ai/Controllers/settings_controller.dart';
+import 'package:recipe_ai/Controllers/onboarding_controller.dart';
 import 'package:recipe_ai/Controllers/share_intent_service_controller.dart';
 import 'package:recipe_ai/Core/Routes/app_routes.dart';
 import 'package:recipe_ai/Core/Theme/app_theme_controller.dart';
 import 'package:recipe_ai/View/Splash/spalsh_screen.dart';
+
+import 'package:recipe_ai/Service/auth_service.dart';
+import 'package:recipe_ai/Service/notification_service.dart';
+import 'package:recipe_ai/Service/local_notification_service.dart';
 import 'package:recipe_ai/firebase_options.dart';
 import 'package:recipe_ai/theme/app_theme.dart' as new_theme;
 
@@ -92,10 +97,33 @@ void main() async {
   Get.put(ProfileController(), permanent: true);
   Get.put(CookbookController(), permanent: true);
   Get.put(SettingsController(), permanent: true);
+  Get.put(OnboardingController(), permanent: true);
 
   final shareService = Get.put(ShareIntentService(), permanent: true);
 
   await shareService.init();
+
+  // Notifications: initialise the SDKs (no permission prompt here) and keep
+  // the user's preferences + scheduled reminders bound to the signed-in user.
+  await NotificationService.instance.init();
+  await LocalNotificationService.instance.init();
+  _bindNotificationsToAuth();
+}
+
+/// Links push/local notifications to the auth session: on sign-in the OneSignal
+/// user is linked and the Firestore-backed toggles are loaded + reconciled; on
+/// sign-out scheduled reminders are cancelled. Fires immediately with the
+/// current user, so an already-signed-in user is bound on cold start.
+void _bindNotificationsToAuth() {
+  final settings = Get.find<SettingsController>();
+  AuthService.authStateChanges.listen((user) async {
+    if (user != null) {
+      await NotificationService.instance.loginUser(user.uid);
+      await settings.bindUser(user.uid);
+    } else {
+      await settings.onLogout();
+    }
+  });
 }
 
 class MyApp extends StatelessWidget {

@@ -4,7 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:get/get.dart';
 import 'package:recipe_ai/Controllers/home_controller.dart';
+import 'package:recipe_ai/Controllers/settings_controller.dart';
+import 'package:recipe_ai/Service/local_notification_service.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -189,6 +192,7 @@ class _CookModeScreenState extends State<CookModeScreen>
         if (t.remaining == 0) {
           t.running = false;
           t.done = true;
+          LocalNotificationService.instance.cancelCookTimerAlert(index);
           HapticFeedback.heavyImpact();
           // Alert like the lock-screen notification when it's a background step.
           if (index != _currentPage) {
@@ -218,11 +222,13 @@ class _CookModeScreenState extends State<CookModeScreen>
       );
     });
     _ensureTicker();
+    _syncTimerNotification(index);
   }
 
   void _pause(int index) {
     setState(() => _timers[index]?.running = false);
     _maybeStopTicker();
+    _syncTimerNotification(index);
   }
 
   void _resume(int index) {
@@ -233,6 +239,7 @@ class _CookModeScreenState extends State<CookModeScreen>
       t.done = false;
     });
     _ensureTicker();
+    _syncTimerNotification(index);
   }
 
   void _reset(int index) {
@@ -244,6 +251,7 @@ class _CookModeScreenState extends State<CookModeScreen>
       t.done = false;
     });
     _ensureTicker();
+    _syncTimerNotification(index);
   }
 
   void _addMinute(int index) {
@@ -258,11 +266,39 @@ class _CookModeScreenState extends State<CookModeScreen>
       }
     });
     _ensureTicker();
+    _syncTimerNotification(index);
   }
 
   void _dismiss(int index) {
     setState(() => _timers.remove(index));
+    LocalNotificationService.instance.cancelCookTimerAlert(index);
     _maybeStopTicker();
+  }
+
+  /// Keep a backing local notification in sync with a running timer so the
+  /// "Cook timer alert" still fires if the app is backgrounded. Only scheduled
+  /// when the device permission is granted AND the toggle is enabled; otherwise
+  /// any pending alert for this slot is cancelled.
+  void _syncTimerNotification(int index) {
+    final local = LocalNotificationService.instance;
+    final t = _timers[index];
+    final settings = Get.isRegistered<SettingsController>()
+        ? Get.find<SettingsController>()
+        : null;
+    if (t == null ||
+        !t.running ||
+        t.remaining <= 0 ||
+        settings == null ||
+        !settings.canFireCookTimer) {
+      local.cancelCookTimerAlert(index);
+      return;
+    }
+    local.scheduleCookTimerAlert(
+      slot: index,
+      fireAt: DateTime.now().add(Duration(seconds: t.remaining)),
+      title: 'Timer done — Step ${index + 1} ⏰',
+      body: '${widget.recipe.title} · ${t.label.toLowerCase()} finished',
+    );
   }
 
   // ─── Navigation ────────────────────────────────────────────────────────────

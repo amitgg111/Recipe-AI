@@ -417,7 +417,7 @@ class CookbookRecipesScreen extends StatelessWidget {
           },
         );
       },
-    );
+    ).whenComplete(nameController.dispose);
   }
 
   // ── Delete confirmation dialog (screen 23) ───────────────────────────────

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/Controllers/cookbook_controller.dart';
@@ -100,28 +101,12 @@ class _CookbooksScreenState extends State<CookbooksScreen>
       ),
       child: Row(
         children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const AppLogoMark(size: 24),
-          ),
+          const AppLogo(size: 36),
           const SizedBox(width: 10),
-          Text(
-            'Recipe AI',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textDark,
-              letterSpacing: -0.3,
-            ),
-          ),
+          AppWordmark(fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: -0.3),
           const Spacer(),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             decoration: BoxDecoration(
               color: AppColors.goldBg,
               borderRadius: BorderRadius.circular(AppDimensions.radiusRound),
@@ -129,8 +114,8 @@ class _CookbooksScreenState extends State<CookbooksScreen>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.auto_awesome, size: 14, color: AppColors.gold),
-                const SizedBox(width: 4),
+                const Icon(Icons.auto_awesome, size: 14, color: AppColors.primary),
+                const SizedBox(width: 5),
                 Text(
                   '5/5',
                   style: AppTextStyles.chipLabel.copyWith(
@@ -155,20 +140,24 @@ class _CookbooksScreenState extends State<CookbooksScreen>
             const SizedBox(height: AppSpacing.lg),
             Align(
               alignment: Alignment.centerLeft,
-              child: Text('Cookbooks', style: AppTextStyles.screenTitle),
+              child: Text(
+                'Cookbooks',
+                style: AppTextStyles.screenTitle.copyWith(fontSize: 22),
+              ),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 26),
             const EmptyPlateIllustration(),
             const SizedBox(height: AppSpacing.xxl),
             Text(
               "Let's get cooking!",
               style: AppTextStyles.screenTitle.copyWith(fontSize: 27),
             ),
-            const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: 9),
             Text(
               'Your cookbook is empty for now. Save your first recipe and it\'ll have a cozy home right here.',
               textAlign: TextAlign.center,
               style: AppTextStyles.bodyMedium.copyWith(
+                fontSize: 14.5,
                 color: AppColors.textBody,
                 height: 1.5,
               ),
@@ -194,7 +183,7 @@ class _CookbooksScreenState extends State<CookbooksScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: 18),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
             child: Row(
@@ -215,15 +204,13 @@ class _CookbooksScreenState extends State<CookbooksScreen>
                     height: AppDimensions.appBarButtonSize,
                     decoration: BoxDecoration(
                       color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(
-                        AppDimensions.radiusMd,
-                      ),
+                      borderRadius: BorderRadius.circular(13),
                       border: Border.all(color: AppColors.surfaceBorderLight),
                     ),
                     child: const Icon(
                       Icons.tune_rounded,
                       size: 20,
-                      color: AppColors.textDark,
+                      color: Color(0xFF9A938A),
                     ),
                   ),
                 ),
@@ -237,9 +224,23 @@ class _CookbooksScreenState extends State<CookbooksScreen>
               hintText: _selectedSegment == 0
                   ? 'Search cookbooks'
                   : 'Search recipes',
+              height: 46,
+              borderRadius: 14,
+              borderColor: const Color(0xFFEDE3D2),
+              showShadow: false,
+              hintStyle: GoogleFonts.plusJakartaSans(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFFA89F90),
+              ),
+              prefixIcon: const Icon(
+                Icons.search_rounded,
+                size: 20,
+                color: Color(0xFFA89F90),
+              ),
             ),
           ),
-          const SizedBox(height: AppSpacing.xl),
+          const SizedBox(height: AppSpacing.lg),
           if (_selectedSegment == 0)
             _buildCookbooksGrid(controller)
           else
@@ -299,7 +300,7 @@ class _CookbooksScreenState extends State<CookbooksScreen>
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            mainAxisSpacing: 20,
+            mainAxisSpacing: 16,
             crossAxisSpacing: 16,
             childAspectRatio: 0.72,
           ),
@@ -1160,6 +1161,7 @@ class _CookbookCard extends StatelessWidget {
             aspectRatio: 1,
             child: Container(
               decoration: BoxDecoration(
+                color: const Color(0xFFEDE5D7),
                 borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
                 border: Border.all(color: AppColors.surfaceBorder),
               ),
@@ -1169,17 +1171,25 @@ class _CookbookCard extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 9),
           Text(
             cookbook.name,
-            style: AppTextStyles.bodyLarge,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textDark,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 2),
           Text(
             '${cookbook.recipeCount} ${cookbook.recipeCount == 1 ? 'recipe' : 'recipes'}',
-            style: AppTextStyles.smallLabel,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13,
+              fontWeight: FontWeight.w400,
+              color: const Color(0xFF9A938A),
+            ),
           ),
         ],
       ),
@@ -1194,17 +1204,17 @@ class _CookbookCard extends StatelessWidget {
           child: Row(
             children: [
               Expanded(child: _gridCell(urls, 0)),
-              const SizedBox(width: 1.5),
+              const SizedBox(width: 2),
               Expanded(child: _gridCell(urls, 1)),
             ],
           ),
         ),
-        const SizedBox(height: 1.5),
+        const SizedBox(height: 2),
         Expanded(
           child: Row(
             children: [
               Expanded(child: _gridCell(urls, 2)),
-              const SizedBox(width: 1.5),
+              const SizedBox(width: 2),
               Expanded(child: _gridCell(urls, 3)),
             ],
           ),
@@ -1231,9 +1241,9 @@ class _CookbookCard extends StatelessWidget {
 
   Widget _placeholder() {
     return Container(
-      color: AppColors.background,
+      color: const Color(0xFFE7DECE),
       child: const Center(
-        child: Icon(Icons.image_outlined, color: AppColors.iconLight, size: 24),
+        child: Icon(Icons.image_outlined, color: Color(0xFFCFC5B4), size: 20),
       ),
     );
   }

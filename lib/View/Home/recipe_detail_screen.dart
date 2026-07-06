@@ -11,6 +11,10 @@ import 'package:recipe_ai/View/Home/cookbook_recipes_screen.dart';
 import 'package:recipe_ai/View/Home/home_screen.dart';
 import 'package:recipe_ai/View/Home/recipe_editor_screen.dart';
 import 'package:recipe_ai/Helper/ingredient_scale_helper.dart';
+import 'package:recipe_ai/Helper/unit_converter.dart';
+import 'package:recipe_ai/Helper/instruction_scaler.dart';
+import 'package:recipe_ai/Helper/premium_gate.dart';
+import 'package:recipe_ai/Controllers/settings_controller.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_dimensions.dart';
@@ -93,6 +97,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   bool _menuOpen = false;
   late bool _isPublic;
   final Set<int> _checkedIngredients = {};
+  final SettingsController _settings = Get.find<SettingsController>();
 
   RecipeModel get recipe => widget.recipe;
 
@@ -676,9 +681,20 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             style: _font(12, FontWeight.w500, const Color(0xFF9A938A)),
           ),
           const SizedBox(height: 12),
-          _buildUnitsBanner(),
-          const SizedBox(height: 4),
-          ..._buildIngredientsList(),
+          // Units switcher + ingredient list rebuild reactively when the user
+          // toggles Metric/US (globally via SettingsController), so every
+          // quantity + unit recalculates instantly.
+          Obx(() {
+            final system = _settings.unitSystem;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildUnitsBanner(),
+                const SizedBox(height: 4),
+                ..._buildIngredientsList(system),
+              ],
+            );
+          }),
           const SizedBox(height: 14),
           GestureDetector(
             onTap: _addToGroceries,
@@ -713,6 +729,76 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
   // Plus-only unit switcher (visual — matches the HTML locked control)
   Widget _buildUnitsBanner() {
+    // Metric/Imperial is a premium feature, force-unlocked for dev/testing via
+    // PremiumGate. Flip PremiumGate.unitConversionUnlocked to a subscription
+    // check to re-gate it — the conversion logic is unaffected either way.
+    if (!PremiumGate.unitConversionUnlocked) return _buildLockedUnitsBanner();
+
+    final isUS = _settings.units.value == 'US';
+    return Container(
+      padding: const EdgeInsets.fromLTRB(13, 7, 9, 7),
+      decoration: BoxDecoration(
+        color: _C.purpleBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _C.purpleBorder),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.straighten_rounded, size: 16, color: _C.purple),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Text(
+              'Units',
+              style: _font(12.5, FontWeight.w700, const Color(0xFF5B3E8C)),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _unitChip('US', isUS),
+                _unitChip('Metric', !isUS),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// One segment of the functional US/Metric switcher. Persists the choice
+  /// globally through SettingsController so every screen reacts.
+  Widget _unitChip(String label, bool selected) {
+    return GestureDetector(
+      onTap: () => _settings.setUnits(label),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+        decoration: BoxDecoration(
+          color: selected ? _C.purple : Colors.transparent,
+          borderRadius: BorderRadius.circular(7),
+        ),
+        child: Text(
+          label,
+          style: _font(
+            11,
+            selected ? FontWeight.w800 : FontWeight.w700,
+            selected ? Colors.white : const Color(0xFF9A938A),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // The original locked (Plus paywall) banner — shown when the premium flag is
+  // off. Preserved so re-gating is a one-line flag change.
+  Widget _buildLockedUnitsBanner() {
     return Container(
       padding: const EdgeInsets.fromLTRB(13, 7, 9, 7),
       decoration: BoxDecoration(
@@ -802,7 +888,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     );
   }
 
-  List<Widget> _buildIngredientsList() {
+  List<Widget> _buildIngredientsList(UnitSystem system) {
     final multiplier = _servings / _initialServings;
     final hasSections = recipe.ingredientSections.any(
       (s) => s.items.isNotEmpty,
@@ -817,9 +903,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           widgets.add(_sectionHeader(section.name!));
         }
         for (var i = 0; i < section.items.length; i++) {
-          final scaled = IngredientScaleHelper.scaleIngredient(
+          final scaled = UnitConverter.scaleAndConvert(
             section.items[i],
             multiplier,
+            system,
           );
           widgets.add(_ingredientRow(scaled, globalIdx));
           globalIdx++;
@@ -829,9 +916,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     }
 
     for (var i = 0; i < recipe.ingredients.length; i++) {
-      final scaled = IngredientScaleHelper.scaleIngredient(
+      final scaled = UnitConverter.scaleAndConvert(
         recipe.ingredients[i],
         multiplier,
+        system,
       );
       widgets.add(_ingredientRow(scaled, i));
     }
@@ -1021,13 +1109,23 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         children: [
           Text('Instructions', style: _font(18, FontWeight.w800, _C.textDark)),
           const SizedBox(height: 6),
-          ..._buildInstructionsList(),
+          // Steps rebuild reactively on unit change; serving changes rebuild the
+          // whole screen via setState. Quantities + timers in the text scale to
+          // match the ingredient list.
+          Obx(() {
+            final multiplier = _servings / _initialServings;
+            final system = _settings.unitSystem;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: _buildInstructionsList(multiplier, system),
+            );
+          }),
         ],
       ),
     );
   }
 
-  List<Widget> _buildInstructionsList() {
+  List<Widget> _buildInstructionsList(double multiplier, UnitSystem system) {
     final hasSections = recipe.instructionSections.any(
       (s) => s.steps.isNotEmpty,
     );
@@ -1041,7 +1139,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           widgets.add(_sectionHeader(section.name!));
         }
         for (var i = 0; i < section.steps.length; i++) {
-          widgets.add(_instructionRow(stepNum, section.steps[i]));
+          widgets.add(_instructionRow(
+            stepNum,
+            InstructionScaler.scale(section.steps[i], multiplier, system),
+          ));
           stepNum++;
         }
       }
@@ -1049,7 +1150,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     }
 
     for (var i = 0; i < recipe.instructions.length; i++) {
-      widgets.add(_instructionRow(i + 1, recipe.instructions[i]));
+      widgets.add(_instructionRow(
+        i + 1,
+        InstructionScaler.scale(recipe.instructions[i], multiplier, system),
+      ));
     }
     return widgets;
   }
@@ -1356,9 +1460,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       title: '${recipe.ingredients.length} ingredients added to groceries',
       actionText: 'View',
       onAction: () {
-        HomeScreen.activeIndex = 3;
         Get.offUntil(
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
+          MaterialPageRoute(
+            builder: (_) => const HomeScreen(initialIndex: 3),
+          ),
           (route) => route.isFirst,
         );
       },
@@ -1974,6 +2079,9 @@ class _MealPlanPickerSheetState extends State<_MealPlanPickerSheet> {
         recipeTitle: widget.recipe.title,
         recipeImageUrl: widget.recipe.imageUrl,
       );
+      // Point the Meal Plan tab at the day we just added to, so the new meal is
+      // visible immediately even when it falls outside the week currently shown.
+      widget.mealPlanController.selectDate(_selectedDay);
       if (mounted) Navigator.pop(context);
       CustomSnackbar.show(
         title: 'Added to $_selectedMealType',
@@ -1981,7 +2089,7 @@ class _MealPlanPickerSheetState extends State<_MealPlanPickerSheet> {
         type: SnackbarType.success,
       );
     } catch (_) {
-      setState(() => _isAdding = false);
+      if (mounted) setState(() => _isAdding = false);
     }
   }
 
@@ -2136,6 +2244,9 @@ class _MealPlanPickerSheetState extends State<_MealPlanPickerSheet> {
                           const SizedBox(height: 4),
                           Text(
                             type,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
                             style: _font(
                               10,
                               FontWeight.w600,

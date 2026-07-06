@@ -37,7 +37,7 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
                       textAlign: TextAlign.center,
                       text: TextSpan(
                         style: GoogleFonts.plusJakartaSans(
-                          fontSize: 26,
+                          fontSize: 22,
                           fontWeight: FontWeight.w800,
                           color: AppColors.textDark,
                           height: 1.18,
@@ -48,9 +48,9 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
                           TextSpan(
                             text: 'trial experience',
                             style: GoogleFonts.plusJakartaSans(
-                              fontSize: 26,
+                              fontSize: 22,
                               fontWeight: FontWeight.w800,
-                              color: AppColors.primary,
+                              color: AppColors.purple,
                               height: 1.18,
                               letterSpacing: -0.52,
                             ),
@@ -100,8 +100,7 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
                     // Button
                     PrimaryButton.purple(
                       label: 'Redeem 7 days for ₹0.00',
-                      onPressed: () =>
-                          Get.offAll(
+                      onPressed: () => Get.offAll(
                         () => const CreateAccountScreen(),
                         transition: Transition.noTransition,
                       ),
@@ -129,7 +128,7 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
 
   Widget _buildHeroImages() {
     return SizedBox(
-      height: 230,
+      height: 190,
       child: Stack(
         children: [
           // 3-column grid with 5px gap, opacity 0.96
@@ -185,9 +184,9 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
             right: 18,
             child: GestureDetector(
               onTap: () => Get.offAll(
-                        () => const CreateAccountScreen(),
-                        transition: Transition.noTransition,
-                      ),
+                () => const CreateAccountScreen(),
+                transition: Transition.noTransition,
+              ),
               child: Container(
                 width: 36,
                 height: 36,
@@ -274,7 +273,7 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.surfaceBorder,
+            color: isSelected ? AppColors.purple : AppColors.surfaceBorder,
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
@@ -318,7 +317,7 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
                 width: 26,
                 height: 26,
                 decoration: const BoxDecoration(
-                  color: AppColors.primary,
+                  color: AppColors.purple,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.check, color: Colors.white, size: 16),
@@ -345,7 +344,7 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
-        color: AppColors.primaryShadow,
+        color: AppColors.purpleBg,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -370,7 +369,7 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
               padding: const EdgeInsets.all(3),
               decoration: BoxDecoration(
                 color: _remindMe
-                    ? AppColors.primary
+                    ? AppColors.purple
                     : AppColors.unselectedBorder,
                 borderRadius: BorderRadius.circular(14),
               ),
