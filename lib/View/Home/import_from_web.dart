@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/Core/Theme/app_theme.dart';
 import 'package:recipe_ai/Widget/custom_text.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:recipe_ai/Controllers/import_web_controller.dart';
@@ -54,7 +55,7 @@ class ImportFromWebScreen extends StatelessWidget {
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.close, size: 25),
+            icon: const OnboardingLineIcon('x', size: 25, color: Colors.black87),
             onPressed: () {
               controller.loadLandingPage();
               Get.back();
@@ -197,8 +198,8 @@ class ImportFromWebScreen extends StatelessWidget {
             else
               Column(
                 children: [
-                  Icon(
-                    Icons.menu_book_rounded,
+                  OnboardingLineIcon(
+                    'book',
                     size: 34,
                     color: Colors.grey.shade500,
                   ),
@@ -223,7 +224,11 @@ class ImportFromWebScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 _navButton(
-                  icon: Icons.arrow_back_ios_new_rounded,
+                  iconWidget: const OnboardingLineIcon(
+                    'back',
+                    size: 22,
+                    color: Color(0xFF4A4A4A),
+                  ),
                   onTap: () {
                     controller.webViewController.canGoBack().then((can) {
                       if (can) {
@@ -247,7 +252,11 @@ class ImportFromWebScreen extends StatelessWidget {
                 const SizedBox(width: 20),
 
                 _navButton(
-                  icon: Icons.arrow_forward_ios_rounded,
+                  iconWidget: const OnboardingLineIcon(
+                    'chevR',
+                    size: 22,
+                    color: Color(0xFF4A4A4A),
+                  ),
                   onTap: () {
                     controller.webViewController.canGoForward().then((can) {
                       if (can) {
@@ -264,7 +273,11 @@ class ImportFromWebScreen extends StatelessWidget {
     );
   }
 
-  Widget _navButton({required IconData icon, required VoidCallback onTap}) {
+  Widget _navButton({
+    IconData? icon,
+    Widget? iconWidget,
+    required VoidCallback onTap,
+  }) {
     return Material(
       color: const Color(0xFFF5F6FA),
       borderRadius: BorderRadius.circular(14),
@@ -274,7 +287,9 @@ class ImportFromWebScreen extends StatelessWidget {
         child: SizedBox(
           height: 52,
           width: 52,
-          child: Icon(icon, size: 22, color: const Color(0xFF4A4A4A)),
+          child:
+              iconWidget ??
+              Icon(icon, size: 22, color: const Color(0xFF4A4A4A)),
         ),
       ),
     );
@@ -507,7 +522,7 @@ class _RecipePreviewSheetState extends State<_RecipePreviewSheet> {
               ),
 
               IconButton(
-                icon: const Icon(Icons.close),
+                icon: const OnboardingLineIcon('x', color: Colors.black87),
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ],
@@ -595,7 +610,11 @@ class _RecipePreviewSheetState extends State<_RecipePreviewSheet> {
                           onPressed: () {
                             // Hook up real editing later.
                           },
-                          icon: const Icon(Icons.edit, size: 16),
+                          icon: const OnboardingLineIcon(
+                            'pencil',
+                            size: 16,
+                            color: AppTheme.primary,
+                          ),
                           label: const CustomText('Edit recipe'),
                           style: OutlinedButton.styleFrom(
                             shape: RoundedRectangleBorder(
@@ -701,21 +720,63 @@ class _RecipeOverview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = <({IconData icon, String label})>[
+    final items = <({IconData? icon, Widget? iconWidget, String label})>[
       if (recipe.totalTime != null)
-        (icon: Icons.schedule, label: 'Total ${recipe.totalTime}'),
+        (
+          icon: null,
+          iconWidget: const OnboardingLineIcon(
+            'clock',
+            size: 16,
+            color: AppTheme.primary,
+          ),
+          label: 'Total ${recipe.totalTime}',
+        ),
       if (recipe.prepTime != null)
-        (icon: Icons.timer_outlined, label: 'Prep ${recipe.prepTime}'),
+        (
+          icon: null,
+          iconWidget: const OnboardingLineIcon(
+            'timerR',
+            size: 16,
+            color: AppTheme.primary,
+          ),
+          label: 'Prep ${recipe.prepTime}',
+        ),
       if (recipe.cookTime != null)
         (
-          icon: Icons.local_fire_department_outlined,
+          icon: null,
+          iconWidget: const OnboardingLineIcon(
+            'flame',
+            size: 16,
+            color: AppTheme.primary,
+          ),
           label: 'Cook ${recipe.cookTime}',
         ),
       if (recipe.servings != null)
-        (icon: Icons.groups_outlined, label: recipe.servings!),
+        (
+          icon: null,
+          iconWidget: const OnboardingLineIcon(
+            'friend',
+            size: 16,
+            color: AppTheme.primary,
+          ),
+          label: recipe.servings!,
+        ),
       if (recipe.category != null)
-        (icon: Icons.category_outlined, label: recipe.category!),
-      if (recipe.cuisine != null) (icon: Icons.public, label: recipe.cuisine!),
+        (
+          icon: Icons.category_outlined,
+          iconWidget: null,
+          label: recipe.category!,
+        ),
+      if (recipe.cuisine != null)
+        (
+          icon: null,
+          iconWidget: const OnboardingLineIcon(
+            'globe',
+            size: 16,
+            color: AppTheme.primary,
+          ),
+          label: recipe.cuisine!,
+        ),
     ];
 
     if (items.isEmpty && recipe.keywords.isEmpty) {
@@ -727,7 +788,11 @@ class _RecipeOverview extends StatelessWidget {
       runSpacing: 8,
       children: [
         ...items.map(
-          (item) => _OverviewChip(icon: item.icon, label: item.label),
+          (item) => _OverviewChip(
+            icon: item.icon,
+            iconWidget: item.iconWidget,
+            label: item.label,
+          ),
         ),
         ...recipe.keywords
             .take(4)
@@ -741,10 +806,11 @@ class _RecipeOverview extends StatelessWidget {
 }
 
 class _OverviewChip extends StatelessWidget {
-  final IconData icon;
+  final IconData? icon;
+  final Widget? iconWidget;
   final String label;
 
-  const _OverviewChip({required this.icon, required this.label});
+  const _OverviewChip({this.icon, this.iconWidget, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -757,7 +823,7 @@ class _OverviewChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: AppTheme.primary),
+          iconWidget ?? Icon(icon, size: 16, color: AppTheme.primary),
           const SizedBox(width: 6),
           Flexible(
             child: CustomText(
@@ -803,10 +869,17 @@ class _SavedFeedbackOverlay extends StatelessWidget {
                 children: [
                   const SizedBox(width: 40),
                   const Spacer(),
-                  IconButton(icon: const Icon(Icons.close), onPressed: onClose),
+                  IconButton(
+                    icon: const OnboardingLineIcon('x', color: Colors.black87),
+                    onPressed: onClose,
+                  ),
                 ],
               ),
-              const Icon(Icons.check_circle, color: AppTheme.primary, size: 80),
+              const OnboardingLineIcon(
+                'checkCircle',
+                color: AppTheme.primary,
+                size: 80,
+              ),
               const SizedBox(height: 12),
               const CustomText(
                 'Recipe saved',

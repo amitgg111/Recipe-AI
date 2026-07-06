@@ -19,16 +19,13 @@ class AppBackButton extends StatelessWidget {
       child: Container(
         width: AppDimensions.appBarButtonSize,
         height: AppDimensions.appBarButtonSize,
+        padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
           border: Border.all(color: AppColors.surfaceBorderLight),
         ),
-        child: Icon(
-          icon,
-          size: 18,
-          color: AppColors.textDark,
-        ),
+        child: Icon(icon, size: 18, color: AppColors.textDark),
       ),
     );
   }

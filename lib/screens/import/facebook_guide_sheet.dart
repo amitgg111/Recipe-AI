@@ -6,6 +6,7 @@ import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_spacing.dart';
 import 'package:recipe_ai/theme/app_dimensions.dart';
 import 'package:recipe_ai/widgets/bottom_sheet_handle.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 
 class FacebookGuideSheet extends StatefulWidget {
@@ -94,8 +95,8 @@ class _FacebookGuideSheetState extends State<FacebookGuideSheet> {
                         AppDimensions.radiusSm,
                       ),
                     ),
-                    child: const Icon(
-                      Icons.arrow_back_ios_new_rounded,
+                    child: const OnboardingLineIcon(
+                      'back',
                       size: 16,
                       color: AppColors.textDark,
                     ),
@@ -161,8 +162,8 @@ class _FacebookGuideSheetState extends State<FacebookGuideSheet> {
             ),
             child: PrimaryButton(
               label: 'Open Facebook to find a recipe',
-              leadingIcon: const Icon(
-                Icons.chat_rounded,
+              leadingIcon: const OnboardingLineIcon(
+                'chat',
                 color: Colors.white,
                 size: 20,
               ),
@@ -212,8 +213,8 @@ class _FacebookSlide1 extends StatelessWidget {
                         color: Color(0xFF2D6FE0),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
-                        Icons.person_rounded,
+                      child: const OnboardingLineIcon(
+                        'user',
                         size: 20,
                         color: Colors.white,
                       ),
@@ -285,7 +286,7 @@ class _FacebookSlide1 extends StatelessWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.chat_bubble_outline_rounded,
+                          const OnboardingLineIcon('chat',
                               size: 20, color: AppColors.textMedium),
                           const SizedBox(width: 6),
                           Text(
@@ -316,7 +317,7 @@ class _FacebookSlide1 extends StatelessWidget {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.share_rounded,
+                            const OnboardingLineIcon('share',
                                 size: 20, color: AppColors.primary),
                             const SizedBox(width: 6),
                             Text(
@@ -425,7 +426,7 @@ class _FacebookSlide2 extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.search, size: 18, color: AppColors.textLight),
+                      const OnboardingLineIcon('search', size: 18, color: AppColors.textLight),
                       const SizedBox(width: 8),
                       Text(
                         'Search',
@@ -577,8 +578,8 @@ class _FacebookSlide3 extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child: const Icon(
-                        Icons.restaurant_menu_rounded,
+                      child: const OnboardingLineIcon(
+                        'bowl',
                         color: Colors.white,
                         size: 24,
                       ),
@@ -592,7 +593,8 @@ class _FacebookSlide3 extends StatelessWidget {
                   const Color(0xFF2D6FE0),
                   '',
                   'Chat',
-                  icon: Icons.chat_bubble_rounded,
+                  iconWidget: const OnboardingLineIcon('chat',
+                      size: 22, color: Color(0xFF2D6FE0)),
                 ),
                 // Triangle - green
                 _appIcon(
@@ -614,6 +616,7 @@ class _FacebookSlide3 extends StatelessWidget {
     String letter,
     String label, {
     IconData? icon,
+    Widget? iconWidget,
   }) {
     return Column(
       children: [
@@ -625,7 +628,8 @@ class _FacebookSlide3 extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           child: Center(
-            child: icon != null
+            child: iconWidget ??
+                (icon != null
                 ? Icon(icon, size: 22, color: color)
                 : Text(
                     letter,
@@ -634,7 +638,7 @@ class _FacebookSlide3 extends StatelessWidget {
                       fontWeight: FontWeight.w800,
                       color: color,
                     ),
-                  ),
+                  )),
           ),
         ),
         const SizedBox(height: 6),

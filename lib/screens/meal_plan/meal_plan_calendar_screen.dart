@@ -50,10 +50,7 @@ class _MealPlanCalendarScreenState extends State<MealPlanCalendarScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: AppBottomNav(
-        currentIndex: 2,
-        onTap: (i) {},
-      ),
+      bottomNavigationBar: AppBottomNav(currentIndex: 2, onTap: (i) {}),
     );
   }
 
@@ -74,10 +71,7 @@ class _MealPlanCalendarScreenState extends State<MealPlanCalendarScreen> {
               border: Border.all(color: AppColors.surfaceBorder),
             ),
             child: Row(
-              children: [
-                _segmentTab('Day', 0),
-                _segmentTab('Month', 1),
-              ],
+              children: [_segmentTab('Day', 0), _segmentTab('Month', 1)],
             ),
           ),
           const SizedBox(width: 10),
@@ -91,7 +85,11 @@ class _MealPlanCalendarScreenState extends State<MealPlanCalendarScreen> {
                 borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
                 border: Border.all(color: AppColors.surfaceBorder),
               ),
-              child: const Icon(Icons.more_horiz, size: 20, color: AppColors.textMedium),
+              child: const Icon(
+                Icons.more_horiz,
+                size: 20,
+                color: AppColors.textMedium,
+              ),
             ),
           ),
         ],
@@ -136,7 +134,11 @@ class _MealPlanCalendarScreenState extends State<MealPlanCalendarScreen> {
                 borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
                 border: Border.all(color: AppColors.surfaceBorder),
               ),
-              child: const Icon(Icons.chevron_left, size: 20, color: AppColors.textMedium),
+              child: const Icon(
+                Icons.chevron_left,
+                size: 20,
+                color: AppColors.textMedium,
+              ),
             ),
           ),
           const Spacer(),
@@ -158,7 +160,11 @@ class _MealPlanCalendarScreenState extends State<MealPlanCalendarScreen> {
                 borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
                 border: Border.all(color: AppColors.surfaceBorder),
               ),
-              child: const Icon(Icons.chevron_right, size: 20, color: AppColors.textMedium),
+              child: const Icon(
+                Icons.chevron_right,
+                size: 20,
+                color: AppColors.textMedium,
+              ),
             ),
           ),
         ],
@@ -224,9 +230,11 @@ class _MealPlanCalendarScreenState extends State<MealPlanCalendarScreen> {
         height: 56,
         margin: const EdgeInsets.all(2),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : AppColors.surface,
+          color: isSelected ? AppColors.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-          border: isSelected ? null : Border.all(color: AppColors.surfaceBorder),
+          border: isSelected
+              ? null
+              : Border.all(color: AppColors.surfaceBorder),
           boxShadow: isSelected
               ? [
                   BoxShadow(

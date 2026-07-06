@@ -6,6 +6,7 @@ import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/Controllers/onboarding_controller.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:recipe_ai/widgets/progress_indicator_dots.dart';
 import 'package:recipe_ai/screens/onboarding/recipe_sources_screen.dart';
 
@@ -459,7 +460,24 @@ class _SourceLeadingIcon extends StatelessWidget {
         child: CustomPaint(painter: _InstagramGlyphPainter(option.iconColor)),
       );
     }
-    return Icon(option.icon, color: option.iconColor, size: 20);
+    return OnboardingLineIcon(
+      _registryName(option.icon),
+      size: 20,
+      color: option.iconColor,
+    );
+  }
+
+  /// Maps the source's Material [IconData] to the matching HTML line-icon
+  /// registry name (1:1 with the design mock's `I` icon set).
+  static String _registryName(IconData icon) {
+    if (icon == Icons.search) return 'search';
+    if (icon == Icons.play_arrow) return 'play';
+    if (icon == Icons.music_note) return 'music';
+    if (icon == Icons.people_alt_rounded) return 'friend';
+    if (icon == Icons.chat_bubble_outline) return 'chat';
+    if (icon == Icons.camera_alt_outlined) return 'camera';
+    if (icon == Icons.more_horiz) return 'dots';
+    return 'dots';
   }
 }
 

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:recipe_ai/Controllers/settings_controller.dart';
 import 'package:recipe_ai/View/Home/settings/settings_common.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 
 class LanguageScreen extends StatefulWidget {
   const LanguageScreen({super.key});
@@ -86,7 +87,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.search_rounded, size: 20, color: AppColors.textHint),
+          const OnboardingLineIcon('search', size: 20, color: AppColors.textHint),
           const SizedBox(width: 10),
           Expanded(
             child: TextField(
@@ -166,7 +167,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                   color: AppColors.primary,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.check_rounded,
+                child: const OnboardingLineIcon('check',
                     size: 15, color: Colors.white),
               ),
           ],

@@ -31,11 +31,7 @@ class _RecipesGridScreenState extends State<RecipesGridScreen> {
       duration: '45 min',
       isFavorite: false,
     ),
-    _RecipeItem(
-      title: 'Avocado Toast',
-      duration: '10 min',
-      isFavorite: true,
-    ),
+    _RecipeItem(title: 'Avocado Toast', duration: '10 min', isFavorite: true),
     _RecipeItem(
       title: 'Chicken Tikka Masala',
       duration: '50 min',
@@ -46,11 +42,7 @@ class _RecipesGridScreenState extends State<RecipesGridScreen> {
       duration: '15 min',
       isFavorite: false,
     ),
-    _RecipeItem(
-      title: 'Pasta Carbonara',
-      duration: '25 min',
-      isFavorite: true,
-    ),
+    _RecipeItem(title: 'Pasta Carbonara', duration: '25 min', isFavorite: true),
   ];
 
   @override
@@ -70,7 +62,7 @@ class _RecipesGridScreenState extends State<RecipesGridScreen> {
               ),
               child: Row(
                 children: [
-                  AppWordmark(fontSize: 22, fontWeight: FontWeight.w800),
+                  const AppWordmark(fontSize: 22, fontWeight: FontWeight.w800),
                   const Spacer(),
                   // Credits badge
                   Container(
@@ -96,9 +88,7 @@ class _RecipesGridScreenState extends State<RecipesGridScreen> {
                         const SizedBox(width: 4),
                         Text(
                           '5 credits',
-                          style: AppTextStyles.chipLabel.copyWith(
-                            fontSize: 12,
-                          ),
+                          style: AppTextStyles.chipLabel.copyWith(fontSize: 12),
                         ),
                       ],
                     ),
@@ -136,9 +126,7 @@ class _RecipesGridScreenState extends State<RecipesGridScreen> {
                         borderRadius: BorderRadius.circular(
                           AppDimensions.radiusIcon,
                         ),
-                        border: Border.all(
-                          color: AppColors.surfaceBorderLight,
-                        ),
+                        border: Border.all(color: AppColors.surfaceBorderLight),
                       ),
                       child: const Icon(
                         Icons.swap_vert_rounded,
@@ -189,6 +177,7 @@ class _RecipesGridScreenState extends State<RecipesGridScreen> {
       floatingActionButton: Container(
         width: AppDimensions.fabSize,
         height: AppDimensions.fabSize,
+
         decoration: BoxDecoration(
           color: AppColors.primary,
           borderRadius: BorderRadius.circular(30),
@@ -201,23 +190,15 @@ class _RecipesGridScreenState extends State<RecipesGridScreen> {
             ),
           ],
         ),
-        child: Material(
+        child: Container(
           color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(30),
+          child: GestureDetector(
             onTap: () {},
-            child: const Icon(
-              Icons.add_rounded,
-              color: Colors.white,
-              size: 30,
-            ),
+            child: const Icon(Icons.add_rounded, color: Colors.white, size: 30),
           ),
         ),
       ),
-      bottomNavigationBar: AppBottomNav(
-        currentIndex: 0,
-        onTap: (_) {},
-      ),
+      bottomNavigationBar: AppBottomNav(currentIndex: 0, onTap: (_) {}),
     );
   }
 }
@@ -310,9 +291,7 @@ class _RecipeGridCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         recipe.duration,
-                        style: AppTextStyles.smallLabel.copyWith(
-                          fontSize: 12,
-                        ),
+                        style: AppTextStyles.smallLabel.copyWith(fontSize: 12),
                       ),
                     ],
                   ),

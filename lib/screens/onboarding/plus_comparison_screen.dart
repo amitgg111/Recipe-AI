@@ -5,6 +5,7 @@ import 'package:recipe_ai/widgets/app_logo.dart';
 import 'package:recipe_ai/widgets/crown_icon.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:recipe_ai/screens/onboarding/trial_chooser_screen.dart';
 
 class PlusComparisonScreen extends StatefulWidget {
@@ -222,14 +223,15 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                             child: Container(
                               width: 34,
                               height: 34,
+                              padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
                                 color: const Color(
                                   0xFF2A211B,
                                 ).withValues(alpha: 0.07),
                                 borderRadius: BorderRadius.circular(17),
                               ),
-                              child: const Icon(
-                                Icons.close,
+                              child: const OnboardingLineIcon(
+                                'x',
                                 size: 18,
                                 color: AppColors.textMedium,
                               ),
@@ -265,8 +267,8 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(
-                                  Icons.auto_awesome,
+                                const OnboardingLineIcon(
+                                  'sparkF',
                                   size: 12,
                                   color: Color(0xFF8B5CF6),
                                 ),
@@ -506,9 +508,7 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
           SizedBox(
             width: 114,
             child: Container(
-              decoration: const BoxDecoration(
-                color: Color(0xFF8B5CF6),
-              ),
+              decoration: const BoxDecoration(color: Color(0xFF8B5CF6)),
               child: Stack(
                 children: [
                   // Content
@@ -522,7 +522,27 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            const CrownIcon(size: 15),
+                            Container(
+                              width: 40,
+                              height: 40,
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                gradient: const LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    Color(0xFF8B5CF6),
+                                    Color(0xFF6D3BD4),
+                                  ],
+                                ),
+                              ),
+                              child: const OnboardingLineIcon(
+                                'crown',
+                                size: 20,
+                                color: Colors.white,
+                              ),
+                            ),
 
                             Text(
                               'PLUS',
@@ -556,8 +576,8 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                             child: isCheck
                                 ? ScaleTransition(
                                     scale: _checkScales[i],
-                                    child: const Icon(
-                                      Icons.check,
+                                    child: const OnboardingLineIcon(
+                                      'check',
                                       color: Colors.white,
                                       size: 18,
                                     ),

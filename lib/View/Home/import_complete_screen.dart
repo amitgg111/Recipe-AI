@@ -6,6 +6,7 @@ import 'package:recipe_ai/Controllers/home_controller.dart';
 import 'package:recipe_ai/View/Home/recipe_detail_screen.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/app_logo.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 
 /// Import complete (review) screen — matches the HTML design: photo hero with
 /// "Imported" badge, an AI-review banner, a source pill, orange meta row, and
@@ -84,7 +85,7 @@ class ImportCompleteScreen extends StatelessWidget {
                       color: Colors.white.withValues(alpha: 0.92),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Icon(Icons.close_rounded,
+                    child: const OnboardingLineIcon('x',
                         size: 20, color: AppColors.textDark),
                   ),
                 ),
@@ -97,7 +98,7 @@ class ImportCompleteScreen extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.check_rounded, size: 15, color: Colors.white),
+                      const OnboardingLineIcon('check', size: 15, color: Colors.white),
                       const SizedBox(width: 6),
                       Text('Imported',
                           style: GoogleFonts.plusJakartaSans(
@@ -173,7 +174,7 @@ class ImportCompleteScreen extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.auto_awesome_rounded, size: 17, color: AppColors.gold),
+          const OnboardingLineIcon('sparkF', size: 17, color: AppColors.gold),
           const SizedBox(width: 11),
           Expanded(
             child: Text(
@@ -239,14 +240,14 @@ class ImportCompleteScreen extends StatelessWidget {
 
   Widget _metaRow() {
     final items = <Widget>[];
-    void add(IconData icon, String text) {
+    void add(String iconName, String text) {
       if (items.isNotEmpty) {
         items.add(const Padding(
           padding: EdgeInsets.symmetric(horizontal: 9),
           child: Text('·', style: TextStyle(color: Color(0xFFD8CFC0), fontWeight: FontWeight.w700)),
         ));
       }
-      items.add(Icon(icon, size: 16, color: AppColors.primary));
+      items.add(OnboardingLineIcon(iconName, size: 16, color: AppColors.primary));
       items.add(const SizedBox(width: 6));
       items.add(Text(text,
           style: GoogleFonts.plusJakartaSans(
@@ -257,13 +258,13 @@ class ImportCompleteScreen extends StatelessWidget {
     }
 
     final time = recipe.totalTime ?? recipe.cookTime ?? recipe.prepTime;
-    if (time != null && time.isNotEmpty) add(Icons.schedule_rounded, time);
+    if (time != null && time.isNotEmpty) add('clock', time);
     if (recipe.servings != null && recipe.servings!.isNotEmpty) {
-      add(Icons.person_outline_rounded, '${recipe.servings} servings');
+      add('user', '${recipe.servings} servings');
     }
     final third = recipe.category ?? recipe.cuisine;
     if (third != null && third.isNotEmpty) {
-      add(Icons.auto_awesome_rounded, third);
+      add('sparkF', third);
     }
     if (items.isEmpty) return const SizedBox.shrink();
     return Wrap(
@@ -451,7 +452,7 @@ class ImportCompleteScreen extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.menu_book_rounded, size: 20, color: Colors.white),
+            const OnboardingLineIcon('book', size: 20, color: Colors.white),
             const SizedBox(width: 9),
             Text('Save to cookbook',
                 style: GoogleFonts.plusJakartaSans(
@@ -481,7 +482,7 @@ class ImportCompleteScreen extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.edit_outlined, size: 18, color: AppColors.primary),
+            const OnboardingLineIcon('pencil', size: 18, color: AppColors.primary),
             const SizedBox(width: 8),
             Text('Edit before saving',
                 style: GoogleFonts.plusJakartaSans(
@@ -652,7 +653,7 @@ class _IngredientRow extends StatelessWidget {
               color: AppColors.goldBg,
               borderRadius: BorderRadius.circular(9),
             ),
-            child: const Icon(Icons.shopping_basket_rounded,
+            child: const OnboardingLineIcon('basket',
                 size: 15, color: AppColors.goldDark),
           ),
           const SizedBox(width: 12),

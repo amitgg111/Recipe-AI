@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 
@@ -104,7 +105,6 @@ class _RecipeMenuContentState extends State<_RecipeMenuContent> {
                       children: [
                         // Public recipe toggle
                         _buildToggleItem(
-                          icon: Icons.language,
                           label: 'Public recipe',
                           value: _isPublic,
                           onChanged: (v) => setState(() => _isPublic = v),
@@ -144,7 +144,6 @@ class _RecipeMenuContentState extends State<_RecipeMenuContent> {
   }
 
   Widget _buildToggleItem({
-    required IconData icon,
     required String label,
     required bool value,
     required ValueChanged<bool> onChanged,
@@ -153,7 +152,7 @@ class _RecipeMenuContentState extends State<_RecipeMenuContent> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: AppColors.textDark),
+          const OnboardingLineIcon('globe', size: 20, color: AppColors.textDark),
           const SizedBox(width: 10),
           Expanded(
             child: Text(

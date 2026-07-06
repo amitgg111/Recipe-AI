@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/Controllers/profile_controller.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
-import 'package:recipe_ai/Service/user_service.dart';
 import 'package:recipe_ai/View/Home/settings/settings_common.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -19,7 +19,6 @@ class EditProfileScreen extends StatefulWidget {
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final _profile = Get.find<ProfileController>();
   late final TextEditingController _nameController;
-  late final TextEditingController _usernameController;
   late final TextEditingController _contactController;
   late final TextEditingController _bioController;
 
@@ -30,10 +29,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.initState();
     final user = FirebaseAuth.instance.currentUser;
     _nameController = TextEditingController(text: user?.displayName ?? '');
-    _usernameController = TextEditingController();
     _contactController = TextEditingController();
     _bioController = TextEditingController();
-    UserService.ensureUsername();
     _loadUserDoc();
   }
 
@@ -47,7 +44,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           .get();
       final data = doc.data();
       if (data != null && mounted) {
-        _usernameController.text = (data['username'] as String?) ?? '';
         _contactController.text = (data['contact'] as String?) ?? '';
         _bioController.text = (data['bio'] as String?) ?? '';
         setState(() {});
@@ -58,7 +54,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void dispose() {
     _nameController.dispose();
-    _usernameController.dispose();
     _contactController.dispose();
     _bioController.dispose();
     super.dispose();
@@ -69,21 +64,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser!;
       final name = _nameController.text.trim();
-
-      // Username (unique) — validate & reserve before anything else.
-      final username = _usernameController.text.trim().toLowerCase();
-      if (username.isNotEmpty) {
-        final err = await UserService.setUsername(username);
-        if (err != null) {
-          CustomSnackbar.show(
-            title: 'Username',
-            message: err,
-            type: SnackbarType.warning,
-          );
-          setState(() => _saving = false);
-          return;
-        }
-      }
 
       // Preserve existing behaviour: update FirebaseAuth display name + reload.
       if (name.isNotEmpty && name != user.displayName) {
@@ -196,8 +176,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 width: 3,
                               ),
                             ),
-                            child: const Icon(
-                              Icons.camera_alt_rounded,
+                            child: const OnboardingLineIcon(
+                              'camera',
                               size: 15,
                               color: Colors.white,
                             ),
@@ -225,14 +205,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
             _label('NAME'),
             _field(controller: _nameController, focused: true),
-            const SizedBox(height: 13),
-
-            _label('USERNAME'),
-            _field(
-              controller: _usernameController,
-              hint: 'yourname',
-              prefixText: '@',
-            ),
             const SizedBox(height: 13),
 
             _label('EMAIL'),

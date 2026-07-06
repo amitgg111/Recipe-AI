@@ -18,6 +18,8 @@ import 'package:recipe_ai/theme/app_spacing.dart';
 import 'package:recipe_ai/theme/app_dimensions.dart';
 import 'package:recipe_ai/widgets/sliding_segmented.dart';
 import 'package:recipe_ai/widgets/app_search_bar.dart';
+import 'package:recipe_ai/screens/import/add_menu_sheet.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/widgets/empty_plate_illustration.dart';
 
@@ -33,18 +35,14 @@ class _CookbooksScreenState extends State<CookbooksScreen>
   int _selectedSegment = 0;
   int _sortIndex = 0;
   late AnimationController _fabPulseController;
-  late Animation<double> _fabPulseAnimation;
 
   @override
   void initState() {
     super.initState();
     _fabPulseController = AnimationController(
-      duration: const Duration(milliseconds: 1800),
+      duration: const Duration(milliseconds: 2400),
       vsync: this,
     )..repeat();
-    _fabPulseAnimation = Tween<double>(begin: 0.4, end: 0.0).animate(
-      CurvedAnimation(parent: _fabPulseController, curve: Curves.easeOut),
-    );
   }
 
   @override
@@ -103,7 +101,11 @@ class _CookbooksScreenState extends State<CookbooksScreen>
         children: [
           const AppLogo(size: 36),
           const SizedBox(width: 10),
-          AppWordmark(fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: -0.3),
+          const AppWordmark(
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.3,
+          ),
           const Spacer(),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
@@ -114,7 +116,11 @@ class _CookbooksScreenState extends State<CookbooksScreen>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.auto_awesome, size: 14, color: AppColors.primary),
+                const OnboardingLineIcon(
+                  'sparkF',
+                  size: 14,
+                  color: AppColors.primary,
+                ),
                 const SizedBox(width: 5),
                 Text(
                   '5/5',
@@ -142,7 +148,10 @@ class _CookbooksScreenState extends State<CookbooksScreen>
               alignment: Alignment.centerLeft,
               child: Text(
                 'Cookbooks',
-                style: AppTextStyles.screenTitle.copyWith(fontSize: 22),
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             const SizedBox(height: 26),
@@ -150,14 +159,17 @@ class _CookbooksScreenState extends State<CookbooksScreen>
             const SizedBox(height: AppSpacing.xxl),
             Text(
               "Let's get cooking!",
-              style: AppTextStyles.screenTitle.copyWith(fontSize: 27),
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 9),
             Text(
               'Your cookbook is empty for now. Save your first recipe and it\'ll have a cozy home right here.',
               textAlign: TextAlign.center,
               style: AppTextStyles.bodyMedium.copyWith(
-                fontSize: 14.5,
+                fontSize: 13,
                 color: AppColors.textBody,
                 height: 1.5,
               ),
@@ -165,7 +177,12 @@ class _CookbooksScreenState extends State<CookbooksScreen>
             const SizedBox(height: AppSpacing.xxl),
             PrimaryButton(
               label: 'Add your first recipe',
-              leadingIcon: const Icon(Icons.add, color: Colors.white, size: 20),
+              width: 230,
+              leadingIcon: const OnboardingLineIcon(
+                'plus',
+                color: Colors.white,
+                size: 24,
+              ),
               onPressed: () => _showAddMenu(context),
             ),
             const SizedBox(height: 100),
@@ -200,6 +217,7 @@ class _CookbooksScreenState extends State<CookbooksScreen>
                 GestureDetector(
                   onTap: () => _showSortSheet(context),
                   child: Container(
+                    padding: const EdgeInsets.all(10),
                     width: AppDimensions.appBarButtonSize,
                     height: AppDimensions.appBarButtonSize,
                     decoration: BoxDecoration(
@@ -207,9 +225,9 @@ class _CookbooksScreenState extends State<CookbooksScreen>
                       borderRadius: BorderRadius.circular(13),
                       border: Border.all(color: AppColors.surfaceBorderLight),
                     ),
-                    child: const Icon(
-                      Icons.tune_rounded,
-                      size: 20,
+                    child: const OnboardingLineIcon(
+                      'sort',
+                      size: 18,
                       color: Color(0xFF9A938A),
                     ),
                   ),
@@ -224,7 +242,7 @@ class _CookbooksScreenState extends State<CookbooksScreen>
               hintText: _selectedSegment == 0
                   ? 'Search cookbooks'
                   : 'Search recipes',
-              height: 46,
+              height: 50,
               borderRadius: 14,
               borderColor: const Color(0xFFEDE3D2),
               showShadow: false,
@@ -233,8 +251,8 @@ class _CookbooksScreenState extends State<CookbooksScreen>
                 fontWeight: FontWeight.w500,
                 color: const Color(0xFFA89F90),
               ),
-              prefixIcon: const Icon(
-                Icons.search_rounded,
+              prefixIcon: const OnboardingLineIcon(
+                'search',
                 size: 20,
                 color: Color(0xFFA89F90),
               ),
@@ -389,19 +407,27 @@ class _CookbooksScreenState extends State<CookbooksScreen>
       child: Stack(
         alignment: Alignment.center,
         children: [
+          // HTML `@keyframes ringpulse` (2.4s ease-out infinite): a solid
+          // FAB-coloured circle behind the button that expands scale .75→1.9
+          // and fades opacity .55→0 (gone by 70% of the cycle). It starts
+          // smaller than the FAB, so each loop restart stays hidden behind it.
           AnimatedBuilder(
-            animation: _fabPulseAnimation,
+            animation: _fabPulseController,
             builder: (context, child) {
-              return Container(
-                width: AppDimensions.fabSize + 20,
-                height: AppDimensions.fabSize + 20,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppColors.primary.withValues(
-                      alpha: _fabPulseAnimation.value,
+              final t = Curves.easeOut.transform(_fabPulseController.value);
+              final scale = 0.75 + (1.9 - 0.75) * t;
+              final opacity = t < 0.7 ? 0.55 * (1 - t / 0.7) : 0.0;
+              return Opacity(
+                opacity: opacity,
+                child: Transform.scale(
+                  scale: scale,
+                  child: Container(
+                    width: AppDimensions.fabSize,
+                    height: AppDimensions.fabSize,
+                    decoration: const BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
                     ),
-                    width: 2,
                   ),
                 ),
               );
@@ -412,6 +438,7 @@ class _CookbooksScreenState extends State<CookbooksScreen>
             child: Container(
               width: AppDimensions.fabSize,
               height: AppDimensions.fabSize,
+              padding: const EdgeInsets.all(15),
               decoration: const BoxDecoration(
                 color: AppColors.primary,
                 shape: BoxShape.circle,
@@ -424,7 +451,11 @@ class _CookbooksScreenState extends State<CookbooksScreen>
                   ),
                 ],
               ),
-              child: const Icon(Icons.add, color: Colors.white, size: 28),
+              child: const OnboardingLineIcon(
+                'plus',
+                color: Colors.white,
+                size: 28,
+              ),
             ),
           ),
         ],
@@ -434,6 +465,12 @@ class _CookbooksScreenState extends State<CookbooksScreen>
 
   // ── Sort By bottom sheet ──────────────────────────────────────────────────
   void _showSortSheet(BuildContext context) {
+    const options = [
+      ('Newest first', 'clock'),
+      ('Oldest first', 'clock'),
+      ('Name A-Z', 'A'),
+      ('Name Z-A', 'Z'),
+    ];
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -441,80 +478,49 @@ class _CookbooksScreenState extends State<CookbooksScreen>
         return StatefulBuilder(
           builder: (context, setSheetState) {
             return Container(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 30),
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 26),
               decoration: const BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Drag handle
-                  Container(
-                    width: 50,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(20),
+                  // Drag handle (HTML: 42x5, #E7E0D2). No close button.
+                  Center(
+                    child: Container(
+                      width: 42,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE7E0D2),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  // Header row
-                  Row(
-                    children: [
-                      Text('Sort by', style: AppTextStyles.screenTitle),
-                      const Spacer(),
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          width: 32,
-                          height: 32,
-                          decoration: const BoxDecoration(
-                            color: AppColors.primary,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.close,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                        ),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8, bottom: 14),
+                    child: Text(
+                      'Sort by',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF2A211B),
+                        letterSpacing: -0.4,
                       ),
-                    ],
+                    ),
                   ),
-                  const SizedBox(height: 20),
-                  _SortOption(
-                    label: 'Newest first',
-                    isSelected: _sortIndex == 0,
-                    onTap: () {
-                      setState(() => _sortIndex = 0);
-                      Navigator.pop(context);
-                    },
-                  ),
-                  _SortOption(
-                    label: 'Oldest first',
-                    isSelected: _sortIndex == 1,
-                    onTap: () {
-                      setState(() => _sortIndex = 1);
-                      Navigator.pop(context);
-                    },
-                  ),
-                  _SortOption(
-                    label: 'Name A-Z',
-                    isSelected: _sortIndex == 2,
-                    onTap: () {
-                      setState(() => _sortIndex = 2);
-                      Navigator.pop(context);
-                    },
-                  ),
-                  _SortOption(
-                    label: 'Name Z-A',
-                    isSelected: _sortIndex == 3,
-                    onTap: () {
-                      setState(() => _sortIndex = 3);
-                      Navigator.pop(context);
-                    },
-                  ),
+                  for (var i = 0; i < options.length; i++)
+                    _sortRow(
+                      leading: options[i].$2,
+                      label: options[i].$1,
+                      isSelected: _sortIndex == i,
+                      onTap: () {
+                        setState(() => _sortIndex = i);
+                        Navigator.pop(context);
+                      },
+                    ),
                 ],
               ),
             );
@@ -524,75 +530,95 @@ class _CookbooksScreenState extends State<CookbooksScreen>
     );
   }
 
+  // A single HTML-style sort row: a leading rounded icon box (a clock for the
+  // time sorts, or a letter for the name sorts) + the label, with a trailing
+  // orange check and a highlighted background on the selected row.
+  Widget _sortRow({
+    required String leading, // 'clock' or a single letter (e.g. 'A')
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    final fg = isSelected ? const Color(0xFFF2623E) : const Color(0xFF8A7E70);
+    final Widget leadingChild = leading == 'clock'
+        ? OnboardingLineIcon('clock', color: fg, size: 20)
+        : Text(
+            leading,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: fg,
+            ),
+          );
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 2),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFFFF3EF) : Colors.transparent,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? const Color(0xFFFCE3DB)
+                    : const Color(0xFFF4F1EA),
+                borderRadius: BorderRadius.circular(11),
+              ),
+              child: leadingChild,
+            ),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Text(
+                label,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 16,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                  color: const Color(0xFF2A211B),
+                ),
+              ),
+            ),
+            if (isSelected)
+              Container(
+                width: 24,
+                height: 24,
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF2623E),
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
+                ),
+                child: const OnboardingLineIcon(
+                  'check',
+                  color: Colors.white,
+                  size: 14,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ── Add Menu bottom sheet (Add Recipe / Add Cookbook) ───────────────────────
   void _showAddMenu(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) {
-        return Container(
-          padding: const EdgeInsets.fromLTRB(24, 12, 24, 30),
-          decoration: const BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Drag handle
-              Container(
-                width: 50,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              ),
-              const SizedBox(height: 20),
-              // Title
-              Text('Add to Recipe AI', style: AppTextStyles.screenTitle),
-              const SizedBox(height: 6),
-              Text(
-                'Import from anywhere',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textMedium,
-                ),
-              ),
-              const SizedBox(height: 24),
-              // Add a Recipe
-              _AddMenuOption(
-                icon: Icons.receipt_long_outlined,
-                iconBgColor: AppColors.primary.withValues(alpha: 0.12),
-                iconColor: AppColors.primary,
-                title: 'Add a Recipe',
-                subtitle: 'Import from anywhere',
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const ImportSourcePickerScreen(),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 12),
-              // Add a Cookbook
-              _AddMenuOption(
-                icon: Icons.menu_book_rounded,
-                iconBgColor: const Color(0xFFFCE3DB),
-                iconColor: AppColors.primary,
-                title: 'Add a Cookbook',
-                subtitle: 'Organize your recipes',
-                onTap: () {
-                  Navigator.pop(context);
-                  _showNewCookbookSheet(context);
-                },
-              ),
-            ],
-          ),
+    // The design-accurate "Add to Recipe AI" sheet (screen 24). Navigation is
+    // wired here; the sheet owns the layout/icons.
+    AddMenuSheet.show(
+      context,
+      onAddRecipe: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ImportSourcePickerScreen()),
         );
       },
+      onAddCookbook: () => _showNewCookbookSheet(context),
     );
   }
 
@@ -643,13 +669,14 @@ class _CookbooksScreenState extends State<CookbooksScreen>
                       child: Container(
                         width: 32,
                         height: 32,
+                        padding: const EdgeInsets.all(5),
                         decoration: const BoxDecoration(
-                          color: AppColors.primary,
+                          color: AppColors.divider,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
-                          Icons.close,
-                          color: Colors.white,
+                        child: const OnboardingLineIcon(
+                          'x',
+                          color: Colors.grey,
                           size: 18,
                         ),
                       ),
@@ -701,11 +728,16 @@ class _CookbooksScreenState extends State<CookbooksScreen>
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  '0 / 40',
-                  style: AppTextStyles.smallLabel.copyWith(
-                    color: AppColors.textHint,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      '0 / 40',
+                      style: AppTextStyles.smallLabel.copyWith(
+                        color: AppColors.textHint,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 24),
                 // Create cookbook button
@@ -737,7 +769,11 @@ class _CookbooksScreenState extends State<CookbooksScreen>
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.add, color: Colors.white, size: 20),
+                        const OnboardingLineIcon(
+                          'plus',
+                          color: Colors.white,
+                          size: 20,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           'Create cookbook',
@@ -760,126 +796,9 @@ class _CookbooksScreenState extends State<CookbooksScreen>
 // Sort option row widget
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _SortOption extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _SortOption({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        child: Row(
-          children: [
-            // Radio circle
-            Container(
-              width: 22,
-              height: 22,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isSelected
-                      ? AppColors.primary
-                      : AppColors.surfaceBorder,
-                  width: isSelected ? 6 : 2,
-                ),
-              ),
-            ),
-            const SizedBox(width: 14),
-            Text(
-              label,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 16,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: AppColors.textDark,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Add Menu option tile
 // ─────────────────────────────────────────────────────────────────────────────
-
-class _AddMenuOption extends StatelessWidget {
-  final IconData icon;
-  final Color iconBgColor;
-  final Color iconColor;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  const _AddMenuOption({
-    required this.icon,
-    required this.iconBgColor,
-    required this.iconColor,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.surfaceBorderLight),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: iconBgColor,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(icon, color: iconColor, size: 24),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: AppTextStyles.bodyLarge),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: AppTextStyles.smallLabel.copyWith(
-                      color: AppColors.textMedium,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: AppColors.textHint,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Import Source Picker Screen (full screen — matching image 26)
@@ -904,8 +823,8 @@ class ImportSourcePickerScreen extends StatelessWidget {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Icon(
-                      Icons.arrow_back_ios_new_rounded,
+                    child: const OnboardingLineIcon(
+                      'back',
                       size: 20,
                       color: AppColors.textDark,
                     ),
@@ -938,15 +857,36 @@ class ImportSourcePickerScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Import from social media',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
+                      Row(
+                        children: [
+                          Container(
+                            width: 46,
+                            height: 46,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            child: const OnboardingLineIcon(
+                              'share',
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Import from social media',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 12),
                       Text(
                         'Share to Recipe AI from Instagram, TikTok,\nFacebook and more',
                         style: GoogleFonts.plusJakartaSans(
@@ -960,17 +900,11 @@ class ImportSourcePickerScreen extends StatelessWidget {
                       // Social icons row
                       Row(
                         children: [
-                          _socialIcon(
-                            Icons.camera_alt_rounded,
-                            const Color(0xFFE1306C),
-                          ),
+                          _socialIcon('camera', const Color(0xFFC13584)),
                           const SizedBox(width: 8),
-                          _socialIcon(Icons.music_note_rounded, Colors.black),
+                          _socialIcon('music', const Color(0xFF1F1F24)),
                           const SizedBox(width: 8),
-                          _socialIcon(
-                            Icons.facebook_rounded,
-                            const Color(0xFF1877F2),
-                          ),
+                          _socialIcon('chat', const Color(0xFF2D6FE0)),
                         ],
                       ),
                     ],
@@ -984,7 +918,9 @@ class ImportSourcePickerScreen extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _ImportSourceCard(
-                      icon: Icons.photo_camera_outlined,
+                      iconName: 'camera',
+                      iconBg: const Color(0xFFE4ECFB),
+                      iconColor: const Color(0xFF2D6FE0),
                       title: 'Import from\nphoto',
                       subtitle: 'Scan a cookbook page',
                       onTap: () {
@@ -996,7 +932,9 @@ class ImportSourcePickerScreen extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: _ImportSourceCard(
-                      icon: Icons.text_fields_rounded,
+                      iconName: 'file',
+                      iconBg: const Color(0xFFFDEBD2),
+                      iconColor: const Color(0xFFD98A12),
                       title: 'Import from text',
                       subtitle: 'Enter recipe name',
                       onTap: () {
@@ -1012,7 +950,9 @@ class ImportSourcePickerScreen extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _ImportSourceCard(
-                      icon: Icons.language_rounded,
+                      iconName: 'globe',
+                      iconBg: const Color(0xFFEDE7FE),
+                      iconColor: const Color(0xFF7C3AED),
                       title: 'Import from web',
                       subtitle: 'Paste a link',
                       onTap: () {
@@ -1029,7 +969,9 @@ class ImportSourcePickerScreen extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: _ImportSourceCard(
-                      icon: Icons.edit_note_rounded,
+                      iconName: 'pencil',
+                      iconBg: const Color(0xFFDBF0E7),
+                      iconColor: const Color(0xFF1F7A5E),
                       title: 'Write from\nscratch',
                       subtitle: 'Create manually',
                       onTap: () {
@@ -1047,27 +989,32 @@ class ImportSourcePickerScreen extends StatelessWidget {
     );
   }
 
-  Widget _socialIcon(IconData icon, Color color) {
+  Widget _socialIcon(String iconName, Color color) {
     return Container(
-      width: 34,
-      height: 34,
+      width: 36,
+      height: 36,
+      alignment: Alignment.center,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
       ),
-      child: Icon(icon, size: 18, color: color),
+      child: OnboardingLineIcon(iconName, size: 20, color: color),
     );
   }
 }
 
 class _ImportSourceCard extends StatelessWidget {
-  final IconData icon;
+  final String iconName;
+  final Color iconBg;
+  final Color iconColor;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
 
   const _ImportSourceCard({
-    required this.icon,
+    required this.iconName,
+    required this.iconBg,
+    required this.iconColor,
     required this.title,
     required this.subtitle,
     required this.onTap,
@@ -1078,6 +1025,7 @@ class _ImportSourceCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        height: 175,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppColors.surface,
@@ -1088,19 +1036,20 @@ class _ImportSourceCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 44,
-              height: 44,
+              width: 46,
+              height: 46,
+              alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
+                color: iconBg,
+                borderRadius: BorderRadius.circular(15),
               ),
-              child: Icon(icon, color: AppColors.primary, size: 22),
+              child: OnboardingLineIcon(iconName, color: iconColor, size: 24),
             ),
             const SizedBox(height: 12),
             Text(
               title,
               style: GoogleFonts.plusJakartaSans(
-                fontSize: 14,
+                fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textDark,
                 height: 1.3,
@@ -1111,7 +1060,7 @@ class _ImportSourceCard extends StatelessWidget {
               subtitle,
               style: AppTextStyles.smallLabel.copyWith(
                 color: AppColors.textMedium,
-                fontSize: 11.5,
+                fontSize: 12,
               ),
             ),
           ],
@@ -1289,16 +1238,17 @@ class _RecipeCard extends StatelessWidget {
                     top: 8,
                     right: 8,
                     child: Container(
-                      width: 26,
-                      height: 26,
+                      width: 28,
+                      height: 28,
+                      padding: const EdgeInsets.all(5),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.92),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
-                        Icons.favorite_border_rounded,
-                        size: 14,
-                        color: AppColors.textMedium,
+                      child: const OnboardingLineIcon(
+                        'heartO',
+                        size: 18,
+                        color: AppColors.pinterest,
                       ),
                     ),
                   ),
@@ -1329,15 +1279,19 @@ class _RecipeCard extends StatelessWidget {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      const Icon(
-                        Icons.access_time_rounded,
+                      const OnboardingLineIcon(
+                        'clock',
                         size: 14,
                         color: AppColors.textLight,
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        recipe.totalTime ?? recipe.cookTime ?? '—',
-                        style: AppTextStyles.smallLabel.copyWith(fontSize: 12),
+                      Expanded(
+                        child: Text(
+                          recipe.totalTime ?? recipe.cookTime ?? '—',
+                          style: AppTextStyles.smallLabel.copyWith(
+                            fontSize: 12,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -1758,8 +1712,7 @@ class _PrivacyBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(isPublic ? Icons.public : Icons.lock_outline_rounded,
-              size: 11, color: fg),
+          OnboardingLineIcon(isPublic ? 'globe' : 'lock', size: 12, color: fg),
           const SizedBox(width: 4),
           Text(
             isPublic ? 'Public' : 'Private',

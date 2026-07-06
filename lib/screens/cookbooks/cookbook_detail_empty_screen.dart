@@ -10,10 +10,7 @@ import 'package:recipe_ai/widgets/primary_button.dart';
 class CookbookDetailEmptyScreen extends StatefulWidget {
   final String title;
 
-  const CookbookDetailEmptyScreen({
-    super.key,
-    this.title = 'Quick Breakfast',
-  });
+  const CookbookDetailEmptyScreen({super.key, this.title = 'Quick Breakfast'});
 
   @override
   State<CookbookDetailEmptyScreen> createState() =>
@@ -86,7 +83,9 @@ class _CookbookDetailEmptyScreenState extends State<CookbookDetailEmptyScreen>
           const AppBackButton(),
           Text(
             widget.title,
-            style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w700),
+            style: AppTextStyles.bodyLarge.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
           ),
           GestureDetector(
             onTap: () {},
@@ -217,10 +216,7 @@ class _CookbookDetailEmptyScreenState extends State<CookbookDetailEmptyScreen>
                         gradient: const LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [
-                            AppColors.primary,
-                            AppColors.primaryLight,
-                          ],
+                          colors: [AppColors.primary, AppColors.primaryLight],
                         ),
                         borderRadius: BorderRadius.circular(
                           AppDimensions.radiusIconLg,

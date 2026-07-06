@@ -7,6 +7,7 @@ import 'package:recipe_ai/Controllers/recipe_editor_controller.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_dimensions.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Design constants — matched to the HTML "Recipe detail (edit)" design
@@ -106,7 +107,7 @@ class RecipeEditorScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(13),
                   border: Border.all(color: const Color(0xFFEFEDE6)),
                 ),
-                child: const Icon(Icons.close, size: 19, color: _E.textDark),
+                child: const OnboardingLineIcon('x', size: 19, color: _E.textDark),
               ),
             ),
             Text(isEdit ? 'Edit recipe' : 'New recipe',
@@ -207,7 +208,7 @@ class _PhotoBasicsCard extends StatelessWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.photo_camera_outlined,
+                              const OnboardingLineIcon('camera',
                                   size: 15, color: _E.primary),
                               const SizedBox(width: 6),
                               Text('Change photo',
@@ -346,7 +347,7 @@ class _DragDots extends StatelessWidget {
   const _DragDots();
   @override
   Widget build(BuildContext context) {
-    return const Icon(Icons.drag_indicator_rounded, size: 18, color: _E.grip);
+    return const OnboardingLineIcon('grip', size: 18, color: _E.grip);
   }
 }
 
@@ -407,7 +408,7 @@ class _AddItemButton extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.add, size: 15, color: _E.primary),
+            const OnboardingLineIcon('plus', size: 15, color: _E.primary),
             const SizedBox(width: 6),
             Text(label, style: _f(13, FontWeight.w700, _E.primary)),
           ],
@@ -432,7 +433,7 @@ class _AddGroupButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.add, size: 16, color: _E.primary),
+            const OnboardingLineIcon('plus', size: 16, color: _E.primary),
             const SizedBox(width: 7),
             Text('Add group', style: _f(13, FontWeight.w700, _E.textDark)),
           ],
@@ -571,7 +572,7 @@ class _IngredientsEditor extends StatelessWidget {
               behavior: HitTestBehavior.opaque,
               child: const SizedBox(
                 width: 34,
-                child: Icon(Icons.delete_outline_rounded, size: 18, color: _E.trash),
+                child: OnboardingLineIcon('trash', size: 18, color: _E.trash),
               ),
             ),
           ],
@@ -741,7 +742,7 @@ class _InstructionsEditor extends StatelessWidget {
                 behavior: HitTestBehavior.opaque,
                 child: const SizedBox(
                   width: 34,
-                  child: Icon(Icons.delete_outline_rounded,
+                  child: OnboardingLineIcon('trash',
                       size: 18, color: _E.trash),
                 ),
               ),
@@ -830,7 +831,7 @@ class _DeleteButton extends StatelessWidget {
                   decoration: BoxDecoration(
                       color: const Color(0xFFFEE2E2),
                       borderRadius: BorderRadius.circular(16)),
-                  child: const Icon(Icons.delete_outline_rounded,
+                  child: const OnboardingLineIcon('trashLg',
                       color: Colors.red, size: 28),
                 ),
                 const SizedBox(height: 20),
@@ -906,7 +907,7 @@ class _DeleteButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.delete_outline_rounded, size: 19, color: _E.redText),
+            const OnboardingLineIcon('trash', size: 19, color: _E.redText),
             const SizedBox(width: 8),
             Text('Delete recipe', style: _f(15, FontWeight.w700, _E.redText)),
           ],
@@ -962,7 +963,7 @@ class _EditorBottomSheet extends StatelessWidget {
                     height: 30,
                     decoration: const BoxDecoration(
                         color: _E.primary, shape: BoxShape.circle),
-                    child: const Icon(Icons.close, color: Colors.white, size: 16),
+                    child: const OnboardingLineIcon('x', color: Colors.white, size: 16),
                   ),
                 ),
               ],

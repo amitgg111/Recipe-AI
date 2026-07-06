@@ -6,6 +6,7 @@ import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/Controllers/onboarding_controller.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/widgets/progress_indicator_dots.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:recipe_ai/screens/onboarding/notifications_screen.dart';
 
 class WhenToCookScreen extends StatefulWidget {
@@ -138,8 +139,8 @@ class _WhenToCookScreenState extends State<WhenToCookScreen> {
                                 ),
                                 child: isSelected
                                     ? const Center(
-                                        child: Icon(
-                                          Icons.check,
+                                        child: OnboardingLineIcon(
+                                          'check',
                                           color: Colors.white,
                                           size: 16,
                                         ),
@@ -226,7 +227,7 @@ class _WhenToCookBodyState extends State<WhenToCookBody> {
                   'When do you usually think about what to cook?',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 18,
+                    fontSize: 24,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textDark,
                     height: 1.2,
@@ -290,8 +291,8 @@ class _WhenToCookBodyState extends State<WhenToCookBody> {
                             ),
                             child: isSelected
                                 ? const Center(
-                                    child: Icon(
-                                      Icons.check,
+                                    child: OnboardingLineIcon(
+                                      'check',
                                       color: Colors.white,
                                       size: 16,
                                     ),

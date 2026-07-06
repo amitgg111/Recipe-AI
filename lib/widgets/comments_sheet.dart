@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_ai/Service/recipe_social_service.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Comments bottom sheet — matched to the HTML "Comments (sheet)" design.
@@ -156,7 +157,7 @@ class _CommentsSheetState extends State<CommentsSheet> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.mode_comment_outlined,
+                          OnboardingLineIcon('comment',
                               size: 40,
                               color: _C.textHint.withValues(alpha: 0.5)),
                           const SizedBox(height: 12),
@@ -288,7 +289,7 @@ class _CommentsSheetState extends State<CommentsSheet> {
                               child: CircularProgressIndicator(
                                   color: Colors.white, strokeWidth: 2),
                             )
-                          : const Icon(Icons.send_rounded,
+                          : const OnboardingLineIcon('send',
                               size: 18, color: Colors.white),
                     ),
                   ),

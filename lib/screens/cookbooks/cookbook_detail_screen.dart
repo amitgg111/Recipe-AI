@@ -65,9 +65,7 @@ class CookbookDetailScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: AppSpacing.lg),
                     const Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppSpacing.xl,
-                      ),
+                      padding: EdgeInsets.symmetric(horizontal: AppSpacing.xl),
                       child: AppSearchBar(hintText: 'Search recipes'),
                     ),
                     const SizedBox(height: AppSpacing.lg),
@@ -94,7 +92,9 @@ class CookbookDetailScreen extends StatelessWidget {
           const AppBackButton(),
           Text(
             title,
-            style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w700),
+            style: AppTextStyles.bodyLarge.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
           ),
           _buildMenuButton(context),
         ],
@@ -106,8 +106,9 @@ class CookbookDetailScreen extends StatelessWidget {
     return GestureDetector(
       onTap: () {},
       child: Container(
-        width: AppDimensions.appBarButtonSize,
-        height: AppDimensions.appBarButtonSize,
+        width: AppDimensions.appBarButtonSize - 10,
+        height: AppDimensions.appBarButtonSize - 10,
+        padding: EdgeInsets.all(6),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppDimensions.radiusMd),

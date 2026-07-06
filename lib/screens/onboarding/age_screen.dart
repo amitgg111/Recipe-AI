@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/Controllers/onboarding_controller.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:recipe_ai/screens/onboarding/setting_up_screen.dart';
 
 class AgeScreen extends StatefulWidget {
@@ -143,8 +144,8 @@ class _AgeScreenState extends State<AgeScreen> {
                               ),
                             ),
                             child: isSelected
-                                ? const Icon(
-                                    Icons.check,
+                                ? const OnboardingLineIcon(
+                                    'check',
                                     color: Colors.white,
                                     size: 14,
                                   )
@@ -285,8 +286,8 @@ class _AgeBodyState extends State<AgeBody> {
                           ),
                         ),
                         child: isSelected
-                            ? const Icon(
-                                Icons.check,
+                            ? const OnboardingLineIcon(
+                                'check',
                                 color: Colors.white,
                                 size: 14,
                               )

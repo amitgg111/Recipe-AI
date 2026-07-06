@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/Controllers/discover_controller.dart';
@@ -98,7 +99,7 @@ class CreatorProfileScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(13),
                 border: Border.all(color: const Color(0xFFEFEDE6)),
               ),
-              child: const Icon(Icons.arrow_back_rounded,
+              child: const OnboardingLineIcon('back',
                   size: 20, color: AppColors.textDark),
             ),
           ),
@@ -258,7 +259,7 @@ class CreatorProfileScreen extends StatelessWidget {
                       const SizedBox(height: 3),
                       Row(
                         children: [
-                          const Icon(Icons.favorite_rounded,
+                          const OnboardingLineIcon('heart',
                               size: 13, color: AppColors.textHint),
                           const SizedBox(width: 5),
                           Text('${r.likesCount}',
@@ -277,7 +278,7 @@ class CreatorProfileScreen extends StatelessWidget {
                     color: AppColors.greenBgLight,
                     borderRadius: BorderRadius.circular(9),
                   ),
-                  child: const Icon(Icons.public_rounded,
+                  child: const OnboardingLineIcon('globe',
                       size: 16, color: AppColors.green),
                 ),
               ],

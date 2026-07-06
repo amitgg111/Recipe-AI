@@ -1,9 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_spacing.dart';
 import 'package:recipe_ai/theme/app_dimensions.dart';
 import 'package:recipe_ai/widgets/app_back_button.dart';
+
+// Design glyph (viewBox 0 0 24 24) in the given hex colour. `camera`'s
+// viewfinder dot is a filled circle, so its fill tracks the icon colour.
+Widget _glyph(String key, {required double size, required String color}) {
+  final inner = {
+    'share': '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/>'
+        '<circle cx="18" cy="19" r="3"/>'
+        '<path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>',
+    'camera': '<rect x="3" y="7" width="18" height="13" rx="4"/>'
+        '<circle cx="12" cy="13.5" r="3.4"/>'
+        '<circle cx="17" cy="10.5" r="1" fill="$color" stroke="none"/>',
+    'music': '<circle cx="7" cy="18" r="2.6"/><circle cx="17" cy="16" r="2.6"/>'
+        '<path d="M9.6 18V5l9.4-2v13"/>',
+    'chat': '<path d="M4 6a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-4 4z"/>',
+  }[key]!;
+  final svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" '
+      'fill="none" stroke="$color" stroke-width="1.9" '
+      'stroke-linecap="round" stroke-linejoin="round">$inner</svg>';
+  return SvgPicture.string(svg, width: size, height: size);
+}
 
 class ImportPickerScreen extends StatelessWidget {
   const ImportPickerScreen({super.key});
@@ -132,61 +153,51 @@ class ImportPickerScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Share icon
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: Icon(
-              Icons.share_rounded,
-              color: Colors.white.withValues(alpha: 0.9),
-              size: 22,
-            ),
+          // Header: share icon + title (row).
+          Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: _glyph('share', size: 22, color: '#FFFFFF'),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Import from social media',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: AppSpacing.lg),
-          const Text(
-            'Import from social media',
-            style: TextStyle(
-              fontSize: 19,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              letterSpacing: -0.38,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
+          const SizedBox(height: 12),
           Text(
-            'Grab recipes from Instagram, TikTok, or Facebook in one tap.',
+            'Share to Recipe AI from Instagram, TikTok, Facebook and more.',
             style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: Colors.white.withValues(alpha: 0.85),
+              fontSize: 13.5,
+              fontWeight: FontWeight.w400,
+              color: Colors.white.withValues(alpha: 0.92),
               height: 1.45,
             ),
           ),
-          const SizedBox(height: AppSpacing.lg),
-          // Social icon buttons
-          Row(
+          const SizedBox(height: 16),
+          // Social icon tiles (white .92 background, brand-coloured glyph).
+          const Row(
             children: [
-              _SocialIconButton(
-                icon: Icons.camera_alt_rounded,
-                color: AppColors.instagram,
-                onTap: () {},
-              ),
-              const SizedBox(width: AppSpacing.md),
-              _SocialIconButton(
-                icon: Icons.music_note_rounded,
-                color: AppColors.tiktok,
-                onTap: () {},
-              ),
-              const SizedBox(width: AppSpacing.md),
-              _SocialIconButton(
-                icon: Icons.facebook_rounded,
-                color: AppColors.facebook,
-                onTap: () {},
-              ),
+              _SocialIconButton(glyph: 'camera', colorHex: '#C13584'),
+              SizedBox(width: 8),
+              _SocialIconButton(glyph: 'music', colorHex: '#1F1F24'),
+              SizedBox(width: 8),
+              _SocialIconButton(glyph: 'chat', colorHex: '#2D6FE0'),
             ],
           ),
         ],
@@ -196,29 +207,22 @@ class ImportPickerScreen extends StatelessWidget {
 }
 
 class _SocialIconButton extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final VoidCallback? onTap;
+  final String glyph;
+  final String colorHex;
 
-  const _SocialIconButton({
-    required this.icon,
-    required this.color,
-    this.onTap,
-  });
+  const _SocialIconButton({required this.glyph, required this.colorHex});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-        ),
-        child: Icon(icon, color: color, size: 18),
+    return Container(
+      width: 36,
+      height: 36,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(12),
       ),
+      child: _glyph(glyph, size: 20, color: colorHex),
     );
   }
 }

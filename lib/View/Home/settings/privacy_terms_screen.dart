@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:recipe_ai/View/Home/settings/settings_common.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class PrivacyTermsScreen extends StatelessWidget {
@@ -44,7 +45,7 @@ class PrivacyTermsScreen extends StatelessWidget {
                       color: AppColors.greenBgLight,
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Icon(Icons.shield_outlined,
+                    child: const OnboardingLineIcon('shield',
                         size: 26, color: AppColors.green),
                   ),
                   const SizedBox(height: 12),
@@ -65,17 +66,20 @@ class PrivacyTermsScreen extends StatelessWidget {
             SettingsUi.card(
               rows: [
                 SettingsUi.row(
-                  icon: Icons.shield_outlined,
+                  leadingIcon: const OnboardingLineIcon('shield',
+                      size: 21, color: SettingsUi.rowIcon),
                   label: 'Privacy policy',
                   onTap: () => _open('https://example.com/privacy'),
                 ),
                 SettingsUi.row(
-                  icon: Icons.description_outlined,
+                  leadingIcon: const OnboardingLineIcon('file',
+                      size: 21, color: SettingsUi.rowIcon),
                   label: 'Terms of service',
                   onTap: () => _open('https://example.com/terms'),
                 ),
                 SettingsUi.row(
-                  icon: Icons.auto_awesome_rounded,
+                  leadingIcon: const OnboardingLineIcon('sparkF2',
+                      size: 21, color: SettingsUi.rowIcon),
                   label: 'Refund policy',
                   onTap: () => _open('https://example.com/refunds'),
                 ),

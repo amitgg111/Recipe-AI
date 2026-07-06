@@ -33,7 +33,9 @@ class CookModeFinishScreen extends StatefulWidget {
 class _CookModeFinishScreenState extends State<CookModeFinishScreen>
     with TickerProviderStateMixin {
   late List<AnimationController> _confettiControllers;
-  late List<Animation<double>> _confettiAnimations;
+  // Fixed float phase (0..1) per piece so their bobbing is staggered but each
+  // loops seamlessly (sin returns to 0 at the wrap).
+  static const List<double> _confettiPhase = [0.0, 0.25, 0.5, 0.75];
   int _selectedRating = 4;
 
   final List<_ConfettiPiece> _confettiPieces = [
@@ -78,22 +80,12 @@ class _CookModeFinishScreenState extends State<CookModeFinishScreen>
   @override
   void initState() {
     super.initState();
+    // One long-lived controller per piece, each running continuously (linear)
+    // so its full 0..1 cycle drives a seamless sin float that connects the last
+    // frame to the first with no restart or jump.
     _confettiControllers = _confettiPieces.map((piece) {
       return AnimationController(vsync: this, duration: piece.duration)
-        ..repeat(reverse: true);
-    }).toList();
-
-    _confettiAnimations = _confettiControllers.asMap().entries.map((entry) {
-      final index = entry.key;
-      final controller = entry.value;
-      // Stagger the start
-      Future.delayed(Duration(milliseconds: index * 300), () {
-        if (mounted) controller.forward();
-      });
-      return Tween<double>(
-        begin: 0,
-        end: 12,
-      ).animate(CurvedAnimation(parent: controller, curve: Curves.easeInOut));
+        ..repeat();
     }).toList();
   }
 
@@ -157,9 +149,16 @@ class _CookModeFinishScreenState extends State<CookModeFinishScreen>
       final piece = entry.value;
 
       return AnimatedBuilder(
-        animation: _confettiAnimations[index],
+        animation: _confettiControllers[index],
         builder: (context, child) {
-          final floatOffset = _confettiAnimations[index].value;
+          // Seamless vertical bob: value(0) == value(1) == 0, no restart snap.
+          final phase = _confettiPhase[index % _confettiPhase.length];
+          final floatOffset = 6 *
+              math.sin(
+                2 *
+                    math.pi *
+                    ((_confettiControllers[index].value + phase) % 1.0),
+              );
           return Positioned(
             left: piece.left * width,
             top: (piece.top * height) + floatOffset,

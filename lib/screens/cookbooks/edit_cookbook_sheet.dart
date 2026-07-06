@@ -72,10 +72,7 @@ class _EditCookbookSheetState extends State<EditCookbookSheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Rename cookbook',
-                  style: AppTextStyles.listTitle,
-                ),
+                Text('Rename cookbook', style: AppTextStyles.listTitle),
                 // Close button
                 GestureDetector(
                   onTap: () => Navigator.of(context).pop(),
@@ -102,10 +99,7 @@ class _EditCookbookSheetState extends State<EditCookbookSheet> {
               decoration: BoxDecoration(
                 color: AppColors.surfaceLight,
                 borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-                border: Border.all(
-                  color: AppColors.primary,
-                  width: 1.5,
-                ),
+                border: Border.all(color: AppColors.primary, width: 1.5),
                 boxShadow: [
                   BoxShadow(
                     color: AppColors.primary.withValues(alpha: 0.12),
@@ -185,8 +179,7 @@ class _EditCookbookSheetState extends State<EditCookbookSheet> {
                     },
             ),
             SizedBox(
-              height: AppSpacing.xxl +
-                  MediaQuery.of(context).padding.bottom,
+              height: AppSpacing.xxl + MediaQuery.of(context).padding.bottom,
             ),
           ],
         ),

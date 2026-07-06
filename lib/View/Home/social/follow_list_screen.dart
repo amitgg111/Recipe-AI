@@ -7,6 +7,7 @@ import 'package:recipe_ai/Service/user_service.dart';
 import 'package:recipe_ai/View/Home/social/creator_profile_screen.dart';
 import 'package:recipe_ai/View/Home/social/social_widgets.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:recipe_ai/widgets/sliding_segmented.dart';
 
 /// Followers / Following list for [userId], with a segmented toggle.
@@ -84,7 +85,7 @@ class _FollowListScreenState extends State<FollowListScreen> {
                 borderRadius: BorderRadius.circular(13),
                 border: Border.all(color: const Color(0xFFEFEDE6)),
               ),
-              child: const Icon(Icons.arrow_back_rounded,
+              child: const OnboardingLineIcon('back',
                   size: 20, color: AppColors.textDark),
             ),
           ),

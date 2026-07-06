@@ -6,6 +6,7 @@ import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/widgets/progress_indicator_dots.dart';
 import 'package:recipe_ai/screens/onboarding/goals_screen.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 
 class SocialProofScreen extends StatefulWidget {
   static const String routeName = '/onboarding/social-proof';
@@ -123,8 +124,8 @@ class _SocialProofScreenState extends State<SocialProofScreen> {
                                   padding: EdgeInsets.only(
                                     right: index < 4 ? 4 : 0,
                                   ),
-                                  child: const Icon(
-                                    Icons.star,
+                                  child: const OnboardingLineIcon(
+                                    'starF',
                                     color: AppColors.primary,
                                     size: 18,
                                   ),
@@ -299,8 +300,8 @@ class SocialProofBody extends StatelessWidget {
                               padding: EdgeInsets.only(
                                 right: index < 4 ? 4 : 0,
                               ),
-                              child: const Icon(
-                                Icons.star,
+                              child: const OnboardingLineIcon(
+                                'starF',
                                 color: AppColors.primary,
                                 size: 18,
                               ),

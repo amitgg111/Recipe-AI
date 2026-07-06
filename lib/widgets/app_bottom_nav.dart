@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../theme/app_dimensions.dart';
+import 'onboarding_line_icon.dart';
 
 class AppBottomNav extends StatelessWidget {
   final int currentIndex;
@@ -14,12 +15,13 @@ class AppBottomNav extends StatelessWidget {
     required this.onTap,
   });
 
+  // Exact HTML `navTab` icon set: book / compass / cal / cart / dots.
   static const _items = [
-    _NavItem(icon: Icons.menu_book_rounded, label: 'Cookbooks'),
-    _NavItem(icon: Icons.explore_outlined, label: 'Discover'),
-    _NavItem(icon: Icons.calendar_today_rounded, label: 'Meal Plan'),
-    _NavItem(icon: Icons.shopping_cart_outlined, label: 'Groceries'),
-    _NavItem(icon: Icons.more_horiz_rounded, label: 'More'),
+    _NavItem(icon: 'book', label: 'Cookbooks'),
+    _NavItem(icon: 'compass', label: 'Discover'),
+    _NavItem(icon: 'cal', label: 'Meal Plan'),
+    _NavItem(icon: 'cart', label: 'Groceries'),
+    _NavItem(icon: 'dots', label: 'More'),
   ];
 
   @override
@@ -59,14 +61,14 @@ class AppBottomNav extends StatelessWidget {
 }
 
 class _NavItem {
-  final IconData icon;
+  final String icon;
   final String label;
 
   const _NavItem({required this.icon, required this.label});
 }
 
 class _NavTab extends StatelessWidget {
-  final IconData icon;
+  final String icon;
   final String label;
   final bool isActive;
   final VoidCallback onTap;
@@ -86,15 +88,17 @@ class _NavTab extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // 50×30 icon pill (pink bg only when active), matching the HTML.
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            width: 50,
+            height: 30,
+            alignment: Alignment.center,
             decoration: BoxDecoration(
               color: isActive ? const Color(0xFFFCE3DB) : Colors.transparent,
-              borderRadius: BorderRadius.circular(AppDimensions.radiusRound),
+              borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(
+            child: OnboardingLineIcon(
               icon,
-              size: AppDimensions.iconMd,
               color: isActive ? AppColors.primary : AppColors.tabInactive,
             ),
           ),

@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/widgets/progress_indicator_dots.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:recipe_ai/screens/onboarding/when_to_cook_screen.dart';
 
 class GoalsHappenScreen extends StatefulWidget {
@@ -129,8 +130,8 @@ class _GoalsHappenScreenState extends State<GoalsHappenScreen> {
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(
-                                        Icons.auto_awesome,
+                                      const OnboardingLineIcon(
+                                        'spark',
                                         size: 12,
                                         color: AppColors.green,
                                       ),
@@ -225,8 +226,8 @@ class _GoalsHappenScreenState extends State<GoalsHappenScreen> {
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: const Center(
-                                      child: Icon(
-                                        Icons.restaurant,
+                                      child: OnboardingLineIcon(
+                                        'bowl',
                                         color: Colors.white,
                                         size: 20,
                                       ),
@@ -275,8 +276,8 @@ class _GoalsHappenScreenState extends State<GoalsHappenScreen> {
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: const Center(
-                                      child: Icon(
-                                        Icons.account_balance_wallet,
+                                      child: OnboardingLineIcon(
+                                        'wallet',
                                         color: Colors.white,
                                         size: 20,
                                       ),
@@ -378,7 +379,7 @@ class _GoalsHappenBodyState extends State<GoalsHappenBody>
             "Let's make your\ngoals happen!",
             textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 21,
+              fontSize: 28,
               fontWeight: FontWeight.w800,
               color: AppColors.textDark,
               height: 1.15,
@@ -448,8 +449,8 @@ class _GoalsHappenBodyState extends State<GoalsHappenBody>
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(
-                                    Icons.auto_awesome,
+                                  const OnboardingLineIcon(
+                                    'spark',
                                     size: 12,
                                     color: AppColors.green,
                                   ),
@@ -547,8 +548,8 @@ class _GoalsHappenBodyState extends State<GoalsHappenBody>
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: const Center(
-                                  child: Icon(
-                                    Icons.restaurant,
+                                  child: OnboardingLineIcon(
+                                    'bowl',
                                     color: Colors.white,
                                     size: 20,
                                   ),
@@ -597,8 +598,8 @@ class _GoalsHappenBodyState extends State<GoalsHappenBody>
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: const Center(
-                                  child: Icon(
-                                    Icons.account_balance_wallet,
+                                  child: OnboardingLineIcon(
+                                    'wallet',
                                     color: Colors.white,
                                     size: 20,
                                   ),

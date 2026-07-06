@@ -21,10 +21,13 @@ class AwesomeImportScreen extends StatefulWidget {
 
 class _AwesomeImportScreenState extends State<AwesomeImportScreen>
     with TickerProviderStateMixin {
-  // Ring pulse animation: scale 1 -> 1.5, opacity 0.6 -> 0
+  // Ring pulse: a single continuously-repeating controller drives several
+  // phase-staggered expanding rings so the pulse reads as a seamless loop
+  // (a ring that has fully expanded/faded is replaced by a fresh one).
   late final AnimationController _ringPulseController;
-  late final Animation<double> _ringScaleAnimation;
-  late final Animation<double> _ringOpacityAnimation;
+
+  // Phase offsets so the expanding rings overlap and never all reset at once.
+  static const List<double> _ringPhases = [0.0, 0.5];
 
   // Individual float controllers for each orbiting icon
   late final List<AnimationController> _floatControllers;
@@ -34,21 +37,23 @@ class _AwesomeImportScreenState extends State<AwesomeImportScreen>
   static const List<int> _floatDurations = [4000, 4500, 5000, 4700, 4300];
   static const List<int> _floatDelays = [0, 300, 600, 900, 1100];
 
+  // Seamless expanding-ring parameters derived from the linear controller.
+  // scale grows 1 -> 1.5, opacity fades 0.6 -> 0 across one cycle; staggered
+  // phases keep the overall pulse continuous with no visible restart.
+  double _ringScaleAt(double p) =>
+      1.0 + 0.5 * ((_ringPulseController.value + p) % 1.0);
+  double _ringOpacityAt(double p) =>
+      0.6 * (1.0 - ((_ringPulseController.value + p) % 1.0));
+
   @override
   void initState() {
     super.initState();
 
-    // Ring pulse: scale 1->1.5, opacity 0.6->0, 2.4s repeating
+    // Ring pulse: linear, constant motion, started once and never reset.
     _ringPulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2400),
     )..repeat();
-    _ringScaleAnimation = Tween<double>(begin: 1.0, end: 1.5).animate(
-      CurvedAnimation(parent: _ringPulseController, curve: Curves.easeOut),
-    );
-    _ringOpacityAnimation = Tween<double>(begin: 0.6, end: 0.0).animate(
-      CurvedAnimation(parent: _ringPulseController, curve: Curves.easeOut),
-    );
 
     // Individual float animations per icon
     _floatControllers = [];
@@ -147,7 +152,7 @@ class _AwesomeImportScreenState extends State<AwesomeImportScreen>
                     letterSpacing: -0.54,
                   ),
                   children: [
-                    const TextSpan(text: 'Import from ',),
+                    const TextSpan(text: 'Import from '),
                     TextSpan(
                       text: '95%',
                       style: GoogleFonts.plusJakartaSans(
@@ -206,8 +211,8 @@ class _AwesomeImportScreenState extends State<AwesomeImportScreen>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      Icons.check_circle,
+                    const OnboardingLineIcon(
+                      'checkCircle',
                       size: 14,
                       color: AppColors.primary,
                     ),
@@ -254,21 +259,22 @@ class _AwesomeImportScreenState extends State<AwesomeImportScreen>
               size: const Size(236, 236),
               painter: _DashedLinesPainter(),
             ),
-            // Pulsing ring behind center icon
-            Transform.scale(
-              scale: _ringScaleAnimation.value,
-              child: Opacity(
-                opacity: _ringOpacityAnimation.value,
-                child: Container(
-                  width: 74,
-                  height: 74,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(24),
+            // Pulsing rings behind center icon (phase-staggered = seamless loop)
+            for (final p in _ringPhases)
+              Transform.scale(
+                scale: _ringScaleAt(p),
+                child: Opacity(
+                  opacity: _ringOpacityAt(p),
+                  child: Container(
+                    width: 74,
+                    height: 74,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(24),
+                    ),
                   ),
                 ),
               ),
-            ),
             // Centre tile — the app logo (static), matched to the HTML logoMark.
             const _OrbitCenterLogo(),
             // Floating platform icons
@@ -384,10 +390,11 @@ class AwesomeImportBody extends StatefulWidget {
 
 class _AwesomeImportBodyState extends State<AwesomeImportBody>
     with TickerProviderStateMixin {
-  // Ring pulse animation: scale 1 -> 1.5, opacity 0.6 -> 0
+  // Ring pulse: a single continuously-repeating controller drives several
+  // phase-staggered expanding rings so the pulse reads as a seamless loop.
   late final AnimationController _ringPulseController;
-  late final Animation<double> _ringScaleAnimation;
-  late final Animation<double> _ringOpacityAnimation;
+
+  static const List<double> _ringPhases = [0.0];
 
   // Individual float controllers for each orbiting icon
   late final List<AnimationController> _floatControllers;
@@ -395,6 +402,12 @@ class _AwesomeImportBodyState extends State<AwesomeImportBody>
 
   static const List<int> _floatDurations = [4000, 4500, 5000, 4700, 4300];
   static const List<int> _floatDelays = [0, 300, 600, 900, 1100];
+
+  // Seamless expanding-ring parameters derived from the linear controller.
+  double _ringScaleAt(double p) =>
+      1.0 + 0.5 * ((_ringPulseController.value + p) % 1.0);
+  double _ringOpacityAt(double p) =>
+      0.6 * (1.0 - ((_ringPulseController.value + p) % 1.0));
 
   @override
   void initState() {
@@ -404,12 +417,6 @@ class _AwesomeImportBodyState extends State<AwesomeImportBody>
       vsync: this,
       duration: const Duration(milliseconds: 2400),
     )..repeat();
-    _ringScaleAnimation = Tween<double>(begin: 1.0, end: 1.5).animate(
-      CurvedAnimation(parent: _ringPulseController, curve: Curves.easeOut),
-    );
-    _ringOpacityAnimation = Tween<double>(begin: 0.6, end: 0.0).animate(
-      CurvedAnimation(parent: _ringPulseController, curve: Curves.easeOut),
-    );
 
     _floatControllers = [];
     _floatAnimations = [];
@@ -554,8 +561,8 @@ class _AwesomeImportBodyState extends State<AwesomeImportBody>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
-                  Icons.check_circle,
+                const OnboardingLineIcon(
+                  'checkCircle',
                   size: 14,
                   color: AppColors.primary,
                 ),
@@ -593,21 +600,22 @@ class _AwesomeImportBodyState extends State<AwesomeImportBody>
               size: const Size(236, 236),
               painter: _DashedLinesPainter(),
             ),
-            // Pulsing ring behind the centre (static).
-            Transform.scale(
-              scale: _ringScaleAnimation.value,
-              child: Opacity(
-                opacity: _ringOpacityAnimation.value,
-                child: Container(
-                  width: 74,
-                  height: 74,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(24),
+            // Pulsing rings behind the centre (phase-staggered = seamless loop).
+            for (final p in _ringPhases)
+              Transform.scale(
+                scale: _ringScaleAt(p),
+                child: Opacity(
+                  opacity: _ringOpacityAt(p),
+                  child: Container(
+                    width: 74,
+                    height: 74,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(24),
+                    ),
                   ),
                 ),
               ),
-            ),
             // Centre tile — the app logo (static), matched to the HTML logoMark.
             const _OrbitCenterLogo(),
             // Platform icons float gently in place (matches the HTML).

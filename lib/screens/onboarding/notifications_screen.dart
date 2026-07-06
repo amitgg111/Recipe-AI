@@ -7,6 +7,7 @@ import 'package:recipe_ai/Service/notification_service.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/widgets/progress_indicator_dots.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:recipe_ai/screens/onboarding/how_did_you_hear_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -163,8 +164,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                       borderRadius: BorderRadius.circular(18),
                                     ),
                                     child: const Center(
-                                      child: Icon(
-                                        Icons.notifications_none_rounded,
+                                      child: OnboardingLineIcon(
+                                        'bell',
                                         color: AppColors.primary,
                                         size: 30,
                                       ),
@@ -354,7 +355,7 @@ class _NotificationsBodyState extends State<NotificationsBody> {
             'Get the right recipe at the right time',
             textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 20,
+              fontSize: 24,
               fontWeight: FontWeight.w800,
               color: AppColors.textDark,
               height: 1.18,
@@ -418,8 +419,8 @@ class _NotificationsBodyState extends State<NotificationsBody> {
                                   borderRadius: BorderRadius.circular(18),
                                 ),
                                 child: const Center(
-                                  child: Icon(
-                                    Icons.notifications_none_rounded,
+                                  child: OnboardingLineIcon(
+                                    'bell',
                                     color: AppColors.primary,
                                     size: 30,
                                   ),

@@ -9,6 +9,7 @@ import 'package:recipe_ai/utils/auth_error_mapper.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/screens/auth/login_screen.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -140,8 +141,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             height: 44,
                             child: Align(
                               alignment: Alignment.centerLeft,
-                              child: Icon(
-                                Icons.arrow_back_ios_new_rounded,
+                              child: OnboardingLineIcon(
+                                'back',
                                 size: 20,
                                 color: Color(0xFF2A211B),
                               ),
@@ -156,12 +157,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     Container(
                       width: 60,
                       height: 60,
+                      padding: const EdgeInsets.all(15),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFCE3DB),
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: const Icon(
-                        Icons.lock_outline_rounded,
+                      child: const OnboardingLineIcon(
+                        'lock',
                         size: 28,
                         color: Color(0xFFF2623E),
                       ),
@@ -242,8 +244,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           hintStyle: AppTextStyles.inputHint,
                           prefixIcon: const Padding(
                             padding: EdgeInsets.only(left: 14, right: 10),
-                            child: Icon(
-                              Icons.mail_outline_rounded,
+                            child: OnboardingLineIcon(
+                              'mail',
                               size: 20,
                               color: Color(0xFFF2623E),
                             ),
@@ -322,8 +324,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             : Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(
-                                    Icons.mail_outline_rounded,
+                                  const OnboardingLineIcon(
+                                    'mail',
                                     size: 18,
                                     color: Colors.white,
                                   ),

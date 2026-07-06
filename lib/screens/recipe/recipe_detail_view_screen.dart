@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
@@ -202,7 +203,8 @@ class _RecipeDetailViewScreenState extends State<RecipeDetailViewScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.language, size: 13, color: AppColors.green),
+                  const OnboardingLineIcon('globe',
+                      size: 13, color: AppColors.green),
                   const SizedBox(width: 5),
                   Text(
                     'Public',

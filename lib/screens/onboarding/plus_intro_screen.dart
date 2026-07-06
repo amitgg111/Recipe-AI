@@ -6,6 +6,7 @@ import 'package:recipe_ai/widgets/app_logo.dart';
 import 'package:recipe_ai/widgets/crown_icon.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:recipe_ai/screens/onboarding/plus_comparison_screen.dart';
 
 class PlusIntroScreen extends StatefulWidget {
@@ -156,8 +157,8 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
                           ).withValues(alpha: 0.07),
                           borderRadius: BorderRadius.circular(18),
                         ),
-                        child: const Icon(
-                          Icons.close,
+                        child: const OnboardingLineIcon(
+                          'x',
                           size: 18,
                           color: AppColors.textMedium,
                         ),
@@ -319,26 +320,26 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
                                       _pulseRing(0.5),
                                       // Main icon: 80x80, gradient 160deg
                                       Container(
-                                        width: 80,
-                                        height: 80,
+                                        width: 40,
+                                        height: 40,
+                                        padding: const EdgeInsets.all(8),
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFF8B5CF6),
                                           borderRadius: BorderRadius.circular(
-                                            26,
+                                            12,
                                           ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: const Color(
-                                                0xFF8B5CF6,
-                                              ).withValues(alpha: 0.7),
-                                              blurRadius: 32,
-                                              offset: const Offset(0, 18),
-                                              spreadRadius: -12,
-                                            ),
-                                          ],
+                                          gradient: const LinearGradient(
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                            colors: [
+                                              Color(0xFF8B5CF6),
+                                              Color(0xFF6D3BD4),
+                                            ],
+                                          ),
                                         ),
-                                        child: const Center(
-                                          child: CrownIcon(size: 38),
+                                        child: const OnboardingLineIcon(
+                                          'crown',
+                                          size: 20,
+                                          color: Colors.white,
                                         ),
                                       ),
                                       // "7 DAYS FREE" badge (pops in)
@@ -364,7 +365,7 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
                           left: 0,
                           top: 8,
                           label: 'Unlimited Recipe imports',
-                          icon: Icons.auto_awesome,
+                          iconName: 'spark',
                           color: AppColors.purple,
                         ),
                         _tag(
@@ -372,7 +373,7 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
                           right: 0,
                           top: 48,
                           label: 'Nutrition calculator',
-                          icon: Icons.check_circle,
+                          iconName: 'checkCircle',
                           color: AppColors.green,
                         ),
                         _tag(
@@ -380,7 +381,7 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
                           left: 0,
                           bottom: 56,
                           label: 'AI cooking assistant',
-                          icon: Icons.auto_awesome,
+                          iconName: 'spark',
                           color: AppColors.primary,
                         ),
                         _tag(
@@ -388,7 +389,7 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
                           right: 0,
                           bottom: 22,
                           label: 'Convert measurements',
-                          icon: Icons.language,
+                          iconName: 'globe',
                           color: AppColors.blue,
                         ),
                         // Sparkles (fade in + float)
@@ -496,12 +497,12 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
     double? top,
     double? bottom,
     required String label,
-    required IconData icon,
+    required String iconName,
     required Color color,
   }) {
     final tagWidget = Transform.rotate(
       angle: _tagRot[i] * math.pi / 180,
-      child: _buildFeatureTag(label, icon, color),
+      child: _buildFeatureTag(label, iconName, color),
     );
     return Positioned(
       left: left,
@@ -552,12 +553,12 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
             ),
           );
         },
-        child: Icon(Icons.auto_awesome, color: color, size: 14),
+        child: OnboardingLineIcon('spark', color: color, size: 14),
       ),
     );
   }
 
-  Widget _buildFeatureTag(String text, IconData icon, Color iconColor) {
+  Widget _buildFeatureTag(String text, String iconName, Color iconColor) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -576,7 +577,7 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: iconColor),
+          OnboardingLineIcon(iconName, size: 12, color: iconColor),
           const SizedBox(width: 6),
           Text(
             text,
@@ -591,4 +592,3 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
     );
   }
 }
-

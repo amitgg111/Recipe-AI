@@ -21,7 +21,7 @@ class AppDimensions {
   static const double inputHeightLg = 54;
   static const double bottomNavHeight = 88;
   static const double appBarButtonSize = 42;
-  static const double fabSize = 60;
+  static const double fabSize = 55;
 
   // Icon sizes
   static const double iconSm = 20;

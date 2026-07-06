@@ -6,6 +6,7 @@ import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_spacing.dart';
 import 'package:recipe_ai/theme/app_dimensions.dart';
 import 'package:recipe_ai/widgets/bottom_sheet_handle.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 
 class InstagramGuideSheet extends StatefulWidget {
@@ -94,8 +95,8 @@ class _InstagramGuideSheetState extends State<InstagramGuideSheet> {
                         AppDimensions.radiusSm,
                       ),
                     ),
-                    child: const Icon(
-                      Icons.arrow_back_ios_new_rounded,
+                    child: const OnboardingLineIcon(
+                      'back',
                       size: 16,
                       color: AppColors.textDark,
                     ),
@@ -161,8 +162,8 @@ class _InstagramGuideSheetState extends State<InstagramGuideSheet> {
             ),
             child: PrimaryButton(
               label: 'Open Instagram to find a recipe',
-              leadingIcon: const Icon(
-                Icons.camera_alt_rounded,
+              leadingIcon: const OnboardingLineIcon(
+                'camera',
                 color: Colors.white,
                 size: 20,
               ),
@@ -242,17 +243,17 @@ class _Slide1 extends StatelessWidget {
                 // Action icons row
                 const Row(
                   children: [
-                    Icon(Icons.favorite_border_rounded,
+                    OnboardingLineIcon('heartO',
                         size: 24, color: AppColors.textDark),
                     SizedBox(width: 14),
-                    Icon(Icons.chat_bubble_outline_rounded,
+                    OnboardingLineIcon('chat',
                         size: 22, color: AppColors.textDark),
                     SizedBox(width: 14),
                     // Send icon with arrow
                     Stack(
                       clipBehavior: Clip.none,
                       children: [
-                        Icon(Icons.send_rounded,
+                        OnboardingLineIcon('send',
                             size: 22, color: AppColors.textDark),
                         Positioned(
                           top: -28,
@@ -270,7 +271,7 @@ class _Slide1 extends StatelessWidget {
                       ],
                     ),
                     Spacer(),
-                    Icon(Icons.bookmark_border_rounded,
+                    OnboardingLineIcon('bookmark',
                         size: 24, color: AppColors.textDark),
                   ],
                 ),

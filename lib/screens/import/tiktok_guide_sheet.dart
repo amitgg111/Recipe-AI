@@ -6,6 +6,7 @@ import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_spacing.dart';
 import 'package:recipe_ai/theme/app_dimensions.dart';
 import 'package:recipe_ai/widgets/bottom_sheet_handle.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 
 class TikTokGuideSheet extends StatefulWidget {
@@ -94,8 +95,8 @@ class _TikTokGuideSheetState extends State<TikTokGuideSheet> {
                         AppDimensions.radiusSm,
                       ),
                     ),
-                    child: const Icon(
-                      Icons.arrow_back_ios_new_rounded,
+                    child: const OnboardingLineIcon(
+                      'back',
                       size: 16,
                       color: AppColors.textDark,
                     ),
@@ -161,8 +162,8 @@ class _TikTokGuideSheetState extends State<TikTokGuideSheet> {
             ),
             child: PrimaryButton(
               label: 'Open TikTok to find a recipe',
-              leadingIcon: const Icon(
-                Icons.music_note_rounded,
+              leadingIcon: const OnboardingLineIcon(
+                'music',
                 color: Colors.white,
                 size: 20,
               ),
@@ -219,8 +220,8 @@ class _TikTokSlide1 extends StatelessWidget {
                         child: Stack(
                           children: [
                             Center(
-                              child: Icon(
-                                Icons.play_arrow_rounded,
+                              child: OnboardingLineIcon(
+                                'play',
                                 size: 48,
                                 color: Colors.white.withValues(alpha: 0.7),
                               ),
@@ -249,8 +250,8 @@ class _TikTokSlide1 extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // Heart icon
-                    const Icon(
-                      Icons.favorite_rounded,
+                    const OnboardingLineIcon(
+                      'heart',
                       size: 28,
                       color: AppColors.textDark,
                     ),
@@ -261,8 +262,8 @@ class _TikTokSlide1 extends StatelessWidget {
                     ),
                     const SizedBox(height: 14),
                     // Chat icon
-                    const Icon(
-                      Icons.chat_bubble_rounded,
+                    const OnboardingLineIcon(
+                      'chat',
                       size: 26,
                       color: AppColors.textDark,
                     ),
@@ -273,8 +274,8 @@ class _TikTokSlide1 extends StatelessWidget {
                     ),
                     const SizedBox(height: 14),
                     // Bookmark icon
-                    const Icon(
-                      Icons.bookmark_rounded,
+                    const OnboardingLineIcon(
+                      'bookmark',
                       size: 26,
                       color: AppColors.textDark,
                     ),
@@ -294,8 +295,8 @@ class _TikTokSlide1 extends StatelessWidget {
                             ),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(
-                            Icons.send_rounded,
+                          child: const OnboardingLineIcon(
+                            'send',
                             size: 20,
                             color: AppColors.primary,
                           ),
@@ -317,8 +318,8 @@ class _TikTokSlide1 extends StatelessWidget {
                                 ),
                               ),
                               SizedBox(width: 4),
-                              Icon(
-                                Icons.arrow_forward_rounded,
+                              OnboardingLineIcon(
+                                'chevR',
                                 size: 16,
                                 color: AppColors.blueArrow,
                               ),
@@ -401,7 +402,7 @@ class _TikTokSlide2 extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.search, size: 18, color: AppColors.textLight),
+                      const OnboardingLineIcon('search', size: 18, color: AppColors.textLight),
                       const SizedBox(width: 8),
                       Text(
                         'Search',
@@ -553,8 +554,8 @@ class _TikTokSlide3 extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child: const Icon(
-                        Icons.restaurant_menu_rounded,
+                      child: const OnboardingLineIcon(
+                        'bowl',
                         color: Colors.white,
                         size: 24,
                       ),
@@ -569,7 +570,11 @@ class _TikTokSlide3 extends StatelessWidget {
                   '',
                   'Chat',
                   false,
-                  icon: Icons.chat_bubble_rounded,
+                  iconWidget: const OnboardingLineIcon(
+                    'chat',
+                    size: 22,
+                    color: Color(0xFF2D6FE0),
+                  ),
                 ),
                 // Triangle - green
                 _appIcon(
@@ -593,6 +598,7 @@ class _TikTokSlide3 extends StatelessWidget {
     String label,
     bool highlighted, {
     IconData? icon,
+    Widget? iconWidget,
   }) {
     return Column(
       children: [
@@ -604,7 +610,9 @@ class _TikTokSlide3 extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           child: Center(
-            child: icon != null
+            child: iconWidget != null
+                ? iconWidget
+                : icon != null
                 ? Icon(icon, size: 22, color: color)
                 : Text(
                     letter,

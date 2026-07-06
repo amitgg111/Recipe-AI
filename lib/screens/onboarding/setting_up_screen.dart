@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:recipe_ai/screens/onboarding/plus_intro_screen.dart';
 
 class SettingUpScreen extends StatefulWidget {
@@ -418,8 +419,8 @@ class _SettingUpScreenState extends State<SettingUpScreen>
                               return Positioned(
                                 top: 20 + _sparkleY.value,
                                 right: 36,
-                                child: const Icon(
-                                  Icons.auto_awesome,
+                                child: const OnboardingLineIcon(
+                                  'sparkF2',
                                   color: AppColors.primary,
                                   size: 20,
                                 ),
@@ -900,8 +901,8 @@ class _SettingUpBodyState extends State<SettingUpBody>
                               angle: tw * 0.6,
                               child: Transform.scale(
                                 scale: 0.82 + 0.36 * tw,
-                                child: const Icon(
-                                  Icons.auto_awesome,
+                                child: const OnboardingLineIcon(
+                                  'sparkF2',
                                   color: AppColors.primary,
                                   size: 20,
                                 ),
@@ -928,8 +929,8 @@ class _SettingUpBodyState extends State<SettingUpBody>
                                 color: AppColors.primary,
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(
-                                Icons.check_rounded,
+                              child: const OnboardingLineIcon(
+                                'check',
                                 color: Colors.white,
                                 size: 22,
                               ),

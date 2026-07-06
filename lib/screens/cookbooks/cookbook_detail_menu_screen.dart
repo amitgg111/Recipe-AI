@@ -93,9 +93,7 @@ class _CookbookDetailMenuScreenState extends State<CookbookDetailMenuScreen> {
             if (_showMenu)
               GestureDetector(
                 onTap: () => setState(() => _showMenu = false),
-                child: Container(
-                  color: const Color(0x521E1B18),
-                ),
+                child: Container(color: const Color(0x521E1B18)),
               ),
             // Popup menu
             if (_showMenu) _buildPopupMenu(),
@@ -117,7 +115,9 @@ class _CookbookDetailMenuScreenState extends State<CookbookDetailMenuScreen> {
           const AppBackButton(),
           Text(
             widget.title,
-            style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w700),
+            style: AppTextStyles.bodyLarge.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
           ),
           // Dots button in active state
           GestureDetector(

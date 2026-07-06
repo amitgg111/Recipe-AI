@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/Controllers/profile_controller.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
@@ -28,6 +29,13 @@ class SettingsUi {
         children: [
           _squareButton(
             icon: backIcon,
+            iconWidget: backIcon == Icons.arrow_back
+                ? const OnboardingLineIcon(
+                    'back',
+                    size: 20,
+                    color: AppColors.textDark,
+                  )
+                : null,
             onTap: onBack ?? () => Get.back(),
           ),
           const SizedBox(width: 14),
@@ -49,6 +57,7 @@ class SettingsUi {
 
   static Widget _squareButton({
     required IconData icon,
+    Widget? iconWidget,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
@@ -56,12 +65,13 @@ class SettingsUi {
       child: Container(
         width: 40,
         height: 40,
+        padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(13),
           border: Border.all(color: const Color(0xFFEFEDE6)),
         ),
-        child: Icon(icon, size: 20, color: AppColors.textDark),
+        child: iconWidget ?? Icon(icon, size: 20, color: AppColors.textDark),
       ),
     );
   }
@@ -69,8 +79,7 @@ class SettingsUi {
   static Widget squareIconButton({
     required IconData icon,
     required VoidCallback onTap,
-  }) =>
-      _squareButton(icon: icon, onTap: onTap);
+  }) => _squareButton(icon: icon, onTap: onTap);
 
   /// Uppercase section label (12px w800, letter-spacing .06em).
   static Widget label(String text, {EdgeInsets? padding}) {
@@ -94,11 +103,9 @@ class SettingsUi {
     for (var i = 0; i < rows.length; i++) {
       children.add(rows[i]);
       if (i != rows.length - 1) {
-        children.add(const Divider(
-          height: 1,
-          thickness: 1,
-          color: AppColors.divider,
-        ));
+        children.add(
+          const Divider(height: 1, thickness: 1, color: AppColors.divider),
+        );
       }
     }
     return Container(
@@ -115,6 +122,7 @@ class SettingsUi {
   /// A tappable settings row: leading icon, label, optional trailing + chevron.
   static Widget row({
     IconData? icon,
+    Widget? leadingIcon,
     required String label,
     String? subtitle,
     Widget? trailing,
@@ -128,7 +136,10 @@ class SettingsUi {
         padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
         child: Row(
           children: [
-            if (icon != null) ...[
+            if (leadingIcon != null) ...[
+              leadingIcon,
+              const SizedBox(width: 13),
+            ] else if (icon != null) ...[
               Icon(icon, size: 21, color: rowIcon),
               const SizedBox(width: 13),
             ],
@@ -161,7 +172,7 @@ class SettingsUi {
             if (trailing != null) trailing,
             if (showChevron) ...[
               const SizedBox(width: 8),
-              const Icon(Icons.chevron_right_rounded, size: 22, color: chevron),
+              const OnboardingLineIcon('chevR', color: chevron, size: 22),
             ],
           ],
         ),

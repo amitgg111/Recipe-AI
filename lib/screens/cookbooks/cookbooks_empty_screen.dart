@@ -70,7 +70,15 @@ class _CookbooksEmptyScreenState extends State<CookbooksEmptyScreen>
   }
 
   // bob keyframe: 0% → 0, 50% → -13, 100% → 0 (ease-in-out via cosine)
-  double _bob(AnimationController c) => -6.5 * (1 - math.cos(2 * math.pi * c.value));
+  double _bob(AnimationController c) =>
+      -6.5 * (1 - math.cos(2 * math.pi * c.value));
+
+  // Seamless expanding-ring parameters at a given phase offset (0..1).
+  // scale grows .75 → 1.9 and opacity fades .55 → 0 across each cycle; the
+  // phase wrap makes the last frame connect perfectly to the first.
+  double _ringScaleAt(double p) =>
+      0.75 + (1.9 - 0.75) * ((_fab.value + p) % 1.0);
+  double _ringOpacityAt(double p) => 0.55 * (1.0 - ((_fab.value + p) % 1.0));
 
   @override
   Widget build(BuildContext context) {
@@ -155,7 +163,10 @@ class _CookbooksEmptyScreenState extends State<CookbooksEmptyScreen>
               ),
               // 5/5 badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 7,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFCEFD0),
                   borderRadius: BorderRadius.circular(20),
@@ -211,8 +222,8 @@ class _CookbooksEmptyScreenState extends State<CookbooksEmptyScreen>
             Text(
               "Let's get cooking!",
               style: GoogleFonts.plusJakartaSans(
-                fontSize: 27,
-                fontWeight: FontWeight.w800,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
                 color: AppColors.textDark,
                 letterSpacing: -0.68,
               ),
@@ -395,6 +406,23 @@ class _CookbooksEmptyScreenState extends State<CookbooksEmptyScreen>
 
   // ── FAB with ring pulse ────────────────────────────────────────────────────
 
+  Widget _fabRing(double phase) {
+    return Transform.scale(
+      scale: _ringScaleAt(phase),
+      child: Opacity(
+        opacity: _ringOpacityAt(phase),
+        child: Container(
+          width: 60,
+          height: 60,
+          decoration: const BoxDecoration(
+            color: AppColors.primary,
+            shape: BoxShape.circle,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildFAB() {
     return Positioned(
       right: 20,
@@ -406,25 +434,14 @@ class _CookbooksEmptyScreenState extends State<CookbooksEmptyScreen>
           alignment: Alignment.center,
           children: [
             // ringpulse: scale .75 → 1.9, opacity .55 → 0
+            // Phase-staggered copies so the expanding pulse reads continuous
+            // with no snap when the controller wraps 1.0 → 0.0.
             AnimatedBuilder(
               animation: _fab,
               builder: (context, child) {
-                final v = _fab.value;
-                final scale = 0.75 + (1.9 - 0.75) * v;
-                final opacity = v >= 0.7 ? 0.0 : 0.55 * (1 - v / 0.7);
-                return Transform.scale(
-                  scale: scale,
-                  child: Opacity(
-                    opacity: opacity,
-                    child: Container(
-                      width: 60,
-                      height: 60,
-                      decoration: const BoxDecoration(
-                        color: AppColors.primary,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
+                return Stack(
+                  alignment: Alignment.center,
+                  children: [_fabRing(0.0), _fabRing(0.5)],
                 );
               },
             ),

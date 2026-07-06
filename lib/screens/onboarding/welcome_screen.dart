@@ -8,6 +8,7 @@ import 'package:recipe_ai/widgets/app_logo.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/screens/onboarding/social_proof_screen.dart';
 import 'package:recipe_ai/screens/auth/login_screen.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 
 class WelcomeScreen extends StatefulWidget {
   static const String routeName = '/onboarding/welcome';
@@ -42,6 +43,12 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       duration: const Duration(milliseconds: 2200),
       vsync: this,
     );
+
+    // Continuous sheen sweep across the CTA — runs seamlessly on a loop.
+    _sheenController = AnimationController(
+      duration: const Duration(milliseconds: 2600),
+      vsync: this,
+    )..repeat();
 
     _logoFade = _fade(0.0, 0.25);
     _logoSlide = _slide(const Offset(0, -0.3), 0.0, 0.25);
@@ -531,7 +538,14 @@ class _WelcomeCookingAnimationState extends State<WelcomeCookingAnimation>
                 dy: -7 * _pingPong(t, 4.0, 0.0),
                 bg: const Color(0xFFFDEBD2),
                 fg: const Color(0xFFD98A12),
-                icon: Icons.auto_awesome,
+                iconWidget: const Padding(
+                  padding: EdgeInsets.only(top: 3.0),
+                  child: OnboardingLineIcon(
+                    'sparkF',
+                    size: 16,
+                    color: Color(0xFFD98A12),
+                  ),
+                ),
                 label: 'Import any recipe',
               ),
               _chip(
@@ -540,7 +554,11 @@ class _WelcomeCookingAnimationState extends State<WelcomeCookingAnimation>
                 dy: -7 * _pingPong(t, 4.8, 0.5),
                 bg: const Color(0xFFE4ECFB),
                 fg: const Color(0xFF2D6FE0),
-                icon: Icons.calendar_today,
+                iconWidget: const OnboardingLineIcon(
+                  'cal',
+                  size: 16,
+                  color: Color(0xFF2D6FE0),
+                ),
                 label: 'Plan your week',
               ),
               _chip(
@@ -549,7 +567,11 @@ class _WelcomeCookingAnimationState extends State<WelcomeCookingAnimation>
                 dy: -7 * _pingPong(t, 4.4, 0.9),
                 bg: const Color(0xFFDBF0E7),
                 fg: const Color(0xFF1F7A5E),
-                icon: Icons.shopping_cart_outlined,
+                iconWidget: const OnboardingLineIcon(
+                  'cart',
+                  size: 16,
+                  color: Color(0xFF1F7A5E),
+                ),
                 label: 'Auto shopping list',
               ),
             ],
@@ -877,7 +899,8 @@ class _WelcomeCookingAnimationState extends State<WelcomeCookingAnimation>
     required double dy,
     required Color bg,
     required Color fg,
-    required IconData icon,
+    IconData? icon,
+    Widget? iconWidget,
     required String label,
   }) {
     final chip = Transform.translate(
@@ -902,11 +925,12 @@ class _WelcomeCookingAnimationState extends State<WelcomeCookingAnimation>
             Container(
               width: 30,
               height: 30,
+              padding: const EdgeInsets.all(5),
               decoration: BoxDecoration(
                 color: bg,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, size: 16, color: fg),
+              child: iconWidget ?? Icon(icon, size: 16, color: fg),
             ),
             const SizedBox(width: 8),
             Text(

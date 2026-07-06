@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/Controllers/home_controller.dart';
 import 'package:recipe_ai/Model/user_model.dart';
@@ -91,8 +92,9 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                 'Profile',
                 trailing: SettingsUi.squareIconButton(
                   icon: Icons.edit_outlined,
-                  onTap: () => Get.to(() => const EditProfileScreen())
-                      ?.then((_) => _loadUserDoc()),
+                  onTap: () => Get.to(
+                    () => const EditProfileScreen(),
+                  )?.then((_) => _loadUserDoc()),
                 ),
               ),
               const SizedBox(height: 10),
@@ -160,10 +162,21 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
               SettingsUi.label('DETAILS'),
               SettingsUi.card(
                 rows: [
-                  _detailRow(Icons.mail_outline_rounded, 'Email',
-                      user?.email ?? '—'),
-                  _detailRow(Icons.phone_outlined, 'Contact',
-                      _contact.isEmpty ? 'Not set' : _contact),
+                  _detailRow(
+                    Icons.mail_outline_rounded,
+                    'Email',
+                    user?.email ?? '—',
+                    iconWidget: const OnboardingLineIcon(
+                      'mail',
+                      size: 20,
+                      color: AppColors.textBodyDark,
+                    ),
+                  ),
+                  _detailRow(
+                    Icons.phone_outlined,
+                    'Contact',
+                    _contact.isEmpty ? 'Not set' : _contact,
+                  ),
                 ],
               ),
               const SizedBox(height: 9),
@@ -228,11 +241,13 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
     final name = FirebaseAuth.instance.currentUser?.displayName ?? 'Profile';
     void openList(bool followers) {
       if (uid == null) return;
-      Get.to(() => FollowListScreen(
-            userId: uid,
-            title: name,
-            showFollowers: followers,
-          ));
+      Get.to(
+        () => FollowListScreen(
+          userId: uid,
+          title: name,
+          showFollowers: followers,
+        ),
+      );
     }
 
     return Container(
@@ -293,12 +308,17 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
   Widget _divider() =>
       Container(width: 1, height: 34, color: const Color(0xFFF0ECE4));
 
-  Widget _detailRow(IconData icon, String label, String value) {
+  Widget _detailRow(
+    IconData icon,
+    String label,
+    String value, {
+    Widget? iconWidget,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: AppColors.textBodyDark),
+          iconWidget ?? Icon(icon, size: 20, color: AppColors.textBodyDark),
           const SizedBox(width: 13),
           Expanded(
             child: Column(
@@ -340,7 +360,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.lock_outline_rounded, size: 18, color: AppColors.green),
+          const OnboardingLineIcon('lock', size: 18, color: AppColors.green),
           const SizedBox(width: 9),
           Expanded(
             child: Text(
@@ -436,12 +456,13 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
     return Container(
       width: 30,
       height: 30,
+      padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
         color: isPublic ? AppColors.greenBgLight : const Color(0xFFF2EEE6),
         borderRadius: BorderRadius.circular(9),
       ),
-      child: Icon(
-        isPublic ? Icons.public_rounded : Icons.lock_outline_rounded,
+      child: OnboardingLineIcon(
+        isPublic ? 'globe' : 'lock',
         size: 16,
         color: isPublic ? AppColors.green : AppColors.textMedium,
       ),
@@ -459,7 +480,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
       ),
       child: const Column(
         children: [
-          Icon(Icons.menu_book_rounded, size: 34, color: AppColors.iconLight),
+          OnboardingLineIcon('book', size: 34, color: AppColors.iconLight),
           SizedBox(height: 10),
           Text(
             'No recipes yet',

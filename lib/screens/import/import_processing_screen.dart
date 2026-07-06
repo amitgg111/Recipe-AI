@@ -16,29 +16,15 @@ class _ImportProcessingScreenState extends State<ImportProcessingScreen>
   late final AnimationController _orbitController;
   late final AnimationController _pulseController;
   late final AnimationController _progressController;
-  late final AnimationController _messageController;
-  int _currentMessage = 0;
-
-  final _messages = [
-    'Gathering your favorite recipes…',
-    'Setting up your cookbooks…',
-    'Building your meal planner…',
-    'Almost ready to cook…',
-  ];
 
   @override
   void initState() {
     super.initState();
     _orbitController = AnimationController(vsync: this, duration: const Duration(seconds: 6))..repeat();
     _pulseController = AnimationController(vsync: this, duration: const Duration(milliseconds: 2200))..repeat();
-    _progressController = AnimationController(vsync: this, duration: const Duration(milliseconds: 3200))..repeat();
-    _messageController = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat();
-    _messageController.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        setState(() => _currentMessage = (_currentMessage + 1) % _messages.length);
-        _messageController.forward(from: 0);
-      }
-    });
+    // Ping-pong so the fill grows and recedes smoothly; a plain repeat would
+    // snap the bar from full back to empty at the loop boundary.
+    _progressController = AnimationController(vsync: this, duration: const Duration(milliseconds: 3200))..repeat(reverse: true);
   }
 
   @override
@@ -46,7 +32,6 @@ class _ImportProcessingScreenState extends State<ImportProcessingScreen>
     _orbitController.dispose();
     _pulseController.dispose();
     _progressController.dispose();
-    _messageController.dispose();
     super.dispose();
   }
 
@@ -60,12 +45,12 @@ class _ImportProcessingScreenState extends State<ImportProcessingScreen>
           child: Column(
             children: [
               const SizedBox(height: 14),
-              Row(
+              const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.restaurant, color: AppColors.primary, size: 20),
-                  const SizedBox(width: 6),
-                  const AppWordmark(fontSize: 17, fontWeight: FontWeight.w800),
+                  Icon(Icons.restaurant, color: AppColors.primary, size: 20),
+                  SizedBox(width: 6),
+                  AppWordmark(fontSize: 17, fontWeight: FontWeight.w800),
                 ],
               ),
               const SizedBox(height: 46),
@@ -131,18 +116,32 @@ class _ImportProcessingScreenState extends State<ImportProcessingScreen>
           AnimatedBuilder(
             animation: _pulseController,
             builder: (context, child) {
-              final scale = 0.75 + _pulseController.value * 1.15;
-              final opacity = (1 - _pulseController.value).clamp(0.0, 0.55);
-              return Transform.scale(
-                scale: scale,
-                child: Container(
-                  width: 88,
-                  height: 88,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.primary.withValues(alpha: opacity),
-                  ),
-                ),
+              // Phase-staggered expanding rings: as one ring finishes its
+              // expand-and-fade another is mid-cycle, so the pulse reads as a
+              // continuous outward ripple with no snap at the loop boundary.
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  for (final p in const [0.0, 0.5])
+                    Builder(
+                      builder: (_) {
+                        final t = (_pulseController.value + p) % 1.0;
+                        final scale = 0.75 + t * 1.15;
+                        final opacity = 0.55 * (1 - t);
+                        return Transform.scale(
+                          scale: scale,
+                          child: Container(
+                            width: 88,
+                            height: 88,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.primary.withValues(alpha: opacity),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                ],
               );
             },
           ),

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -98,6 +100,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   late bool _isPublic;
   final Set<int> _checkedIngredients = {};
   final SettingsController _settings = Get.find<SettingsController>();
+  final GroceryStore _grocery = Get.find<GroceryStore>();
 
   RecipeModel get recipe => widget.recipe;
 
@@ -107,8 +110,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     _isPublic = recipe.isPublic;
     // Migration: back-fill `visibility` on legacy docs when opened.
     if (!recipe.visibilityWasStored) {
-      Get.find<HomeController>()
-          .migrateVisibility(recipe.id, recipe.visibility);
+      Get.find<HomeController>().migrateVisibility(
+        recipe.id,
+        recipe.visibility,
+      );
     }
     int parsed = 2;
     if (recipe.servings != null) {
@@ -238,21 +243,14 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             right: 18,
             child: Row(
               children: [
-                _floatingBtn(
-                  Icons.arrow_back_ios_new_rounded,
-                  () => Navigator.pop(context),
-                ),
+                _floatingBtn('back', () => Navigator.pop(context)),
                 const Spacer(),
                 _floatingBtn(
-                  Icons.edit_outlined,
+                  'pencil',
                   () => Get.to(() => RecipeEditorScreen(recipe: recipe)),
                 ),
                 const SizedBox(width: 9),
-                _floatingBtn(
-                  Icons.more_horiz_rounded,
-                  _showRecipeMenuPopup,
-                  active: _menuOpen,
-                ),
+                _floatingBtn('dots', _showRecipeMenuPopup, active: _menuOpen),
               ],
             ),
           ),
@@ -308,11 +306,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     ),
   );
 
-  Widget _floatingBtn(
-    IconData icon,
-    VoidCallback onTap, {
-    bool active = false,
-  }) {
+  Widget _floatingBtn(String icon, VoidCallback onTap, {bool active = false}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -329,7 +323,13 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             ),
           ],
         ),
-        child: Icon(icon, size: 20, color: active ? Colors.white : _C.textDark),
+        child: Center(
+          child: OnboardingLineIcon(
+            icon,
+            size: 20,
+            color: active ? Colors.white : _C.textDark,
+          ),
+        ),
       ),
     );
   }
@@ -350,7 +350,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.public, size: 15, color: _C.textHint),
+          const OnboardingLineIcon('globe', size: 15, color: _C.textHint),
           const SizedBox(width: 6),
           Flexible(
             child: Text(
@@ -361,11 +361,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             ),
           ),
           const SizedBox(width: 2),
-          const Icon(
-            Icons.chevron_right_rounded,
-            size: 16,
-            color: Color(0xFFC7BCAC),
-          ),
+          const OnboardingLineIcon('chevR', size: 16, color: Color(0xFFC7BCAC)),
         ],
       ),
     );
@@ -406,8 +402,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              isPublic ? Icons.public : Icons.lock_outline_rounded,
+            OnboardingLineIcon(
+              isPublic ? 'globe' : 'lock',
               size: 14,
               color: fg,
             ),
@@ -435,10 +431,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     final time = recipe.totalTime ?? recipe.cookTime ?? recipe.prepTime ?? '';
     final children = <Widget>[];
     if (time.isNotEmpty) {
-      children.add(_metaItem(Icons.access_time_rounded, time));
+      children.add(_metaItem('clock', time));
     }
-    children.add(_metaItem(Icons.people_alt_outlined, '$_servings servings'));
-    children.add(_metaItem(Icons.auto_awesome_rounded, 'Easy'));
+    children.add(_metaItem('friend', '$_servings servings'));
+    children.add(_metaItem('spark', 'Easy'));
 
     final row = <Widget>[];
     for (var i = 0; i < children.length; i++) {
@@ -458,11 +454,11 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     return Row(children: row);
   }
 
-  Widget _metaItem(IconData icon, String label) {
+  Widget _metaItem(String icon, String label) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 16, color: _C.primary),
+        OnboardingLineIcon(icon, size: 16, color: _C.primary),
         const SizedBox(width: 6),
         Text(label, style: _font(13.5, FontWeight.w700, _C.textBody)),
       ],
@@ -476,24 +472,16 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   Widget _buildActionTiles() {
     return Row(
       children: [
-        _actionTile(
-          Icons.menu_book_rounded,
-          'Cookbook',
-          _showAddToCookbookSheet,
-        ),
+        _actionTile('book', 'Cookbook', _showAddToCookbookSheet),
         const SizedBox(width: 8),
-        _actionTile(
-          Icons.calendar_today_rounded,
-          'Meal Plan',
-          _showMealPlanPicker,
-        ),
+        _actionTile('cal', 'Meal Plan', _showMealPlanPicker),
         const SizedBox(width: 8),
-        _actionTile(Icons.ios_share_rounded, 'Share', _shareRecipe),
+        _actionTile('share', 'Share', _shareRecipe),
       ],
     );
   }
 
-  Widget _actionTile(IconData icon, String label, VoidCallback onTap) {
+  Widget _actionTile(String icon, String label, VoidCallback onTap) {
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
@@ -503,12 +491,13 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             Container(
               width: 52,
               height: 52,
+              alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: _C.card,
                 borderRadius: BorderRadius.circular(17),
                 border: Border.all(color: _C.border),
               ),
-              child: Icon(icon, size: 22, color: _C.primary),
+              child: OnboardingLineIcon(icon, size: 22, color: _C.primary),
             ),
             const SizedBox(height: 7),
             Text(label, style: _font(11, FontWeight.w600, _C.textMedium)),
@@ -559,8 +548,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
-                            Icons.menu_book_rounded,
+                          const OnboardingLineIcon(
+                            'book',
                             size: 15,
                             color: _C.primary,
                           ),
@@ -582,7 +571,11 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.add, size: 16, color: _C.primary),
+                    const OnboardingLineIcon(
+                      'plus',
+                      size: 16,
+                      color: _C.primary,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       'Add to cookbook',
@@ -617,7 +610,12 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 color: _C.noteBg,
                 borderRadius: BorderRadius.circular(11),
               ),
-              child: const Icon(Icons.edit_outlined, size: 18, color: _C.primary),
+              alignment: Alignment.center,
+              child: const OnboardingLineIcon(
+                'pencil',
+                size: 18,
+                color: _C.primary,
+              ),
             ),
             const SizedBox(width: 13),
             Expanded(
@@ -642,8 +640,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 ],
               ),
             ),
-            const Icon(
-              Icons.chevron_right_rounded,
+            const OnboardingLineIcon(
+              'chevR',
               size: 18,
               color: Color(0xFFC7BCAC),
             ),
@@ -708,11 +706,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
-                    Icons.shopping_cart_outlined,
-                    size: 18,
-                    color: _C.primary,
-                  ),
+                  const OnboardingLineIcon('cart', size: 18, color: _C.primary),
                   const SizedBox(width: 9),
                   Text(
                     'Add all to groceries',
@@ -744,7 +738,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.straighten_rounded, size: 16, color: _C.purple),
+          const OnboardingLineIcon('ruler', size: 16, color: _C.purple),
           const SizedBox(width: 9),
           Expanded(
             child: Text(
@@ -760,10 +754,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
-              children: [
-                _unitChip('US', isUS),
-                _unitChip('Metric', !isUS),
-              ],
+              children: [_unitChip('US', isUS), _unitChip('Metric', !isUS)],
             ),
           ),
         ],
@@ -808,7 +799,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.straighten_rounded, size: 16, color: _C.purple),
+          const OnboardingLineIcon('ruler', size: 16, color: _C.purple),
           const SizedBox(width: 9),
           Expanded(
             child: Text(
@@ -876,11 +867,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.workspace_premium_rounded,
-            size: 10,
-            color: Colors.white,
-          ),
+          const OnboardingLineIcon('crown', size: 10, color: Colors.white),
           const SizedBox(width: 3),
           Text('PLUS', style: _font(9, FontWeight.w800, Colors.white)),
         ],
@@ -937,7 +924,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           _stepBtn(
-            Icons.remove,
+            'minus',
             _servings > 1,
             () => setState(() => _servings--),
             _C.textDark,
@@ -961,29 +948,25 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               ],
             ),
           ),
-          _stepBtn(
-            Icons.add,
-            true,
-            () => setState(() => _servings++),
-            _C.primary,
-          ),
+          _stepBtn('plus', true, () => setState(() => _servings++), _C.primary),
         ],
       ),
     );
   }
 
-  Widget _stepBtn(
-    IconData icon,
-    bool enabled,
-    VoidCallback onTap,
-    Color color,
-  ) {
+  Widget _stepBtn(String icon, bool enabled, VoidCallback onTap, Color color) {
     return GestureDetector(
       onTap: enabled ? onTap : null,
       child: SizedBox(
         width: 36,
         height: 36,
-        child: Icon(icon, size: 16, color: enabled ? color : _C.textHint),
+        child: Center(
+          child: OnboardingLineIcon(
+            icon,
+            size: 16,
+            color: enabled ? color : _C.textHint,
+          ),
+        ),
       ),
     );
   }
@@ -1019,22 +1002,29 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                     : Border.all(color: _C.borderInner, width: 2),
               ),
               child: checked
-                  ? const Icon(Icons.check, color: Colors.white, size: 14)
+                  ? const Center(
+                      child: OnboardingLineIcon(
+                        'check',
+                        color: Colors.white,
+                        size: 14,
+                      ),
+                    )
                   : null,
             ),
             const SizedBox(width: 12),
-            // Basket icon
+            // Grocery category icon (same emoji the Groceries screen uses),
+            // detected from the ingredient name.
             Container(
               width: 28,
               height: 28,
+              alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: _C.goldBg,
                 borderRadius: BorderRadius.circular(9),
               ),
-              child: const Icon(
-                Icons.shopping_basket_outlined,
-                size: 15,
-                color: _C.gold,
+              child: Text(
+                _grocery.emojiForIngredient(parts.$2),
+                style: const TextStyle(fontSize: 15),
               ),
             ),
             const SizedBox(width: 12),
@@ -1139,10 +1129,12 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           widgets.add(_sectionHeader(section.name!));
         }
         for (var i = 0; i < section.steps.length; i++) {
-          widgets.add(_instructionRow(
-            stepNum,
-            InstructionScaler.scale(section.steps[i], multiplier, system),
-          ));
+          widgets.add(
+            _instructionRow(
+              stepNum,
+              InstructionScaler.scale(section.steps[i], multiplier, system),
+            ),
+          );
           stepNum++;
         }
       }
@@ -1150,10 +1142,12 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     }
 
     for (var i = 0; i < recipe.instructions.length; i++) {
-      widgets.add(_instructionRow(
-        i + 1,
-        InstructionScaler.scale(recipe.instructions[i], multiplier, system),
-      ));
+      widgets.add(
+        _instructionRow(
+          i + 1,
+          InstructionScaler.scale(recipe.instructions[i], multiplier, system),
+        ),
+      );
     }
     return widgets;
   }
@@ -1243,7 +1237,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 22),
+            const OnboardingLineIcon('play', color: Colors.white, size: 22),
             const SizedBox(width: 9),
             Text(
               'Cook step-by-step',
@@ -1286,11 +1280,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(
-                  Icons.workspace_premium_rounded,
-                  size: 18,
-                  color: _C.purple,
-                ),
+                const OnboardingLineIcon('crown', size: 18, color: _C.purple),
                 const SizedBox(width: 11),
                 Expanded(
                   child: Text.rich(
@@ -1461,9 +1451,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       actionText: 'View',
       onAction: () {
         Get.offUntil(
-          MaterialPageRoute(
-            builder: (_) => const HomeScreen(initialIndex: 3),
-          ),
+          MaterialPageRoute(builder: (_) => const HomeScreen(initialIndex: 3)),
           (route) => route.isFirst,
         );
       },
@@ -1528,8 +1516,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                           color: Color(0xFFF4F1EA),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
-                          Icons.close,
+                        alignment: Alignment.center,
+                        child: const OnboardingLineIcon(
+                          'x',
                           size: 17,
                           color: _C.textMedium,
                         ),
@@ -1722,38 +1711,29 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                         children: [
                           _menuVisibilityRow(),
                           _menuDivider(),
-                          _menuRow(
-                            Icons.ios_share_rounded,
-                            'Share recipe link',
-                            () {
-                              Navigator.pop(ctx);
-                              _shareRecipe();
-                            },
-                          ),
+                          _menuRow('share', 'Share recipe link', () {
+                            Navigator.pop(ctx);
+                            _shareRecipe();
+                          }),
                           _menuDivider(),
                           _menuRow(
-                            Icons.description_outlined,
+                            'file',
                             'Export PDF',
                             () => Navigator.pop(ctx),
                             plus: true,
                           ),
                           _menuDivider(),
                           _menuRow(
-                            Icons.print_outlined,
+                            'print',
                             'Print recipe',
                             () => Navigator.pop(ctx),
                             plus: true,
                           ),
                           _menuDivider(),
-                          _menuRow(
-                            Icons.delete_outline_rounded,
-                            'Delete recipe',
-                            () {
-                              Navigator.pop(ctx);
-                              _confirmDelete();
-                            },
-                            destructive: true,
-                          ),
+                          _menuRow('trash', 'Delete recipe', () {
+                            Navigator.pop(ctx);
+                            _confirmDelete();
+                          }, destructive: true),
                         ],
                       ),
                     ),
@@ -1783,8 +1763,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               children: [
-                Icon(
-                  isPublic ? Icons.public : Icons.lock_outline_rounded,
+                OnboardingLineIcon(
+                  isPublic ? 'globe' : 'lock',
                   size: 18,
                   color: isPublic ? _C.green : _C.textBody,
                 ),
@@ -1836,7 +1816,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   );
 
   Widget _menuRow(
-    IconData icon,
+    String icon,
     String label,
     VoidCallback onTap, {
     bool plus = false,
@@ -1848,7 +1828,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
-            Icon(
+            OnboardingLineIcon(
               icon,
               size: 18,
               color: destructive ? _C.primaryDark : _C.textBody,
@@ -1874,8 +1854,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      Icons.workspace_premium_rounded,
+                    const OnboardingLineIcon(
+                      'crown',
                       size: 10,
                       color: Color(0xFF7A45E0),
                     ),
@@ -1944,8 +1924,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                     color: const Color(0xFFFEE2E2),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: const Icon(
-                    Icons.delete_outline_rounded,
+                  alignment: Alignment.center,
+                  child: const OnboardingLineIcon(
+                    'trash',
                     color: Colors.red,
                     size: 28,
                   ),
@@ -2142,7 +2123,11 @@ class _MealPlanPickerSheetState extends State<_MealPlanPickerSheet> {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close, size: 20),
+                  icon: const OnboardingLineIcon(
+                    'x',
+                    size: 20,
+                    color: _C.textMedium,
+                  ),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -2405,8 +2390,10 @@ class _CookbookPickerSheetState extends State<CookbookPickerSheet> {
             children: [
               Row(
                 children: [
-                  Text('New cookbook',
-                      style: _font(20, FontWeight.w800, _C.textDark)),
+                  Text(
+                    'New cookbook',
+                    style: _font(20, FontWeight.w800, _C.textDark),
+                  ),
                   const Spacer(),
                   GestureDetector(
                     onTap: () => Navigator.pop(ctx),
@@ -2414,9 +2401,15 @@ class _CookbookPickerSheetState extends State<CookbookPickerSheet> {
                       width: 32,
                       height: 32,
                       decoration: const BoxDecoration(
-                          color: _C.primary, shape: BoxShape.circle),
-                      child:
-                          const Icon(Icons.close, color: Colors.white, size: 18),
+                        color: _C.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      alignment: Alignment.center,
+                      child: const OnboardingLineIcon(
+                        'x',
+                        color: Colors.white,
+                        size: 18,
+                      ),
                     ),
                   ),
                 ],
@@ -2444,8 +2437,10 @@ class _CookbookPickerSheetState extends State<CookbookPickerSheet> {
                     disabledBorder: InputBorder.none,
                     errorBorder: InputBorder.none,
                     focusedErrorBorder: InputBorder.none,
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
                   ),
                 ),
               ),
@@ -2468,13 +2463,18 @@ class _CookbookPickerSheetState extends State<CookbookPickerSheet> {
                   height: AppDimensions.buttonHeight,
                   decoration: BoxDecoration(
                     color: _C.primary,
-                    borderRadius:
-                        BorderRadius.circular(AppDimensions.radiusButton),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusButton,
+                    ),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.add, color: Colors.white, size: 20),
+                      const OnboardingLineIcon(
+                        'plus',
+                        color: Colors.white,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Text('Create cookbook', style: AppTextStyles.buttonLabel),
                     ],
@@ -2488,113 +2488,201 @@ class _CookbookPickerSheetState extends State<CookbookPickerSheet> {
     );
   }
 
+  // 2×2 image collage thumbnail (design 36), built from the cookbook's recipe
+  // images with an empty-tile fallback.
+  Widget _thumb(CookbookModel cb) {
+    final home = Get.find<HomeController>();
+    final imgs = <String>[];
+    for (final id in cb.recipeIds) {
+      final url = home.recipes.firstWhereOrNull((e) => e.id == id)?.imageUrl;
+      if (url != null && url.isNotEmpty) imgs.add(url);
+      if (imgs.length == 4) break;
+    }
+    Widget cell(int i) => i < imgs.length
+        ? RecipeImage(imageUrl: imgs[i])
+        : Container(color: const Color(0xFFE7DECE));
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        color: const Color(0xFFEDE5D7),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(child: cell(0)),
+                const SizedBox(width: 1),
+                Expanded(child: cell(1)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 1),
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(child: cell(2)),
+                const SizedBox(width: 1),
+                Expanded(child: cell(3)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: _C.card,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 26),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Grab handle
           Center(
             child: Container(
-              width: 50,
+              width: 42,
               height: 5,
+              margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(20),
+                color: const Color(0xFFE7E0D2),
+                borderRadius: BorderRadius.circular(3),
               ),
             ),
           ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Add to cookbook',
-                      style: _font(18, FontWeight.w800, _C.textDark)),
-                  const SizedBox(height: 2),
-                  Text('Select one or more',
-                      style: _font(12.5, FontWeight.w500, _C.textMedium)),
-                ],
-              ),
-              const Spacer(),
-              GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    shape: BoxShape.circle,
+          // Header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: Row(
+              children: [
+                Text(
+                  'Add to cookbook',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF2A211B),
+                    letterSpacing: -0.4,
                   ),
-                  child: const Icon(Icons.close, size: 16, color: _C.textDark),
                 ),
-              ),
-            ],
+                const Spacer(),
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    width: 34,
+                    height: 34,
+                    alignment: Alignment.center,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFF4F1EA),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const OnboardingLineIcon(
+                      'x',
+                      size: 19,
+                      color: Color(0xFF8A7E70),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
+          // Cookbook list
           Flexible(
             child: Obx(() {
               final cbs = widget.cookbookController.cookbooks;
               if (cbs.isEmpty) {
                 return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: Text('No cookbooks yet — create one below.',
-                      style: _font(13.5, FontWeight.w500, _C.textMedium)),
+                  padding: const EdgeInsets.fromLTRB(6, 16, 6, 16),
+                  child: Text(
+                    'No cookbooks yet — create one below.',
+                    style: _font(13.5, FontWeight.w500, _C.textMedium),
+                  ),
                 );
               }
               return ListView.separated(
                 shrinkWrap: true,
+                padding: EdgeInsets.zero,
                 itemCount: cbs.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 4),
+                separatorBuilder: (_, __) => const SizedBox(height: 2),
                 itemBuilder: (_, i) {
                   final cb = cbs[i];
                   final selected = _selected.contains(cb.id);
+                  final count = cb.recipeIds.length;
                   return GestureDetector(
                     onTap: () => setState(() {
                       selected ? _selected.remove(cb.id) : _selected.add(cb.id);
                     }),
                     behavior: HitTestBehavior.opaque,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? const Color(0xFFFFF3EF)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(15),
+                      ),
                       child: Row(
                         children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: SizedBox(
-                              width: 40,
-                              height: 40,
-                              child: RecipeImage(imageUrl: cb.imageUrl),
-                            ),
-                          ),
-                          const SizedBox(width: 14),
+                          _thumb(cb),
+                          const SizedBox(width: 13),
                           Expanded(
-                            child: Text(
-                              cb.name,
-                              style: _font(15, FontWeight.w600, _C.textDark),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  cb.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF2A211B),
+                                  ),
+                                ),
+                                const SizedBox(height: 1),
+                                Text(
+                                  '$count ${count == 1 ? 'Recipe' : 'Recipes'}',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF9A938A),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
+                          const SizedBox(width: 10),
                           Container(
-                            width: 24,
-                            height: 24,
+                            width: 26,
+                            height: 26,
+                            alignment: Alignment.center,
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(7),
-                              color: selected ? _C.primary : Colors.transparent,
+                              borderRadius: BorderRadius.circular(13),
+                              color: selected
+                                  ? const Color(0xFFF2623E)
+                                  : Colors.transparent,
                               border: selected
                                   ? null
-                                  : Border.all(color: _C.borderInner, width: 2),
+                                  : Border.all(
+                                      color: const Color(0xFFE2D8C7),
+                                      width: 2,
+                                    ),
                             ),
                             child: selected
-                                ? const Icon(Icons.check,
-                                    color: Colors.white, size: 15)
+                                ? const OnboardingLineIcon(
+                                    'check',
+                                    color: Colors.white,
+                                    size: 16,
+                                  )
                                 : null,
                           ),
                         ],
@@ -2605,28 +2693,63 @@ class _CookbookPickerSheetState extends State<CookbookPickerSheet> {
               );
             }),
           ),
-          const SizedBox(height: 10),
+          // New cookbook
           GestureDetector(
             onTap: _createCookbook,
             behavior: HitTestBehavior.opaque,
-            child: Row(
-              children: [
-                const Icon(Icons.add, size: 18, color: _C.primary),
-                const SizedBox(width: 6),
-                Text('New cookbook',
-                    style: _font(14, FontWeight.w700, _C.primary)),
-              ],
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+              child: Row(
+                children: [
+                  const SizedBox(
+                    width: 42,
+                    height: 42,
+                    child: CustomPaint(
+                      painter: _DashedRRectPainter(
+                        color: Color(0xFFD8CFBE),
+                        radius: 12,
+                        strokeWidth: 1.5,
+                      ),
+                      child: Center(
+                        child: OnboardingLineIcon(
+                          'plus',
+                          size: 22,
+                          color: Color(0xFFF2623E),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 13),
+                  Text(
+                    'New cookbook',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFFF2623E),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 12),
+          // Done button
           GestureDetector(
             onTap: _apply,
             child: Container(
               width: double.infinity,
-              height: AppDimensions.buttonHeight,
+              height: 50,
               decoration: BoxDecoration(
-                color: _C.primary,
-                borderRadius: BorderRadius.circular(AppDimensions.radiusButton),
+                color: const Color(0xFFF2623E),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFF2623E).withValues(alpha: 0.4),
+                    blurRadius: 26,
+                    offset: const Offset(0, 14),
+                    spreadRadius: -10,
+                  ),
+                ],
               ),
               child: Center(
                 child: _saving
@@ -2634,13 +2757,17 @@ class _CookbookPickerSheetState extends State<CookbookPickerSheet> {
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2),
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
                       )
                     : Text(
-                        _selected.isEmpty
-                            ? 'Done'
-                            : 'Save to ${_selected.length} cookbook${_selected.length == 1 ? '' : 's'}',
-                        style: AppTextStyles.buttonLabel,
+                        'Done',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
                       ),
               ),
             ),
@@ -2649,6 +2776,46 @@ class _CookbookPickerSheetState extends State<CookbookPickerSheet> {
       ),
     );
   }
+}
+
+/// Dashed rounded-rectangle border (for the "New cookbook" tile in design 36).
+class _DashedRRectPainter extends CustomPainter {
+  final Color color;
+  final double radius;
+  final double strokeWidth;
+
+  const _DashedRRectPainter({
+    required this.color,
+    required this.radius,
+    required this.strokeWidth,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth;
+    final path = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(Offset.zero & size, Radius.circular(radius)),
+      );
+    const dash = 4.0, gap = 3.0;
+    for (final metric in path.computeMetrics()) {
+      double dist = 0;
+      while (dist < metric.length) {
+        final len = math.min(dash, metric.length - dist);
+        canvas.drawPath(metric.extractPath(dist, dist + len), paint);
+        dist += dash + gap;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedRRectPainter old) =>
+      old.color != color ||
+      old.radius != radius ||
+      old.strokeWidth != strokeWidth;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -2673,8 +2840,9 @@ void showDeleteRecipeDialog(RecipeModel recipe, HomeController controller) {
                 color: const Color(0xFFFEE2E2),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Icon(
-                Icons.delete_outline_rounded,
+              alignment: Alignment.center,
+              child: const OnboardingLineIcon(
+                'trash',
                 color: Colors.red,
                 size: 28,
               ),
@@ -2754,14 +2922,17 @@ class _VisibilityConfirmDialog extends StatelessWidget {
   final bool makePublic;
   final VoidCallback onConfirm;
 
-  const _VisibilityConfirmDialog(
-      {required this.makePublic, required this.onConfirm});
+  const _VisibilityConfirmDialog({
+    required this.makePublic,
+    required this.onConfirm,
+  });
 
   @override
   Widget build(BuildContext context) {
     final accent = makePublic ? _C.green : _C.primary;
-    final title =
-        makePublic ? 'Make this recipe public?' : 'Make this recipe private?';
+    final title = makePublic
+        ? 'Make this recipe public?'
+        : 'Make this recipe private?';
     final body = makePublic
         ? 'Everyone will be able to discover and view it.'
         : 'Only you will be able to access it.';
@@ -2783,15 +2954,22 @@ class _VisibilityConfirmDialog extends StatelessWidget {
                 color: accent.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Icon(makePublic ? Icons.public : Icons.lock_outline_rounded,
-                  color: accent, size: 28),
+              child: Center(
+                child: OnboardingLineIcon(
+                  makePublic ? 'globe' : 'lock',
+                  color: accent,
+                  size: 28,
+                ),
+              ),
             ),
             const SizedBox(height: 20),
             Text(title, style: _font(18, FontWeight.w800, _C.textDark)),
             const SizedBox(height: 10),
-            Text(body,
-                textAlign: TextAlign.center,
-                style: _font(13.5, FontWeight.w400, _C.textMedium, h: 1.5)),
+            Text(
+              body,
+              textAlign: TextAlign.center,
+              style: _font(13.5, FontWeight.w400, _C.textMedium, h: 1.5),
+            ),
             const SizedBox(height: 24),
             Row(
               children: [
@@ -2803,11 +2981,14 @@ class _VisibilityConfirmDialog extends StatelessWidget {
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         border: Border.all(color: _C.border),
-                        borderRadius:
-                            BorderRadius.circular(AppDimensions.radiusButton),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusButton,
+                        ),
                       ),
-                      child:
-                          Text('Cancel', style: _font(15, FontWeight.w700, _C.textDark)),
+                      child: Text(
+                        'Cancel',
+                        style: _font(15, FontWeight.w700, _C.textDark),
+                      ),
                     ),
                   ),
                 ),
@@ -2820,11 +3001,14 @@ class _VisibilityConfirmDialog extends StatelessWidget {
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: accent,
-                        borderRadius:
-                            BorderRadius.circular(AppDimensions.radiusButton),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusButton,
+                        ),
                       ),
-                      child: Text(action,
-                          style: _font(15, FontWeight.w700, Colors.white)),
+                      child: Text(
+                        action,
+                        style: _font(15, FontWeight.w700, Colors.white),
+                      ),
                     ),
                   ),
                 ),

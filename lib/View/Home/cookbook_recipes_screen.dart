@@ -1,15 +1,19 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/Controllers/cookbook_controller.dart';
 import 'package:recipe_ai/Controllers/home_controller.dart';
-import 'package:recipe_ai/View/Home/cookbooks_screen.dart';
+// hide AnimatedBuilder: cookbooks_screen defines its own class of that name,
+// which would otherwise clash with Flutter's AnimatedBuilder used below.
+import 'package:recipe_ai/View/Home/cookbooks_screen.dart' hide AnimatedBuilder;
 import 'package:recipe_ai/View/Home/recipe_detail_screen.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_dimensions.dart';
 import 'package:recipe_ai/theme/app_spacing.dart';
 import 'package:recipe_ai/widgets/app_search_bar.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 
 class CookbookRecipesScreen extends StatelessWidget {
   final CookbookModel cookbook;
@@ -25,8 +29,9 @@ class CookbookRecipesScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Obx(() {
-          final latestCookbook = cookbookController.cookbooks
-              .firstWhereOrNull((e) => e.id == cookbook.id);
+          final latestCookbook = cookbookController.cookbooks.firstWhereOrNull(
+            (e) => e.id == cookbook.id,
+          );
 
           if (latestCookbook == null) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -46,11 +51,8 @@ class CookbookRecipesScreen extends StatelessWidget {
               _TopBar(
                 title: latestCookbook.name,
                 onBack: () => Navigator.pop(context),
-                onMenuTap: () => _showMenu(
-                  context,
-                  latestCookbook,
-                  cookbookController,
-                ),
+                onMenuTap: () =>
+                    _showMenu(context, latestCookbook, cookbookController),
               ),
               const SizedBox(height: 4),
               // ── Title + subtitle ─────────────────────────────────────
@@ -69,8 +71,9 @@ class CookbookRecipesScreen extends StatelessWidget {
               if (recipes.isNotEmpty) ...[
                 const SizedBox(height: 4),
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xl,
+                  ),
                   child: Text(
                     '${recipes.length} ${recipes.length == 1 ? 'recipe' : 'recipes'} · updated today',
                     style: AppTextStyles.smallLabel.copyWith(
@@ -81,8 +84,9 @@ class CookbookRecipesScreen extends StatelessWidget {
               ] else ...[
                 const SizedBox(height: 2),
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xl,
+                  ),
                   child: Text(
                     'No recipes yet',
                     style: AppTextStyles.smallLabel.copyWith(
@@ -166,8 +170,9 @@ class CookbookRecipesScreen extends StatelessWidget {
                         border: Border.all(color: const Color(0xFFEFE6D6)),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF1E1B18)
-                                .withValues(alpha: 0.45),
+                            color: const Color(
+                              0xFF1E1B18,
+                            ).withValues(alpha: 0.45),
                             blurRadius: 50,
                             offset: const Offset(0, 24),
                             spreadRadius: -16,
@@ -181,6 +186,11 @@ class CookbookRecipesScreen extends StatelessWidget {
                           _menuRow(
                             icon: Icons.edit_outlined,
                             iconColor: const Color(0xFF5A5147),
+                            iconWidget: const OnboardingLineIcon(
+                              'pencil',
+                              size: 20,
+                              color: Color(0xFF5A5147),
+                            ),
                             label: 'Edit',
                             labelColor: const Color(0xFF2A211B),
                             onTap: () {
@@ -196,6 +206,11 @@ class CookbookRecipesScreen extends StatelessWidget {
                           _menuRow(
                             icon: Icons.delete_outline,
                             iconColor: const Color(0xFFE0481F),
+                            iconWidget: const OnboardingLineIcon(
+                              'trash',
+                              size: 20,
+                              color: Color(0xFFE0481F),
+                            ),
                             label: 'Delete',
                             labelColor: const Color(0xFFE0481F),
                             onTap: () {
@@ -222,6 +237,7 @@ class CookbookRecipesScreen extends StatelessWidget {
     required String label,
     required Color labelColor,
     required VoidCallback onTap,
+    Widget? iconWidget,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -230,7 +246,7 @@ class CookbookRecipesScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
-            Icon(icon, size: 20, color: iconColor),
+            iconWidget ?? Icon(icon, size: 20, color: iconColor),
             const SizedBox(width: 12),
             Text(
               label,
@@ -252,172 +268,12 @@ class CookbookRecipesScreen extends StatelessWidget {
     CookbookModel cb,
     CookbookController ctrl,
   ) {
-    final nameController = TextEditingController(text: cb.name);
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (sheetCtx) {
-        return StatefulBuilder(
-          builder: (ctx, setSheetState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(ctx).viewInsets.bottom,
-              ),
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-                decoration: const BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius:
-                      BorderRadius.vertical(top: Radius.circular(28)),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header row
-                    Row(
-                      children: [
-                        Text(
-                          'Rename cookbook',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.textDark,
-                          ),
-                        ),
-                        const Spacer(),
-                        GestureDetector(
-                          onTap: () => Navigator.pop(ctx),
-                          child: Container(
-                            width: 32,
-                            height: 32,
-                            decoration: const BoxDecoration(
-                              color: AppColors.primary,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.close,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    // Text field
-                    Container(
-                      height: AppDimensions.inputHeight,
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(11),
-                        border:
-                            Border.all(color: AppColors.primary, width: 1.5),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.1),
-                            blurRadius: 0,
-                            spreadRadius: 3,
-                          ),
-                        ],
-                      ),
-                      child: TextField(
-                        controller: nameController,
-                        autofocus: true,
-                        style: AppTextStyles.inputText,
-                        onChanged: (_) => setSheetState(() {}),
-                        decoration: InputDecoration(
-                          hintText: 'Cookbook name',
-                          hintStyle: AppTextStyles.inputHint,
-                          filled: false,
-                          isDense: false,
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          disabledBorder: InputBorder.none,
-                          errorBorder: InputBorder.none,
-                          focusedErrorBorder: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
-                          suffixIcon: nameController.text.isNotEmpty
-                              ? GestureDetector(
-                                  onTap: () {
-                                    nameController.clear();
-                                    setSheetState(() {});
-                                  },
-                                  child: const Padding(
-                                    padding: EdgeInsets.only(right: 12),
-                                    child: Icon(
-                                      Icons.cancel,
-                                      size: 20,
-                                      color: AppColors.textHint,
-                                    ),
-                                  ),
-                                )
-                              : null,
-                          suffixIconConstraints: const BoxConstraints(
-                            minWidth: 0,
-                            minHeight: 0,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Text(
-                        '${nameController.text.length} / 40',
-                        style: AppTextStyles.smallLabel.copyWith(
-                          color: AppColors.textHint,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    // Save button
-                    GestureDetector(
-                      onTap: () {
-                        final name = nameController.text.trim();
-                        if (name.isEmpty) return;
-                        ctrl.updateCookbook(cb.id, name);
-                        Navigator.pop(ctx);
-                      },
-                      child: Container(
-                        width: double.infinity,
-                        height: AppDimensions.buttonHeight,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.radiusButton,
-                          ),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: AppColors.primaryShadow,
-                              blurRadius: 30,
-                              offset: Offset(0, 16),
-                              spreadRadius: -10,
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Text(
-                            'Save changes',
-                            style: AppTextStyles.buttonLabel,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    ).whenComplete(nameController.dispose);
+      builder: (sheetCtx) => _RenameCookbookSheet(cb: cb, ctrl: ctrl),
+    );
   }
 
   // ── Delete confirmation dialog (screen 23) ───────────────────────────────
@@ -448,8 +304,8 @@ class CookbookRecipesScreen extends StatelessWidget {
                     color: const Color(0xFFFEE2E2),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: const Icon(
-                    Icons.delete_outline_rounded,
+                  child: const OnboardingLineIcon(
+                    'trash',
                     color: Colors.red,
                     size: 28,
                   ),
@@ -488,9 +344,7 @@ class CookbookRecipesScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(
                               AppDimensions.radiusButton,
                             ),
-                            border: Border.all(
-                              color: AppColors.surfaceBorder,
-                            ),
+                            border: Border.all(color: AppColors.surfaceBorder),
                           ),
                           child: Center(
                             child: Text(
@@ -573,13 +427,14 @@ class _TopBar extends StatelessWidget {
             child: Container(
               width: 42,
               height: 42,
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: const Color(0xFFEDE3D2)),
               ),
-              child: const Icon(
-                Icons.arrow_back_ios_new_rounded,
+              child: const OnboardingLineIcon(
+                'back',
                 size: 18,
                 color: AppColors.textDark,
               ),
@@ -606,13 +461,14 @@ class _TopBar extends StatelessWidget {
             child: Container(
               width: 42,
               height: 42,
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: const Color(0xFFEDE3D2)),
               ),
-              child: const Icon(
-                Icons.more_horiz_rounded,
+              child: const OnboardingLineIcon(
+                'dots',
                 size: 20,
                 color: AppColors.textDark,
               ),
@@ -628,10 +484,51 @@ class _TopBar extends StatelessWidget {
 // Empty state (screen 20)
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _EmptyState extends StatelessWidget {
+class _EmptyState extends StatefulWidget {
   final VoidCallback onAddRecipe;
 
   const _EmptyState({required this.onAddRecipe});
+
+  @override
+  State<_EmptyState> createState() => _EmptyStateState();
+}
+
+class _EmptyStateState extends State<_EmptyState>
+    with TickerProviderStateMixin {
+  // Two independent seamless bobs (ping-pong) matching the HTML @keyframes: the
+  // book group `bob` (−13px / 4.4s) and the sparkle badge `floaty` (−7px / 3.6s).
+  late final AnimationController _bookBob;
+  late final AnimationController _badgeFloat;
+  late final Animation<double> _bookBobAnim;
+  late final Animation<double> _badgeFloatAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _bookBob = AnimationController(
+      duration: const Duration(milliseconds: 2200), // half of 4.4s
+      vsync: this,
+    )..repeat(reverse: true);
+    _bookBobAnim = Tween<double>(
+      begin: 0,
+      end: -13,
+    ).animate(CurvedAnimation(parent: _bookBob, curve: Curves.easeInOut));
+    _badgeFloat = AnimationController(
+      duration: const Duration(milliseconds: 1800), // half of 3.6s
+      vsync: this,
+    )..repeat(reverse: true);
+    _badgeFloatAnim = Tween<double>(
+      begin: 0,
+      end: -7,
+    ).animate(CurvedAnimation(parent: _badgeFloat, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _bookBob.dispose();
+    _badgeFloat.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -641,92 +538,123 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           children: [
             const SizedBox(height: 60),
-            // Plate + utensils illustration
+            // Two-book empty illustration (HTML screen 20)
             SizedBox(
-              height: 180,
+              width: 158,
+              height: 150,
               child: Stack(
-                alignment: Alignment.center,
+                clipBehavior: Clip.none,
                 children: [
-                  // Main circle
-                  Container(
-                    width: 140,
-                    height: 140,
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 24,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // Dashed inner circle
-                        Container(
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: AppColors.surfaceBorder,
-                              width: 1.5,
-                            ),
-                          ),
-                        ),
-                        // Plate lines
-                        const Icon(
-                          Icons.restaurant_rounded,
-                          size: 36,
-                          color: AppColors.iconLight,
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Orange plus button
+                  // Soft orange radial glow behind everything
                   Positioned(
-                    top: 20,
-                    right: 80,
+                    top: -6,
+                    left: (158 - 300) / 2,
                     child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: const BoxDecoration(
-                        color: AppColors.primary,
+                      width: 300,
+                      height: 300,
+                      decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.add,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                  // Fork left
-                  Positioned(
-                    left: 50,
-                    top: 30,
-                    child: Transform.rotate(
-                      angle: -0.2,
-                      child: Icon(
-                        Icons.restaurant_outlined,
-                        size: 28,
-                        color: AppColors.textHint.withValues(alpha: 0.35),
+                        gradient: RadialGradient(
+                          colors: [
+                            AppColors.primary.withValues(alpha: 0.14),
+                            AppColors.primary.withValues(alpha: 0.0),
+                          ],
+                          stops: const [0.0, 0.66],
+                        ),
                       ),
                     ),
                   ),
-                  // Knife right
+                  // The two book pages, gently bobbing together
                   Positioned(
-                    right: 50,
-                    bottom: 30,
-                    child: Transform.rotate(
-                      angle: 0.3,
-                      child: Icon(
-                        Icons.flatware_rounded,
-                        size: 28,
-                        color: AppColors.textHint.withValues(alpha: 0.35),
+                    bottom: 0,
+                    left: (158 - 148) / 2,
+                    child: AnimatedBuilder(
+                      animation: _bookBobAnim,
+                      builder: (context, child) => Transform.translate(
+                        offset: Offset(0, _bookBobAnim.value),
+                        child: child,
+                      ),
+                      child: SizedBox(
+                        width: 148,
+                        height: 104,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            // Left page (−7°, pivots at bottom-right)
+                            Positioned(
+                              left: 0,
+                              top: 8,
+                              child: Transform.rotate(
+                                angle: -7 * math.pi / 180,
+                                alignment: Alignment.bottomRight,
+                                child: _bookCard(
+                                  radius: const BorderRadius.only(
+                                    topLeft: Radius.circular(12),
+                                    bottomLeft: Radius.circular(12),
+                                    topRight: Radius.circular(4),
+                                    bottomRight: Radius.circular(4),
+                                  ),
+                                  lineWidths: const [38, 30, 34],
+                                ),
+                              ),
+                            ),
+                            // Right page (+7°, pivots at bottom-left)
+                            Positioned(
+                              right: 0,
+                              top: 8,
+                              child: Transform.rotate(
+                                angle: 7 * math.pi / 180,
+                                alignment: Alignment.bottomLeft,
+                                child: _bookCard(
+                                  radius: const BorderRadius.only(
+                                    topLeft: Radius.circular(4),
+                                    bottomLeft: Radius.circular(4),
+                                    topRight: Radius.circular(12),
+                                    bottomRight: Radius.circular(12),
+                                  ),
+                                  lineWidths: const [34, 38, 26],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Floating sparkle badge (gradient 160°)
+                  Positioned(
+                    top: -6,
+                    left: (158 - 46) / 2,
+                    child: AnimatedBuilder(
+                      animation: _badgeFloatAnim,
+                      builder: (context, child) => Transform.translate(
+                        offset: Offset(0, _badgeFloatAnim.value),
+                        child: child,
+                      ),
+                      child: Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment(-0.342, -0.940),
+                            end: Alignment(0.342, 0.940),
+                            colors: [Color(0xFFFF8763), Color(0xFFF2623E)],
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: AppColors.primaryShadow,
+                              blurRadius: 26,
+                              offset: Offset(0, 14),
+                              spreadRadius: -10,
+                            ),
+                          ],
+                        ),
+                        child: const OnboardingLineIcon(
+                          'sparkF2',
+                          color: Colors.white,
+                          size: 22,
+                        ),
                       ),
                     ),
                   ),
@@ -754,10 +682,12 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 28),
             // Add a recipe button
             GestureDetector(
-              onTap: onAddRecipe,
+              onTap: widget.onAddRecipe,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 14,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.primary,
                   borderRadius: BorderRadius.circular(
@@ -775,7 +705,11 @@ class _EmptyState extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.add, color: Colors.white, size: 20),
+                    const OnboardingLineIcon(
+                      'plus',
+                      color: Colors.white,
+                      size: 20,
+                    ),
                     const SizedBox(width: 8),
                     Text('Add a recipe', style: AppTextStyles.buttonLabel),
                   ],
@@ -784,6 +718,49 @@ class _EmptyState extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // A single tilted "book page" card with faint text lines (72×92).
+  Widget _bookCard({
+    required BorderRadius radius,
+    required List<double> lineWidths,
+  }) {
+    return Container(
+      width: 72,
+      height: 92,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: radius,
+        border: Border.all(color: const Color(0xFFF0E7D6)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF2A211B).withValues(alpha: 0.5),
+            blurRadius: 30,
+            offset: const Offset(0, 18),
+            spreadRadius: -18,
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (int i = 0; i < lineWidths.length; i++) ...[
+            if (i > 0) const SizedBox(height: 7),
+            Container(
+              width: lineWidths[i],
+              height: 6,
+              decoration: BoxDecoration(
+                color: i == 0
+                    ? const Color(0xFFEEE7DA)
+                    : const Color(0xFFF1ECE0),
+                borderRadius: BorderRadius.circular(3),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -865,11 +842,7 @@ class _RecipeListTile extends StatelessWidget {
             // Recipe image
             ClipRRect(
               borderRadius: BorderRadius.circular(14),
-              child: SizedBox(
-                width: 74,
-                height: 74,
-                child: _buildImage(),
-              ),
+              child: SizedBox(width: 74, height: 74, child: _buildImage()),
             ),
             const SizedBox(width: 14),
             // Title + time
@@ -891,8 +864,8 @@ class _RecipeListTile extends StatelessWidget {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(
-                        Icons.access_time_rounded,
+                      const OnboardingLineIcon(
+                        'clock',
                         size: 15,
                         color: Color(0xFFA89F90),
                       ),
@@ -912,8 +885,8 @@ class _RecipeListTile extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             // Chevron
-            const Icon(
-              Icons.arrow_forward_ios,
+            const OnboardingLineIcon(
+              'chevR',
               size: 15,
               color: Color(0xFFC7BCAC),
             ),
@@ -950,6 +923,228 @@ class _RecipeListTile extends StatelessWidget {
         Icons.restaurant_rounded,
         size: 26,
         color: AppColors.textLight.withValues(alpha: 0.4),
+      ),
+    );
+  }
+}
+
+/// Bottom-sheet body for renaming a cookbook.
+///
+/// Owns its own [TextEditingController] and disposes it in [State.dispose], so
+/// the controller's lifetime is tied exactly to this element. Flutter unhooks
+/// the [TextField] before `dispose` runs, so the field can never touch a
+/// disposed controller during the sheet's exit animation / autofill teardown
+/// (the cause of the "TextEditingController was used after being disposed"
+/// crash from the old `whenComplete(controller.dispose)` pattern).
+class _RenameCookbookSheet extends StatefulWidget {
+  final CookbookModel cb;
+  final CookbookController ctrl;
+
+  const _RenameCookbookSheet({required this.cb, required this.ctrl});
+
+  @override
+  State<_RenameCookbookSheet> createState() => _RenameCookbookSheetState();
+}
+
+class _RenameCookbookSheetState extends State<_RenameCookbookSheet> {
+  late final TextEditingController _nameController;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.cb.name);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    final name = _nameController.text.trim();
+    if (name.isEmpty) return;
+    widget.ctrl.updateCookbook(widget.cb.id, name);
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(24, 14, 24, 30),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Grab handle
+            Center(
+              child: Container(
+                width: 42,
+                height: 5,
+                margin: const EdgeInsets.only(bottom: 22),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE7E0D2),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+            ),
+            // Header row
+            Row(
+              children: [
+                Text(
+                  'Rename cookbook',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 21,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF2A211B),
+                    letterSpacing: -0.42,
+                  ),
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    width: 34,
+                    height: 34,
+                    alignment: Alignment.center,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFF4F1EA),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const OnboardingLineIcon(
+                      'x',
+                      color: Color(0xFF8A7E70),
+                      size: 19,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            // Text field
+            Container(
+              height: 55,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFBF7F0),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xFFF2623E), width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFF2623E).withValues(alpha: 0.12),
+                    blurRadius: 0,
+                    spreadRadius: 4,
+                  ),
+                ],
+              ),
+              child: TextField(
+                controller: _nameController,
+                autofocus: true,
+                cursorColor: const Color(0xFFF2623E),
+                textAlignVertical: TextAlignVertical.center,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF2A211B),
+                ),
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  hintText: 'Cookbook name',
+                  hintStyle: AppTextStyles.inputHint,
+                  filled: false,
+                  isCollapsed: false,
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  disabledBorder: InputBorder.none,
+                  errorBorder: InputBorder.none,
+                  focusedErrorBorder: InputBorder.none,
+
+                  suffixIcon: _nameController.text.isNotEmpty
+                      ? GestureDetector(
+                          onTap: () {
+                            _nameController.clear();
+                            setState(() {});
+                          },
+                          child: Container(
+                            width: 26,
+                            height: 26,
+                            alignment: Alignment.center,
+                            margin: const EdgeInsets.only(right: 14),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFEFE8DC),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const OnboardingLineIcon(
+                              'x',
+                              size: 15,
+                              color: Color(0xFFA89F90),
+                            ),
+                          ),
+                        )
+                      : null,
+                  suffixIconConstraints: const BoxConstraints(
+                    minWidth: 0,
+                    minHeight: 0,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 2),
+                child: Text(
+                  '${_nameController.text.length} / 40',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFFB0A899),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            // Save button
+            GestureDetector(
+              onTap: _save,
+              child: Container(
+                width: double.infinity,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF2623E),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFF2623E).withValues(alpha: 0.35),
+                      blurRadius: 26,
+                      offset: const Offset(0, 14),
+                      spreadRadius: -10,
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    'Save changes',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

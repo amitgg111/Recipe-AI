@@ -35,6 +35,9 @@ class RecipeModel {
   /// False when the document had no `visibility` field yet (needs migration).
   final bool visibilityWasStored;
 
+  /// Aggregate social like count (from the recipe's `likesCount` field).
+  final int likesCount;
+
   RecipeModel({
     required this.id,
     required this.title,
@@ -55,6 +58,7 @@ class RecipeModel {
     this.visibility = 'private',
     this.isDeleted = false,
     this.visibilityWasStored = true,
+    this.likesCount = 0,
   });
 
   bool get isPublic => visibility == 'public';
@@ -84,6 +88,7 @@ class RecipeModel {
           (data['isPublic'] == true ? 'public' : 'private'),
       isDeleted: data['isDeleted'] == true,
       visibilityWasStored: data.containsKey('visibility'),
+      likesCount: (data['likesCount'] as num?)?.toInt() ?? 0,
     );
   }
   double get servingCount {

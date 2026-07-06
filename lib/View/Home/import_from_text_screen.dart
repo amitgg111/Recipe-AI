@@ -5,6 +5,7 @@ import 'package:recipe_ai/Service/import_with_image_api_calling_service.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/app_logo.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 
 /// Generate a recipe from just its name (AI). App-styled to match the rest of
 /// the app: brand hero, styled input, gradient CTA and tappable suggestions.
@@ -125,7 +126,7 @@ class _GenerateRecipeScreenState extends State<GenerateRecipeScreen> {
                 borderRadius: BorderRadius.circular(13),
                 border: Border.all(color: const Color(0xFFEFEDE6)),
               ),
-              child: const Icon(Icons.arrow_back_rounded,
+              child: const OnboardingLineIcon('back',
                   size: 20, color: AppColors.textDark),
             ),
           ),
@@ -153,7 +154,7 @@ class _GenerateRecipeScreenState extends State<GenerateRecipeScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          const Icon(Icons.search_rounded, size: 22, color: AppColors.textHint),
+          const OnboardingLineIcon('search', size: 22, color: AppColors.textHint),
           const SizedBox(width: 10),
           Expanded(
             child: TextField(
@@ -223,7 +224,7 @@ class _GenerateRecipeScreenState extends State<GenerateRecipeScreen> {
               : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.auto_awesome_rounded,
+                    const OnboardingLineIcon('sparkF2',
                         size: 20, color: Colors.white),
                     const SizedBox(width: 9),
                     Text(

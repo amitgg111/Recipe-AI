@@ -5,6 +5,8 @@ import 'package:recipe_ai/widgets/social_guide_animation.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_dimensions.dart';
+import 'package:recipe_ai/screens/import/social_picker_sheet.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -15,13 +17,19 @@ import 'package:url_launcher/url_launcher.dart';
 class ImportFromSocialScreen extends StatelessWidget {
   const ImportFromSocialScreen({super.key});
 
-  static void showPicker(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) => const _SocialMediaPickerSheet(),
-    );
+  static Future<void> showPicker(BuildContext context) async {
+    // The design-accurate picker (screen 28). It returns the chosen platform;
+    // we then open that platform's share guide.
+    final choice = await SocialPickerSheet.show(context);
+    final platform = switch (choice) {
+      'instagram' => SocialPlatform.instagram,
+      'tiktok' => SocialPlatform.tiktok,
+      'facebook' => SocialPlatform.facebook,
+      _ => null,
+    };
+    if (platform != null && Get.context != null) {
+      SocialGuideScreen.show(Get.context!, platform);
+    }
   }
 
   @override
@@ -41,8 +49,8 @@ class ImportFromSocialScreen extends StatelessWidget {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Icon(
-                      Icons.arrow_back_ios_new_rounded,
+                    child: const OnboardingLineIcon(
+                      'back',
                       size: 20,
                       color: AppColors.textDark,
                     ),
@@ -82,8 +90,8 @@ class ImportFromSocialScreen extends StatelessWidget {
                             color: Colors.white.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Icon(
-                            Icons.share_rounded,
+                          child: const OnboardingLineIcon(
+                            'share',
                             size: 16,
                             color: Colors.white,
                           ),
@@ -137,155 +145,6 @@ class ImportFromSocialScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
       ),
       child: Icon(icon, size: 18, color: color),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Social Media Picker Bottom Sheet (screen 28)
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _SocialMediaPickerSheet extends StatelessWidget {
-  const _SocialMediaPickerSheet();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(24, 12, 24, 34),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Drag handle
-          Center(
-            child: Container(
-              width: 50,
-              height: 5,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(20),
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text('Import from social media', style: AppTextStyles.screenTitle),
-          const SizedBox(height: 4),
-          Text(
-            'Pick where your recipe is from.',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textMedium,
-            ),
-          ),
-          const SizedBox(height: 24),
-          // Instagram
-          _SocialOptionTile(
-            icon: Icons.camera_alt_rounded,
-            iconBgColor: const Color(0xFFE1306C),
-            title: 'Instagram',
-            subtitle: 'Reels, posts & saved',
-            onTap: () {
-              Navigator.pop(context);
-              SocialGuideScreen.show(Get.context!, SocialPlatform.instagram);
-            },
-          ),
-          const SizedBox(height: 4),
-          // TikTok
-          _SocialOptionTile(
-            icon: Icons.music_note_rounded,
-            iconBgColor: Colors.black,
-            title: 'TikTok',
-            subtitle: 'Recipe videos',
-            onTap: () {
-              Navigator.pop(context);
-              SocialGuideScreen.show(Get.context!, SocialPlatform.tiktok);
-            },
-          ),
-          const SizedBox(height: 4),
-          // Facebook
-          _SocialOptionTile(
-            icon: Icons.facebook_rounded,
-            iconBgColor: const Color(0xFF1877F2),
-            title: 'Facebook',
-            subtitle: 'Posts & watch videos',
-            onTap: () {
-              Navigator.pop(context);
-              SocialGuideScreen.show(Get.context!, SocialPlatform.facebook);
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SocialOptionTile extends StatelessWidget {
-  final IconData icon;
-  final Color iconBgColor;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  const _SocialOptionTile({
-    required this.icon,
-    required this.iconBgColor,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: iconBgColor,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(icon, color: Colors.white, size: 24),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textDark,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: AppTextStyles.smallLabel.copyWith(
-                      color: AppColors.textMedium,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: AppColors.textHint,
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -389,8 +248,8 @@ class _SocialGuideScreenState extends State<SocialGuideScreen> {
                     child: const SizedBox(
                       width: 40,
                       height: 40,
-                      child: Icon(
-                        Icons.arrow_back_ios_new_rounded,
+                      child: OnboardingLineIcon(
+                        'back',
                         size: 20,
                         color: AppColors.textDark,
                       ),

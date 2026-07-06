@@ -9,6 +9,7 @@ import 'package:recipe_ai/Controllers/home_controller.dart';
 import 'package:recipe_ai/Controllers/settings_controller.dart';
 import 'package:recipe_ai/Service/local_notification_service.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // COOK MODE — step-by-step & timer states (matches the HTML design)
@@ -372,7 +373,9 @@ class _CookModeScreenState extends State<CookModeScreen>
   Widget _header() {
     return Row(
       children: [
-        _squareBtn(Icons.close_rounded, _confirmExit),
+        _squareBtn(
+            const OnboardingLineIcon('x', size: 20, color: _C.textDark),
+            _confirmExit),
         const SizedBox(width: 14),
         Expanded(
           child: ClipRRect(
@@ -395,19 +398,20 @@ class _CookModeScreenState extends State<CookModeScreen>
     );
   }
 
-  Widget _squareBtn(IconData icon, VoidCallback onTap,
-      {double size = 40, Color? fg}) {
+  Widget _squareBtn(Widget iconWidget, VoidCallback onTap,
+      {double size = 40}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: size,
         height: size,
+        alignment: Alignment.center,
         decoration: BoxDecoration(
           color: _C.surface,
           borderRadius: BorderRadius.circular(13),
           border: Border.all(color: _C.border),
         ),
-        child: Icon(icon, size: 20, color: fg ?? _C.textDark),
+        child: iconWidget,
       ),
     );
   }
@@ -446,13 +450,15 @@ class _CookModeScreenState extends State<CookModeScreen>
           ),
           if (duration != null)
             _outlineTimerButton(
-              icon: Icons.schedule_rounded,
+              iconWidget: const OnboardingLineIcon('clock',
+                  size: 20, color: _C.primary),
               label: 'Start timer · ${_fmt(duration)}',
               onTap: () => _startTimer(index, duration),
             )
           else
             _outlineTimerButton(
-              icon: Icons.add_alarm_rounded,
+              iconWidget:
+                  const Icon(Icons.add_alarm_rounded, size: 20, color: _C.primary),
               label: 'Add a timer',
               onTap: () => _openSetTimerSheet(index),
             ),
@@ -473,7 +479,7 @@ class _CookModeScreenState extends State<CookModeScreen>
   }
 
   Widget _outlineTimerButton({
-    required IconData icon,
+    required Widget iconWidget,
     required String label,
     required VoidCallback onTap,
   }) {
@@ -490,7 +496,7 @@ class _CookModeScreenState extends State<CookModeScreen>
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 20, color: _C.primary),
+            iconWidget,
             const SizedBox(width: 10),
             Text(label, style: _f(16, FontWeight.w600, _C.primary)),
           ],
@@ -547,7 +553,7 @@ class _CookModeScreenState extends State<CookModeScreen>
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(Icons.local_fire_department_rounded,
+                                  const OnboardingLineIcon('flame',
                                       size: 14, color: _C.primary),
                                   const SizedBox(width: 5),
                                   Text(step.label.toUpperCase(),
@@ -581,9 +587,8 @@ class _CookModeScreenState extends State<CookModeScreen>
                         () => _reset(index)),
                     const SizedBox(width: 12),
                     _pillBtn(
-                      icon: paused
-                          ? Icons.play_arrow_rounded
-                          : Icons.pause_rounded,
+                      iconWidget: OnboardingLineIcon(paused ? 'play' : 'pause',
+                          size: 20, color: Colors.white),
                       label: paused ? 'Resume' : 'Pause',
                       onTap: () => paused ? _resume(index) : _pause(index),
                     ),
@@ -634,7 +639,7 @@ class _CookModeScreenState extends State<CookModeScreen>
   }
 
   Widget _pillBtn({
-    required IconData icon,
+    required Widget iconWidget,
     required String label,
     required VoidCallback onTap,
     Color color = _C.primary,
@@ -651,7 +656,7 @@ class _CookModeScreenState extends State<CookModeScreen>
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 20, color: Colors.white),
+            iconWidget,
             const SizedBox(width: 9),
             Text(label, style: _f(15, FontWeight.w600, Colors.white)),
           ],
@@ -693,7 +698,7 @@ class _CookModeScreenState extends State<CookModeScreen>
                             height: 60,
                             decoration: const BoxDecoration(
                                 color: _C.green, shape: BoxShape.circle),
-                            child: const Icon(Icons.check_rounded,
+                            child: const OnboardingLineIcon('check',
                                 size: 32, color: Colors.white),
                           ),
                           const SizedBox(height: 10),
@@ -730,7 +735,8 @@ class _CookModeScreenState extends State<CookModeScreen>
                     ),
                     const SizedBox(width: 12),
                     _pillBtn(
-                      icon: Icons.check_rounded,
+                      iconWidget: const OnboardingLineIcon('check',
+                          size: 20, color: Colors.white),
                       label: 'Dismiss',
                       color: _C.green,
                       onTap: () => _dismiss(index),
@@ -852,7 +858,7 @@ class _CookModeScreenState extends State<CookModeScreen>
               ),
             ),
             if (big)
-              const Icon(Icons.chevron_right_rounded,
+              const OnboardingLineIcon('chevR',
                   size: 20, color: _C.iconLight),
           ],
         ),
@@ -866,7 +872,10 @@ class _CookModeScreenState extends State<CookModeScreen>
     final isLast = _currentPage == _steps.length - 1;
     return Row(
       children: [
-        _squareBtn(Icons.arrow_back_rounded, _prev, size: 50),
+        _squareBtn(
+            const OnboardingLineIcon('back', size: 20, color: _C.textDark),
+            _prev,
+            size: 50),
         const SizedBox(width: 12),
         Expanded(
           child: GestureDetector(
@@ -891,7 +900,7 @@ class _CookModeScreenState extends State<CookModeScreen>
                   Text(isLast ? 'Finish' : 'Next step',
                       style: _f(16, FontWeight.w700, Colors.white)),
                   const SizedBox(width: 9),
-                  Icon(isLast ? Icons.check_rounded : Icons.arrow_forward_rounded,
+                  OnboardingLineIcon(isLast ? 'check' : 'chevR',
                       size: 20, color: Colors.white),
                 ],
               ),
@@ -1060,7 +1069,8 @@ class _FinishViewState extends State<_FinishView>
                           borderRadius: BorderRadius.circular(13),
                           border: Border.all(color: _C.border),
                         ),
-                        child: const Icon(Icons.close_rounded,
+                        alignment: Alignment.center,
+                        child: const OnboardingLineIcon('x',
                             size: 20, color: _C.textDark),
                       ),
                     ),
@@ -1082,8 +1092,8 @@ class _FinishViewState extends State<_FinishView>
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(
-                                      Icons.local_fire_department_rounded,
+                                  const OnboardingLineIcon(
+                                      'flame',
                                       size: 14,
                                       color: _C.primary),
                                   const SizedBox(width: 6),
@@ -1174,7 +1184,8 @@ class _FinishViewState extends State<_FinishView>
                 shape: BoxShape.circle,
                 border: Border.all(color: _C.bg, width: 4),
               ),
-              child: const Icon(Icons.check_rounded, size: 24, color: Colors.white),
+              alignment: Alignment.center,
+              child: const OnboardingLineIcon('check', size: 24, color: Colors.white),
             ),
           ),
         ],
@@ -1211,8 +1222,8 @@ class _FinishViewState extends State<_FinishView>
                 onTap: () => widget.onRate(i + 1),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 5),
-                  child: Icon(
-                    filled ? Icons.star_rounded : Icons.star_border_rounded,
+                  child: OnboardingLineIcon(
+                    filled ? 'starF' : 'starO',
                     size: 34,
                     color: filled ? const Color(0xFFF2A24C) : const Color(0xFFE2D8C7),
                   ),
@@ -1274,7 +1285,7 @@ class _FinishViewState extends State<_FinishView>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.ios_share_rounded, size: 18, color: _C.primary),
+                const OnboardingLineIcon('share', size: 18, color: _C.primary),
                 const SizedBox(width: 8),
                 Text('Share your dish',
                     style: _f(15, FontWeight.w700, _C.textDark)),
@@ -1373,9 +1384,10 @@ class _SetTimerSheetState extends State<_SetTimerSheet> {
                 child: Container(
                   width: 34,
                   height: 34,
+                  alignment: Alignment.center,
                   decoration: const BoxDecoration(
                       color: Color(0xFFF4F1EA), shape: BoxShape.circle),
-                  child: const Icon(Icons.close_rounded,
+                  child: const OnboardingLineIcon('x',
                       size: 18, color: _C.textMed),
                 ),
               ),
@@ -1494,7 +1506,7 @@ class _SetTimerSheetState extends State<_SetTimerSheet> {
         ),
         GestureDetector(
           onTap: onDec,
-          child: const Icon(Icons.keyboard_arrow_down_rounded,
+          child: const OnboardingLineIcon('chevDown',
               size: 26, color: _C.textMed),
         ),
         Text(unit, style: _f(11, FontWeight.w700, _C.textLight, spacing: 0.5)),

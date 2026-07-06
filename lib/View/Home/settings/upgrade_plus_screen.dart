@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:recipe_ai/View/Home/settings/settings_common.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 
 class UpgradePlusScreen extends StatefulWidget {
   const UpgradePlusScreen({super.key});
@@ -14,11 +15,11 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen> {
   int _plan = 1; // 0 monthly, 1 yearly
 
   static const _features = [
-    ['Unlimited recipe imports', Icons.auto_awesome_rounded],
-    ['Full nutrition breakdowns', Icons.local_fire_department_rounded],
-    ['AI meal-plan auto-fill', Icons.calendar_month_rounded],
-    ['Smart grocery categorising', Icons.shopping_cart_outlined],
-    ['Ad-free, priority support', Icons.bolt_rounded],
+    ['Unlimited recipe imports', Icons.auto_awesome_rounded, 'sparkF'],
+    ['Full nutrition breakdowns', Icons.local_fire_department_rounded, 'flame'],
+    ['AI meal-plan auto-fill', Icons.calendar_month_rounded, 'cal'],
+    ['Smart grocery categorising', Icons.shopping_cart_outlined, 'cart'],
+    ['Ad-free, priority support', Icons.bolt_rounded, null],
   ];
 
   @override
@@ -30,10 +31,7 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(18, 4, 18, 0),
-              child: SettingsUi.header(
-                'Plus',
-                backIcon: Icons.close_rounded,
-              ),
+              child: SettingsUi.header('Plus', backIcon: Icons.close_rounded),
             ),
             Expanded(
               child: ListView(
@@ -44,7 +42,11 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen> {
                   SettingsUi.card(
                     rows: [
                       for (final f in _features)
-                        _featureRow(f[0] as String, f[1] as IconData),
+                        _featureRow(
+                          f[0] as String,
+                          f[1] as IconData,
+                          f[2] as String?,
+                        ),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -129,12 +131,16 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen> {
           Container(
             width: 48,
             height: 48,
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Icon(Icons.workspace_premium_rounded,
-                color: Colors.white, size: 28),
+            child: const OnboardingLineIcon(
+              'crown',
+              color: Colors.white,
+              size: 28,
+            ),
           ),
           const SizedBox(height: 14),
           const Text(
@@ -161,7 +167,7 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen> {
     );
   }
 
-  Widget _featureRow(String label, IconData icon) {
+  Widget _featureRow(String label, IconData icon, [String? iconName]) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
       child: Row(
@@ -169,11 +175,18 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen> {
           Container(
             width: 34,
             height: 34,
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: AppColors.purpleBg,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, size: 18, color: AppColors.purple),
+            child: iconName != null
+                ? OnboardingLineIcon(
+                    iconName,
+                    size: 18,
+                    color: AppColors.purple,
+                  )
+                : Icon(icon, size: 18, color: AppColors.purple),
           ),
           const SizedBox(width: 13),
           Expanded(
@@ -186,8 +199,11 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen> {
               ),
             ),
           ),
-          const Icon(Icons.check_circle_rounded,
-              size: 20, color: AppColors.purple),
+          const OnboardingLineIcon(
+            'checkCircle',
+            size: 20,
+            color: AppColors.purple,
+          ),
         ],
       ),
     );
@@ -241,7 +257,9 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen> {
                         const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.purpleBg,
                             borderRadius: BorderRadius.circular(8),

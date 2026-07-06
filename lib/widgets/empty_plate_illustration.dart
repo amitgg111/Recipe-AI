@@ -68,8 +68,8 @@ class _EmptyPlateIllustrationState extends State<EmptyPlateIllustration>
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 230,
-      height: 206,
+      width: 220,
+      height: 196,
       child: Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.center,
@@ -78,8 +78,8 @@ class _EmptyPlateIllustrationState extends State<EmptyPlateIllustration>
           Positioned(
             top: -47,
             child: Container(
-              width: 300,
-              height: 300,
+              width: 280,
+              height: 280,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
@@ -94,10 +94,10 @@ class _EmptyPlateIllustrationState extends State<EmptyPlateIllustration>
           ),
           // Fork (left)
           Positioned(
-            left: 12,
+            left: 6,
             top: 46,
             child: CustomPaint(
-              size: const Size(26, 116),
+              size: const Size(6, 106),
               painter: _ForkPainter(),
             ),
           ),
@@ -106,7 +106,7 @@ class _EmptyPlateIllustrationState extends State<EmptyPlateIllustration>
             right: 14,
             top: 46,
             child: CustomPaint(
-              size: const Size(20, 116),
+              size: const Size(10, 106),
               painter: _KnifePainter(),
             ),
           ),
@@ -116,11 +116,11 @@ class _EmptyPlateIllustrationState extends State<EmptyPlateIllustration>
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                _steamBar(_steam1, 22, const Color(0xFFE7DBC8)),
+                _steamBar(_steam1, 20, const Color(0xFFE7DBC8)),
                 const SizedBox(width: 9),
-                _steamBar(_steam2, 30, const Color(0xFFEBDFCB)),
+                _steamBar(_steam2, 28, const Color(0xFFEBDFCB)),
                 const SizedBox(width: 9),
-                _steamBar(_steam3, 22, const Color(0xFFE7DBC8)),
+                _steamBar(_steam3, 20, const Color(0xFFE7DBC8)),
               ],
             ),
           ),
@@ -132,8 +132,8 @@ class _EmptyPlateIllustrationState extends State<EmptyPlateIllustration>
               child: child,
             ),
             child: Container(
-              width: 152,
-              height: 152,
+              width: 142,
+              height: 142,
               decoration: BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
@@ -148,14 +148,14 @@ class _EmptyPlateIllustrationState extends State<EmptyPlateIllustration>
               ),
               alignment: Alignment.center,
               child: CustomPaint(
-                size: const Size(108, 108),
+                size: const Size(98, 98),
                 painter: _DashedRingPainter(color: const Color(0xFFE7DBC8)),
                 child: const SizedBox(
-                  width: 108,
-                  height: 108,
+                  width: 98,
+                  height: 98,
                   child: Center(
                     child: CustomPaint(
-                      size: Size(46, 44),
+                      size: Size(36, 34),
                       painter: _ChefHatPainter(color: AppColors.primary),
                     ),
                   ),
@@ -290,7 +290,7 @@ class _ChefHatPainter extends CustomPainter {
 
 class _DashedRingPainter extends CustomPainter {
   final Color color;
-  _DashedRingPainter({required this.color});
+    _DashedRingPainter({required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {

@@ -14,6 +14,7 @@ import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_dimensions.dart';
 import 'package:recipe_ai/screens/auth/forgot_password_screen.dart';
 import 'package:recipe_ai/widgets/sliding_segmented.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 
 /// Combined Log in / Sign up screen.
 ///
@@ -444,7 +445,7 @@ class _LoginScreenState extends State<LoginScreen> {
           controller: _loginEmailController,
           focusNode: _loginEmailFocus,
           hint: 'Enter The Email',
-          prefixIcon: Icons.mail_outline_rounded,
+          prefixIconName: 'mail',
           keyboardType: TextInputType.emailAddress,
           errorText: _loginEmailError,
           onChanged: (v) =>
@@ -460,7 +461,7 @@ class _LoginScreenState extends State<LoginScreen> {
           controller: _loginPasswordController,
           focusNode: _loginPasswordFocus,
           hint: '••••••••',
-          prefixIcon: Icons.lock_outline_rounded,
+          prefixIconName: 'lock',
           obscure: _obscurePassword,
           suffixIcon: _eyeToggle(),
           errorText: _loginPasswordError,
@@ -513,7 +514,7 @@ class _LoginScreenState extends State<LoginScreen> {
           controller: _signupNameController,
           focusNode: _signupNameFocus,
           hint: 'Enter The Name',
-          prefixIcon: Icons.person_outline_rounded,
+          prefixIconName: 'user',
           keyboardType: TextInputType.name,
           errorText: _signupNameError,
           onChanged: (v) =>
@@ -529,7 +530,7 @@ class _LoginScreenState extends State<LoginScreen> {
           controller: _signupEmailController,
           focusNode: _signupEmailFocus,
           hint: 'Enter the name',
-          prefixIcon: Icons.mail_outline_rounded,
+          prefixIconName: 'mail',
           keyboardType: TextInputType.emailAddress,
           errorText: _signupEmailError,
           onChanged: (v) =>
@@ -545,7 +546,7 @@ class _LoginScreenState extends State<LoginScreen> {
           controller: _signupPasswordController,
           focusNode: _signupPasswordFocus,
           hint: 'Create a password',
-          prefixIcon: Icons.lock_outline_rounded,
+          prefixIconName: 'lock',
           obscure: _obscurePassword,
           suffixIcon: _eyeToggle(),
           errorText: _signupPasswordError,
@@ -579,8 +580,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 child: _agreedToTerms
-                    ? const Icon(Icons.check_rounded,
-                        size: 14, color: Colors.white)
+                    ? const OnboardingLineIcon(
+                        'check',
+                        size: 14,
+                        color: Colors.white,
+                      )
                     : null,
               ),
             ),
@@ -705,10 +709,8 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _eyeToggle() {
     return GestureDetector(
       onTap: () => setState(() => _obscurePassword = !_obscurePassword),
-      child: Icon(
-        _obscurePassword
-            ? Icons.visibility_off_outlined
-            : Icons.visibility_outlined,
+      child: const OnboardingLineIcon(
+        'eye',
         size: 20,
         color: AppColors.textHint,
       ),
@@ -730,7 +732,7 @@ class _LoginScreenState extends State<LoginScreen> {
     required TextEditingController controller,
     required FocusNode focusNode,
     required String hint,
-    required IconData prefixIcon,
+    required String prefixIconName,
     TextInputType keyboardType = TextInputType.text,
     bool obscure = false,
     Widget? suffixIcon,
@@ -783,8 +785,8 @@ class _LoginScreenState extends State<LoginScreen> {
               hintStyle: AppTextStyles.inputHint,
               prefixIcon: Padding(
                 padding: const EdgeInsets.only(left: 14, right: 10),
-                child: Icon(
-                  prefixIcon,
+                child: OnboardingLineIcon(
+                  prefixIconName,
                   size: 20,
                   color: isFocused ? AppColors.primary : AppColors.textHint,
                 ),
@@ -871,8 +873,8 @@ class _BackButton extends StatelessWidget {
           color: Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: const Icon(
-          Icons.arrow_back_ios_new_rounded,
+        child: const OnboardingLineIcon(
+          'back',
           size: 18,
           color: AppColors.textDark,
         ),

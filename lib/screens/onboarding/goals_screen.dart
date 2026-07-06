@@ -211,8 +211,8 @@ class _GoalsScreenState extends State<GoalsScreen> {
                                 ),
                               ),
                               child: isSelected
-                                  ? const Icon(
-                                      Icons.check,
+                                  ? const OnboardingLineIcon(
+                                      'check',
                                       color: Colors.white,
                                       size: 16,
                                     )
@@ -420,8 +420,8 @@ class _GoalsBodyState extends State<GoalsBody> {
                             ),
                           ),
                           child: isSelected
-                              ? const Icon(
-                                  Icons.check,
+                              ? const OnboardingLineIcon(
+                                  'check',
                                   color: Colors.white,
                                   size: 16,
                                 )

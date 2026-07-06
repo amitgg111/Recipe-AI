@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/widgets/progress_indicator_dots.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:recipe_ai/screens/onboarding/goals_happen_screen.dart';
 
 class ThatsGreatScreen extends StatefulWidget {
@@ -195,8 +196,8 @@ class _ThatsGreatScreenState extends State<ThatsGreatScreen>
                                   ],
                                 ),
                                 child: const Center(
-                                  child: Icon(
-                                    Icons.account_balance_wallet,
+                                  child: OnboardingLineIcon(
+                                    'wallet',
                                     color: AppColors.gold,
                                     size: 22,
                                   ),
@@ -255,8 +256,8 @@ class _ThatsGreatScreenState extends State<ThatsGreatScreen>
                                       padding: EdgeInsets.only(
                                         right: index < 4 ? 2 : 0,
                                       ),
-                                      child: const Icon(
-                                        Icons.star,
+                                      child: const OnboardingLineIcon(
+                                        'starF',
                                         color: AppColors.starOrange,
                                         size: 14,
                                       ),
@@ -482,8 +483,8 @@ class _ThatsGreatBodyState extends State<ThatsGreatBody>
                               ],
                             ),
                             child: const Center(
-                              child: Icon(
-                                Icons.account_balance_wallet,
+                              child: OnboardingLineIcon(
+                                'wallet',
                                 color: AppColors.gold,
                                 size: 22,
                               ),
@@ -533,8 +534,8 @@ class _ThatsGreatBodyState extends State<ThatsGreatBody>
                                   padding: EdgeInsets.only(
                                     right: index < 4 ? 2 : 0,
                                   ),
-                                  child: const Icon(
-                                    Icons.star,
+                                  child: const OnboardingLineIcon(
+                                    'starF',
                                     color: AppColors.starOrange,
                                     size: 14,
                                   ),

@@ -11,6 +11,7 @@ import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/app_logo.dart';
 import 'package:recipe_ai/screens/auth/login_screen.dart';
 import 'package:recipe_ai/screens/auth/sign_up_screen.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 
 class CreateAccountScreen extends StatefulWidget {
   const CreateAccountScreen({super.key});
@@ -112,8 +113,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                         border: Border.all(color: const Color(0xFFEDE3D2)),
                       ),
                       alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.arrow_back_ios_new,
+                      child: const OnboardingLineIcon(
+                        'back',
                         size: 15,
                         color: AppColors.textDark,
                       ),

@@ -12,6 +12,7 @@ import 'package:recipe_ai/View/Home/social/creator_profile_screen.dart';
 import 'package:recipe_ai/View/Home/recipe_detail_screen.dart'
     show CookbookPickerSheet;
 import 'package:recipe_ai/widgets/comments_sheet.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:share_plus/share_plus.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -204,7 +205,11 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.auto_awesome_rounded, size: 13, color: _D.primary),
+          const OnboardingLineIcon(
+            'sparkF',
+            size: 13,
+            color: _D.primary,
+          ),
           const SizedBox(width: 5),
           Text('5/5', style: _f(13, FontWeight.w700, const Color(0xFFC0860F))),
         ],
@@ -217,8 +222,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.explore_outlined,
+          OnboardingLineIcon(
+            'compass',
             size: 56,
             color: _D.textHint.withValues(alpha: 0.4),
           ),
@@ -258,7 +263,7 @@ class _SearchField extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.search_rounded, size: 20, color: _D.textHint),
+          const OnboardingLineIcon('search', size: 20, color: _D.textHint),
           const SizedBox(width: 10),
           Expanded(
             child: TextField(
@@ -510,8 +515,8 @@ class _RecipeCardState extends State<_RecipeCard> {
                         'View recipe',
                         style: _f(12.5, FontWeight.w700, _D.primary),
                       ),
-                      const Icon(
-                        Icons.chevron_right_rounded,
+                      const OnboardingLineIcon(
+                        'chevR',
                         size: 16,
                         color: _D.primary,
                       ),
@@ -570,8 +575,8 @@ class _RecipeCardState extends State<_RecipeCard> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(
-                                  Icons.access_time_rounded,
+                                const OnboardingLineIcon(
+                                  'clock',
                                   size: 13,
                                   color: _D.primary,
                                 ),
@@ -614,17 +619,21 @@ class _RecipeCardState extends State<_RecipeCard> {
             child: Row(
               children: [
                 _action(
-                  icon: _liked
-                      ? Icons.favorite_rounded
-                      : Icons.favorite_border_rounded,
-                  color: _liked ? _D.primary : _D.textDark,
+                  iconWidget: OnboardingLineIcon(
+                    _liked ? 'heart' : 'heartO',
+                    size: 22,
+                    color: _liked ? _D.primary : _D.textDark,
+                  ),
                   count: _likes,
                   onTap: _toggleLike,
                 ),
                 const SizedBox(width: 20),
                 _action(
-                  icon: Icons.mode_comment_outlined,
-                  color: _D.textDark,
+                  iconWidget: const OnboardingLineIcon(
+                    'comment',
+                    size: 22,
+                    color: _D.textDark,
+                  ),
                   count: _comments,
                   onTap: () => CommentsSheet.show(
                     context,
@@ -637,18 +646,22 @@ class _RecipeCardState extends State<_RecipeCard> {
                 ),
                 const SizedBox(width: 20),
                 _action(
-                  icon: Icons.send_outlined,
-                  color: _D.textDark,
+                  iconWidget: const OnboardingLineIcon(
+                    'send',
+                    size: 22,
+                    color: _D.textDark,
+                  ),
                   count: _shares,
                   showCount: false,
                   onTap: _share,
                 ),
                 const Spacer(),
                 _action(
-                  icon: _saved
-                      ? Icons.bookmark_rounded
-                      : Icons.bookmark_border_rounded,
-                  color: _saved ? _D.primary : _D.textDark,
+                  iconWidget: OnboardingLineIcon(
+                    'bookmark',
+                    size: 22,
+                    color: _saved ? _D.primary : _D.textDark,
+                  ),
                   count: _saves,
                   showCount: false,
                   onTap: _openSaveSheet,
@@ -662,8 +675,7 @@ class _RecipeCardState extends State<_RecipeCard> {
   }
 
   Widget _action({
-    required IconData icon,
-    required Color color,
+    required Widget iconWidget,
     required int count,
     required VoidCallback onTap,
     bool showCount = true,
@@ -674,7 +686,7 @@ class _RecipeCardState extends State<_RecipeCard> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 22, color: color),
+          iconWidget,
           if (showCount && count > 0) ...[
             const SizedBox(width: 7),
             Text('$count', style: _f(13, FontWeight.w700, _D.textBody)),

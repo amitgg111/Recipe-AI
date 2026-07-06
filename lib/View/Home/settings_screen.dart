@@ -15,6 +15,8 @@ import 'package:recipe_ai/View/Home/settings/settings_common.dart';
 import 'package:recipe_ai/View/Home/settings/upgrade_plus_screen.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/sliding_segmented.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
+import 'package:recipe_ai/widgets/crown_icon.dart';
 
 /// The "More" tab (bottom-nav index 4). Settings hub matching the HTML design.
 class SettingsScreen extends StatelessWidget {
@@ -65,14 +67,22 @@ class SettingsScreen extends StatelessWidget {
               SettingsUi.card(
                 rows: [
                   SettingsUi.row(
-                    icon: Icons.notifications_none_rounded,
+                    leadingIcon: const OnboardingLineIcon(
+                      'bellSm',
+                      color: SettingsUi.rowIcon,
+                      size: 20,
+                    ),
                     label: 'Notifications',
                     onTap: () =>
                         Get.to(() => const NotificationSettingsScreen()),
                   ),
                   _unitsRow(settings),
                   SettingsUi.row(
-                    icon: Icons.language_rounded,
+                    leadingIcon: const OnboardingLineIcon(
+                      'globe',
+                      color: SettingsUi.rowIcon,
+                      size: 20,
+                    ),
                     label: 'Language',
                     trailing: Obx(
                       () => Text(
@@ -94,17 +104,29 @@ class SettingsScreen extends StatelessWidget {
               SettingsUi.card(
                 rows: [
                   SettingsUi.row(
-                    icon: Icons.help_outline_rounded,
+                    leadingIcon: const OnboardingLineIcon(
+                      'helpC',
+                      color: SettingsUi.rowIcon,
+                      size: 20,
+                    ),
                     label: 'Help center',
                     onTap: () => Get.to(() => const HelpCenterScreen()),
                   ),
                   SettingsUi.row(
-                    icon: Icons.flag_outlined,
+                    leadingIcon: const OnboardingLineIcon(
+                      'flag',
+                      color: SettingsUi.rowIcon,
+                      size: 20,
+                    ),
                     label: 'Send feedback',
                     onTap: () => Get.to(() => const SendFeedbackScreen()),
                   ),
                   SettingsUi.row(
-                    icon: Icons.shield_outlined,
+                    leadingIcon: const OnboardingLineIcon(
+                      'shield',
+                      color: SettingsUi.rowIcon,
+                      size: 20,
+                    ),
                     label: 'Privacy & terms',
                     onTap: () => Get.to(() => const PrivacyTermsScreen()),
                   ),
@@ -189,8 +211,11 @@ class SettingsScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded,
-                size: 22, color: SettingsUi.chevron),
+            const OnboardingLineIcon(
+              'chevR',
+              color: SettingsUi.chevron,
+              size: 18,
+            ),
           ],
         ),
       ),
@@ -221,14 +246,18 @@ class SettingsScreen extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 42,
-              height: 42,
+              width: 40,
+              height: 40,
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(13),
+                borderRadius: BorderRadius.circular(12),
+                color: const Color(0xFF6D3BD4).withValues(alpha: 0.4),
               ),
-              child: const Icon(Icons.workspace_premium_rounded,
-                  color: Colors.white, size: 24),
+              child: const OnboardingLineIcon(
+                'crown',
+                size: 20,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(width: 13),
             const Expanded(
@@ -255,7 +284,7 @@ class SettingsScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, color: Colors.white),
+            const OnboardingLineIcon('chevR', color: Colors.white, size: 18),
           ],
         ),
       ),
@@ -273,14 +302,20 @@ class SettingsScreen extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: 40,
+            height: 40,
+            padding: const EdgeInsets.only(top: 5),
             decoration: BoxDecoration(
               color: AppColors.goldBg,
               borderRadius: BorderRadius.circular(11),
             ),
-            child: const Icon(Icons.auto_awesome_rounded,
-                color: AppColors.gold, size: 20),
+            child: const Center(
+              child: OnboardingLineIcon(
+                'sparkF',
+                color: AppColors.gold,
+                size: 25,
+              ),
+            ),
           ),
           const SizedBox(width: 12),
           const Expanded(
@@ -330,7 +365,11 @@ class SettingsScreen extends StatelessWidget {
 
   Widget _unitsRow(SettingsController settings) {
     return SettingsUi.row(
-      icon: Icons.straighten_rounded,
+      leadingIcon: const OnboardingLineIcon(
+        'ruler',
+        color: SettingsUi.rowIcon,
+        size: 20,
+      ),
       label: 'Units',
       showChevron: false,
       trailing: Obx(
@@ -375,7 +414,11 @@ class SettingsScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
           ),
         ),
-        icon: const Icon(Icons.logout_rounded, size: 20, color: Color(0xFFE0481F)),
+        icon: const OnboardingLineIcon(
+          'logout',
+          color: Color(0xFFE0481F),
+          size: 20,
+        ),
         label: const Text(
           'Log out',
           style: TextStyle(
@@ -399,8 +442,11 @@ class SettingsScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
           ),
         ),
-        icon: const Icon(Icons.delete_outline_rounded,
-            size: 20, color: Color(0xFFB0453A)),
+        icon: const OnboardingLineIcon(
+          'trash',
+          color: Color(0xFFB0453A),
+          size: 19,
+        ),
         label: const Text(
           'Delete account',
           style: TextStyle(
@@ -481,8 +527,7 @@ class _ConfirmDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: AppColors.background,
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       insetPadding: const EdgeInsets.symmetric(horizontal: 40),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(22, 24, 22, 18),

@@ -6,6 +6,7 @@ import 'package:recipe_ai/View/Home/recipe_detail_screen.dart';
 import 'package:recipe_ai/View/Home/settings/settings_common.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 
 class MyRecipesScreen extends StatefulWidget {
   const MyRecipesScreen({super.key});
@@ -61,10 +62,10 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
                     _chip('All · ${all.length}', 0),
                     const SizedBox(width: 8),
                     _chip('Public · $publicCount', 1,
-                        icon: Icons.public_rounded, iconColor: AppColors.green),
+                        iconName: 'globe', iconColor: AppColors.green),
                     const SizedBox(width: 8),
                     _chip('Private · $privateCount', 2,
-                        icon: Icons.lock_outline_rounded,
+                        iconName: 'lock',
                         iconColor: AppColors.textMedium),
                   ],
                 ),
@@ -111,7 +112,7 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.search_rounded, size: 20, color: AppColors.textHint),
+          const OnboardingLineIcon('search', size: 20, color: AppColors.textHint),
           const SizedBox(width: 10),
           Expanded(
             child: TextField(
@@ -145,7 +146,7 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
     );
   }
 
-  Widget _chip(String label, int index, {IconData? icon, Color? iconColor}) {
+  Widget _chip(String label, int index, {String? iconName, Color? iconColor}) {
     final active = _filter == index;
     return GestureDetector(
       onTap: () => setState(() => _filter = index),
@@ -160,8 +161,9 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
         ),
         child: Row(
           children: [
-            if (icon != null && !active) ...[
-              Icon(icon, size: 14, color: iconColor),
+            if (iconName != null && !active) ...[
+              OnboardingLineIcon(iconName,
+                  size: 14, color: iconColor ?? AppColors.textMedium),
               const SizedBox(width: 5),
             ],
             Text(
@@ -225,7 +227,7 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
                   onTap: () => _showOptions(recipe),
                   child: const Padding(
                     padding: EdgeInsets.only(left: 2),
-                    child: Icon(Icons.more_horiz_rounded,
+                    child: OnboardingLineIcon('dots',
                         size: 20, color: AppColors.iconLight),
                   ),
                 ),
@@ -268,8 +270,8 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
         color: isPublic ? AppColors.greenBgLight : const Color(0xFFF2EEE6),
         borderRadius: BorderRadius.circular(9),
       ),
-      child: Icon(
-        isPublic ? Icons.public_rounded : Icons.lock_outline_rounded,
+      child: OnboardingLineIcon(
+        isPublic ? 'globe' : 'lock',
         size: 16,
         color: isPublic ? AppColors.green : AppColors.textMedium,
       ),
@@ -304,9 +306,11 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
               },
             ),
             _sheetItem(
-              icon: makePublic
-                  ? Icons.public_rounded
-                  : Icons.lock_outline_rounded,
+              iconWidget: OnboardingLineIcon(
+                makePublic ? 'globe' : 'lock',
+                size: 21,
+                color: makePublic ? AppColors.green : AppColors.textDark,
+              ),
               label: makePublic ? 'Make public' : 'Make private',
               color: makePublic ? AppColors.green : AppColors.textDark,
               onTap: () async {
@@ -328,7 +332,8 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
   }
 
   Widget _sheetItem({
-    required IconData icon,
+    IconData? icon,
+    Widget? iconWidget,
     required String label,
     required VoidCallback onTap,
     Color color = AppColors.textDark,
@@ -340,7 +345,7 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
         child: Row(
           children: [
-            Icon(icon, size: 21, color: color),
+            iconWidget ?? Icon(icon, size: 21, color: color),
             const SizedBox(width: 14),
             Text(
               label,
@@ -361,7 +366,7 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.menu_book_rounded,
+          const OnboardingLineIcon('book',
               size: 40, color: AppColors.iconLight),
           const SizedBox(height: 12),
           Text(

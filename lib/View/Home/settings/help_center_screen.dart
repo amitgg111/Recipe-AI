@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:recipe_ai/View/Home/settings/send_feedback_screen.dart';
 import 'package:recipe_ai/View/Home/settings/settings_common.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
+import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 
 class HelpCenterScreen extends StatefulWidget {
   const HelpCenterScreen({super.key});
@@ -16,10 +17,10 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
   int? _expanded;
 
   static const _topics = [
-    ['Importing recipes', Icons.auto_awesome_rounded, AppColors.primary, AppColors.redBg],
-    ['Meal planning', Icons.calendar_today_rounded, AppColors.blue, AppColors.blueBg],
-    ['Groceries', Icons.shopping_cart_outlined, AppColors.green, AppColors.greenBgLight],
-    ['Plus & billing', Icons.workspace_premium_rounded, AppColors.purple, AppColors.purpleBg],
+    ['Importing recipes', 'sparkF2', AppColors.primary, AppColors.redBg],
+    ['Meal planning', 'cal', AppColors.blue, AppColors.blueBg],
+    ['Groceries', 'cart', AppColors.green, AppColors.greenBgLight],
+    ['Plus & billing', 'crown', AppColors.purple, AppColors.purpleBg],
   ];
 
   static const _faqs = [
@@ -46,9 +47,13 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
     final faqs = _faqs
         .asMap()
         .entries
-        .where((e) =>
-            _query.isEmpty ||
-            e.value[0].toString().toLowerCase().contains(_query.toLowerCase()))
+        .where(
+          (e) =>
+              _query.isEmpty ||
+              e.value[0].toString().toLowerCase().contains(
+                _query.toLowerCase(),
+              ),
+        )
         .toList();
 
     return Scaffold(
@@ -62,8 +67,10 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
             _searchBar(),
             const SizedBox(height: 18),
 
-            SettingsUi.label('BROWSE TOPICS',
-                padding: const EdgeInsets.fromLTRB(4, 0, 4, 10)),
+            SettingsUi.label(
+              'BROWSE TOPICS',
+              padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
+            ),
             GridView.count(
               crossAxisCount: 2,
               shrinkWrap: true,
@@ -75,7 +82,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                 for (final t in _topics)
                   _topicCard(
                     label: t[0] as String,
-                    icon: t[1] as IconData,
+                    iconName: t[1] as String,
                     color: t[2] as Color,
                     bg: t[3] as Color,
                   ),
@@ -83,8 +90,10 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
             ),
 
             const SizedBox(height: 22),
-            SettingsUi.label('POPULAR QUESTIONS',
-                padding: const EdgeInsets.fromLTRB(4, 0, 4, 10)),
+            SettingsUi.label(
+              'POPULAR QUESTIONS',
+              padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
+            ),
             SettingsUi.card(
               rows: [
                 for (final e in faqs)
@@ -111,7 +120,11 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.search_rounded, size: 20, color: AppColors.textHint),
+          const OnboardingLineIcon(
+            'search',
+            size: 20,
+            color: AppColors.textHint,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: TextField(
@@ -147,7 +160,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
 
   Widget _topicCard({
     required String label,
-    required IconData icon,
+    required String iconName,
     required Color color,
     required Color bg,
   }) {
@@ -167,11 +180,12 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
             Container(
               width: 40,
               height: 40,
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: bg,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, size: 20, color: color),
+              child: OnboardingLineIcon(iconName, size: 20, color: color),
             ),
             Text(
               label,
@@ -249,8 +263,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
             borderRadius: BorderRadius.circular(13),
           ),
         ),
-        icon: const Icon(Icons.chat_bubble_outline_rounded,
-            size: 19, color: Colors.white),
+        icon: const OnboardingLineIcon('chat', size: 19, color: Colors.white),
         label: const Text(
           'Contact support',
           style: TextStyle(
