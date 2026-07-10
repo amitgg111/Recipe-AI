@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/Controllers/profile_controller.dart';
 import 'package:recipe_ai/Controllers/settings_controller.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
+import 'package:recipe_ai/View/Auth/auth_wrapper.dart';
 import 'package:recipe_ai/View/Home/settings/help_center_screen.dart';
 import 'package:recipe_ai/View/Home/settings/language_screen.dart';
 import 'package:recipe_ai/View/Home/settings/notification_settings_screen.dart';
@@ -16,7 +17,6 @@ import 'package:recipe_ai/View/Home/settings/upgrade_plus_screen.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/sliding_segmented.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
-import 'package:recipe_ai/widgets/crown_icon.dart';
 
 /// The "More" tab (bottom-nav index 4). Settings hub matching the HTML design.
 class SettingsScreen extends StatelessWidget {
@@ -42,7 +42,7 @@ class SettingsScreen extends StatelessWidget {
                   'More',
                   style: TextStyle(
                     fontSize: 22,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.bold,
                     color: AppColors.textDark,
                     letterSpacing: -0.4,
                   ),
@@ -468,9 +468,14 @@ class SettingsScreen extends StatelessWidget {
         confirmColor: const Color(0xFFE0481F),
         onConfirm: () async {
           Get.back();
-          // Preserve exact logout logic + clear local profile cache.
+          // Clear the local profile cache, sign out, then hard-reset navigation
+          // to the auth gate so the user actually leaves the logged-in area
+          // (works even if the AuthWrapper stream is slow to react).
           profileController.clearLocalData();
-          await AuthService.logout();
+          try {
+            await AuthService.logout();
+          } catch (_) {}
+          Get.offAll(() => const AuthWrapper());
         },
       ),
     );

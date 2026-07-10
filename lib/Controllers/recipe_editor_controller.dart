@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
+import 'package:recipe_ai/utils/validation_helper.dart';
+import 'package:recipe_ai/Helper/recipe_publish_policy.dart';
 
 import '../Controllers/home_controller.dart';
 import '../Model/recipe_section_model.dart';
@@ -29,6 +31,14 @@ class RecipeEditorController extends GetxController {
   final prepTimeController = TextEditingController();
   final cookTimeController = TextEditingController();
   final totalTimeController = TextEditingController();
+
+  /// Unit paired with [totalTimeController]'s number: 'minutes' or 'hours'.
+  /// Combined into the stored `totalTime` string on save (e.g. "50 minutes").
+  final RxString totalTimeUnit = 'minutes'.obs;
+
+  /// A recipe must keep at least this many ingredients / steps — the last few
+  /// can't be deleted in the editor.
+  static const int kMinItems = 3;
 
   final servingsController = TextEditingController();
 
@@ -104,7 +114,11 @@ class RecipeEditorController extends GetxController {
 
     cookTimeController.text = recipe!.cookTime ?? '';
 
-    totalTimeController.text = recipe!.totalTime ?? '';
+    // Split the stored total time ("50 mins" / "2 hours") into a number + unit
+    // so the numeric field and the minutes/hours dropdown pre-fill correctly.
+    final tt = recipe!.totalTime ?? '';
+    totalTimeController.text = RegExp(r'\d+').firstMatch(tt)?.group(0) ?? '';
+    totalTimeUnit.value = tt.toLowerCase().contains('h') ? 'hours' : 'minutes';
 
     servingsController.text = recipe!.servings ?? '';
 
@@ -155,7 +169,15 @@ class RecipeEditorController extends GetxController {
   Future<void> pickImage() async {
     final picker = ImagePicker();
 
-    final picked = await picker.pickImage(source: ImageSource.gallery);
+    // Compress + downscale at pick time so the upload on Save is small and
+    // fast (a full-res photo can be several MB → this drops it to a few hundred
+    // KB with no visible quality loss for a recipe photo).
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 70,
+      maxWidth: 1280,
+      maxHeight: 1280,
+    );
 
     if (picked == null) return;
 
@@ -255,6 +277,16 @@ class RecipeEditorController extends GetxController {
   }
 
   void removeIngredientFromSection(int sectionIdx, int itemIdx) {
+    // A recipe must keep at least [kMinItems] ingredients.
+    if (ingredients.length <= kMinItems) {
+      CustomSnackbar.show(
+        title: 'Minimum reached',
+        message: 'A recipe needs at least $kMinItems ingredients — '
+            'this one can’t be removed.',
+        type: SnackbarType.error,
+      );
+      return;
+    }
     final s = ingredientSections[sectionIdx];
     final newItems = List<String>.from(s.items)..removeAt(itemIdx);
     ingredientSections[sectionIdx] = IngredientSection(name: s.name, items: newItems);
@@ -284,6 +316,16 @@ class RecipeEditorController extends GetxController {
   }
 
   void removeInstructionFromSection(int sectionIdx, int stepIdx) {
+    // A recipe must keep at least [kMinItems] steps.
+    if (instructions.length <= kMinItems) {
+      CustomSnackbar.show(
+        title: 'Minimum reached',
+        message: 'A recipe needs at least $kMinItems steps — '
+            'this one can’t be removed.',
+        type: SnackbarType.error,
+      );
+      return;
+    }
     final s = instructionSections[sectionIdx];
     final newSteps = List<String>.from(s.steps)..removeAt(stepIdx);
     instructionSections[sectionIdx] = InstructionSection(name: s.name, steps: newSteps);
@@ -315,6 +357,32 @@ class RecipeEditorController extends GetxController {
           type: SnackbarType.error,
         );
 
+        return;
+      }
+
+      // A recipe needs at least one ingredient and one instruction.
+      final ingErr = ValidationHelper.nonEmptyList(
+        ingredientSections.expand((s) => s.items).toList(),
+        field: 'ingredient',
+      );
+      if (ingErr != null) {
+        CustomSnackbar.show(
+          title: 'Error',
+          message: ingErr,
+          type: SnackbarType.error,
+        );
+        return;
+      }
+      final insErr = ValidationHelper.nonEmptyList(
+        instructionSections.expand((s) => s.steps).toList(),
+        field: 'instruction',
+      );
+      if (insErr != null) {
+        CustomSnackbar.show(
+          title: 'Error',
+          message: insErr,
+          type: SnackbarType.error,
+        );
         return;
       }
 
@@ -370,6 +438,11 @@ class RecipeEditorController extends GetxController {
         imageUrl = imagePath.value.isEmpty ? null : imagePath.value;
       }
 
+      // Discovered copies can never be published — never let an edit flip them
+      // public even if the toggle somehow says so.
+      final bool discoveredCopy = recipe?.isDiscoveredCopy ?? false;
+      final bool effectiveIsPublic = discoveredCopy ? false : isPublic.value;
+
       final recipeData = {
         "title": titleController.text.trim(),
         "description": descriptionController.text.trim(),
@@ -380,7 +453,7 @@ class RecipeEditorController extends GetxController {
 
         "prepTime": prepTimeController.text.trim(),
         "cookTime": cookTimeController.text.trim(),
-        "totalTime": totalTimeController.text.trim(),
+        "totalTime": _composedTotalTime(),
 
         "servings": servingsController.text.trim(),
 
@@ -404,8 +477,12 @@ class RecipeEditorController extends GetxController {
 
         // Privacy: recipes are private by default. `visibility` is canonical;
         // `isPublic` is kept in sync for backward compatibility.
-        "isPublic": isPublic.value,
-        "visibility": isPublic.value ? 'public' : 'private',
+        // A recipe saved from Discover can never be published, so force it
+        // private regardless of the toggle state (the backend enforces this
+        // too). `recipeSource` itself is left untouched on edit so provenance
+        // is preserved.
+        "isPublic": effectiveIsPublic,
+        "visibility": effectiveIsPublic ? 'public' : 'private',
         "ownerId": uid,
         "updatedAt": FieldValue.serverTimestamp(),
       };
@@ -419,9 +496,12 @@ class RecipeEditorController extends GetxController {
         await collection.doc(recipe!.id).update(recipeData);
         Get.back(result: {...recipeData, "id": recipe!.id});
       } else {
-        // New recipes start private with zeroed engagement counters.
+        // New recipes start private with zeroed engagement counters. A recipe
+        // written in the editor is the user's own creation, so it is publishable.
         await collection.add({
           ...recipeData,
+          "recipeSource": RecipePublishPolicy.sourceUserCreated,
+          "originalRecipeId": null,
           "createdAt": FieldValue.serverTimestamp(),
           "isDeleted": false,
           "likesCount": 0,
@@ -447,6 +527,14 @@ class RecipeEditorController extends GetxController {
     } finally {
       isSaving.value = false;
     }
+  }
+
+  /// Combine the total-time number and unit into the stored string, e.g.
+  /// "50" + "minutes" → "50 minutes". Empty when no number is entered.
+  String _composedTotalTime() {
+    final n = totalTimeController.text.trim();
+    if (n.isEmpty) return '';
+    return '$n ${totalTimeUnit.value}';
   }
 
   void updateIngredient(int index, String value) {

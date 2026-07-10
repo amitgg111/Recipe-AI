@@ -128,7 +128,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
           const SizedBox(width: 10),
           Expanded(
             child: TextField(
-              onChanged: (v) => setState(() => _query = v),
+              onChanged: (v) => setState(() => _query = v.trim()),
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,

@@ -15,6 +15,7 @@ class MealPlanController extends GetxController {
   final RxInt viewMode = 0.obs;
   StreamSubscription<QuerySnapshot>? _mealPlanSubscription;
   StreamSubscription<QuerySnapshot>? _monthSubscription;
+  StreamSubscription? _authSub;
 
   static const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
 
@@ -24,11 +25,25 @@ class MealPlanController extends GetxController {
     selectedWeekStart.value = _getMonday(DateTime.now());
     selectedDate.value = DateTime.now();
     ever(selectedWeekStart, (_) => fetchMealPlans());
+    // Re-fetch when auth changes — this controller is permanent and created
+    // BEFORE login (fresh install / reinstall), so meals must load once the
+    // user signs in, not only at startup.
+    _authSub = AuthService.authStateChanges.listen((user) {
+      if (user != null) {
+        fetchMealPlans();
+      } else {
+        _mealPlanSubscription?.cancel();
+        _monthSubscription?.cancel();
+        mealPlanItems.clear();
+        monthMealPlanItems.clear();
+      }
+    });
     fetchMealPlans();
   }
 
   @override
   void onClose() {
+    _authSub?.cancel();
     _mealPlanSubscription?.cancel();
     _monthSubscription?.cancel();
     super.onClose();
@@ -222,6 +237,29 @@ class MealPlanController extends GetxController {
         .collection('meal_plans')
         .doc(id)
         .delete();
+  }
+
+  /// Remove every meal-plan entry that references [recipeId], across ALL
+  /// weeks/months. Called when the source recipe is deleted so no dangling
+  /// meals remain. The active week/month snapshot listeners refresh the UI.
+  Future<void> removeMealsByRecipe(String recipeId) async {
+    final uid = AuthService.currentUser?.uid;
+    if (uid == null || recipeId.isEmpty) return;
+
+    final snapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('meal_plans')
+        .where('recipeId', isEqualTo: recipeId)
+        .get();
+
+    if (snapshot.docs.isEmpty) return;
+
+    final batch = FirebaseFirestore.instance.batch();
+    for (final doc in snapshot.docs) {
+      batch.delete(doc.reference);
+    }
+    await batch.commit();
   }
 
   Future<void> clearWeek() async {

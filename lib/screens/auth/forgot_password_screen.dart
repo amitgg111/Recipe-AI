@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:recipe_ai/utils/validators.dart';
+import 'package:recipe_ai/utils/validation_helper.dart';
 import 'package:recipe_ai/utils/auth_error_mapper.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
@@ -19,6 +20,7 @@ class ForgotPasswordScreen extends StatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _emailFocus = FocusNode();
   bool _isLoading = false;
@@ -43,6 +45,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   Future<void> _onSendResetLink() async {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      // Surface the failure via the screen's existing inline error display,
+      // since the built-in TextFormField error area is intentionally collapsed.
+      setState(() => _emailError = Validators.email(_emailController.text));
+      return;
+    }
     if (_isLoading) return; // prevent duplicate requests / double taps
     FocusScope.of(context).unfocus(); // dismiss the keyboard on submit
 
@@ -135,17 +143,21 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         alignment: Alignment.centerLeft,
                         child: GestureDetector(
                           onTap: () => Navigator.of(context).maybePop(),
-                          behavior: HitTestBehavior.opaque,
-                          child: const SizedBox(
-                            width: 40,
-                            height: 44,
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: OnboardingLineIcon(
-                                'back',
-                                size: 20,
-                                color: Color(0xFF2A211B),
+                          child: Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFFEDE3D2),
                               ),
+                            ),
+                            alignment: Alignment.center,
+                            child: const OnboardingLineIcon(
+                              'back',
+                              size: 15,
+                              color: AppColors.textDark,
                             ),
                           ),
                         ),
@@ -208,63 +220,71 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     const SizedBox(height: 6),
 
                     // Email field (focused style per design)
-                    Container(
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(11),
-                        border: Border.all(
-                          color: _emailError != null
-                              ? const Color(0xFFDC2626)
-                              : const Color(0xFFF2623E),
-                          width: 1.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color:
-                                (_emailError != null
-                                        ? const Color(0xFFDC2626)
-                                        : const Color(0xFFF2623E))
-                                    .withValues(alpha: 0.1),
-                            blurRadius: 0,
-                            spreadRadius: 3,
+                    Form(
+                      key: _formKey,
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      child: Container(
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(11),
+                          border: Border.all(
+                            color: _emailError != null
+                                ? const Color(0xFFDC2626)
+                                : const Color(0xFFF2623E),
+                            width: 1.5,
                           ),
-                        ],
-                      ),
-                      child: TextField(
-                        controller: _emailController,
-                        focusNode: _emailFocus,
-                        keyboardType: TextInputType.emailAddress,
-                        textInputAction: TextInputAction.done,
-                        onChanged: _onEmailChanged,
-                        onSubmitted: (_) => _onSendResetLink(),
-                        style: AppTextStyles.inputText,
-                        decoration: InputDecoration(
-                          hintText: 'Enter the Email',
-                          hintStyle: AppTextStyles.inputHint,
-                          prefixIcon: const Padding(
-                            padding: EdgeInsets.only(left: 14, right: 10),
-                            child: OnboardingLineIcon(
-                              'mail',
-                              size: 20,
-                              color: Color(0xFFF2623E),
+                          boxShadow: [
+                            BoxShadow(
+                              color:
+                                  (_emailError != null
+                                          ? const Color(0xFFDC2626)
+                                          : const Color(0xFFF2623E))
+                                      .withValues(alpha: 0.1),
+                              blurRadius: 0,
+                              spreadRadius: 3,
                             ),
-                          ),
-                          prefixIconConstraints: const BoxConstraints(
-                            minWidth: 0,
-                            minHeight: 0,
-                          ),
-                          filled: false,
-                          isDense: false,
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          disabledBorder: InputBorder.none,
-                          errorBorder: InputBorder.none,
-                          focusedErrorBorder: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 0,
+                          ],
+                        ),
+                        child: TextFormField(
+                          controller: _emailController,
+                          focusNode: _emailFocus,
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.done,
+                          onChanged: _onEmailChanged,
+                          onFieldSubmitted: (_) => _onSendResetLink(),
+                          validator: (v) => ValidationHelper.email(v),
+                          style: AppTextStyles.inputText,
+                          decoration: InputDecoration(
+                            hintText: 'Enter the Email',
+                            hintStyle: AppTextStyles.inputHint,
+                            prefixIcon: const Padding(
+                              padding: EdgeInsets.only(left: 14, right: 10),
+                              child: OnboardingLineIcon(
+                                'mail',
+                                size: 20,
+                                color: Color(0xFFF2623E),
+                              ),
+                            ),
+                            prefixIconConstraints: const BoxConstraints(
+                              minWidth: 0,
+                              minHeight: 0,
+                            ),
+                            filled: false,
+                            isDense: false,
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            disabledBorder: InputBorder.none,
+                            errorBorder: InputBorder.none,
+                            focusedErrorBorder: InputBorder.none,
+                            // Built-in error area collapsed: the message is shown
+                            // via the existing custom _emailError display below.
+                            errorStyle: const TextStyle(height: 0, fontSize: 0),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
                           ),
                         ),
                       ),

@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/Controllers/home_controller.dart';
+import 'package:recipe_ai/widgets/app_network_image.dart';
 import 'package:recipe_ai/Controllers/settings_controller.dart';
 import 'package:recipe_ai/Service/local_notification_service.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
@@ -60,7 +61,8 @@ class _CookModeScreenState extends State<CookModeScreen>
   late final PageController _pageController;
   int _currentPage = 0;
   bool _isFinished = false;
-  int _selectedRating = 0;
+  // Pre-select 4 stars by default on the finish screen (user can still change).
+  int _selectedRating = 4;
 
   /// Active timers keyed by their step index. Supports several running at once.
   final Map<int, _StepTimer> _timers = {};
@@ -1166,10 +1168,11 @@ class _FinishViewState extends State<_FinishView>
             ),
             child: ClipOval(
               child: (recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty)
-                  ? Image.network(recipe.imageUrl!,
+                  ? AppNetworkImage(recipe.imageUrl!,
                       fit: BoxFit.cover,
                       cacheWidth: 450,
-                      errorBuilder: (_, __, ___) => _dishFallback())
+                      placeholder: _dishFallback(),
+                      error: _dishFallback())
                   : _dishFallback(),
             ),
           ),

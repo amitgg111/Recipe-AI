@@ -5,6 +5,7 @@ import 'package:recipe_ai/Controllers/home_controller.dart';
 import 'package:recipe_ai/View/Home/recipe_detail_screen.dart';
 import 'package:recipe_ai/View/Home/settings/settings_common.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
+import 'package:recipe_ai/widgets/cannot_publish_dialog.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 
@@ -61,12 +62,19 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
                   children: [
                     _chip('All · ${all.length}', 0),
                     const SizedBox(width: 8),
-                    _chip('Public · $publicCount', 1,
-                        iconName: 'globe', iconColor: AppColors.green),
+                    _chip(
+                      'Public · $publicCount',
+                      1,
+                      iconName: 'globe',
+                      iconColor: AppColors.green,
+                    ),
                     const SizedBox(width: 8),
-                    _chip('Private · $privateCount', 2,
-                        iconName: 'lock',
-                        iconColor: AppColors.textMedium),
+                    _chip(
+                      'Private · $privateCount',
+                      2,
+                      iconName: 'lock',
+                      iconColor: AppColors.textMedium,
+                    ),
                   ],
                 ),
               ),
@@ -82,7 +90,9 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
                             decoration: BoxDecoration(
                               color: AppColors.surface,
                               borderRadius: BorderRadius.circular(18),
-                              border: Border.all(color: AppColors.surfaceBorder),
+                              border: Border.all(
+                                color: AppColors.surfaceBorder,
+                              ),
                             ),
                             child: Column(
                               children: [
@@ -112,11 +122,15 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
       ),
       child: Row(
         children: [
-          const OnboardingLineIcon('search', size: 20, color: AppColors.textHint),
+          const OnboardingLineIcon(
+            'search',
+            size: 20,
+            color: AppColors.textHint,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: TextField(
-              onChanged: (v) => setState(() => _query = v),
+              onChanged: (v) => setState(() => _query = v.trim()),
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -162,8 +176,11 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
         child: Row(
           children: [
             if (iconName != null && !active) ...[
-              OnboardingLineIcon(iconName,
-                  size: 14, color: iconColor ?? AppColors.textMedium),
+              OnboardingLineIcon(
+                iconName,
+                size: 14,
+                color: iconColor ?? AppColors.textMedium,
+              ),
               const SizedBox(width: 5),
             ],
             Text(
@@ -227,8 +244,11 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
                   onTap: () => _showOptions(recipe),
                   child: const Padding(
                     padding: EdgeInsets.only(left: 2),
-                    child: OnboardingLineIcon('dots',
-                        size: 20, color: AppColors.iconLight),
+                    child: OnboardingLineIcon(
+                      'dots',
+                      size: 20,
+                      color: AppColors.iconLight,
+                    ),
                   ),
                 ),
               ],
@@ -266,6 +286,7 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
     return Container(
       width: 30,
       height: 30,
+      padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
         color: isPublic ? AppColors.greenBgLight : const Color(0xFFF2EEE6),
         borderRadius: BorderRadius.circular(9),
@@ -315,6 +336,12 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
               color: makePublic ? AppColors.green : AppColors.textDark,
               onTap: () async {
                 Get.back();
+                // Recipes saved from Discover can never be published — show the
+                // block popup and change nothing.
+                if (makePublic && !recipe.canBePublished) {
+                  showCannotPublishDialog();
+                  return;
+                }
                 await _home.updateRecipeVisibility(recipe.id, makePublic);
                 CustomSnackbar.show(
                   title: makePublic ? 'Now public' : 'Now private',
@@ -366,8 +393,11 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const OnboardingLineIcon('book',
-              size: 40, color: AppColors.iconLight),
+          const OnboardingLineIcon(
+            'book',
+            size: 40,
+            color: AppColors.iconLight,
+          ),
           const SizedBox(height: 12),
           Text(
             _query.isNotEmpty ? 'No matches' : 'No recipes here yet',

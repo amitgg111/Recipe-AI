@@ -14,7 +14,9 @@ class RecipeDetailEditScreen extends StatefulWidget {
 }
 
 class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
-  final _titleController = TextEditingController(text: 'Coconut Chickpea Curry');
+  final _titleController = TextEditingController(
+    text: 'Coconut Chickpea Curry',
+  );
   final _servingsController = TextEditingController(text: '2');
   final _timeController = TextEditingController(text: '35 min');
 
@@ -39,9 +41,13 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
   ];
 
   final List<_EditInstruction> _instructions = [
-    _EditInstruction('Heat olive oil in a large pan over medium heat. Add diced onion and cook until translucent.'),
+    _EditInstruction(
+      'Heat olive oil in a large pan over medium heat. Add diced onion and cook until translucent.',
+    ),
     _EditInstruction('Add curry paste and stir for 1 minute until fragrant.'),
-    _EditInstruction('Pour in coconut milk and bring to a simmer. Add chickpeas and bell pepper.'),
+    _EditInstruction(
+      'Pour in coconut milk and bring to a simmer. Add chickpeas and bell pepper.',
+    ),
     _EditInstruction('Cook for 15 minutes, stirring occasionally.'),
     _EditInstruction('Stir in baby spinach and cook until wilted.'),
   ];
@@ -269,7 +275,7 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
         controller: controller,
         style: AppTextStyles.inputText,
         decoration: const InputDecoration(
-          contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 0),
           filled: false,
           isDense: false,
           border: InputBorder.none,
@@ -295,7 +301,7 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
         controller: controller,
         style: AppTextStyles.inputText,
         decoration: const InputDecoration(
-          contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 0),
           filled: false,
           isDense: false,
           border: InputBorder.none,
@@ -366,7 +372,7 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
                     decoration: const InputDecoration(
                       contentPadding: EdgeInsets.symmetric(
                         horizontal: 12,
-                        vertical: 8,
+                        vertical: 0,
                       ),
                       filled: false,
                       isDense: false,
@@ -435,7 +441,10 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
                 ),
                 textAlign: TextAlign.center,
                 decoration: const InputDecoration(
-                  contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 0,
+                  ),
                   filled: false,
                   isDense: false,
                   border: InputBorder.none,
@@ -467,7 +476,7 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
                 decoration: const InputDecoration(
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: 10,
-                    vertical: 8,
+                    vertical: 0,
                   ),
                   filled: false,
                   isDense: false,
@@ -484,7 +493,11 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
           const SizedBox(width: 6),
           GestureDetector(
             onTap: () {},
-            child: const Icon(Icons.delete_outline, size: 20, color: AppColors.red),
+            child: const Icon(
+              Icons.delete_outline,
+              size: 20,
+              color: AppColors.red,
+            ),
           ),
         ],
       ),
@@ -557,7 +570,7 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
                       color: AppColors.textDark,
                     ),
                     decoration: const InputDecoration(
-                      contentPadding: EdgeInsets.all(10),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 10),
                       filled: false,
                       isDense: false,
                       border: InputBorder.none,
@@ -571,10 +584,15 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
                 ),
                 const SizedBox(height: 6),
                 GestureDetector(
-                  onTap: () => SetStepTimerSheet.show(context, stepNumber: index + 1),
+                  onTap: () =>
+                      SetStepTimerSheet.show(context, stepNumber: index + 1),
                   child: Row(
                     children: [
-                      const Icon(Icons.timer_outlined, size: 14, color: AppColors.primary),
+                      const Icon(
+                        Icons.timer_outlined,
+                        size: 14,
+                        color: AppColors.primary,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         'Add timer',
@@ -593,7 +611,11 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
           const SizedBox(width: 8),
           GestureDetector(
             onTap: () {},
-            child: const Icon(Icons.delete_outline, size: 20, color: AppColors.red),
+            child: const Icon(
+              Icons.delete_outline,
+              size: 20,
+              color: AppColors.red,
+            ),
           ),
         ],
       ),
@@ -693,7 +715,7 @@ class _EditIngredientGroup {
   // typed edits survive rebuilds and controllers don't leak on each build.
   final TextEditingController nameController;
   _EditIngredientGroup({required this.name, required this.items})
-      : nameController = TextEditingController(text: name);
+    : nameController = TextEditingController(text: name);
 }
 
 class _EditIngredient {
@@ -702,13 +724,13 @@ class _EditIngredient {
   final TextEditingController amountController;
   final TextEditingController nameController;
   _EditIngredient({required this.amount, required this.name})
-      : amountController = TextEditingController(text: amount),
-        nameController = TextEditingController(text: name);
+    : amountController = TextEditingController(text: amount),
+      nameController = TextEditingController(text: name);
 }
 
 class _EditInstruction {
   String text;
   final TextEditingController textController;
   _EditInstruction(this.text)
-      : textController = TextEditingController(text: text);
+    : textController = TextEditingController(text: text);
 }

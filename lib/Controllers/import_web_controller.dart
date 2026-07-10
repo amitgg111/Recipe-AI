@@ -11,6 +11,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_scraper/recipe_scraper.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/Model/recipe_section_model.dart';
+import 'package:recipe_ai/Controllers/home_controller.dart';
 
 enum ImportStage { landing, browsing }
 
@@ -87,6 +88,13 @@ class ImportWebController extends GetxController {
   static const int freeRecipesTotal = 5;
   final RxInt freeRecipesLeft = 5.obs;
 
+  /// Google `-site:` filters appended to name searches so video/social sites
+  /// (which don't show a readable, importable recipe) are excluded — only
+  /// recipe-detail websites appear.
+  static const String _excludeSites =
+      ' -site:youtube.com -site:youtu.be -site:instagram.com'
+      ' -site:tiktok.com -site:facebook.com -site:pinterest.com';
+
   bool get showImportBar =>
       stage.value == ImportStage.browsing &&
       currentUrl.value != null &&
@@ -146,9 +154,13 @@ class ImportWebController extends GetxController {
       webViewController.loadRequest(directUri);
       return;
     }
-    final encoded = Uri.encodeQueryComponent('$query recipe');
+    // `udm=14` is Google's plain "Web" results mode: a classic list of website
+    // links with NO AI overview, video carousels, "People also ask", "People
+    // also search for" or short-video blocks. The `-site:` filters drop
+    // video/social sites so only recipe-detail websites remain.
+    final encoded = Uri.encodeQueryComponent('$query recipe$_excludeSites');
     webViewController.loadRequest(
-      Uri.parse('https://www.google.com/search?q=$encoded'),
+      Uri.parse('https://www.google.com/search?q=$encoded&udm=14'),
     );
   }
 
@@ -250,7 +262,7 @@ class ImportWebController extends GetxController {
 
   // ── Save to Firestore ──────────────────────────────────────────────────────
 
-  Future<bool> saveRecipe(ScrapedRecipeData recipe) async {
+  Future<RecipeModel?> saveRecipe(ScrapedRecipeData recipe) async {
     try {
       final uid = AuthService.currentUser?.uid;
 
@@ -261,7 +273,7 @@ class ImportWebController extends GetxController {
           type: SnackbarType.error,
         );
 
-        return false;
+        return null;
       }
 
       String? firebaseImageUrl;
@@ -271,7 +283,8 @@ class ImportWebController extends GetxController {
       }
       log("Original Image: ${recipe.imageUrl}");
       log("Firebase Image: $firebaseImageUrl");
-      await FirebaseFirestore.instance
+      final resolvedImageUrl = firebaseImageUrl ?? recipe.imageUrl;
+      final docRef = await FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
           .collection('recipes')
@@ -281,7 +294,7 @@ class ImportWebController extends GetxController {
 
             // Firebase Storage URL (fall back to the scraped URL only if the
             // re-upload failed, so a saved recipe always has a usable image).
-            'imageUrl': firebaseImageUrl ?? recipe.imageUrl,
+            'imageUrl': resolvedImageUrl,
 
             'sourceUrl': recipe.sourceUrl,
             'prepTime': recipe.prepTime,
@@ -306,6 +319,9 @@ class ImportWebController extends GetxController {
             // Privacy: imported recipes are private by default.
             'visibility': 'private',
             'isPublic': false,
+            // Ownership: imported recipes MAY later be published by the user.
+            'recipeSource': 'imported',
+            'originalRecipeId': null,
             'ownerId': uid,
             'isDeleted': false,
             'likesCount': 0,
@@ -321,7 +337,24 @@ class ImportWebController extends GetxController {
         freeRecipesLeft.value--;
       }
       log('------------------------ok');
-      return true;
+      return RecipeModel(
+        id: docRef.id,
+        title: recipe.title,
+        description: recipe.description,
+        imageUrl: resolvedImageUrl,
+        sourceUrl: recipe.sourceUrl,
+        prepTime: recipe.prepTime,
+        cookTime: recipe.cookTime,
+        totalTime: recipe.totalTime,
+        servings: recipe.servings,
+        category: recipe.category,
+        cuisine: recipe.cuisine,
+        keywords: recipe.keywords,
+        ingredients: recipe.ingredients,
+        instructions: recipe.instructions,
+        ingredientSections: recipe.ingredientSections,
+        instructionSections: recipe.instructionSections,
+      );
     } catch (e) {
       log('-------------------------error');
       CustomSnackbar.show(
@@ -330,7 +363,7 @@ class ImportWebController extends GetxController {
         type: SnackbarType.error,
       );
 
-      return false;
+      return null;
     }
   }
 
@@ -675,13 +708,18 @@ JSON.stringify((function() {
       if (title == null || title.isEmpty) return null;
 
       // ── Resolve ingredient sections ────────────────────────────────────────
+      // Prefer structured sources (WPRM / Tasty plugins, then schema.org
+      // JSON-LD) over the greedy generic DOM grab, which can otherwise scoop up
+      // share/action buttons ("Print", "Add Cooksnap", …) as "ingredients".
+      final jsonLdIngs = _extractIngredientSections(
+        _findRecipeJsonRaw(payload['jsonLd'], 'recipeIngredient'),
+      );
       final ingredientSections =
           _parseDomSections(payload['wprmIngs']) ??
           _parseDomSections(payload['tastyIngs']) ??
+          (jsonLdIngs.isNotEmpty ? jsonLdIngs : null) ??
           _parseDomSections(payload['genericIngs']) ??
-          _extractIngredientSections(
-            _findRecipeJsonRaw(payload['jsonLd'], 'recipeIngredient'),
-          );
+          <IngredientSection>[];
 
       // ── Resolve instruction sections ───────────────────────────────────────
       final instructionSections =
@@ -1143,7 +1181,7 @@ JSON.stringify((function() {
       }
       if (!/^https?:\\/\\//i.test(target)) {
         target = 'https://www.google.com/search?q=' +
-          encodeURIComponent(query + ' recipe');
+          encodeURIComponent(query + ' recipe$_excludeSites') + '&udm=14';
       }
       window.location.href = target;
     });

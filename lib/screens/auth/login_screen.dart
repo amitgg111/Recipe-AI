@@ -311,8 +311,25 @@ class _LoginScreenState extends State<LoginScreen> {
                       height: 40,
                       child: Align(
                         alignment: Alignment.centerLeft,
-                        child: _BackButton(
+                        child: GestureDetector(
                           onTap: () => Navigator.of(context).maybePop(),
+                          child: Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFFEDE3D2),
+                              ),
+                            ),
+                            alignment: Alignment.center,
+                            child: const OnboardingLineIcon(
+                              'back',
+                              size: 15,
+                              color: AppColors.textDark,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -495,9 +512,9 @@ class _LoginScreenState extends State<LoginScreen> {
           enabled: _isLoginValid,
           onTap: _onLogin,
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 14),
         const _OrDivider(),
-        const SizedBox(height: 18),
+        const SizedBox(height: 14),
         _buildSocialRow(),
       ],
     );
@@ -529,7 +546,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _buildTextField(
           controller: _signupEmailController,
           focusNode: _signupEmailFocus,
-          hint: 'Enter the name',
+          hint: 'Enter The Email',
           prefixIconName: 'mail',
           keyboardType: TextInputType.emailAddress,
           errorText: _signupEmailError,
@@ -815,7 +832,7 @@ class _LoginScreenState extends State<LoginScreen> {
               focusedErrorBorder: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 14,
-                vertical: 0,
+                vertical: 11,
               ),
             ),
           ),
@@ -858,31 +875,6 @@ class _AppLogo extends StatelessWidget {
   }
 }
 
-class _BackButton extends StatelessWidget {
-  final VoidCallback onTap;
-  const _BackButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const OnboardingLineIcon(
-          'back',
-          size: 18,
-          color: AppColors.textDark,
-        ),
-      ),
-    );
-  }
-}
-
 class _PrimaryActionButton extends StatelessWidget {
   final String label;
   final VoidCallback? onTap;
@@ -910,16 +902,16 @@ class _PrimaryActionButton extends StatelessWidget {
               ? AppColors.primary.withValues(alpha: 0.7)
               : enabled
               ? AppColors.primary
-              : AppColors.primary.withValues(alpha: 0.5),
+              : AppColors.divider,
           borderRadius: BorderRadius.circular(AppDimensions.radiusButton),
-          boxShadow: const [
-            BoxShadow(
-              color: AppColors.primaryShadow,
-              blurRadius: 30,
-              offset: Offset(0, 16),
-              spreadRadius: -10,
-            ),
-          ],
+          // boxShadow: const [
+          //   BoxShadow(
+          //     color: AppColors.primaryShadow,
+          //     blurRadius: 30,
+          //     offset: Offset(0, 16),
+          //     spreadRadius: -10,
+          //   ),
+          // ],
         ),
         child: Center(
           child: isLoading

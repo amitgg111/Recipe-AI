@@ -180,7 +180,8 @@ class OnboardingLineIcon extends StatelessWidget {
       sw: 1.9,
     ),
     'comment': (
-      body: '<path d="M21 11.5a8 8 0 0 1-11.5 7.2L4 20l1.3-5A8 8 0 1 1 21 11.5z"/>',
+      body:
+          '<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>',
       size: 24,
       sw: 1.9,
     ),
@@ -215,6 +216,13 @@ class OnboardingLineIcon extends StatelessWidget {
     'bookmark2': (
       body: '<path d="M6 4h12a1 1 0 0 1 1 1v15l-7-4-7 4V5a1 1 0 0 1 1-1z"/>',
       size: 22,
+      sw: 1.9,
+    ),
+    // Filled bookmark — used for the "saved" state so the whole icon is solid.
+    'bookmarkF': (
+      body:
+          '<path d="M6 4h12a1 1 0 0 1 1 1v15l-7-4-7 4V5a1 1 0 0 1 1-1z" fill="{c}" stroke="{c}"/>',
+      size: 20,
       sw: 1.9,
     ),
 
@@ -354,7 +362,7 @@ class OnboardingLineIcon extends StatelessWidget {
     ),
     'heartO': (
       body:
-          '<path d="M12 20s-7-4.6-7-9.3A3.7 3.7 0 0 1 12 7a3.7 3.7 0 0 1 7 3.7C19 15.4 12 20 12 20z"/>',
+          '<path d="M12 20.3l-1.45-1.32C5.4 14.36 2 11.28 2 7.5 2 4.42 4.42 2 7.5 2c1.74 0 3.41.81 4.5 2.09C13.09 2.81 14.76 2 16.5 2 19.58 2 22 4.42 22 7.5c0 3.78-3.4 6.86-8.55 11.54L12 20.3z"/>',
       size: 20,
       sw: 1.9,
     ),
@@ -392,8 +400,8 @@ class OnboardingLineIcon extends StatelessWidget {
     ),
     'heart': (
       body:
-          '<path d="M12 20s-7-4.6-7-9.3A3.7 3.7 0 0 1 12 7a3.7 3.7 0 0 1 7 3.7C19 15.4 12 20 12 20z" fill="{c}" stroke="none"/>',
-      size: 17,
+          '<path d="M12 20.3l-1.45-1.32C5.4 14.36 2 11.28 2 7.5 2 4.42 4.42 2 7.5 2c1.74 0 3.41.81 4.5 2.09C13.09 2.81 14.76 2 16.5 2 19.58 2 22 4.42 22 7.5c0 3.78-3.4 6.86-8.55 11.54L12 20.3z" fill="{c}" stroke="none"/>',
+      size: 20,
       sw: 1.9,
     ),
     'crown': (

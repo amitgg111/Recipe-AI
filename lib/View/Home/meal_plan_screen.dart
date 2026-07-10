@@ -15,7 +15,6 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
 import 'package:recipe_ai/Controllers/grocery_store_controller.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
-import 'package:recipe_ai/widgets/crown_icon.dart';
 
 class _S {
   static const bg = AppColors.background;

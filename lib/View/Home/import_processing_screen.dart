@@ -56,7 +56,7 @@ class ImportProcessingScreenState extends State<ImportProcessingScreen>
     // barfill 3.2s (8%→88%). Ping-pong keeps the fill seamless (no snap-reset).
     _bar = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 3200),
+      duration: const Duration(milliseconds: 5200),
     )..repeat(reverse: true);
 
     for (var i = 0; i < widget.steps.length; i++) {
@@ -66,7 +66,7 @@ class ImportProcessingScreenState extends State<ImportProcessingScreen>
   }
 
   void _scheduleAdvance() {
-    _advance = Timer(const Duration(milliseconds: 1600), () {
+    _advance = Timer(const Duration(milliseconds: 3600), () {
       if (!mounted) return;
       if (_activeStep < widget.steps.length - 1) {
         setState(() {
@@ -94,64 +94,75 @@ class ImportProcessingScreenState extends State<ImportProcessingScreen>
       canPop: false,
       child: Scaffold(
         backgroundColor: AppColors.background,
+        // A transient keyboard (carried over from the share / import flow) must
+        // not shrink this fixed layout; the scroll view also keeps it safe on
+        // very short screens.
+        resizeToAvoidBottomInset: false,
         body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(28, 14, 28, 28),
-            child: Column(
-              children: [
-                // Brand: app logo + name
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const AppLogo(size: 34),
-                    const SizedBox(width: 9),
-                    AppWordmark(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.2,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 38),
+          child: LayoutBuilder(
+            builder: (context, constraints) => SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(28, 14, 28, 28),
+                  child: Column(
+                    children: [
+                      // Brand: app logo + name
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const AppLogo(size: 34),
+                          const SizedBox(width: 9),
+                          AppWordmark(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.2,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 38),
 
-                // Food-themed AI scan animation
-                _scanAnimation(),
+                      // Food-themed AI scan animation
+                      _scanAnimation(),
 
-                const SizedBox(height: 34),
-                Text(
-                  'Reading your recipe…',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 23,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textDark,
-                    letterSpacing: -0.3,
+                      const SizedBox(height: 34),
+                      Text(
+                        'Reading your recipe…',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 23,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textDark,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        "Our AI is pulling out every detail so you don't have to.",
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14,
+                          height: 1.5,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textMedium,
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+
+                      _progressBar(),
+
+                      const SizedBox(height: 22),
+                      ...List.generate(
+                        widget.steps.length,
+                        (i) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _checkRow(widget.steps[i], _status[i]),
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  "Our AI is pulling out every detail so you don't have to.",
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
-                    height: 1.5,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textMedium,
-                  ),
-                ),
-                const SizedBox(height: 22),
-
-                _progressBar(),
-
-                const SizedBox(height: 22),
-                ...List.generate(
-                  widget.steps.length,
-                  (i) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _checkRow(widget.steps[i], _status[i]),
-                  ),
-                ),
-                const Spacer(),
-              ],
+              ),
             ),
           ),
         ),

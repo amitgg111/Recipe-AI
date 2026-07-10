@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/Controllers/cookbook_controller.dart';
+import 'package:recipe_ai/widgets/app_network_image.dart';
 import 'package:recipe_ai/Controllers/home_controller.dart';
 // hide AnimatedBuilder: cookbooks_screen defines its own class of that name,
 // which would otherwise clash with Flutter's AnimatedBuilder used below.
 import 'package:recipe_ai/View/Home/cookbooks_screen.dart' hide AnimatedBuilder;
 import 'package:recipe_ai/View/Home/recipe_detail_screen.dart';
+import 'package:recipe_ai/screens/import/import_picker_screen.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_dimensions.dart';
@@ -634,6 +636,7 @@ class _EmptyStateState extends State<_EmptyState>
                       child: Container(
                         width: 46,
                         height: 46,
+                        padding: const EdgeInsets.only(top: 8),
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
                             begin: Alignment(-0.342, -0.940),
@@ -682,7 +685,9 @@ class _EmptyStateState extends State<_EmptyState>
             const SizedBox(height: 28),
             // Add a recipe button
             GestureDetector(
-              onTap: widget.onAddRecipe,
+              onTap: () {
+                Get.to(() => const ImportPickerScreen());
+              },
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
@@ -691,7 +696,7 @@ class _EmptyStateState extends State<_EmptyState>
                 decoration: BoxDecoration(
                   color: AppColors.primary,
                   borderRadius: BorderRadius.circular(
-                    AppDimensions.radiusButton,
+                    AppDimensions.radiusButton + 10,
                   ),
                   boxShadow: const [
                     BoxShadow(
@@ -898,17 +903,14 @@ class _RecipeListTile extends StatelessWidget {
 
   Widget _buildImage() {
     if (recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty) {
-      return Image.network(
+      return AppNetworkImage(
         recipe.imageUrl!,
         width: 74,
         height: 74,
         fit: BoxFit.cover,
         cacheWidth: 222,
-        errorBuilder: (_, __, ___) => _placeholder(),
-        loadingBuilder: (_, child, loading) {
-          if (loading == null) return child;
-          return _placeholder();
-        },
+        placeholder: _placeholder(),
+        error: _placeholder(),
       );
     }
     return _placeholder();
@@ -1048,7 +1050,7 @@ class _RenameCookbookSheetState extends State<_RenameCookbookSheet> {
                 controller: _nameController,
                 autofocus: true,
                 cursorColor: const Color(0xFFF2623E),
-                textAlignVertical: TextAlignVertical.center,
+
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,

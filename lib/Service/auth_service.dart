@@ -8,6 +8,8 @@ import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:get/get.dart';
+import 'package:recipe_ai/Controllers/onboarding_controller.dart';
 import 'package:recipe_ai/utils/auth_error_mapper.dart';
 
 /// Outcome of an Apple Sign In attempt.
@@ -93,6 +95,8 @@ class AuthService {
 
     await credential.user?.updateDisplayName(trimmedName);
 
+    // merge:true so this never clobbers the `onboarding` map that
+    // OnboardingController writes to the same doc on this auth event.
     await _firestore.collection("users").doc(credential.user!.uid).set({
       "uid": credential.user!.uid,
       "name": trimmedName,
@@ -100,7 +104,13 @@ class AuthService {
       "photoUrl": "",
       "provider": "email",
       "createdAt": FieldValue.serverTimestamp(),
-    });
+    }, SetOptions(merge: true));
+
+    // Guarantee the onboarding selections land in Firebase for this new
+    // account, regardless of the auth-listener timing.
+    if (Get.isRegistered<OnboardingController>()) {
+      await OnboardingController.to.syncToFirebase(credential.user!.uid);
+    }
 
     return credential;
   }
@@ -329,7 +339,8 @@ class AuthService {
     final DocumentSnapshot<Map<String, dynamic>> snapshot = await ref.get();
 
     if (!snapshot.exists) {
-      // First-time user → create the full profile document.
+      // First-time user → create the full profile document. merge:true so it
+      // never clobbers the `onboarding` map written on the same auth event.
       await ref.set({
         'uid': user.uid,
         'name': appleFullName.isNotEmpty ? appleFullName : (user.displayName ?? ''),
@@ -337,7 +348,10 @@ class AuthService {
         'photoUrl': user.photoURL ?? '',
         'provider': 'apple',
         'createdAt': FieldValue.serverTimestamp(),
-      });
+      }, SetOptions(merge: true));
+      if (Get.isRegistered<OnboardingController>()) {
+        await OnboardingController.to.syncToFirebase(user.uid);
+      }
       return;
     }
 
@@ -419,8 +433,16 @@ class AuthService {
   //   await _auth.signOut();
   // }
   static Future<void> logout() async {
-    await GoogleSignIn().disconnect(); // IMPORTANT
-    await GoogleSignIn().signOut();
+    // Google disconnect/sign-out throws when the current session isn't a
+    // Google one (email / Apple sign-in). Guard it so it can NEVER block the
+    // Firebase sign-out below — otherwise "Log out" silently does nothing.
+    try {
+      final google = GoogleSignIn();
+      if (await google.isSignedIn()) {
+        await google.disconnect();
+      }
+      await google.signOut();
+    } catch (_) {}
     await _auth.signOut();
   }
 }

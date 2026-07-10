@@ -1,7 +1,9 @@
+
 const {onCall} = require("firebase-functions/v2/https");
 const {setGlobalOptions} = require("firebase-functions/v2");
 const {GoogleGenAI} = require("@google/genai");
 const admin = require("firebase-admin");
+const crypto = require("crypto");
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -23,6 +25,9 @@ const getAI = () => {
 const RECIPE_RESPONSE_SCHEMA = {
   type: "OBJECT",
   properties: {
+    // False when the source image/content is not a food/recipe at all — the
+    // client then aborts the import instead of saving a made-up recipe.
+    isRecipe: {type: "BOOLEAN"},
     title: {type: "STRING"},
     description: {type: "STRING"},
     imageUrl: {type: "STRING"},
@@ -33,6 +38,18 @@ const RECIPE_RESPONSE_SCHEMA = {
     servings: {type: "STRING"},
     category: {type: "STRING"},
     cuisine: {type: "STRING"},
+    imagePrompt: {
+      type: "STRING",
+      description:
+        "A single, self-contained food-photography prompt for an AI " +
+        "image generator that shows ONLY the finished, cooked dish of " +
+        "THIS exact recipe, plated and filling the frame. Describe its " +
+        "real appearance, colours, textures, main visible ingredients, " +
+        "garnish and serving vessel. Food only — never landscapes, " +
+        "scenery, nature, people, buildings, text or another dish. Add: " +
+        "ultra realistic professional restaurant food photo, DSLR, 4K, " +
+        "natural lighting, 45-degree close-up hero shot.",
+    },
     keywords: {type: "ARRAY", items: {type: "STRING"}},
     ingredients: {type: "ARRAY", items: {type: "STRING"}},
     instructions: {type: "ARRAY", items: {type: "STRING"}},
@@ -80,6 +97,7 @@ const RECIPE_RESPONSE_SCHEMA = {
     "servings",
     "category",
     "cuisine",
+    "imagePrompt",
     "keywords",
     "ingredients",
     "instructions",
@@ -234,6 +252,7 @@ function normalizeRecipe(raw) {
   recipe.servings = String(recipe.servings || "4").trim();
   recipe.category = String(recipe.category || "").trim();
   recipe.cuisine = String(recipe.cuisine || "").trim();
+  recipe.imagePrompt = String(recipe.imagePrompt || "").trim();
 
   recipe.keywords = Array.isArray(recipe.keywords) ?
     recipe.keywords.map((k) => String(k).trim()).filter(Boolean) :
@@ -309,70 +328,186 @@ function normalizeRecipe(raw) {
   return recipe;
 }
 
+// ── AI Image Generation ──────────────────────────────────────────────────────
+// Generates a real food photo for a recipe using Imagen (via @google/genai),
+// uploads it to Firebase Storage, and returns a public URL. This replaces the
+// old approach of asking Gemini's text model to "guess" an Unsplash/Pexels
+// URL, which frequently produced broken or non-existent links.
+
+/**
+ * Fallback image prompt — used ONLY if Gemini did not supply
+ * `recipe.imagePrompt`. Kept short and food-anchored; the primary prompt is
+ * authored by Gemini alongside the recipe (RECIPE_RESPONSE_SCHEMA.imagePrompt),
+ * so there is no separate prompt-building pipeline.
+ * @param {Object} recipe Recipe object.
+ * @return {string} Imagen prompt.
+ */
+function buildImagePrompt(recipe) {
+  const r = recipe || {};
+  const title = String(r.title || "dish").trim();
+  const cuisine = String(r.cuisine || "").trim();
+  const desc = String(r.description || "").trim();
+  const cuisineTag = cuisine ? ` (${cuisine})` : "";
+  return [
+    "Ultra-realistic close-up FOOD PHOTOGRAPH of the finished, cooked",
+    `dish "${title}"${cuisineTag}, plated and filling almost the entire`,
+    "frame. This is food photography ONLY — never a landscape, scenery,",
+    "nature, people, buildings or any other dish. Generate exactly this",
+    `dish. ${desc}`,
+    "Professional restaurant-quality DSLR photo, 4K, natural lighting,",
+    "45-degree hero angle, shallow depth of field, authentic colours,",
+    "no text, no watermark, no logo, no illustration, no cartoon.",
+  ].join("\n").trim();
+}
+
+/**
+ * Generates an image with Imagen and stores it in Firebase Storage.
+ * Returns "" (empty string) on any failure so callers can fall back safely.
+ *
+ * @param {Object} ai GoogleGenAI client instance.
+ * @param {Object} recipe Recipe object.
+ * @return {Promise<string>} Public image URL, or "" on failure.
+ */
+async function generateAndStoreRecipeImage(ai, recipe) {
+  try {
+    if (!recipe || !recipe.title) return "";
+
+    // Prefer the image prompt Gemini authored alongside the recipe (it knows
+    // the exact dish); fall back to a short built prompt. A fixed food anchor
+    // is prepended so Imagen can never drift to a non-food subject.
+    const base = String(recipe.imagePrompt || "").trim() ||
+      buildImagePrompt(recipe);
+    const prompt =
+      "Ultra-realistic FOOD PHOTOGRAPH, food only. The single finished " +
+      "cooked dish fills almost the entire frame. " + base + " Never " +
+      "generate landscapes, scenery, nature, sky, people, buildings, " +
+      "text, watermark or any non-food subject.";
+
+    const response = await ai.models.generateImages({
+      model: "imagen-3.0-generate-002",
+      prompt,
+      config: {
+        numberOfImages: 1,
+        aspectRatio: "4:3",
+      },
+    });
+
+    const generatedImages = response && response.generatedImages;
+    const first = Array.isArray(generatedImages) ? generatedImages[0] : null;
+    const imageBytes = first && first.image && first.image.imageBytes;
+
+    if (!imageBytes) {
+      console.error("Image generation returned no image bytes.");
+      return "";
+    }
+
+    const buffer = Buffer.from(imageBytes, "base64");
+    const bucket = admin.storage().bucket();
+    const safeSeed = recipe.title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "")
+        .slice(0, 60) || "recipe";
+    const fileName =
+      `recipe-images/${safeSeed}-${Date.now()}-` +
+      `${Math.random().toString(36).slice(2, 8)}.png`;
+    const file = bucket.file(fileName);
+
+    const downloadToken = crypto.randomUUID();
+
+    await file.save(buffer, {
+      metadata: {
+        contentType: "image/png",
+        cacheControl: "public, max-age=31536000",
+        metadata: {
+          firebaseStorageDownloadTokens: downloadToken,
+        },
+      },
+    });
+
+    return `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(fileName)}?alt=media&token=${downloadToken}`;
+  } catch (error) {
+    console.error("generateAndStoreRecipeImage failed:", error);
+    return "";
+  }
+}
+
 const RECIPE_IMAGE_PROMPT = `
-You are a world-class chef and recipe developer.
+  You are a world-class chef and recipe developer.
 
-Analyze the food image and generate the most accurate complete recipe.
+  STEP 0 — IS THIS A FOOD / RECIPE IMAGE?
+  First decide whether the image actually shows food: a cooked dish, plated
+  food, a food or drink item, raw ingredients, or a written/printed recipe.
+  - If it does NOT (e.g. a person or selfie, an animal, a landscape, a building,
+    a screenshot of non-food content, a random object, or a document that is not
+    a recipe), return EXACTLY:
+    {"isRecipe": false, "title": "", "description": "", "ingredients": [],
+     "instructions": [], "ingredientSections": [], "instructionSections": []}
+    and DO NOT invent, guess, or hallucinate a recipe.
+  - Only if it clearly shows food or a recipe, set "isRecipe": true and produce
+    the full structured recipe described below.
 
-CRITICAL — SECTION STRUCTURE (MUST FOLLOW):
+  Analyze the food image and generate the most accurate complete recipe.
+
+  CRITICAL — SECTION STRUCTURE (MUST FOLLOW):
 - ingredientSections and instructionSections are the PRIMARY structure.
 - ALWAYS split multi-component dishes into separate named sections.
 - NEVER put all ingredients in one section when the dish has distinct parts.
 - NEVER put all steps in one section when the dish has distinct cooking phases.
 
-Examples of REQUIRED section splits:
+  Examples of REQUIRED section splits:
 
-Veg Manchurian:
-ingredientSections: [
-  {"name":"For Manchurian Balls","items":[
-    "1¼ cup cabbage finely chopped","½ cup carrot grated", "..."
-  ]},
-  {"name":"For Manchurian Sauce","items":[
-    "1½ tablespoons oil","¾ tablespoon garlic", "..."
-  ]}
-]
-instructionSections: [
-  {"name":"Prepare Manchurian Balls","steps":[
-    "Mix vegetables...", "Shape into balls...", "..."
-  ]},
-  {"name":"Prepare Manchurian Sauce","steps":[
-    "Heat oil...", "Add sauces...", "..."
-  ]},
-  {"name":"Combine and Serve","steps":[
-    "Toss balls in sauce...", "..."
-  ]}
-]
+  Veg Manchurian:
+  ingredientSections: [
+    {"name":"For Manchurian Balls","items":[
+      "1¼ cup cabbage finely chopped","½ cup carrot grated", "..."
+    ]},
+    {"name":"For Manchurian Sauce","items":[
+      "1½ tablespoons oil","¾ tablespoon garlic", "..."
+    ]}
+  ]
+  instructionSections: [
+    {"name":"Prepare Manchurian Balls","steps":[
+      "Mix vegetables...", "Shape into balls...", "..."
+    ]},
+    {"name":"Prepare Manchurian Sauce","steps":[
+      "Heat oil...", "Add sauces...", "..."
+    ]},
+    {"name":"Combine and Serve","steps":[
+      "Toss balls in sauce...", "..."
+    ]}
+  ]
 
-Burger: sections for Patty, Sauce, Assembly.
-Pizza: sections for Dough, Sauce, Toppings.
-Cake: sections for Batter, Frosting.
+  Burger: sections for Patty, Sauce, Assembly.
+  Pizza: sections for Dough, Sauce, Toppings.
+  Cake: sections for Batter, Frosting.
 
-For simple single-component dishes use one section named "Main Recipe".
+  For simple single-component dishes use one section named "Main Recipe".
 
-INGREDIENT FORMAT:
-- Every item MUST include quantity: "1 cup rice", "2 tablespoons oil"
-- Minimum 8 ingredients total.
+  INGREDIENT FORMAT:
+  - Every item MUST include quantity: "1 cup rice", "2 tablespoons oil"
+  - Minimum 8 ingredients total.
 
-INSTRUCTION FORMAT:
-- Each step is one clear actionable sentence.
-- Minimum 5 steps total.
-- No step numbers in the text.
+  INSTRUCTION FORMAT:
+  - Each step is one clear actionable sentence.
+  - Minimum 5 steps total.
+  - No step numbers in the text.
 
-FLAT LISTS:
-- "ingredients" = ALL items from every ingredientSection combined in order.
-- "instructions" = ALL steps from every instructionSection combined in order.
+  FLAT LISTS:
+  - "ingredients" = ALL items from every ingredientSection combined in order.
+  - "instructions" = ALL steps from every instructionSection combined in order.
 
-TITLE:
-- Use proper dish name: "Veg Manchurian", "Paneer Butter Masala", etc.
+  TITLE:
+  - Use proper dish name: "Veg Manchurian", "Paneer Butter Masala", etc.
 
-OTHER:
-- servings: numeric string only, e.g. "4"
-- prepTime/cookTime/totalTime: e.g. "20 mins", "30 mins", "50 mins"
-- category: Breakfast|Lunch|Dinner|Snack|Dessert|Beverage
-- keywords: 8-15 relevant tags
-- sourceUrl: "AI Generated"
-- imageUrl: leave empty string
-`;
+  OTHER:
+  - servings: numeric string only, e.g. "4"
+  - prepTime/cookTime/totalTime: e.g. "20 mins", "30 mins", "50 mins"
+  - category: Breakfast|Lunch|Dinner|Snack|Dessert|Beverage
+  - keywords: 8-15 relevant tags
+  - sourceUrl: "AI Generated"
+  - imageUrl: leave empty string
+  `;
 
 // TEXT PROMPT
 exports.askGemini = onCall(
@@ -449,38 +584,66 @@ OTHER:
 - imageUrl: leave empty string unless a thumbnail URL is provided in context
 `;
 
+
 const RECIPE_VIDEO_PROMPT = `
-You are a world-class chef and recipe developer.
-
-Watch the cooking video and generate the most accurate complete recipe shown.
-
-CRITICAL — SECTION STRUCTURE (MUST FOLLOW):
-- ingredientSections and instructionSections are the PRIMARY structure.
-- ALWAYS split multi-component dishes into separate named sections.
-- For simple single-component dishes use one section named "Main Recipe".
-
-INGREDIENT FORMAT:
-- Every item MUST include quantity: "1 cup rice", "2 tablespoons oil"
-- Minimum 8 ingredients total when possible.
-
-INSTRUCTION FORMAT:
-- Each step is one clear actionable sentence matching what happens in the video.
-- Minimum 5 steps total when possible.
-- No step numbers in the text.
-
-FLAT LISTS:
-- "ingredients" = ALL items from every ingredientSection combined in order.
-- "instructions" = ALL steps from every instructionSection combined in order.
-
-OTHER:
-- servings: numeric string only, e.g. "4"
-- prepTime/cookTime/totalTime: estimate from the video
-- category: Breakfast|Lunch|Dinner|Snack|Dessert|Beverage
-- keywords: 8-15 relevant tags
-- sourceUrl: use provided source URL if any, else "Social Media Video"
-- imageUrl: leave empty string
-`;
-
+You are an expert chef and recipe developer. 
+Extract a structured recipe
+from the provided source.
+Return ONLY valid JSON
+matching this schema.
+No markdown.
+No commentary: 
+ {
+  "title": string,
+  "description": string,
+  "servings": string,            // numeric only, e.g. "4"
+  "prepTime": string,            // e.g. "15 mins"
+  "cookTime": string,
+  "totalTime": string,
+  "category": "Breakfast"|"Lunch"|"Dinner"|"Snack"|"Dessert"|"Beverage",
+  "keywords": string[],          // 8-15 tags
+  "ingredientSections": [{ "name": string, "items": string[] }],
+  "instructionSections": [{ "name": string, "steps": string[] }],
+  "ingredients": string[],       // flattened, all sections in order
+  "instructions": string[],      // flattened, all sections in order
+  "sourceUrl": string,
+  "imageUrl": string,      // fill ONLY if a real thumbnail/
+ // frame URL is given in context; else ""
+   "imageSearchQuery": string
+// ALWAYS non-empty.
+// Use a 3-6 word
+// food-photography
+// search phrase
+// for this dish.
+ }
+ 
+  RULES:
+- Sections are primary.
+- Split multi-component dishes
+  (e.g. sauce, filling, garnish)
+- Capture every ingredient actually used.
+- Do not pad or omit ingredients
+  to hit a target count.   
+- Every instruction is one clear action.
+- No step numbers.
+- Capture every distinct action shown.
+- Do not merge or split actions artificially.
+ - Capture every ingredient actually used 
+ — do not pad or omit to hit a target count.
+ - Every instruction is one clear action, no step numbers.
+  Capture every distinct action shown
+  — do not merge or split artificially.
+- "ingredients" and "instructions"
+  must be the exact concatenation
+  of all section items and steps,
+  preserving order. - servings: digits only, no units.
+  - If a detail is genuinely missing or unclear,
+  infer the most likely value using
+  culinary knowledge.
+- Do not leave fields blank.
+- Exception: imageUrl follows the
+  rule above.
+ - Never fabricate a URL. If you don't have a real one, use "".`;
 /**
  * @param {string} html
  * @return {Record<string, string>}
@@ -521,8 +684,12 @@ async function fetchUrlContext(url) {
   try {
     const response = await fetch(url, {
       headers: {
+        // Instagram / TikTok / etc. only serve their og:image (the post
+        // thumbnail) to recognised link-preview crawlers — a generic bot UA
+        // gets a login wall with no image. Identify as facebookexternalhit.
         "User-Agent":
-          "Mozilla/5.0 (compatible; RecipeAI/1.0; +https://recipeai.app)",
+          "facebookexternalhit/1.1 " +
+          "(+http://www.facebook.com/externalhit_uatext.php)",
         "Accept": "text/html,application/xhtml+xml",
       },
       redirect: "follow",
@@ -623,8 +790,17 @@ exports.extractRecipeFromSocialContent = onCall(
             recipe.sourceUrl === "AI Generated")) {
           recipe.sourceUrl = url;
         }
+
+        // Prefer a real thumbnail scraped from the post; otherwise generate
+        // an AI food photo so the recipe never ships without an image.
         if (pageContext.imageUrl && !recipe.imageUrl) {
           recipe.imageUrl = pageContext.imageUrl;
+        }
+        if (!recipe.imageUrl) {
+          const generatedUrl = await generateAndStoreRecipeImage(ai, recipe);
+          if (generatedUrl) {
+            recipe.imageUrl = generatedUrl;
+          }
         }
 
         return {success: true, recipe};
@@ -701,6 +877,15 @@ exports.analyzeRecipeVideo = onCall(
           recipe.sourceUrl = sourceUrl;
         }
 
+        // Video frames aren't a great thumbnail; generate a clean AI photo
+        // whenever no image was already provided.
+        if (!recipe.imageUrl) {
+          const generatedUrl = await generateAndStoreRecipeImage(ai, recipe);
+          if (generatedUrl) {
+            recipe.imageUrl = generatedUrl;
+          }
+        }
+
         return {success: true, recipe};
       } catch (error) {
         console.error(error);
@@ -748,7 +933,65 @@ exports.analyzeRecipeImage = onCall(
         text = text.replace(/```/g, "");
 
         const rawRecipe = JSON.parse(text);
+
+        // Not a food/recipe image → bail out early. No image upload, no
+        // generation, no made-up recipe. The client aborts on this flag.
+        // Require the flag, real content AND a real title — a hallucinated
+        // non-food result typically has an empty/placeholder title.
+        const hasContent =
+          (Array.isArray(rawRecipe.ingredients) &&
+            rawRecipe.ingredients.length > 0) ||
+          (Array.isArray(rawRecipe.instructions) &&
+            rawRecipe.instructions.length > 0);
+        const title = (rawRecipe.title || "").toString().trim().toLowerCase();
+        const placeholderTitle =
+          ["", "unknown", "unknown recipe", "untitled", "n/a"].includes(title);
+        if (rawRecipe.isRecipe === false || !hasContent || placeholderTitle) {
+          return {success: true, recipe: {isRecipe: false}};
+        }
+
         const recipe = normalizeRecipe(rawRecipe);
+        recipe.isRecipe = true;
+
+        // The user already supplied a real photo of the dish — use it
+        // directly instead of generating a new one, unless it's missing.
+        if (!recipe.imageUrl) {
+          try {
+            const bucket = admin.storage().bucket();
+            const buffer = Buffer.from(imageBase64, "base64");
+            const safeSeed = (recipe.title || "recipe")
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/(^-|-$)/g, "")
+                .slice(0, 60) || "recipe";
+            const fileName =
+              `recipe-images/${safeSeed}-${Date.now()}-` +
+              `${Math.random().toString(36).slice(2, 8)}.jpg`;
+            const file = bucket.file(fileName);
+            const downloadToken = crypto.randomUUID();
+            await file.save(buffer, {
+              metadata: {
+                contentType: "image/jpeg",
+                cacheControl: "public, max-age=31536000",
+                metadata: {
+                  firebaseStorageDownloadTokens: downloadToken,
+                },
+              },
+            });
+            recipe.imageUrl =
+              `https://firebasestorage.googleapis.com/v0/b/${bucket.name}` +
+              `/o/${encodeURIComponent(fileName)}?alt=media&token=` +
+              downloadToken;
+          } catch (uploadError) {
+            console.error("Uploading source image failed:", uploadError);
+            // Fall back to AI-generated image if the upload fails.
+            const generatedUrl =
+              await generateAndStoreRecipeImage(ai, recipe);
+            if (generatedUrl) {
+              recipe.imageUrl = generatedUrl;
+            }
+          }
+        }
 
         console.log("Recipe title:", recipe.title);
         console.log(
@@ -776,12 +1019,10 @@ exports.analyzeRecipeImage = onCall(
 );
 
 // TEXT TO RECIPE
-
-
 exports.generateRecipeFromName = onCall(
     {
       secrets: ["GEMINI_API_KEY"],
-      timeoutSeconds: 120,
+      timeoutSeconds: 180,
       memory: "1GiB",
     },
     async (request) => {
@@ -801,21 +1042,18 @@ Generate a complete recipe for: ${recipeName}
 
 Source URL should be: "AI Generated"
 
-Important Instructions for Image:
-- Provide ONE high-quality, appetizing food image URL from Unsplash or Pexels.
-- Return it in field: imageUrl
-- image is also related to recipe and recipes name 
+Leave the imageUrl field as an empty string. The image will be generated
+separately.
 `;
 
         const recipe = await generateStructuredRecipe(ai, prompt);
 
-        // Better Fallback Image
-        if (
-          !recipe.imageUrl ||
-          recipe.imageUrl === "" ||
-          recipe.imageUrl.includes("placeholder") ||
-          !recipe.imageUrl.startsWith("http")
-        ) {
+        // Always try a real AI-generated food photo first.
+        const generatedUrl = await generateAndStoreRecipeImage(ai, recipe);
+        if (generatedUrl) {
+          recipe.imageUrl = generatedUrl;
+        } else {
+          // Deterministic fallback so the UI never shows a broken image.
           const seed = encodeURIComponent(
               recipeName.trim().toLowerCase().replace(/ /g, "-"),
           );

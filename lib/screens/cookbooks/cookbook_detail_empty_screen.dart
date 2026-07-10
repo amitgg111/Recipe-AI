@@ -212,6 +212,7 @@ class _CookbookDetailEmptyScreenState extends State<CookbookDetailEmptyScreen>
                     child: Container(
                       width: 46,
                       height: 46,
+                      padding: const EdgeInsets.only(top: 5),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
                           begin: Alignment.topLeft,

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:recipe_ai/Controllers/share_intent_service_controller.dart';
 import 'package:recipe_ai/View/Home/cookbooks_screen.dart';
 import 'package:recipe_ai/View/Home/discover_screen.dart';
 import 'package:recipe_ai/View/Home/groceries_screen.dart';
@@ -21,6 +23,20 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late int _activeIndex = widget.initialIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    // Home is now on-screen — process any recipe shared into the app while it
+    // was closed. Deferred to here (after the first frame) so the import's
+    // processing screen is pushed on top of home and isn't wiped out by the
+    // splash → home redirect.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (Get.isRegistered<ShareIntentService>()) {
+        Get.find<ShareIntentService>().consumePendingInitialShare();
+      }
+    });
+  }
 
   final List<Widget> _pages = [
     const CookbooksScreen(),

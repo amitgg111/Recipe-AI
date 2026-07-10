@@ -127,7 +127,7 @@ class _EditCookbookSheetState extends State<EditCookbookSheet> {
                         counterText: '',
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 18,
-                          vertical: 18,
+                          vertical: 0,
                         ),
                         hintText: 'Cookbook name',
                         hintStyle: AppTextStyles.inputHint,

@@ -69,7 +69,7 @@ class RecipeResponseParser {
     if (raw is! List) return [];
     return raw
         .map(parseIngredientItem)
-        .where((s) => s.isNotEmpty)
+        .where((s) => s.isNotEmpty && !_isJunkIngredient(s))
         .toList();
   }
 
@@ -202,7 +202,10 @@ class RecipeResponseParser {
 
   static List<String> _parseSectionItems(dynamic raw) {
     if (raw is! List) return [];
-    return raw.map(parseIngredientItem).where((s) => s.isNotEmpty).toList();
+    return raw
+        .map(parseIngredientItem)
+        .where((s) => s.isNotEmpty && !_isJunkIngredient(s))
+        .toList();
   }
 
   static List<String> _parseSectionSteps(dynamic raw) {
@@ -322,11 +325,42 @@ class RecipeResponseParser {
   }
 
   static String _cleanIngredientString(String raw) {
-    return raw
+    var s = raw
         .replaceAllMapped(RegExp(r'\*\*(.*?)\*\*'), (m) => m.group(1)!)
         .replaceAll(RegExp(r'^\s*[-•*]\s*'), '')
         .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
+    // Collapse a doubled Title-Case label — "PrintPrint",
+    // "Add CooksnapAdd Cooksnap", "Copy as textCopy as text" — that bad
+    // scrapes build from an icon aria-label + its visible text, so
+    // [_isJunkIngredient] can then recognise and drop it.
+    final doubled = RegExp(r'^([A-Z][\w ]*?)\1$').firstMatch(s);
+    if (doubled != null) s = doubled.group(1)!.trim();
+    return s;
+  }
+
+  /// Share/action-button labels and UI noise that broken scrapes sometimes
+  /// capture as "ingredients" (social share buttons, Cookpad's "Add Cooksnap"
+  /// / "Report Recipe", "Print", "Copy URL", etc.). None of these is ever a
+  /// real ingredient, so they are stripped from every import source.
+  static final RegExp _junkLine = RegExp(
+    r'^('
+    r'share|e-?mail|email|facebook|twitter|pinterest|pin it|whats ?app|'
+    r'telegram|reddit|messenger|flipboard|yummly|linked ?in|whatsapp|'
+    r'copy url.*|copy link.*|copy as text|link copied.*|copied|'
+    r'print|more|jump to.*|save recipe|save|saved|bookmark|subscribe|'
+    r'sign ?up|log ?in|add cooksnap|cooksnap|report recipe|report|see report|'
+    r'delete|edit|write a review|leave a review|add a review|rate.*|'
+    r'add note|add photo|add to .*|nutrition facts|advertisement'
+    r')$',
+    caseSensitive: false,
+  );
+
+  /// True when [s] is a share/action-button label or UI noise (never a real
+  /// ingredient), so callers can drop it from the ingredient list.
+  static bool _isJunkIngredient(String s) {
+    final t = s.trim().toLowerCase().replaceAll(RegExp(r'[.!…]+$'), '').trim();
+    return t.isEmpty || _junkLine.hasMatch(t);
   }
 
   static String _cleanInstructionString(String raw) {

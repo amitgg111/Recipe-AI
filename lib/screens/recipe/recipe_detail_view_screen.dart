@@ -203,8 +203,11 @@ class _RecipeDetailViewScreenState extends State<RecipeDetailViewScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const OnboardingLineIcon('globe',
-                      size: 13, color: AppColors.green),
+                  const OnboardingLineIcon(
+                    'globe',
+                    size: 13,
+                    color: AppColors.green,
+                  ),
                   const SizedBox(width: 5),
                   Text(
                     'Public',
@@ -545,7 +548,11 @@ class _RecipeDetailViewScreenState extends State<RecipeDetailViewScreen> {
               width: 34,
               height: 34,
               alignment: Alignment.center,
-              child: const Icon(Icons.remove, size: 18, color: AppColors.textDark),
+              child: const Icon(
+                Icons.remove,
+                size: 18,
+                color: AppColors.textDark,
+              ),
             ),
           ),
           Padding(
@@ -714,9 +721,7 @@ class _RecipeDetailViewScreenState extends State<RecipeDetailViewScreen> {
       _InstructionStep(
         'Heat olive oil in a large pan over medium heat. Add diced onion and cook until translucent, about 3–4 minutes.',
       ),
-      _InstructionStep(
-        'Add curry paste and stir for 1 minute until fragrant.',
-      ),
+      _InstructionStep('Add curry paste and stir for 1 minute until fragrant.'),
       _InstructionStep(
         'Pour in coconut milk and bring to a simmer. Add chickpeas and bell pepper.',
       ),
@@ -902,19 +907,13 @@ class _RecipeDetailViewScreenState extends State<RecipeDetailViewScreen> {
                       height: 100,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppColors.primary,
-                          width: 12,
-                        ),
+                        border: Border.all(color: AppColors.primary, width: 12),
                       ),
                       child: Container(
                         margin: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(
-                            color: AppColors.green,
-                            width: 10,
-                          ),
+                          border: Border.all(color: AppColors.green, width: 10),
                         ),
                         child: Container(
                           margin: const EdgeInsets.all(3),

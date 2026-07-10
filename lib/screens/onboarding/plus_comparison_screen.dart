@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/app_logo.dart';
-import 'package:recipe_ai/widgets/crown_icon.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
@@ -40,6 +39,9 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
   late final Animation<double> _ctaFade;
   late final Animation<Offset> _ctaSlide;
   late final Animation<double> _discFade;
+
+  // The close (X) button stays hidden until the entrance animation has played.
+  bool _showClose = false;
 
   static double _cl(double v) => v < 0.0 ? 0.0 : (v > 1.0 ? 1.0 : v);
 
@@ -128,6 +130,12 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
     _discFade = _c(0.86, 1.0);
 
     _entrance.forward();
+
+    // Reveal the close (X) button only ~2s in — after the entrance animations
+    // have played — so the user sees the comparison before dismissing it.
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _showClose = true);
+    });
   }
 
   @override
@@ -209,31 +217,40 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                           ),
                         ],
                       ),
-                      // Right: X button (34x34, border-radius 17)
+                      // Right: X button — revealed ~2s after the entrance
+                      // animations so it appears once the screen has settled.
                       Expanded(
                         child: Align(
                           alignment: Alignment.centerRight,
-                          child: GestureDetector(
-                            onTap:
-                                widget.onClose ??
-                                () => Get.to(
-                                  () => const TrialChooserScreen(),
-                                  transition: Transition.noTransition,
+                          child: IgnorePointer(
+                            ignoring: !_showClose,
+                            child: AnimatedOpacity(
+                              opacity: _showClose ? 1.0 : 0.0,
+                              duration: const Duration(milliseconds: 350),
+                              curve: Curves.easeOut,
+                              child: GestureDetector(
+                                onTap:
+                                    widget.onClose ??
+                                    () => Get.to(
+                                      () => const TrialChooserScreen(),
+                                      transition: Transition.noTransition,
+                                    ),
+                                child: Container(
+                                  width: 34,
+                                  height: 34,
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: const Color(
+                                      0xFF2A211B,
+                                    ).withValues(alpha: 0.07),
+                                    borderRadius: BorderRadius.circular(17),
+                                  ),
+                                  child: const OnboardingLineIcon(
+                                    'x',
+                                    size: 18,
+                                    color: AppColors.textMedium,
+                                  ),
                                 ),
-                            child: Container(
-                              width: 34,
-                              height: 34,
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: const Color(
-                                  0xFF2A211B,
-                                ).withValues(alpha: 0.07),
-                                borderRadius: BorderRadius.circular(17),
-                              ),
-                              child: const OnboardingLineIcon(
-                                'x',
-                                size: 18,
-                                color: AppColors.textMedium,
                               ),
                             ),
                           ),
@@ -522,26 +539,10 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            Container(
-                              width: 40,
-                              height: 40,
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                gradient: const LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    Color(0xFF8B5CF6),
-                                    Color(0xFF6D3BD4),
-                                  ],
-                                ),
-                              ),
-                              child: const OnboardingLineIcon(
-                                'crown',
-                                size: 20,
-                                color: Colors.white,
-                              ),
+                            const OnboardingLineIcon(
+                              'crown',
+                              size: 20,
+                              color: Colors.white,
                             ),
 
                             Text(

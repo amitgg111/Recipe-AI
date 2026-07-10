@@ -37,13 +37,26 @@ service cloud.firestore {
       // edit content. Any signed-in user may update ONLY the social counters
       // (like / comment / save / share / view) on a public recipe.
       match /recipes/{recipeId} {
+        // Backend publish guard: a recipe saved from Discover
+        // (recipeSource == 'discovered') may NEVER be public. This mirrors
+        // RecipePublishPolicy on the client and blocks any attempt to publish
+        // a Discover copy even if the UI is bypassed or the API is called
+        // directly. Uses get(key, default) so pre-existing docs without the
+        // field are handled safely.
+        function isPublishingDiscovered() {
+          return (request.resource.data.get('visibility', '') == 'public' ||
+                  request.resource.data.get('isPublic', false) == true) &&
+                 request.resource.data.get('recipeSource', '') == 'discovered';
+        }
+
         allow read: if request.auth != null &&
             (request.auth.uid == userId ||
              resource.data.visibility == 'public');
-        allow create: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId &&
+            !isPublishingDiscovered();
         allow delete: if request.auth != null && request.auth.uid == userId;
         allow update: if request.auth != null && (
-            request.auth.uid == userId ||
+            (request.auth.uid == userId && !isPublishingDiscovered()) ||
             request.resource.data.diff(resource.data).affectedKeys()
               .hasOnly(['likesCount', 'commentsCount', 'savesCount',
                         'sharesCount', 'viewsCount', 'ratingSum',
@@ -79,6 +92,25 @@ service cloud.firestore {
         allow read, write:
             if request.auth != null && request.auth.uid == userId;
       }
+    }
+
+    // ── Notifications (in-app social feed) ────────────────────────────────────
+    // Top-level collection; each doc targets one receiver. A user may read ONLY
+    // their own notifications and may mark ONLY their own as read (isRead is the
+    // sole field they can change). Notifications are created exclusively by
+    // trusted backend Cloud Functions (admin SDK bypasses these rules), so
+    // clients can never forge one. A user may delete their own (to clear it).
+    match /notifications/{notificationId} {
+      allow read: if request.auth != null &&
+          resource.data.receiverUserId == request.auth.uid;
+      allow create: if false;
+      allow update: if request.auth != null &&
+          resource.data.receiverUserId == request.auth.uid &&
+          request.resource.data.receiverUserId == resource.data.receiverUserId &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['isRead']);
+      allow delete: if request.auth != null &&
+          resource.data.receiverUserId == request.auth.uid;
     }
 
     // ── Usernames (unique handle reservations) ────────────────────────────────

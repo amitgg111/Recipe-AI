@@ -43,7 +43,6 @@ class _P {
   static const textBody = Color(0xFF5A5147);
   static const textBodyDark = Color(0xFF3A352D);
   static const green = Color(0xFF1F7A5E);
-  static const gold = Color(0xFFD98A12);
   static const goldBg = Color(0xFFFBF1E4);
   static const noteBg = Color(0xFFFCE3DB);
   static const purple = Color(0xFF8B5CF6);
@@ -285,13 +284,19 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _floatingBtn(
-                  const OnboardingLineIcon('back',
-                      size: 20, color: _P.textDark),
+                  const OnboardingLineIcon(
+                    'back',
+                    size: 20,
+                    color: _P.textDark,
+                  ),
                   () => Navigator.pop(context),
                 ),
                 _floatingBtn(
-                  const OnboardingLineIcon('share',
-                      size: 20, color: _P.textDark),
+                  const OnboardingLineIcon(
+                    'share',
+                    size: 20,
+                    color: _P.textDark,
+                  ),
                   _share,
                 ),
               ],
@@ -313,8 +318,11 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const OnboardingLineIcon('globe',
-                        size: 14, color: Colors.white),
+                    const OnboardingLineIcon(
+                      'globe',
+                      size: 14,
+                      color: Colors.white,
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       'Public recipe',
@@ -402,19 +410,25 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
     final time = recipe.totalTime ?? recipe.cookTime ?? recipe.prepTime ?? '';
     final items = <Widget>[];
     if (time.isNotEmpty) {
-      items.add(_metaItem(
-        const OnboardingLineIcon('clock', size: 16, color: _P.primary),
-        time,
-      ));
+      items.add(
+        _metaItem(
+          const OnboardingLineIcon('clock', size: 16, color: _P.primary),
+          time,
+        ),
+      );
     }
-    items.add(_metaItem(
-      const OnboardingLineIcon('friend', size: 16, color: _P.primary),
-      '$_servings servings',
-    ));
-    items.add(_metaItem(
-      const OnboardingLineIcon('sparkF', size: 16, color: _P.primary),
-      'Easy',
-    ));
+    items.add(
+      _metaItem(
+        const OnboardingLineIcon('friend', size: 16, color: _P.primary),
+        '$_servings servings',
+      ),
+    );
+    items.add(
+      _metaItem(
+        const OnboardingLineIcon('sparkF', size: 16, color: _P.primary),
+        'Easy',
+      ),
+    );
     final row = <Widget>[];
     for (var i = 0; i < items.length; i++) {
       row.add(items[i]);
@@ -489,9 +503,6 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                       (recipe.userName.isNotEmpty
                           ? recipe.userName
                           : 'Recipe creator');
-                  final sub = u != null
-                      ? '@${u.handle} · ${_fmtCount(u.followersCount)} followers'
-                      : 'Shared a public recipe';
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -502,11 +513,29 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
-                      Text(
-                        sub,
-                        style: _f(12, FontWeight.w600, _P.textMedium),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      // Subtitle matches the creator card design:
+                      // "N recipes · Xk followers".
+                      StreamBuilder<List<DiscoverRecipe>>(
+                        stream: creatorId.isEmpty
+                            ? null
+                            : UserService.publicRecipesStream(
+                                creatorId,
+                                authorName: name,
+                                authorAvatar: recipe.userAvatar,
+                              ),
+                        builder: (context, rSnap) {
+                          final rc = rSnap.data?.length ?? 0;
+                          final followers = u?.followersCount ?? 0;
+                          final sub =
+                              '$rc ${rc == 1 ? 'recipe' : 'recipes'} · '
+                              '${_fmtCount(followers)} followers';
+                          return Text(
+                            sub,
+                            style: _f(12, FontWeight.w600, _P.textMedium),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          );
+                        },
                       ),
                     ],
                   );
@@ -583,7 +612,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
           ),
           const SizedBox(height: 14),
           GestureDetector(
-            onTap: _addToGroceries,
+            onTap: _showGrocerySelectionSheet,
             child: Container(
               height: 46,
               decoration: BoxDecoration(
@@ -594,11 +623,10 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const OnboardingLineIcon('cart',
-                      size: 18, color: _P.primary),
+                  const OnboardingLineIcon('cart', size: 18, color: _P.primary),
                   const SizedBox(width: 9),
                   Text(
-                    'Add all to groceries',
+                    'Add to groceries',
                     style: _f(14, FontWeight.w700, _P.primary),
                   ),
                 ],
@@ -667,23 +695,13 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
               ],
             ),
           ),
-          _stepBtn(
-            'plus',
-            true,
-            () => setState(() => _servings++),
-            _P.primary,
-          ),
+          _stepBtn('plus', true, () => setState(() => _servings++), _P.primary),
         ],
       ),
     );
   }
 
-  Widget _stepBtn(
-    String icon,
-    bool enabled,
-    VoidCallback onTap,
-    Color color,
-  ) {
+  Widget _stepBtn(String icon, bool enabled, VoidCallback onTap, Color color) {
     return GestureDetector(
       onTap: enabled ? onTap : null,
       child: SizedBox(
@@ -703,78 +721,54 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
   Widget _ingredientRow(String text, int index) {
     final checked = _checked.contains(index);
     final parts = _parseIngredient(text);
-    return GestureDetector(
-      onTap: () => setState(
-        () => checked ? _checked.remove(index) : _checked.add(index),
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 9),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: _P.rowLine)),
       ),
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 9),
-        decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: _P.rowLine)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 22,
-              height: 22,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(6),
-                color: checked ? _P.primary : Colors.transparent,
-                border: checked
-                    ? null
-                    : Border.all(color: _P.borderInner, width: 2),
-              ),
-              child: checked
-                  ? const Center(
-                      child: OnboardingLineIcon('check',
-                          color: Colors.white, size: 14),
-                    )
-                  : null,
+      child: Row(
+        children: [
+          // Grocery category emoji (same one the Groceries screen uses),
+          // detected from the ingredient name.
+          Container(
+            width: 28,
+            height: 28,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: _P.goldBg,
+              borderRadius: BorderRadius.circular(9),
             ),
-            const SizedBox(width: 12),
-            // Grocery category emoji (same one the Groceries screen uses),
-            // detected from the ingredient name.
-            Container(
-              width: 28,
-              height: 28,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: _P.goldBg,
-                borderRadius: BorderRadius.circular(9),
-              ),
-              child: Text(
-                _grocery.emojiForIngredient(parts.$2),
-                style: const TextStyle(fontSize: 15),
-              ),
+            child: Text(
+              _grocery.emojiForIngredient(parts.$2),
+              style: const TextStyle(fontSize: 15),
             ),
-            const SizedBox(width: 12),
-            if (parts.$1 != null) ...[
-              ConstrainedBox(
-                constraints: const BoxConstraints(minWidth: 56),
-                child: Text(
-                  parts.$1!,
-                  style: _f(
-                    14,
-                    FontWeight.w800,
-                    checked ? _P.textHint : _P.textDark,
-                  ),
-                ),
-              ),
-            ],
-            Expanded(
+          ),
+          const SizedBox(width: 12),
+          if (parts.$1 != null) ...[
+            ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 56),
               child: Text(
-                parts.$2,
+                parts.$1!,
                 style: _f(
                   14,
-                  FontWeight.w500,
-                  checked ? _P.textHint : _P.textBody,
-                  h: 1.35,
+                  FontWeight.w800,
+                  checked ? _P.textHint : _P.textDark,
                 ),
               ),
             ),
           ],
-        ),
+          Expanded(
+            child: Text(
+              parts.$2,
+              style: _f(
+                14,
+                FontWeight.w500,
+                checked ? _P.textHint : _P.textBody,
+                h: 1.35,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -837,7 +831,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
 
   Widget _instructionRow(int number, String text) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(15, 9, 0, 9),
+      padding: const EdgeInsets.fromLTRB(0, 9, 0, 9),
       decoration: const BoxDecoration(
         border: Border(bottom: BorderSide(color: _P.rowLine)),
       ),
@@ -937,8 +931,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const OnboardingLineIcon('crown',
-                    size: 18, color: _P.purple),
+                const OnboardingLineIcon('crown', size: 18, color: _P.purple),
                 const SizedBox(width: 11),
                 Expanded(
                   child: Text.rich(
@@ -1160,11 +1153,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
         const SizedBox(width: 10),
         Expanded(
           child: _statCard(
-            icon: const OnboardingLineIcon(
-              'starF',
-              size: 22,
-              color: _P.star,
-            ),
+            icon: const OnboardingLineIcon('starF', size: 22, color: _P.star),
             value: _ratingCount == 0 ? '—' : _avgRating.toStringAsFixed(1),
             label: ratingLabel,
             onTap: () {},
@@ -1402,11 +1391,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const OnboardingLineIcon(
-              'bookmark',
-              color: Colors.white,
-              size: 20,
-            ),
+            const OnboardingLineIcon('bookmark', color: Colors.white, size: 20),
             const SizedBox(width: 9),
             Text(
               'Save to my cookbook',
@@ -1460,20 +1445,297 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
     RecipeSocialService.registerShare(recipe.userId, recipe.id);
   }
 
-  void _addToGroceries() {
-    final grocery = Get.find<GroceryStore>();
+  void _showGrocerySelectionSheet() {
+    final system = _settings.unitSystem;
     final multiplier = _servings / _initialServings;
-    final scaled = recipe.ingredients
-        .map((i) => IngredientScaleHelper.scaleIngredient(i, multiplier))
-        .toList();
-    grocery.addFromRecipe(recipe.id, scaled);
-    CustomSnackbar.show(
-      title: '${recipe.ingredients.length} ingredients added to groceries',
-      actionText: 'View',
-      onAction: () {
-        Get.offUntil(
-          MaterialPageRoute(builder: (_) => const HomeScreen(initialIndex: 3)),
-          (route) => route.isFirst,
+    final selectedIndices = List<bool>.generate(
+      recipe.ingredients.length,
+      (_) => true,
+    );
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: const Color(0x801E1B18),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setStateSheet) {
+            final checkedCount = selectedIndices.where((c) => c).length;
+
+            final widgets = <Widget>[];
+
+            void toggleIndex(int idx) {
+              setStateSheet(() {
+                selectedIndices[idx] = !selectedIndices[idx];
+              });
+            }
+
+            Widget selectionRow(String text, int globalIdx) {
+              final isChecked = selectedIndices[globalIdx];
+              final parts = _parseIngredient(text);
+              return GestureDetector(
+                onTap: () => toggleIndex(globalIdx),
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: const BoxDecoration(
+                    border: Border(bottom: BorderSide(color: _P.rowLine)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(6),
+                          color: isChecked ? _P.primary : Colors.transparent,
+                          border: isChecked
+                              ? null
+                              : Border.all(color: _P.borderInner, width: 2),
+                        ),
+                        child: isChecked
+                            ? const Center(
+                                child: OnboardingLineIcon(
+                                  'check',
+                                  color: Colors.white,
+                                  size: 14,
+                                ),
+                              )
+                            : null,
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        width: 28,
+                        height: 28,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: _P.goldBg,
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                        child: Text(
+                          _grocery.emojiForIngredient(parts.$2),
+                          style: const TextStyle(fontSize: 15),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      if (parts.$1 != null) ...[
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(minWidth: 56),
+                          child: Text(
+                            "${parts.$1!}  ",
+                            style: _f(
+                              14,
+                              FontWeight.w800,
+                              isChecked ? _P.textDark : _P.textHint,
+                            ),
+                          ),
+                        ),
+                      ],
+                      Expanded(
+                        child: Text(
+                          parts.$2,
+                          style: _f(
+                            14,
+                            FontWeight.w500,
+                            isChecked ? _P.textBody : _P.textHint,
+                            h: 1.35,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            for (var i = 0; i < recipe.ingredients.length; i++) {
+              final scaled = UnitConverter.scaleAndConvert(
+                recipe.ingredients[i],
+                multiplier,
+                system,
+              );
+              widgets.add(selectionRow(scaled, i));
+            }
+
+            final allChecked = selectedIndices.every((c) => c);
+
+            return Container(
+              height: MediaQuery.of(ctx).size.height * 0.75,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+              ),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(22, 14, 22, 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: Container(
+                            width: 42,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE7E0D2),
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        Row(
+                          children: [
+                            Text(
+                              'Add to Groceries',
+                              style: _f(
+                                20,
+                                FontWeight.w800,
+                                _P.textDark,
+                                ls: -0.4,
+                              ),
+                            ),
+                            const Spacer(),
+                            GestureDetector(
+                              onTap: () => Navigator.pop(ctx),
+                              child: Container(
+                                width: 34,
+                                height: 34,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFF4F1EA),
+                                  shape: BoxShape.circle,
+                                ),
+                                alignment: Alignment.center,
+                                child: const OnboardingLineIcon(
+                                  'x',
+                                  size: 17,
+                                  color: _P.textMedium,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Select items to purchase',
+                              style: _f(13.5, FontWeight.w600, _P.textMedium),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                setStateSheet(() {
+                                  final target = !allChecked;
+                                  for (
+                                    var i = 0;
+                                    i < selectedIndices.length;
+                                    i++
+                                  ) {
+                                    selectedIndices[i] = target;
+                                  }
+                                });
+                              },
+                              child: Text(
+                                allChecked ? 'Deselect All' : 'Select All',
+                                style: _f(13, FontWeight.w700, _P.primary),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(color: _P.rowLine, height: 1, thickness: 1),
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 22,
+                        vertical: 8,
+                      ),
+                      children: widgets,
+                    ),
+                  ),
+                  Container(
+                    padding: EdgeInsets.fromLTRB(
+                      22,
+                      12,
+                      22,
+                      MediaQuery.of(ctx).padding.bottom + 16,
+                    ),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      border: Border(top: BorderSide(color: _P.rowLine)),
+                    ),
+                    child: GestureDetector(
+                      onTap: checkedCount == 0
+                          ? null
+                          : () {
+                              Navigator.pop(ctx);
+                              final groceryController =
+                                  Get.find<GroceryStore>();
+                              final toAdd = <String>[];
+                              for (
+                                var i = 0;
+                                i < recipe.ingredients.length;
+                                i++
+                              ) {
+                                if (selectedIndices[i]) {
+                                  final scaledIng =
+                                      IngredientScaleHelper.scaleIngredient(
+                                        recipe.ingredients[i],
+                                        multiplier,
+                                      );
+                                  toAdd.add(scaledIng);
+                                }
+                              }
+
+                              groceryController.addFromRecipe(recipe.id, toAdd);
+
+                              CustomSnackbar.show(
+                                title:
+                                    '$checkedCount ingredients added to groceries',
+                                actionText: 'View',
+                                onAction: () {
+                                  Get.offUntil(
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          const HomeScreen(initialIndex: 3),
+                                    ),
+                                    (route) => route.isFirst,
+                                  );
+                                },
+                              );
+                            },
+                      child: Container(
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: checkedCount == 0
+                              ? const Color(0xFFF4F1EA)
+                              : _P.primary,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          checkedCount == 0
+                              ? 'Select items to add'
+                              : checkedCount == 1
+                              ? 'Add 1 item to groceries'
+                              : 'Add $checkedCount items to groceries',
+                          style: _f(
+                            15,
+                            FontWeight.w700,
+                            checkedCount == 0 ? _P.textHint : Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
     );

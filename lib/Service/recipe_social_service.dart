@@ -126,9 +126,13 @@ class RecipeSocialService {
       'instructionSections': [
         {'name': null, 'steps': r.instructions}
       ],
-      // Copies are always private and owned by the current user.
+      // Copies are always private and owned by the current user, and are
+      // tagged as 'discovered' so they can never be published back to Discover
+      // (which would duplicate the original). See RecipePublishPolicy.
       'visibility': 'private',
       'isPublic': false,
+      'recipeSource': 'discovered',
+      'originalRecipeId': r.id,
       'ownerId': uid,
       'isDeleted': false,
       'likesCount': 0,

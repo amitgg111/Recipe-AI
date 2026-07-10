@@ -260,12 +260,12 @@ class _CookbooksEmptyScreenState extends State<CookbooksEmptyScreen>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.add, color: Colors.white, size: 22),
+                    const Icon(Icons.add, color: Colors.white, size: 20),
                     const SizedBox(width: 8),
                     Text(
                       'Add your first recipe',
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 16,
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
                       ),

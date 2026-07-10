@@ -1,9 +1,11 @@
 // grocery_store.dart
 // Firebase-backed grocery store.
 
+import 'dart:async';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
+import 'package:recipe_ai/Helper/unit_converter.dart';
 
 class GroceryItem {
   final String name;
@@ -54,10 +56,31 @@ class GroceryStore extends GetxController {
   final RxList<GroceryItem> items = <GroceryItem>[].obs;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  StreamSubscription? _authSub;
+  StreamSubscription? _grocSub;
+
   @override
   void onInit() {
     super.onInit();
-    _loadFromFirebase();
+    // Re-load from Firestore whenever auth changes. This store is permanent and
+    // is created BEFORE login (e.g. after a fresh install / reinstall), so the
+    // grocery list must be (re)loaded once the user actually signs in — not only
+    // at startup when there may be no user yet.
+    _authSub = AuthService.authStateChanges.listen((user) {
+      if (user != null) {
+        _loadFromFirebase();
+      } else {
+        _grocSub?.cancel();
+        items.clear();
+      }
+    });
+  }
+
+  @override
+  void onClose() {
+    _authSub?.cancel();
+    _grocSub?.cancel();
+    super.onClose();
   }
 
   // ── Firebase persistence ───────────────────────────────────────────────────
@@ -65,7 +88,8 @@ class GroceryStore extends GetxController {
     final uid = AuthService.currentUser?.uid;
     if (uid == null) return;
 
-    _firestore
+    _grocSub?.cancel();
+    _grocSub = _firestore
         .collection('users')
         .doc(uid)
         .collection('groceries')
@@ -95,8 +119,10 @@ class GroceryStore extends GetxController {
       if (uid == null) return;
 
       final batch = _firestore.batch();
-      final ref =
-          _firestore.collection('users').doc(uid).collection('groceries');
+      final ref = _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('groceries');
 
       // Clear existing
       final existing = await ref.get();
@@ -311,64 +337,423 @@ class GroceryStore extends GetxController {
   /// Emoji icon for a category/aisle name (falls back to a cart).
   static String aisleEmoji(String aisle) => _aisleEmoji[aisle] ?? '🛒';
 
-  /// Convenience: the category emoji for a raw ingredient string.
-  String emojiForIngredient(String ingredient) =>
-      aisleEmoji(detectAisle(ingredient));
+  // ── Per-ingredient emoji ────────────────────────────────────────────────────
+  // Specific emoji per ingredient keyword so different ingredients no longer
+  // share the same category emoji. Matched longest-keyword-first (so
+  // "olive oil" beats "oil", "sweet potato" beats "potato", etc.).
+  static const Map<String, String> _ingredientEmoji = {
+    // ── Vegetables ──
+    'cherry tomato': '🍅', 'tomato': '🍅',
+    'red onion': '🧅', 'spring onion': '🧅', 'green onion': '🧅',
+    'scallion': '🧅', 'shallot': '🧅', 'leek': '🧅', 'onion': '🧅',
+    'garlic': '🧄', 'sweet potato': '🍠', 'yam': '🍠', 'potato': '🥔',
+    'carrot': '🥕', 'butternut squash': '🎃', 'butternut': '🎃',
+    'pumpkin': '🎃', 'squash': '🎃', 'gourd': '🎃',
+    'yellow pepper': '🫑', 'bell pepper': '🫑', 'green pepper': '🫑',
+    'red pepper flake': '🌶️', 'red pepper': '🫑', 'capsicum': '🫑',
+    'chili pepper': '🌶️',
+    'chili': '🌶️',
+    'chilli': '🌶️',
+    'jalapeno': '🫑',
+    'serrano': '🌿',
+    'habanero': '🔥',
+    'cayenne': '🌋',
+    'paprika': '🧂',
+    'pepper flake': '✨', 'pepper': '🫑',
+    'sweetcorn': '🌽',
+    'baby corn': '🌾',
+    'cornmeal': '🥣',
+    'polenta': '🍲',
+    'cornstarch': '🥄',
+    'cornflour': '🍞',
+    'corn': '🌽',
+    'cucumber': '🥒',
+    'zucchini': '🥬',
+    'courgette': '🌱',
+    'gherkin': '🫙',
+    'pickle': '🥫',
+    'lettuce': '🥬',
+    'cabbage': '🥬',
+    'spinach': '🌿',
+    'kale': '🍃',
+    'chard': '🌱',
+    'celery': '🥒',
+    'radish': '🌶️',
+    'arugula': '🍀',
+    'rocket': '🚀',
+    'bok choy': '🥬',
+    'asparagus': '🎍',
+    'artichoke': '🌼',
+    'okra': '🫛',
+    'brussels sprout': '🟢',
+    'watercress': '💧',
+    'beetroot': '🍠',
+    'beet': '🍠',
+    'turnip': '⚪',
+    'parsnip': '🥕',
+    'fennel': '🌿', 'broccoli': '🥦', 'cauliflower': '🥦',
+    'shiitake': '🍄', 'portobello': '🍄', 'mushroom': '🍄',
+    'eggplant': '🍆', 'aubergine': '🍆', 'brinjal': '🍆',
+    'avocado': '🥑', 'ginger': '🫚', 'galangal': '🫚',
+    'green bean': '🫛', 'snap pea': '🫛', 'snow pea': '🫛', 'edamame': '🫛',
+    'peas': '🫛', 'pea': '🫛', 'olive': '🫒',
+    // ── Herbs & greens ──
+    'basil': '🌿',
+    'cilantro': '🍃',
+    'coriander': '🌱',
+    'parsley': '🥬',
+    'mint': '🌿',
+    'thyme': '🌾',
+    'rosemary': '🌲',
+    'oregano': '🍂',
+    'sage': '🍁',
+    'chive': '🧅',
+    'tarragon': '🌿',
+    'dill': '🌾',
+    'lemongrass': '🎋',
+    'pesto': '🍝',
+    'herb': '🌿',
+    'bay leaf': '🍃', 'curry leaf': '🍃', 'seaweed': '🍃', 'nori': '🍃',
+    // ── Fruits ──
+    'lemon juice': '🍋', 'lime juice': '🍋', 'lemonade': '🍋', 'lemon': '🍋',
+    'lime': '🍋',
+    'mandarin': '🍊', 'tangerine': '🍊', 'clementine': '🍊',
+    'grapefruit': '🍊', 'marmalade': '🍊', 'orange': '🍊',
+    'green apple': '🍏', 'apple cider': '🍎', 'apple': '🍎',
+    'plantain': '🍌', 'banana': '🍌',
+    'strawberr': '🍓', 'raspberr': '🍓', 'cranberr': '🍒',
+    'blueberr': '🫐', 'blackberr': '🫐',
+    'raisin': '🍇', 'currant': '🍇', 'sultana': '🍇', 'grape': '🍇',
+    'pineapple': '🍍', 'papaya': '🥭', 'mango': '🥭',
+    'coconut milk': '🥥', 'coconut cream': '🥥', 'coconut oil': '🥥',
+    'coconut': '🥥',
+    'apricot': '🍑', 'nectarine': '🍑', 'plum': '🍑', 'peach': '🍑',
+    'cherry': '🍒', 'watermelon': '🍉', 'cantaloupe': '🍈', 'honeydew': '🍈',
+    'melon': '🍈', 'pear': '🍐', 'kiwi': '🥝', 'lychee': '🍒',
+    'pomegranate': '🍎', 'fig': '🍇', 'date': '🌴',
+    // ── Meat & poultry ──
+    'chicken breast': '🍗', 'chicken thigh': '🍗', 'chicken wing': '🍗',
+    'drumstick': '🍗', 'chicken': '🍗', 'poultry': '🍗', 'duck': '🦆',
+    'turkey': '🦃',
+    'ground beef': '🥩', 'ground meat': '🥩', 'meatball': '🥩', 'sirloin': '🥩',
+    'brisket': '🥩', 'veal': '🥩', 'beef': '🥩', 'steak': '🥩', 'mince': '🥩',
+    'meat': '🥩',
+    'bacon': '🥓', 'pork': '🥓', 'lard': '🥓',
+    'ham': '🍖', 'lamb': '🍖', 'mutton': '🍖', 'goat': '🍖', 'ribs': '🍖',
+    'rib': '🍖',
+    'chorizo': '🌭', 'pepperoni': '🌭', 'salami': '🌭', 'hot dog': '🌭',
+    'sausage': '🌭',
+    // ── Seafood ──
+    'salmon': '🍣',
+    'tuna': '🐟',
+    'cod': '🎣',
+    'tilapia': '🐠',
+    'halibut': '🐡',
+    'haddock': '🌊',
+    'trout': '🏞️',
+    'mackerel': '🐟',
+    'sardine': '🥫',
+    'anchovy': '🍕',
+    'caviar': '⚫',
+    'fish': '🐟', 'shrimp': '🦐', 'prawn': '🦐', 'crab': '🦀', 'lobster': '🦞',
+    'crayfish': '🦞', 'calamari': '🦑', 'squid': '🦑', 'octopus': '🐙',
+    'oyster': '🦪', 'clam': '🦪', 'mussel': '🦪', 'scallop': '🦪',
+    'sushi': '🍣',
+    // ── Dairy & eggs ──
+    'egg white': '🥚', 'egg yolk': '🥚', 'egg': '🥚', 'buttermilk': '🥛',
+    'condensed milk': '🥫',
+    'evaporated milk': '🫙',
+    'almond milk': '🌰',
+    'soy milk': '🫘',
+    'oat milk': '🌾',
+    'milk': '🥛',
+    'mozzarella': '🤍',
+    'parmesan': '🟨',
+    'cheddar': '🟧',
+    'feta': '⬜',
+    'paneer': '🥛',
+    'ricotta': '🥣',
+    'gouda': '🟡',
+    'brie': '🍽️',
+    'cream cheese': '🥯',
+    'cheese': '🧀',
+    'sour cream': '🥛', 'heavy cream': '🥛', 'whipping cream': '🥛',
+    'yogurt': '🥛', 'yoghurt': '🥛', 'curd': '🥛', 'cream': '🥛',
+    'ice cream': '🍨', 'custard': '🍮', 'pudding': '🍮',
+    'butter bean': '🫘', 'peanut butter': '🥜', 'almond butter': '🥜',
+    'butter': '🧈', 'ghee': '🧈', 'margarine': '🧈',
+    // ── Nuts, seeds, legumes ──
+    'peanut': '🥜',
+    'almond': '🌰',
+    'cashew': '🌙',
+    'walnut': '🧠',
+    'pistachio': '💚',
+    'hazelnut': '🌰',
+    'pecan': '🍂',
+    'macadamia': '🤍',
+    'pine nut': '🌲',
+    'tahini': '🥣',
+    'nut': '🥜', 'chestnut': '🌰',
+    'sunflower seed': '🌻', 'pumpkin seed': '🎃',
+    'sesame': '🌱', 'flax': '🌱', 'chia': '🌱', 'poppy seed': '🌱',
+    'chickpea': '🫘', 'lentil': '🫘', 'kidney bean': '🫘', 'black bean': '🫘',
+    'pinto bean': '🫘', 'cannellini': '🫘', 'soybean': '🫘', 'bean': '🫘',
+    'tofu': '🧊', 'tempeh': '🧊',
+    // ── Grains & bakery ──
+    'basmati': '🍚', 'jasmine rice': '🍚', 'risotto': '🍚', 'rice flour': '🍚',
+    'rice noodle': '🍜', 'rice': '🍚',
+    'spaghetti': '🍝',
+    'macaroni': '🧀',
+    'penne': '🪶',
+    'fusilli': '🌀',
+    'lasagna': '🥘',
+    'lasagne': '🥘',
+    'fettuccine': '🍜',
+    'linguine': '🥢',
+    'pasta': '🍝',
+    'ramen': '🍜',
+    'udon': '🍜',
+    'vermicelli': '🍜',
+    'noodle': '🍜',
+    'breadcrumb': '🥄',
+    'crouton': '🥗',
+    'toast': '🍞',
+    'sourdough': '🥖',
+    'brioche': '🧈', 'gingerbread': '🍪', 'bread': '🍞', 'baguette': '🥖',
+    'flour': '🥣',
+    'oat': '🌾',
+    'wheat': '🌾',
+    'quinoa': '🫙',
+    'barley': '🌱',
+    'bulgur': '🍚',
+    'couscous': '🥄',
+    'semolina': '🟡',
+    'millet': '🌼',
+    'bran': '🥣',
+    'grain': '🌾', 'granola': '🥜', // nuts-based granola
+    'muesli': '🍎', // often served with fruits
+    'cereal': '🥣', // breakfast cereal bowl 'tortilla': '🌮',
+    'naan': '🧈',
+    'roti': '🫓',
+    'pita': '🥙',
+    'chapati': '🫓',
+    'flatbread': '🫓',
+    'croissant': '🥐',
+    'bagel': '🥯',
+    'pretzel': '🥨',
+    'waffle': '🧇',
+    'pancake': '🥞', 'crepe': '🥞',
+    'cupcake': '🧁', 'muffin': '🧁', 'brownie': '🍫', 'cake': '🍰',
+    'pie': '🥧', 'tart': '🥧', 'cookie': '🍪', 'biscuit': '🍪',
+    'cracker': '🍘', 'donut': '🍩', 'doughnut': '🍩',
+    // ── Pantry, condiments, spices, sweets ──
+    'olive oil': '🫒', 'sunflower oil': '🌻', 'vegetable oil': '🛢️',
+    'sesame oil': '🛢️', 'canola': '🛢️', 'oil': '🛢️',
+    'maple syrup': '🍯', 'molasses': '🍯', 'agave': '🍯', 'honey': '🍯',
+    'syrup': '🍯',
+    'brown sugar': '🍬', 'powdered sugar': '🍬', 'sugar': '🍬',
+    'sweetener': '🍬', 'candy': '🍭',
+    'chocolate chip': '🍫', 'chocolate': '🍫', 'cocoa': '🍫', 'nutella': '🍫',
+    'vanilla': '🍦',
+    'black pepper': '⚫',
+    'white pepper': '⚪',
+    'peppercorn': '🫛',
+
+    'salt': '🧂',
+
+    'cinnamon': '🪵',
+    'turmeric': '🟡',
+    'cumin': '🌰',
+    'nutmeg': '🥜',
+    'clove': '🌸',
+    'cardamom': '🫛',
+
+    'garam masala': '🍛',
+    'curry powder': '🍛',
+    'masala': '🌶️',
+    'spice': '🌶️',
+
+    'saffron': '🌼',
+    'star anise': '⭐',
+
+    'allspice': '🌿',
+    'coriander seed': '🌿',
+    'fennel seed': '🌱',
+    'mustard seed': '🟡',
+
+    'baking powder': '🥣',
+    'baking soda': '🥄',
+    'yeast': '🍞',
+
+    'bouillon': '🍲',
+    'balsamic': '🍶', 'vinegar': '🍶', 'soy sauce': '🍶', 'fish sauce': '🍶',
+    'oyster sauce': '🍶', 'hoisin': '🍶', 'worcestershire': '🍶',
+    'ketchup': '🍅',
+    'tomato paste': '🥫',
+    'tomato puree': '🥣',
+    'passata': '🫙',
+    'salsa': '🥣',
+    'sriracha': '🔥',
+    'hot sauce': '🌡️',
+    'chili sauce': '🫙',
+    'chili powder': '🌶️',
+    'mayonnaise': '🥚',
+    'mayo': '🥚',
+    'mustard': '🟡',
+    'bbq sauce': '🍖',
+    'barbecue': '🔥',
+    'relish': '🥒',
+    'sauce': '🫙',
+    'canned': '🥫', 'jam': '🍓',
+    'jelly': '🍇',
+    'preserve': '🫙', 'stock': '🦴',
+    'broth': '🍲',
+    'gravy': '🥣',
+
+    // ── Beverages ──
+    'sparkling water': '💧', 'water': '💧', 'espresso': '☕', 'coffee': '☕',
+    'matcha': '🍃',
+    'green tea': '🫖',
+    'tea': '🍵',
+    'red wine': '🍷',
+    'white wine': '🥂',
+    'wine': '🍾', 'cider': '🍏',
+    'beer': '🍺',
+    'whiskey': '🥃',
+    'whisky': '🥃',
+    'bourbon': '🥂',
+    'brandy': '🍇', 'rum': '🏴‍☠️',
+    'vodka': '❄️',
+    'champagne': '🥂', 'sake': '🍶',
+    'orange juice': '🍹',
+    'apple juice': '🧃',
+    'juice': '🧃',
+    'smoothie': '🍓',
+    'milkshake': '🍦',
+    'soda': '🥤',
+    'cola': '🥤',
+    'cocktail': '🍹',
+  };
+
+  /// Keywords sorted longest-first so the most specific match wins.
+  static final List<MapEntry<String, String>> _ingredientEmojiSorted =
+      _ingredientEmoji.entries.toList()
+        ..sort((a, b) => b.key.length.compareTo(a.key.length));
+
+  /// A specific emoji for a raw ingredient string. Falls back to the aisle
+  /// emoji only when no ingredient keyword matches, so different ingredients no
+  /// longer all share one repeated category emoji.
+  String emojiForIngredient(String ingredient) {
+    final lower = ingredient.toLowerCase();
+    for (final entry in _ingredientEmojiSorted) {
+      if (lower.contains(entry.key)) return entry.value;
+    }
+    return aisleEmoji(detectAisle(ingredient));
+  }
 
   // ── Ingredient parsing ─────────────────────────────────────────────────────
-  /// Splits "1 tablespoon (15 ml) oil" → name="oil", qty="1 tablespoon"
+  /// Non-convertible "count" / container units. These can't be expressed in
+  /// ml/g, but they are still real units, so they must be split OFF the name
+  /// (never left glued to it) — e.g. "3 cloves garlic" → name "garlic".
+  static const Set<String> _countUnits = {
+    'clove', 'cloves', 'piece', 'pieces', 'pc', 'pcs', 'can', 'cans',
+    'tin', 'tins', 'jar', 'jars', 'bottle', 'bottles', 'pack', 'packs',
+    'packet', 'packets', 'box', 'boxes', 'bag', 'bags', 'bunch', 'bunches',
+    'head', 'heads', 'stalk', 'stalks', 'stick', 'sticks', 'sprig', 'sprigs',
+    'slice', 'slices', 'sheet', 'sheets', 'leaf', 'leaves', 'pinch', 'pinches',
+    'dash', 'dashes', 'handful', 'handfuls', 'drop', 'drops', 'cube', 'cubes',
+    'ball', 'balls', 'fillet', 'fillets', 'strip', 'strips', 'wedge', 'wedges',
+    'knob', 'knobs', 'dollop', 'dollops', 'loaf', 'loaves', 'ear', 'ears',
+    'scoop', 'scoops', 'rasher', 'rashers',
+    // size descriptors commonly used as the "unit" ("1 large onion")
+    'small', 'medium', 'large', 'whole',
+  };
+
+  /// A single token is a unit when it is a convertible unit (per
+  /// [UnitConverter]) OR one of the non-convertible count units above.
+  static bool _isUnitToken(String token) {
+    final t = token.toLowerCase();
+    return UnitConverter.isUnitWord(t) || _countUnits.contains(t);
+  }
+
+  /// True when a token is (part of) a numeric quantity: an integer, decimal,
+  /// fraction ("1/2"), range ("1-2") or unicode vulgar fraction ("½", "1½").
+  static final RegExp _numToken = RegExp(r'^[\d½⅓⅔¼¾⅛⅜⅝⅞./-]+$');
+  static final RegExp _hasDigit = RegExp(r'[\d½⅓⅔¼¾⅛⅜⅝⅞]');
+
+  /// Splits an ingredient line into a clean (name, quantity) pair so the name
+  /// NEVER carries a leading amount and the quantity keeps a convertible unit:
+  ///   "1 tablespoon (15 ml) olive oil" → ("olive oil", "1 tablespoon")
+  ///   "500 grams paneer"               → ("paneer",     "500 grams")
+  ///   "2 pounds chicken breast"        → ("chicken breast", "2 pounds")
+  ///   "3 cloves garlic"                → ("garlic",     "3 cloves")
+  ///   "Salt to taste"                  → ("Salt to taste", "")
   (String name, String qty) parseIngredient(String raw) {
-    // Strip parenthetical notes and brackets (both closed and unclosed)
+    // Strip parenthetical notes / brackets (both closed and unclosed).
     final cleaned = raw
-        .replaceAll(RegExp(r'\s*[\(\[].*?([\)\]]|$)\s*'), ' ')
+        .replaceAll(RegExp(r'[\(\[][^\)\]]*[\)\]]'), ' ')
+        .replaceAll(RegExp(r'[\(\[][^\)\]]*$'), ' ')
         .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
-    final parts = cleaned.split(RegExp(r'\s+'));
-    if (parts.length < 2) return (cleaned, '');
+    if (cleaned.isEmpty) return (raw.trim(), '');
 
-    final first = parts[0];
-    final isNum = RegExp(r'^[\d½⅓⅔¼¾⅛⅜⅝⅞./]+$').hasMatch(first);
-    if (!isNum) return (cleaned, '');
+    final tokens = cleaned.split(' ');
+    var i = 0;
 
-    const units = {
-      'tablespoon',
-      'tablespoons',
-      'tbsp',
-      'teaspoon',
-      'teaspoons',
-      'tsp',
-      'cup',
-      'cups',
-      'g',
-      'kg',
-      'ml',
-      'l',
-      'oz',
-      'lb',
-      'inch',
-      'small',
-      'large',
-      'medium',
-      'cloves',
-      'clove',
-      'piece',
-      'pieces',
-    };
-
-    String qty;
-    String name;
-    if (parts.length > 2 && units.contains(parts[1].toLowerCase())) {
-      qty = '${parts[0]} ${parts[1]}';
-      name = parts.sublist(2).join(' ').trim();
-    } else {
-      qty = parts[0];
-      name = parts.sublist(1).join(' ').trim();
+    // 1) Consume the leading numeric amount ("1", "1.5", "1/2", "1 1/2", "½",
+    //    "1½", or a range "2-3" / "2 to 3").
+    final numberTokens = <String>[];
+    while (i < tokens.length &&
+        _numToken.hasMatch(tokens[i]) &&
+        _hasDigit.hasMatch(tokens[i])) {
+      numberTokens.add(tokens[i]);
+      i++;
+      // Allow "2 to 3" ranges: pull in "to" + the following number.
+      if (i + 1 < tokens.length &&
+          tokens[i].toLowerCase() == 'to' &&
+          _numToken.hasMatch(tokens[i + 1]) &&
+          _hasDigit.hasMatch(tokens[i + 1])) {
+        numberTokens.add(tokens[i]); // "to"
+        i++;
+      }
     }
-    name = name
-        .replaceAll(RegExp(r'\s*[\(\[].*?([\)\]]|$)\s*'), '')
-        .replaceAll(RegExp(r'[,;]+$'), '')
+
+    // No leading number → the whole line is the name (e.g. "Salt to taste").
+    if (numberTokens.isEmpty) return (cleaned, '');
+
+    // 2) Consume a unit after the number. Handle the two-word "fl oz" /
+    //    "fluid ounce" first, then any single-word convertible/count unit.
+    var unit = '';
+    if (i < tokens.length) {
+      final t1 = tokens[i].toLowerCase();
+      final t2 = (i + 1 < tokens.length) ? tokens[i + 1].toLowerCase() : '';
+      if ((t1 == 'fl' && t2 == 'oz') ||
+          (t1 == 'fluid' && (t2 == 'oz' || t2 == 'ounce' || t2 == 'ounces'))) {
+        unit = '${tokens[i]} ${tokens[i + 1]}';
+        i += 2;
+      } else if (_isUnitToken(t1)) {
+        unit = tokens[i];
+        i++;
+      }
+    }
+
+    // 3) Whatever remains is the ingredient name. Drop a leading "of"
+    //    ("2 cups of flour" → "flour") and any trailing punctuation.
+    var name = tokens
+        .sublist(i)
+        .join(' ')
+        .replaceAll(RegExp(r'^of\s+', caseSensitive: false), '')
+        // Strip stray brackets/punctuation left dangling on either end, e.g. a
+        // lone ")" from "water (approx)" → "water )".
+        .replaceAll(RegExp(r'^[\s)\]}]+|[\s([{)\]},;.]+$'), '')
         .trim();
-    return (name.isEmpty ? cleaned : name, qty);
+
+    // Guard: if nothing is left as a name, the "number" was really the item
+    // (rare) — fall back to the cleaned line so we never show an empty name.
+    if (name.isEmpty) return (cleaned, '');
+
+    final qty = [...numberTokens, if (unit.isNotEmpty) unit].join(' ');
+    return (name, qty);
   }
 
   // ── Public API ─────────────────────────────────────────────────────────────
@@ -504,5 +889,194 @@ class GroceryStore extends GetxController {
     final extra = present.where((a) => !_aisleOrder.contains(a)).toList()
       ..sort();
     return [...ordered, ...extra];
+  }
+
+  // ── Multi-recipe merging (By meal "Used in many meals" / By category) ───────
+  /// Lowercased ingredient names that appear across MORE THAN ONE recipe
+  /// (recipe-sourced only — user "Extra items" have an empty recipeId).
+  Set<String> get multiMealNames {
+    final recipesByName = <String, Set<String>>{};
+    for (final it in items) {
+      if (it.recipeId.isEmpty) continue;
+      recipesByName
+          .putIfAbsent(it.name.toLowerCase(), () => <String>{})
+          .add(it.recipeId);
+    }
+    return recipesByName.entries
+        .where((e) => e.value.length > 1)
+        .map((e) => e.key)
+        .toSet();
+  }
+
+  /// Check/uncheck a whole merged group at once (used by the merged rows).
+  Future<void> setCheckedAll(List<GroceryItem> group, bool checked) async {
+    for (final it in group) {
+      it.checked = checked;
+      it.animating = false;
+    }
+    items.refresh();
+    await _saveToFirebase();
+  }
+
+  /// Combine quantities that share a unit ("3 cloves" + "2 cloves" → "5 cloves",
+  /// "1 can" + "1 can" → "2 cans"); otherwise join the originals with " + ".
+  static String combineQuantities(Iterable<String> qtys) {
+    final list = qtys.map((q) => q.trim()).where((q) => q.isNotEmpty).toList();
+    if (list.isEmpty) return '';
+    if (list.length == 1) return list.first;
+
+    // Parse each into (number, unit).
+    final parsed = <({double n, String unit})>[];
+    for (final q in list) {
+      final m = RegExp(r'^\s*([\d./½⅓⅔¼¾⅛⅜⅝⅞\s]+?)\s*(.*)$').firstMatch(q);
+      if (m == null) return list.join(' + ');
+      final n = _parseQtyNum(m.group(1)!);
+      if (n == null) return list.join(' + ');
+      parsed.add((n: n, unit: m.group(2)!.trim()));
+    }
+
+    String norm(String u) {
+      final l = u.toLowerCase().trim();
+      return (l.length > 1 && l.endsWith('s'))
+          ? l.substring(0, l.length - 1)
+          : l;
+    }
+
+    // 1) Same unit (ignoring singular/plural) → simple sum, e.g. "5 cloves".
+    final baseUnit = norm(parsed.first.unit);
+    if (parsed.every((p) => norm(p.unit) == baseUnit)) {
+      final sum = parsed.fold<double>(0, (a, p) => a + p.n);
+      final display = parsed.first.unit;
+      if (display.isEmpty) return _fmtQtyNum(sum);
+      return '${_fmtQtyNum(sum)} ${sum > 1 ? _pluralUnit(display) : display}';
+    }
+
+    // 2) Different but convertible units of the SAME dimension → convert to a
+    // base unit, sum, and format as ONE total (e.g. "5 ml" + "1 tsp" → "10 ml").
+    if (parsed.every((p) => UnitConverter.isConvertible(p.unit))) {
+      final dim = UnitConverter.dimensionOf(parsed.first.unit);
+      if (dim != null &&
+          parsed.every((p) => UnitConverter.dimensionOf(p.unit) == dim)) {
+        final base = switch (dim) {
+          UnitDimension.volume => 'ml',
+          UnitDimension.mass => 'g',
+          UnitDimension.length => 'cm',
+          _ => null,
+        };
+        if (base != null) {
+          var sum = 0.0;
+          var ok = true;
+          for (final p in parsed) {
+            final c = UnitConverter.convert(
+              value: p.n,
+              fromUnit: p.unit,
+              toUnit: base,
+            );
+            if (c == null) {
+              ok = false;
+              break;
+            }
+            sum += c;
+          }
+          if (ok) return UnitConverter.format(sum, base);
+        }
+      }
+    }
+
+    // 3) Units don't match and aren't convertible — but every part has a known
+    // number, so still show ONE direct total (never a "2 + 2" breakdown). Use
+    // the most common unit for display.
+    final sum = parsed.fold<double>(0, (a, p) => a + p.n);
+    final counts = <String, int>{};
+    for (final p in parsed) {
+      if (p.unit.isNotEmpty) counts[p.unit] = (counts[p.unit] ?? 0) + 1;
+    }
+    if (counts.isEmpty) return _fmtQtyNum(sum);
+    final unit = counts.entries
+        .reduce((a, b) => a.value >= b.value ? a : b)
+        .key;
+    return '${_fmtQtyNum(sum)} ${sum > 1 ? _pluralUnit(unit) : unit}';
+  }
+
+  static const Map<String, double> _uniFractions = {
+    '½': 0.5,
+    '⅓': 1 / 3,
+    '⅔': 2 / 3,
+    '¼': 0.25,
+    '¾': 0.75,
+    '⅛': 0.125,
+    '⅜': 0.375,
+    '⅝': 0.625,
+    '⅞': 0.875,
+  };
+
+  static double? _parseQtyNum(String s) {
+    var total = 0.0;
+    var any = false;
+    final buf = StringBuffer();
+    for (final ch in s.split('')) {
+      if (_uniFractions.containsKey(ch)) {
+        total += _uniFractions[ch]!;
+        any = true;
+      } else {
+        buf.write(ch);
+      }
+    }
+    for (final part in buf.toString().trim().split(RegExp(r'\s+'))) {
+      if (part.isEmpty) continue;
+      if (part.contains('/')) {
+        final f = part.split('/');
+        final a = double.tryParse(f[0].trim());
+        final b = f.length > 1 ? double.tryParse(f[1].trim()) : null;
+        if (a == null || b == null || b == 0) return null;
+        total += a / b;
+      } else {
+        final d = double.tryParse(part);
+        if (d == null) return null;
+        total += d;
+      }
+      any = true;
+    }
+    return any ? total : null;
+  }
+
+  static String _fmtQtyNum(double v) => v == v.roundToDouble()
+      ? v.toInt().toString()
+      : v
+            .toStringAsFixed(2)
+            .replaceAll(RegExp(r'0+$'), '')
+            .replaceAll(RegExp(r'\.$'), '');
+
+  static const Set<String> _pluralizable = {
+    'can',
+    'clove',
+    'cup',
+    'piece',
+    'bottle',
+    'jar',
+    'bunch',
+    'slice',
+    'tin',
+    'pack',
+    'box',
+    'stick',
+    'sprig',
+    'head',
+    'stalk',
+    'leaf',
+    'sheet',
+    'bag',
+  };
+
+  static String _pluralUnit(String unit) {
+    final lower = unit.toLowerCase();
+    if (lower.endsWith('s')) return unit;
+    if (_pluralizable.contains(lower)) {
+      if (lower == 'leaf') return 'leaves';
+      if (lower == 'box') return 'boxes';
+      if (lower == 'bunch') return 'bunches';
+      return '${unit}s';
+    }
+    return unit;
   }
 }

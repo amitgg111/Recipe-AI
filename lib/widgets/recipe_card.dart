@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../theme/app_dimensions.dart';
+import 'app_network_image.dart';
 
 class RecipeCard extends StatelessWidget {
   final String title;
@@ -45,12 +46,13 @@ class RecipeCard extends StatelessWidget {
                 AppDimensions.recipeImageRadius,
               ),
               child: imageUrl != null && imageUrl!.isNotEmpty
-                  ? Image.network(
+                  ? AppNetworkImage(
                       imageUrl!,
                       width: AppDimensions.recipeImageSize,
                       height: AppDimensions.recipeImageSize,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _imagePlaceholder(),
+                      placeholder: _imagePlaceholder(),
+                      error: _imagePlaceholder(),
                     )
                   : _imagePlaceholder(),
             ),

@@ -1,5 +1,8 @@
+import 'dart:async';
+import 'dart:developer';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:recipe_ai/Service/auth_service.dart';
 
 class DiscoverRecipe {
   final String id;
@@ -55,24 +58,44 @@ class DiscoverController extends GetxController {
   final RxString selectedCategory = ''.obs;
   final RxString searchQuery = ''.obs;
 
+  // Discover filter chips (match the design): a "smart" set first — Trending
+  // (by engagement), Quick & Easy (short time), Vegan (plant-based) — then the
+  // common meal/course categories.
   final List<String> categories = [
-    'All',
+    'Trending',
+    'Quick & Easy',
+    'Vegan',
+    'Desserts',
     'Breakfast',
     'Lunch',
     'Dinner',
-    'Snacks',
-    'Desserts',
     'Drinks',
-    'Salads',
-    'Soups',
-    'Appetizers',
   ];
+
+  StreamSubscription? _authSub;
 
   @override
   void onInit() {
     super.onInit();
-    selectedCategory.value = 'All';
+    selectedCategory.value = 'Trending';
+    // This controller is permanent, so it can outlive a logout/login. Re-fetch
+    // the public feed whenever the signed-in user changes so a fresh login (or
+    // switching accounts) always reloads posts instead of showing a stale or
+    // empty list left over from before sign-in.
+    _authSub = AuthService.authStateChanges.listen((user) {
+      if (user != null) {
+        fetchDiscoverRecipes();
+      } else {
+        recipes.clear();
+      }
+    });
     fetchDiscoverRecipes();
+  }
+
+  @override
+  void onClose() {
+    _authSub?.cancel();
+    super.onClose();
   }
 
   Future<void> fetchDiscoverRecipes() async {
@@ -89,12 +112,16 @@ class DiscoverController extends GetxController {
         final userName = userData['name']?.toString() ?? 'Chef';
         final userAvatar = userData['photoUrl']?.toString();
 
+        // IMPORTANT: only a single-field equality filter here. Adding an
+        // `orderBy('createdAt')` alongside the `where` would require a
+        // composite index — and when that index is absent Firestore throws
+        // FAILED_PRECONDITION, which previously got swallowed and left the
+        // whole feed empty. We sort client-side instead (see below).
         final recipesSnapshot = await FirebaseFirestore.instance
             .collection('users')
             .doc(userDoc.id)
             .collection('recipes')
             .where('visibility', isEqualTo: 'public')
-            .orderBy('createdAt', descending: true)
             .limit(30)
             .get();
 
@@ -129,10 +156,23 @@ class DiscoverController extends GetxController {
         }
       }
 
+      // Newest first, then shuffle for a varied feed (matches prior behaviour
+      // but without needing a Firestore composite index).
+      allRecipes.sort((a, b) {
+        final ad = a.createdAt;
+        final bd = b.createdAt;
+        if (ad == null && bd == null) return 0;
+        if (ad == null) return 1;
+        if (bd == null) return -1;
+        return bd.compareTo(ad);
+      });
       allRecipes.shuffle();
       recipes.assignAll(allRecipes);
-    } catch (e) {
-      // silently fail
+    } catch (e, stack) {
+      // Surface the reason instead of hiding it — a missing index or a rules
+      // denial here is exactly what leaves Discover blank.
+      log('Discover fetch failed: $e');
+      log(stack.toString());
     } finally {
       isLoading.value = false;
     }
@@ -140,32 +180,107 @@ class DiscoverController extends GetxController {
 
   List<DiscoverRecipe> get filteredRecipes {
     var list = recipes.toList();
+    final sel = selectedCategory.value;
 
-    if (selectedCategory.value.isNotEmpty &&
-        selectedCategory.value != 'All') {
-      list = list
-          .where((r) =>
-              (r.category ?? '')
-                  .toLowerCase()
-                  .contains(selectedCategory.value.toLowerCase()) ||
-              (r.cuisine ?? '')
-                  .toLowerCase()
-                  .contains(selectedCategory.value.toLowerCase()))
-          .toList();
+    switch (sel) {
+      case 'Trending':
+        // Most engaged first (likes + comments + saves + shares).
+        list.sort((a, b) => _engagement(b).compareTo(_engagement(a)));
+        break;
+      case 'Quick & Easy':
+        // 30 minutes or less (total → cook → prep, whichever is available).
+        list = list.where((r) {
+          final m = _minutes(r);
+          return m != null && m <= 30;
+        }).toList();
+        break;
+      case 'Vegan':
+        list = list
+            .where((r) => _matchesAny(r, const [
+                  'vegan', 'vegetarian', 'plant-based', 'plant based',
+                ]))
+            .toList();
+        break;
+      case 'Desserts':
+        list = list
+            .where((r) => _matchesAny(r, const [
+                  'dessert', 'sweet', 'cake', 'cookie', 'brownie', 'pudding',
+                  'ice cream', 'pastry', 'pie', 'tart', 'chocolate', 'halwa',
+                  'kheer', 'ladoo', 'barfi',
+                ]))
+            .toList();
+        break;
+      default:
+        // Meal / course categories — match the recipe's category or cuisine.
+        if (sel.isNotEmpty) {
+          final q = sel.toLowerCase();
+          list = list
+              .where((r) =>
+                  (r.category ?? '').toLowerCase().contains(q) ||
+                  (r.cuisine ?? '').toLowerCase().contains(q) ||
+                  r.title.toLowerCase().contains(q))
+              .toList();
+        }
     }
 
     if (searchQuery.value.isNotEmpty) {
+      // Recipe search — match on the recipe name / category / cuisine only.
+      // The poster's name is intentionally NOT searched: a query should surface
+      // posts by recipe, not by the user who shared them.
       final q = searchQuery.value.toLowerCase();
       list = list
           .where((r) =>
               r.title.toLowerCase().contains(q) ||
               (r.category ?? '').toLowerCase().contains(q) ||
-              (r.cuisine ?? '').toLowerCase().contains(q) ||
-              r.userName.toLowerCase().contains(q))
+              (r.cuisine ?? '').toLowerCase().contains(q))
           .toList();
     }
 
     return list;
+  }
+
+  /// Total engagement score used to rank the "Trending" filter.
+  int _engagement(DiscoverRecipe r) =>
+      r.likesCount + r.commentsCount + r.savesCount + r.sharesCount;
+
+  /// True when any [keywords] appear in the recipe's title / category / cuisine.
+  bool _matchesAny(DiscoverRecipe r, List<String> keywords) {
+    final hay =
+        '${r.title} ${r.category ?? ''} ${r.cuisine ?? ''}'.toLowerCase();
+    return keywords.any(hay.contains);
+  }
+
+  /// Best-effort minutes parsed from a time string ("30 min", "1 hour 20 mins",
+  /// "1h 30m"). Returns null when no duration can be read.
+  int? _minutes(DiscoverRecipe r) {
+    final t = (r.totalTime?.isNotEmpty ?? false)
+        ? r.totalTime!
+        : (r.cookTime?.isNotEmpty ?? false)
+            ? r.cookTime!
+            : (r.prepTime ?? '');
+    final s = t.toLowerCase();
+    if (s.trim().isEmpty) return null;
+
+    var total = 0;
+    var found = false;
+    final hr = RegExp(r'(\d+)\s*(?:h|hr|hrs|hour|hours)').firstMatch(s);
+    if (hr != null) {
+      total += int.parse(hr.group(1)!) * 60;
+      found = true;
+    }
+    final mn = RegExp(r'(\d+)\s*(?:m|min|mins|minute|minutes)').firstMatch(s);
+    if (mn != null) {
+      total += int.parse(mn.group(1)!);
+      found = true;
+    }
+    if (!found) {
+      final n = RegExp(r'(\d+)').firstMatch(s);
+      if (n != null) {
+        total = int.parse(n.group(1)!);
+        found = true;
+      }
+    }
+    return found ? total : null;
   }
 
   void selectCategory(String cat) {

@@ -6,7 +6,6 @@ import 'package:recipe_ai/Model/user_model.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/Service/follow_service.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
-import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 
 /// Circular avatar for any user — remote photo with an initial fallback.
 class UserAvatar extends StatelessWidget {
@@ -127,25 +126,16 @@ class _FollowButtonState extends State<FollowButton> {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: following ? AppColors.primary : Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.primary, width: 1.5),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (!following) ...[
-            const OnboardingLineIcon('plus', size: 16, color: AppColors.primary),
-            const SizedBox(width: 4),
-          ],
-          Text(
-            following ? 'Following' : 'Follow',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: following ? Colors.white : AppColors.primary,
-            ),
-          ),
-        ],
+      child: Text(
+        following ? 'Following' : 'Follow',
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          color: following ? Colors.white : AppColors.primary,
+        ),
       ),
     );
 

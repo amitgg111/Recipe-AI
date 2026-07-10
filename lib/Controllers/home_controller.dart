@@ -5,8 +5,11 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_ai/Controllers/cookbook_controller.dart';
+import 'package:recipe_ai/Controllers/meal_plan_controller.dart';
+import 'package:recipe_ai/Controllers/grocery_store_controller.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/Helper/recipe_response_parser.dart';
+import 'package:recipe_ai/Helper/recipe_publish_policy.dart';
 import 'package:recipe_ai/Model/recipe_section_model.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 
@@ -38,6 +41,14 @@ class RecipeModel {
   /// Aggregate social like count (from the recipe's `likesCount` field).
   final int likesCount;
 
+  /// Ownership provenance: 'userCreated' | 'imported' | 'discovered'.
+  /// Recipes saved from Discover are 'discovered' and can never be published.
+  final String recipeSource;
+
+  /// For 'discovered' recipes, the id of the original Discover recipe this is a
+  /// copy of. Null for user-created / imported recipes.
+  final String? originalRecipeId;
+
   RecipeModel({
     required this.id,
     required this.title,
@@ -59,9 +70,19 @@ class RecipeModel {
     this.isDeleted = false,
     this.visibilityWasStored = true,
     this.likesCount = 0,
+    this.recipeSource = RecipePublishPolicy.sourceUserCreated,
+    this.originalRecipeId,
   });
 
   bool get isPublic => visibility == 'public';
+
+  /// True unless this recipe was saved from Discover — only user-created or
+  /// imported recipes may be published.
+  bool get canBePublished => RecipePublishPolicy.canPublish(recipeSource);
+
+  /// True when this is a private copy saved out of the Discover feed.
+  bool get isDiscoveredCopy =>
+      RecipePublishPolicy.isDiscovered(recipeSource);
 
   factory RecipeModel.fromDocument(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>? ?? {};
@@ -84,11 +105,21 @@ class RecipeModel {
       instructions: parsed.instructions,
       ingredientSections: parsed.ingredientSections,
       instructionSections: parsed.instructionSections,
-      visibility: (data['visibility'] as String?) ??
+      visibility:
+          (data['visibility'] as String?) ??
           (data['isPublic'] == true ? 'public' : 'private'),
       isDeleted: data['isDeleted'] == true,
       visibilityWasStored: data.containsKey('visibility'),
       likesCount: (data['likesCount'] as num?)?.toInt() ?? 0,
+      // Legacy Discover copies predate `recipeSource` but carry
+      // `savedFromRecipeId`; resolveSource() infers 'discovered' for them so
+      // they remain unpublishable even without a migration.
+      recipeSource: RecipePublishPolicy.resolveSource(
+        recipeSource: data['recipeSource'] as String?,
+        savedFromRecipeId: data['savedFromRecipeId'] ?? data['originalRecipeId'],
+      ),
+      originalRecipeId:
+          (data['originalRecipeId'] ?? data['savedFromRecipeId']) as String?,
     );
   }
   double get servingCount {
@@ -190,7 +221,11 @@ class HomeController extends GetxController {
         );
   }
 
-  Future<void> deleteRecipe(RecipeModel recipe) async {
+  /// Deletes the recipe (image, Firestore doc) and cascades to the meal plan,
+  /// grocery list, and every cookbook that references it. The `recipes`
+  /// stream drops it automatically. Returns `true` on success so callers can
+  /// safely navigate away only when the recipe is actually gone.
+  Future<bool> deleteRecipe(RecipeModel recipe) async {
     try {
       final uid = AuthService.currentUser?.uid;
 
@@ -201,7 +236,7 @@ class HomeController extends GetxController {
           type: SnackbarType.error,
         );
 
-        return;
+        return false;
       }
 
       // Firebase Storage image delete
@@ -223,17 +258,35 @@ class HomeController extends GetxController {
           .doc(recipe.id)
           .delete();
 
+      // Cascade: drop this recipe from the meal plan, the grocery list, and
+      // any cookbook that still references it, so nothing dangling remains
+      // after the recipe is gone (this is what was leaving cookbooks with a
+      // stale "1/2 recipes" count but nothing showing inside).
+      if (Get.isRegistered<MealPlanController>()) {
+        await Get.find<MealPlanController>().removeMealsByRecipe(recipe.id);
+      }
+      if (Get.isRegistered<GroceryStore>()) {
+        Get.find<GroceryStore>().removeGroceriesByRecipe(recipe.id);
+      }
+      if (Get.isRegistered<CookbookController>()) {
+        await Get.find<CookbookController>().removeRecipeFromAllCookbooks(
+          recipe.id,
+        );
+      }
+
       CustomSnackbar.show(
         title: 'Success',
         message: 'Recipe deleted successfully',
         type: SnackbarType.success,
       );
+      return true;
     } catch (e) {
       CustomSnackbar.show(
         title: 'Error',
         message: 'Failed to delete recipe',
         type: SnackbarType.error,
       );
+      return false;
     }
   }
 
@@ -243,6 +296,23 @@ class HomeController extends GetxController {
     try {
       final uid = AuthService.currentUser?.uid;
       if (uid == null) return;
+
+      // Publish guard (defense-in-depth): a recipe saved from Discover can
+      // never be made public, no matter which UI path calls this. The backend
+      // Firestore rules enforce the same, so a bypass is rejected there too.
+      if (isPublic) {
+        RecipeModel? r;
+        for (final e in recipes) {
+          if (e.id == recipeId) {
+            r = e;
+            break;
+          }
+        }
+        if (r != null && !r.canBePublished) {
+          log('Blocked publish of discovered recipe $recipeId');
+          return;
+        }
+      }
 
       await FirebaseFirestore.instance
           .collection('users')

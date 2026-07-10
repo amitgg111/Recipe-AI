@@ -5,11 +5,12 @@ import 'package:recipe_ai/theme/app_spacing.dart';
 import 'package:recipe_ai/theme/app_dimensions.dart';
 import 'package:recipe_ai/widgets/bottom_sheet_handle.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
+import 'package:recipe_ai/utils/validation_helper.dart';
 
 class AddCookbookSheet extends StatefulWidget {
   const AddCookbookSheet({super.key});
 
-  static Future<void> show(BuildContext context) {
+  static Future<String?> show(BuildContext context) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -24,7 +25,16 @@ class AddCookbookSheet extends StatefulWidget {
 
 class _AddCookbookSheetState extends State<AddCookbookSheet> {
   final _controller = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
   static const int _maxChars = 40;
+
+  // Validation message for the current text (null when valid).
+  String? get _titleError => ValidationHelper.title(
+    _controller.text,
+    field: 'Cookbook name',
+    min: 2,
+    max: 40,
+  );
 
   @override
   void dispose() {
@@ -107,61 +117,89 @@ class _AddCookbookSheetState extends State<AddCookbookSheet> {
                 const SizedBox(height: AppSpacing.sm),
 
                 // Text field
-                Container(
-                  height: AppDimensions.inputHeightLg,
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceLight,
-                    borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-                    border: Border.all(
-                      color: AppColors.primary,
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.12),
-                        blurRadius: 0,
-                        spreadRadius: 4,
+                Form(
+                  key: _formKey,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  child: Container(
+                    height: AppDimensions.inputHeightLg,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceLight,
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusMd,
                       ),
-                    ],
-                  ),
-                  child: TextField(
-                    controller: _controller,
-                    maxLength: _maxChars,
-                    style: AppTextStyles.inputText,
-                    cursorColor: AppColors.primary,
-                    cursorWidth: 2,
-                    cursorHeight: 24,
-                    decoration: InputDecoration(
-                      counterText: '',
-                      hintText: 'e.g. Weeknight Dinners',
-                      hintStyle: AppTextStyles.inputHint,
-                      filled: false,
-                      isDense: false,
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      disabledBorder: InputBorder.none,
-                      errorBorder: InputBorder.none,
-                      focusedErrorBorder: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.lg,
-                        vertical: AppSpacing.lg,
-                      ),
+                      border: Border.all(color: AppColors.primary, width: 1.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.12),
+                          blurRadius: 0,
+                          spreadRadius: 4,
+                        ),
+                      ],
                     ),
-                    onChanged: (_) => setState(() {}),
+                    child: TextFormField(
+                      controller: _controller,
+                      maxLength: _maxChars,
+                      keyboardType: TextInputType.text,
+                      style: AppTextStyles.inputText,
+                      cursorColor: AppColors.primary,
+                      cursorWidth: 2,
+                      cursorHeight: 24,
+                      validator: (v) => ValidationHelper.title(
+                        v,
+                        field: 'Cookbook name',
+                        min: 2,
+                        max: 40,
+                      ),
+                      decoration: InputDecoration(
+                        counterText: '',
+                        // Collapse the built-in error so it never renders inside
+                        // this fixed-height box (which clipped the hint and
+                        // overlapped the text). The message is shown below.
+                        errorStyle: const TextStyle(height: 0, fontSize: 0),
+                        hintText: 'e.g. Weeknight Dinners',
+                        hintStyle: AppTextStyles.inputHint,
+                        filled: false,
+                        isDense: false,
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
+                        errorBorder: InputBorder.none,
+                        focusedErrorBorder: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.lg,
+                          vertical: 0, //AppSpacing.lg,
+                        ),
+                      ),
+                      onChanged: (_) => setState(() {}),
+                    ),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
 
-                // Character count
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Text(
-                    '${_controller.text.length} / $_maxChars',
-                    style: AppTextStyles.smallLabel.copyWith(
-                      color: AppColors.textLight,
+                // Validation message (left) + character count (right).
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child:
+                          (_controller.text.isNotEmpty && _titleError != null)
+                          ? Text(
+                              _titleError!,
+                              style: AppTextStyles.smallLabel.copyWith(
+                                color: AppColors.red,
+                              ),
+                            )
+                          : const SizedBox.shrink(),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${_controller.text.length} / $_maxChars',
+                      style: AppTextStyles.smallLabel.copyWith(
+                        color: AppColors.textLight,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: AppSpacing.xl),
 
@@ -176,12 +214,13 @@ class _AddCookbookSheetState extends State<AddCookbookSheet> {
                   onPressed: _controller.text.trim().isEmpty
                       ? null
                       : () {
+                          if (!(_formKey.currentState?.validate() ?? false)) {
+                            return;
+                          }
                           Navigator.pop(context, _controller.text.trim());
                         },
                 ),
-                SizedBox(
-                  height: MediaQuery.of(context).padding.bottom + 8,
-                ),
+                SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
               ],
             ),
           ),

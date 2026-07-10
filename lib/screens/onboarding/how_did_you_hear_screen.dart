@@ -349,12 +349,7 @@ class _HowDidYouHearBodyState extends State<HowDidYouHearBody> {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                            color: isSelected
-                                ? AppColors.primary
-                                : AppColors.surfaceBorder,
-                            width: isSelected ? 2 : 1,
-                          ),
+
                           boxShadow: isSelected
                               ? [
                                   BoxShadow(
@@ -405,8 +400,11 @@ class _HowDidYouHearBodyState extends State<HowDidYouHearBody> {
                                 ),
                               ),
                               child: isSelected
-                                  ? const Icon(Icons.check_rounded,
-                                      size: 16, color: Colors.white)
+                                  ? const Icon(
+                                      Icons.check_rounded,
+                                      size: 16,
+                                      color: Colors.white,
+                                    )
                                   : null,
                             ),
                           ],

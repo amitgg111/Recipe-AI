@@ -10,6 +10,7 @@ import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/View/Home/settings/settings_common.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
+import 'package:recipe_ai/utils/validation_helper.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 
 class SendFeedbackScreen extends StatefulWidget {
@@ -21,6 +22,7 @@ class SendFeedbackScreen extends StatefulWidget {
 
 class _SendFeedbackScreenState extends State<SendFeedbackScreen> {
   final _controller = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
   int _type = 0; // 0 Idea, 1 Bug, 2 Praise
   bool _submitting = false;
   XFile? _shot; // optional screenshot attachment
@@ -46,6 +48,7 @@ class _SendFeedbackScreenState extends State<SendFeedbackScreen> {
   }
 
   Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
     final text = _controller.text.trim();
     if (text.isEmpty) {
       CustomSnackbar.show(
@@ -248,50 +251,73 @@ class _SendFeedbackScreenState extends State<SendFeedbackScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      SizedBox(
-                        height: 150,
-                        child: Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceLight,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: AppColors.primary,
-                              width: 1.5,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primary.withValues(alpha: 0.1),
-                                blurRadius: 0,
-                                spreadRadius: 3,
+                      Form(
+                        key: _formKey,
+                        autovalidateMode:
+                            AutovalidateMode.onUserInteraction,
+                        child: SizedBox(
+                          height: 150,
+                          child: Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceLight,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: AppColors.primary,
+                                width: 1.5,
                               ),
-                            ],
-                          ),
-                          child: TextField(
-                            controller: _controller,
-                            maxLines: null,
-                            expands: true,
-                            textAlignVertical: TextAlignVertical.top,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              height: 1.5,
-                              color: AppColors.textDark,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.1,
+                                  ),
+                                  blurRadius: 0,
+                                  spreadRadius: 3,
+                                ),
+                              ],
                             ),
-                            decoration: const InputDecoration(
-                              isDense: true,
-                              filled: false,
-                              hintText: 'Tell us what you think…',
-                              hintStyle: TextStyle(
+                            child: TextFormField(
+                              controller: _controller,
+                              maxLines: null,
+                              expands: true,
+                              keyboardType: TextInputType.multiline,
+                              textAlignVertical: TextAlignVertical.top,
+                              validator: (v) {
+                                final requiredError =
+                                    ValidationHelper.required(
+                                      v,
+                                      field: 'Feedback',
+                                    );
+                                if (requiredError != null) {
+                                  return requiredError;
+                                }
+                                return ValidationHelper.notes(
+                                  v,
+                                  max: 1000,
+                                  field: 'Feedback',
+                                );
+                              },
+                              style: const TextStyle(
                                 fontSize: 14,
-                                color: AppColors.textHint,
+                                height: 1.5,
+                                color: AppColors.textDark,
                               ),
-                              border: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              errorBorder: InputBorder.none,
-                              disabledBorder: InputBorder.none,
-                              focusedErrorBorder: InputBorder.none,
-                              contentPadding: EdgeInsets.zero,
+                              decoration: const InputDecoration(
+                                isDense: true,
+                                filled: false,
+                                hintText: 'Tell us what you think…',
+                                hintStyle: TextStyle(
+                                  fontSize: 14,
+                                  color: AppColors.textHint,
+                                ),
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                errorBorder: InputBorder.none,
+                                disabledBorder: InputBorder.none,
+                                focusedErrorBorder: InputBorder.none,
+                                contentPadding: EdgeInsets.zero,
+                              ),
                             ),
                           ),
                         ),

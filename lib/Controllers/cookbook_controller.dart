@@ -1,5 +1,3 @@
-
-
 import 'dart:async';
 import 'dart:developer';
 
@@ -269,6 +267,43 @@ class CookbookController extends GetxController {
           type: SnackbarType.error,
         );
       }
+    }
+  }
+
+  /// Cascade cleanup for when a recipe is deleted *directly* (e.g. from the
+  /// recipe detail screen), not by removing it from a specific cookbook.
+  ///
+  /// Finds every cookbook that references [recipeId] and strips it from
+  /// `recipeIds` + decrements `recipeCount`, so no cookbook is left pointing
+  /// at a recipe that no longer exists (which was showing as a phantom
+  /// "1/2 recipes" count with nothing inside).
+  Future<void> removeRecipeFromAllCookbooks(String recipeId) async {
+    try {
+      final uid = AuthService.currentUser?.uid;
+      if (uid == null) return;
+
+      final cookbooksRef = FirebaseFirestore.instance
+          .collection("users")
+          .doc(uid)
+          .collection("cookbooks");
+
+      final snapshot = await cookbooksRef
+          .where("recipeIds", arrayContains: recipeId)
+          .get();
+
+      if (snapshot.docs.isEmpty) return;
+
+      final batch = FirebaseFirestore.instance.batch();
+      for (final doc in snapshot.docs) {
+        batch.update(doc.reference, {
+          "recipeIds": FieldValue.arrayRemove([recipeId]),
+          "recipeCount": FieldValue.increment(-1),
+        });
+      }
+      await batch.commit();
+    } catch (e) {
+      log("Remove recipe from all cookbooks error => $e");
+      // Best-effort cleanup — don't block the recipe deletion flow on this.
     }
   }
 }

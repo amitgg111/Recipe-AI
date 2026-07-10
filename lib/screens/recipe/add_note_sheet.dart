@@ -100,7 +100,7 @@ class _AddNoteSheetState extends State<AddNoteSheet> {
                 decoration: InputDecoration(
                   hintText: 'Write your note here...',
                   hintStyle: AppTextStyles.inputHint,
-                  contentPadding: const EdgeInsets.all(14),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14),
                   filled: false,
                   isDense: false,
                   border: InputBorder.none,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../theme/app_dimensions.dart';
+import 'app_network_image.dart';
 
 class CookbookGridCard extends StatelessWidget {
   final String title;
@@ -84,10 +85,11 @@ class CookbookGridCard extends StatelessWidget {
 
   Widget _gridCell(int index) {
     if (index < imageUrls.length && imageUrls[index].isNotEmpty) {
-      return Image.network(
+      return AppNetworkImage(
         imageUrls[index],
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _placeholder(),
+        placeholder: _placeholder(),
+        error: _placeholder(),
       );
     }
     return _placeholder();

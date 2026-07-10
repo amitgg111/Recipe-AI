@@ -11,6 +11,7 @@ import 'package:recipe_ai/Controllers/profile_controller.dart';
 import 'package:recipe_ai/Controllers/recipe_editor_controller.dart';
 import 'package:recipe_ai/Controllers/settings_controller.dart';
 import 'package:recipe_ai/Controllers/onboarding_controller.dart';
+import 'package:recipe_ai/Controllers/notification_controller.dart';
 import 'package:recipe_ai/Controllers/share_intent_service_controller.dart';
 import 'package:recipe_ai/Core/Routes/app_routes.dart';
 import 'package:recipe_ai/Core/Theme/app_theme_controller.dart';
@@ -98,6 +99,8 @@ void main() async {
   Get.put(CookbookController(), permanent: true);
   Get.put(SettingsController(), permanent: true);
   Get.put(OnboardingController(), permanent: true);
+  // Real-time in-app notification feed + unread badge (self-binds to auth).
+  Get.put(NotificationController(), permanent: true);
 
   final shareService = Get.put(ShareIntentService(), permanent: true);
 

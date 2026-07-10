@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:recipe_ai/Service/import_with_image_api_calling_service.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
+import 'package:recipe_ai/utils/validation_helper.dart';
 import 'package:recipe_ai/widgets/app_logo.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 
@@ -19,6 +20,7 @@ class GenerateRecipeScreen extends StatefulWidget {
 class _GenerateRecipeScreenState extends State<GenerateRecipeScreen> {
   final TextEditingController recipeController = TextEditingController();
   final FocusNode _focus = FocusNode();
+  final _formKey = GlobalKey<FormState>();
   bool _busy = false;
 
   static const _suggestions = [
@@ -37,6 +39,7 @@ class _GenerateRecipeScreenState extends State<GenerateRecipeScreen> {
   }
 
   Future<void> _generateRecipe() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
     final recipeName = recipeController.text.trim();
     if (recipeName.isEmpty) {
       CustomSnackbar.show(
@@ -97,6 +100,32 @@ class _GenerateRecipeScreenState extends State<GenerateRecipeScreen> {
                     ),
                     const SizedBox(height: 26),
                     _inputField(),
+                    // Validation message shown OUTSIDE the field (below it).
+                    ValueListenableBuilder<TextEditingValue>(
+                      valueListenable: recipeController,
+                      builder: (context, value, _) {
+                        final err = ValidationHelper.title(
+                          value.text,
+                          field: 'Recipe name',
+                          min: 2,
+                          max: 100,
+                        );
+                        if (value.text.isEmpty || err == null) {
+                          return const SizedBox.shrink();
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 6, left: 4),
+                          child: Text(
+                            err,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w500,
+                              color: const Color(0xFFDC2626),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                     const SizedBox(height: 14),
                     _generateButton(),
                     const SizedBox(height: 28),
@@ -121,13 +150,17 @@ class _GenerateRecipeScreenState extends State<GenerateRecipeScreen> {
             child: Container(
               width: 40,
               height: 40,
+              padding: const EdgeInsets.all(5),
               decoration: BoxDecoration(
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(13),
                 border: Border.all(color: const Color(0xFFEFEDE6)),
               ),
-              child: const OnboardingLineIcon('back',
-                  size: 20, color: AppColors.textDark),
+              child: const OnboardingLineIcon(
+                'back',
+                size: 20,
+                color: AppColors.textDark,
+              ),
             ),
           ),
           const SizedBox(width: 14),
@@ -145,48 +178,66 @@ class _GenerateRecipeScreenState extends State<GenerateRecipeScreen> {
   }
 
   Widget _inputField() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.surfaceBorderLight),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          const OnboardingLineIcon('search', size: 22, color: AppColors.textHint),
-          const SizedBox(width: 10),
-          Expanded(
-            child: TextField(
-              controller: recipeController,
-              focusNode: _focus,
-              textInputAction: TextInputAction.done,
-              onSubmitted: (_) => _generateRecipe(),
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textDark,
-              ),
-              decoration: InputDecoration(
-                isDense: true,
-                filled: false,
-                hintText: 'e.g. Paneer Butter Masala',
-                hintStyle: GoogleFonts.plusJakartaSans(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textHint,
+    return Form(
+      key: _formKey,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.surfaceBorderLight),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            const OnboardingLineIcon(
+              'search',
+              size: 22,
+              color: AppColors.textHint,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: TextFormField(
+                controller: recipeController,
+                focusNode: _focus,
+                keyboardType: TextInputType.text,
+                inputFormatters: [...ValidationHelper.noLeadingSpace],
+                validator: (v) => ValidationHelper.title(
+                  v,
+                  field: 'Recipe name',
+                  min: 2,
+                  max: 100,
                 ),
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                errorBorder: InputBorder.none,
-                disabledBorder: InputBorder.none,
-                focusedErrorBorder: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                textInputAction: TextInputAction.done,
+                onFieldSubmitted: (_) => _generateRecipe(),
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textDark,
+                ),
+                decoration: InputDecoration(
+                  isDense: true,
+                  filled: false,
+                  hintText: 'e.g. Paneer Butter Masala',
+                  hintStyle: GoogleFonts.plusJakartaSans(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textHint,
+                  ),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  errorBorder: InputBorder.none,
+                  disabledBorder: InputBorder.none,
+                  focusedErrorBorder: InputBorder.none,
+                  // Collapse the built-in error inside the box; shown below.
+                  errorStyle: const TextStyle(height: 0, fontSize: 0),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -219,13 +270,18 @@ class _GenerateRecipeScreenState extends State<GenerateRecipeScreen> {
                   width: 24,
                   height: 24,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2.6, color: Colors.white),
+                    strokeWidth: 2.6,
+                    color: Colors.white,
+                  ),
                 )
               : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const OnboardingLineIcon('sparkF2',
-                        size: 20, color: Colors.white),
+                    const OnboardingLineIcon(
+                      'sparkF2',
+                      size: 20,
+                      color: Colors.white,
+                    ),
                     const SizedBox(width: 9),
                     Text(
                       'Generate Recipe',
@@ -256,8 +312,11 @@ class _GenerateRecipeScreenState extends State<GenerateRecipeScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.lightbulb_outline_rounded,
-                  size: 18, color: AppColors.gold),
+              const Icon(
+                Icons.lightbulb_outline_rounded,
+                size: 18,
+                color: AppColors.gold,
+              ),
               const SizedBox(width: 8),
               Text(
                 'Try one of these',
@@ -273,9 +332,7 @@ class _GenerateRecipeScreenState extends State<GenerateRecipeScreen> {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: [
-              for (final s in _suggestions) _chip(s),
-            ],
+            children: [for (final s in _suggestions) _chip(s)],
           ),
         ],
       ),

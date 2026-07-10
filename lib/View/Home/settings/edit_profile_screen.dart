@@ -1,12 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/Controllers/profile_controller.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/View/Home/settings/settings_common.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
+import 'package:recipe_ai/utils/validation_helper.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -18,6 +20,7 @@ class EditProfileScreen extends StatefulWidget {
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final _profile = Get.find<ProfileController>();
+  final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _contactController;
   late final TextEditingController _bioController;
@@ -60,6 +63,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _save() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _saving = true);
     try {
       final user = FirebaseAuth.instance.currentUser!;
@@ -109,9 +113,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
-          children: [
+        child: Form(
+          key: _formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
+            children: [
             // Header: close · title · Save
             SizedBox(
               height: 44,
@@ -204,7 +211,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             const SizedBox(height: 22),
 
             _label('NAME'),
-            _field(controller: _nameController, focused: true),
+            _field(
+              controller: _nameController,
+              focused: true,
+              keyboardType: TextInputType.name,
+              validator: (v) => ValidationHelper.name(v),
+            ),
             const SizedBox(height: 13),
 
             _label('EMAIL'),
@@ -216,6 +228,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               controller: _contactController,
               keyboardType: TextInputType.phone,
               hint: 'Add a phone number',
+              inputFormatters: ValidationHelper.digitsOnly,
+              validator: (v) => ValidationHelper.phone(v, required: false),
             ),
             const SizedBox(height: 13),
 
@@ -224,8 +238,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               controller: _bioController,
               maxLines: 3,
               hint: 'Tell people a little about you',
+              keyboardType: TextInputType.multiline,
+              validator: (v) => ValidationHelper.notes(v, max: 160, field: 'Bio'),
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -289,6 +306,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     String? hint,
     String? prefixText,
     TextInputType? keyboardType,
+    String? Function(String?)? validator,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return Container(
       width: double.infinity,
@@ -313,10 +332,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         horizontal: 14,
         vertical: maxLines > 1 ? 12 : 0,
       ),
-      child: TextField(
+      child: TextFormField(
         controller: controller,
         maxLines: maxLines,
         keyboardType: keyboardType,
+        validator: validator,
+        inputFormatters: inputFormatters,
         style: const TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w600,

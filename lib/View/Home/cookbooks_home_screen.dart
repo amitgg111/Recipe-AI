@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/widgets/app_logo.dart';
+import 'package:recipe_ai/widgets/app_network_image.dart';
 import 'package:recipe_ai/widgets/app_wordmark.dart';
 
 /// Cookbooks (home) — pixel-matched to design "18 · Cookbooks (home)".
@@ -319,14 +320,13 @@ class _CookbooksHomeScreenState extends State<CookbooksHomeScreen> {
           ? const Center(
               child: _Ico(_pPhoto, size: 20, color: '#CFC5B4', stroke: 1.7),
             )
-          : Image.network(
+          : AppNetworkImage(
               url,
               fit: BoxFit.cover,
               width: double.infinity,
               height: double.infinity,
-              loadingBuilder: (c, child, p) =>
-                  p == null ? child : const SizedBox.shrink(),
-              errorBuilder: (c, e, s) => const Center(
+              placeholder: const SizedBox.shrink(),
+              error: const Center(
                 child: _Ico(_pPhoto, size: 20, color: '#CFC5B4', stroke: 1.7),
               ),
             ),

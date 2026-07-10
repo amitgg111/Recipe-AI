@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
@@ -39,6 +40,15 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   @override
   void initState() {
     super.initState();
+
+    // Draw the UI edge-to-edge behind a *visible*, transparent status bar (as in
+    // the design) so the background gradient runs up into the status-bar area.
+    // Content stays clear of the bars via the SafeArea in build().
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.edgeToEdge,
+      overlays: SystemUiOverlay.values,
+    );
+
     _entranceController = AnimationController(
       duration: const Duration(milliseconds: 2200),
       vsync: this,
@@ -94,6 +104,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
   @override
   void dispose() {
+    // Ensure the status bar is back if we leave before the timer fires.
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     _entranceController.dispose();
     _sheenController.dispose();
 
@@ -116,52 +128,66 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Stack(
-        children: [
-          const Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: Alignment.topCenter,
-                  radius: 1.2,
-                  colors: [Color(0x15F2623E), Colors.transparent],
+    return MediaQuery(
+      // Render at the design's 1.0 text scale so the screen matches the mock
+      // regardless of the device's system font-size (accessibility) setting.
+      data: MediaQuery.of(context).copyWith(
+        textScaler: const TextScaler.linear(1.0),
+      ),
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+      // Transparent status bar so the background gradient runs edge-to-edge
+      // up into the status bar area (dark icons for the light background).
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+      ),
+      child: Scaffold(
+        // backgroundColor: AppColors.background,
+        body: Stack(
+          children: [
+            const Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: Alignment.topCenter,
+                    radius: 1.2,
+                    colors: [Color(0x15F2623E), Colors.transparent],
+                  ),
                 ),
               ),
             ),
-          ),
-          const Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: Alignment.bottomLeft,
-                  radius: 1.0,
-                  colors: [Color(0x101F7A5E), Colors.transparent],
+            const Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: Alignment.bottomLeft,
+                    radius: 1.0,
+                    colors: [Color(0x101F7A5E), Colors.transparent],
+                  ),
                 ),
               ),
             ),
-          ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 28),
+                child: Column(
                 children: [
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 18),
                   // Logo
                   _animatedSlide(
                     _logoFade,
                     _logoSlide,
-                    Row(
+                    const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const AppLogo(size: 32),
-                        const SizedBox(width: 10),
+                        AppLogo(size: 32),
+                        SizedBox(width: 10),
                         AppWordmark(fontSize: 22, fontWeight: FontWeight.w800),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 22),
                   // Title
                   _animatedSlide(
                     _titleFade,
@@ -190,7 +216,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                       ),
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 13),
                   // Subtitle
                   _animatedSlide(
                     _subtitleFade,
@@ -308,9 +334,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
               ),
             ),
           ),
-        ],
+          ],
+        ),
       ),
-    );
+    ));
   }
 }
 
@@ -387,11 +414,11 @@ class _WelcomeBodyState extends State<WelcomeBody>
               children: [
                 const SizedBox(height: 24),
                 // Logo
-                Row(
+                const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const AppLogo(size: 32),
-                    const SizedBox(width: 10),
+                    AppLogo(size: 32),
+                    SizedBox(width: 10),
                     AppWordmark(fontSize: 22, fontWeight: FontWeight.w800),
                   ],
                 ),

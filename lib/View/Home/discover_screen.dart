@@ -7,6 +7,7 @@ import 'package:recipe_ai/Controllers/cookbook_controller.dart';
 import 'package:recipe_ai/Service/recipe_social_service.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/app_logo.dart';
+import 'package:recipe_ai/widgets/notification_bell.dart';
 import 'package:recipe_ai/View/Home/public_recipe_view_screen.dart';
 import 'package:recipe_ai/View/Home/social/creator_profile_screen.dart';
 import 'package:recipe_ai/View/Home/recipe_detail_screen.dart'
@@ -94,6 +95,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                         ),
                       ),
                       const Spacer(),
+                      const NotificationBell(),
+                      const SizedBox(width: 10),
                       _creditsBadge(),
                     ],
                   ),
@@ -267,7 +270,7 @@ class _SearchField extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: TextField(
-              onChanged: (v) => controller.searchQuery.value = v,
+              onChanged: (v) => controller.searchQuery.value = v.trim(),
               cursorColor: _D.primary,
               style: _f(14, FontWeight.w500, _D.textDark),
               decoration: InputDecoration(
@@ -336,6 +339,41 @@ class _RecipeCardState extends State<_RecipeCard> {
 
   String get _time =>
       recipe.totalTime ?? recipe.cookTime ?? recipe.prepTime ?? '';
+
+  /// Normalises whatever time string the recipe stored ("20m", "90m", "50 mins",
+  /// "1h 30m"…) into the clean "30 min" / "1 hr 30 min" form used in the design.
+  String _prettyTime(String raw) {
+    final s = raw.toLowerCase().trim();
+    if (s.isEmpty) return '';
+    int? hours;
+    int? mins;
+    final hM = RegExp(r'(\d+)\s*(?:h|hr|hour)').firstMatch(s);
+    final mM = RegExp(r'(\d+)\s*(?:m|min)').firstMatch(s);
+    if (hM != null) hours = int.tryParse(hM.group(1)!);
+    if (mM != null) mins = int.tryParse(mM.group(1)!);
+    if (hours == null && mins == null) {
+      final n = RegExp(r'(\d+)').firstMatch(s);
+      if (n == null) return raw; // no number → show as stored
+      mins = int.tryParse(n.group(1)!);
+    }
+    final total = (hours ?? 0) * 60 + (mins ?? 0);
+    if (total <= 0) return raw;
+    if (total < 60) return '$total min';
+    final h = total ~/ 60;
+    final m = total % 60;
+    return m == 0 ? '$h hr' : '$h hr $m min';
+  }
+
+  /// "1204" → "1,204" so big counts read like the design.
+  String _fmtNum(int n) {
+    final s = n.toString();
+    final b = StringBuffer();
+    for (var i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) b.write(',');
+      b.write(s[i]);
+    }
+    return b.toString();
+  }
 
   String _ago() {
     final dt = recipe.createdAt;
@@ -549,13 +587,19 @@ class _RecipeCardState extends State<_RecipeCard> {
                               errorWidget: (_, __, ___) => _imgPh(),
                             )
                           : _imgPh(),
+                      // Subtle bottom-only gradient — keeps the photo bright
+                      // (like the design) while still making the title legible.
                       const DecoratedBox(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
-                            colors: [Color(0x00140F0A), Color(0xB8140F0A)],
-                            stops: [0.45, 1.0],
+                            colors: [
+                              Color(0x00140F0A),
+                              Color(0x00140F0A),
+                              Color(0x8A140F0A),
+                            ],
+                            stops: [0.0, 0.55, 1.0],
                           ),
                         ),
                       ),
@@ -578,11 +622,11 @@ class _RecipeCardState extends State<_RecipeCard> {
                                 const OnboardingLineIcon(
                                   'clock',
                                   size: 13,
-                                  color: _D.primary,
+                                  color: _D.textDark,
                                 ),
                                 const SizedBox(width: 5),
                                 Text(
-                                  _time,
+                                  _prettyTime(_time),
                                   style: _f(12, FontWeight.w800, _D.textDark),
                                 ),
                               ],
@@ -595,13 +639,22 @@ class _RecipeCardState extends State<_RecipeCard> {
                         bottom: 13,
                         child: Text(
                           recipe.title,
-                          style: _f(
-                            19,
-                            FontWeight.w800,
-                            Colors.white,
-                            h: 1.15,
-                            ls: -0.38,
-                          ),
+                          style:
+                              _f(
+                                19,
+                                FontWeight.w800,
+                                Colors.white,
+                                h: 1.15,
+                                ls: -0.38,
+                              ).copyWith(
+                                shadows: const [
+                                  Shadow(
+                                    color: Color(0xB3000000),
+                                    blurRadius: 10,
+                                    offset: Offset(0, 1),
+                                  ),
+                                ],
+                              ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -658,7 +711,7 @@ class _RecipeCardState extends State<_RecipeCard> {
                 const Spacer(),
                 _action(
                   iconWidget: OnboardingLineIcon(
-                    'bookmark',
+                    _saved ? 'bookmarkF' : 'bookmark',
                     size: 22,
                     color: _saved ? _D.primary : _D.textDark,
                   ),
@@ -689,7 +742,7 @@ class _RecipeCardState extends State<_RecipeCard> {
           iconWidget,
           if (showCount && count > 0) ...[
             const SizedBox(width: 7),
-            Text('$count', style: _f(13, FontWeight.w700, _D.textBody)),
+            Text(_fmtNum(count), style: _f(13, FontWeight.w700, _D.textBody)),
           ],
         ],
       ),

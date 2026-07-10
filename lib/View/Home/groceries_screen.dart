@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -7,6 +8,7 @@ import 'package:recipe_ai/Controllers/grocery_store_controller.dart';
 import 'package:recipe_ai/Controllers/home_controller.dart';
 import 'package:recipe_ai/Controllers/settings_controller.dart';
 import 'package:recipe_ai/Helper/unit_converter.dart';
+import 'package:recipe_ai/utils/validation_helper.dart';
 import 'package:recipe_ai/View/Home/home_screen.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
@@ -71,6 +73,15 @@ const _kCategories = [
   'Other',
 ];
 
+/// A set of grocery items sharing the same name (across one or more recipes),
+/// used to render a single merged line with a per-recipe breakdown.
+class _MergedItem {
+  final String name;
+  final String aisle;
+  final List<GroceryItem> parts;
+  const _MergedItem(this.name, this.aisle, this.parts);
+}
+
 class GroceriesScreen extends StatelessWidget {
   GroceriesScreen({super.key});
 
@@ -80,6 +91,9 @@ class GroceriesScreen extends StatelessWidget {
 
   // true = group by meal/recipe, false = group by category/aisle
   final RxBool _byMeal = true.obs;
+
+  // Which merged "By category" rows are expanded (key = "aisle::name").
+  final RxSet<String> _expandedKeys = <String>{}.obs;
 
   @override
   Widget build(BuildContext context) {
@@ -123,6 +137,14 @@ class GroceriesScreen extends StatelessWidget {
                     _buildProgress(done, total),
                     const SizedBox(height: 18),
                     _buildToggle(),
+                    // Row(
+                    //   children: [
+                    //     Expanded(child: _buildToggle()),
+                    //     const SizedBox(width: 8),
+                    //     // US / Metric — converts every grocery to one system.
+                    //     _unitToggle(),
+                    //   ],
+                    // ),
                     const SizedBox(height: 16),
                     if (_byMeal.value)
                       ..._buildByMeal(context, items)
@@ -241,39 +263,404 @@ class GroceriesScreen extends StatelessWidget {
     );
   }
 
-  // ── By meal (grouped by recipe) ───────────────────────────────────────────
-  List<Widget> _buildByMeal(BuildContext context, List<GroceryItem> items) {
-    final order = <String>[];
-    final groups = <String, List<GroceryItem>>{};
-    for (final it in items) {
-      final key = it.recipeId;
-      if (!groups.containsKey(key)) {
-        groups[key] = [];
-        order.add(key);
-      }
-      groups[key]!.add(it);
+  // ── US / Metric unit switch ───────────────────────────────────────────────
+  // Every grocery is displayed in the selected measurement system, so nothing
+  // ever mixes ml + cups (or g + oz). Changing it here persists the choice and
+  // the item list re-converts in real time (the body Obx reads unitSystem).
+  Widget _unitToggle() {
+    Widget seg(String label, bool us) {
+      final on = (settings.units.value == 'US') == us;
+      return GestureDetector(
+        onTap: () => settings.setUnits(us ? 'US' : 'Metric'),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: on ? _G.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            label,
+            style: _G.f(
+              12,
+              on ? FontWeight.w800 : FontWeight.w700,
+              on ? Colors.white : _G.textBody,
+            ),
+          ),
+        ),
+      );
     }
 
-    final widgets = <Widget>[];
-    final extra = <GroceryItem>[];
+    return Obx(
+      () => Container(
+        padding: const EdgeInsets.all(3),
+        decoration: BoxDecoration(
+          color: _G.card,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: _G.chipBorder),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [seg('US', true), seg('Metric', false)],
+        ),
+      ),
+    );
+  }
 
-    for (final key in order) {
-      final recipe = key.isEmpty ? null : _recipeById(key);
-      if (recipe == null) {
-        extra.addAll(groups[key]!);
-        continue;
-      }
-      widgets.add(_recipeHeader(recipe, groups[key]!.length));
-      widgets.add(_itemCard(context, groups[key]!));
+  // ── By meal (grouped by recipe) ───────────────────────────────────────────
+  List<Widget> _buildByMeal(BuildContext context, List<GroceryItem> items) {
+    final multiNames = store.multiMealNames;
+    final widgets = <Widget>[];
+
+    // 1) "Used in many meals" — ingredients that appear in more than one recipe,
+    // merged into a single line so you buy them once for the week.
+    final multiItems = items
+        .where(
+          (it) =>
+              it.recipeId.isNotEmpty &&
+              multiNames.contains(it.name.toLowerCase()),
+        )
+        .toList();
+    final mergedMulti = _mergeByName(multiItems);
+    if (mergedMulti.isNotEmpty) {
+      widgets.add(_infoBanner());
+      widgets.add(const SizedBox(height: 16));
+      widgets.add(_usedInManyHeader());
+      widgets.add(_manyMealsCard(context, mergedMulti));
       widgets.add(const SizedBox(height: 18));
     }
 
+    // 2) Per-recipe groups (excluding the merged "used in many meals" items).
+    final order = <String>[];
+    final groups = <String, List<GroceryItem>>{};
+    final extra = <GroceryItem>[];
+    for (final it in items) {
+      if (it.recipeId.isEmpty) {
+        extra.add(it);
+        continue;
+      }
+      if (multiNames.contains(it.name.toLowerCase())) continue;
+      if (!groups.containsKey(it.recipeId)) {
+        groups[it.recipeId] = [];
+        order.add(it.recipeId);
+      }
+      groups[it.recipeId]!.add(it);
+    }
+
+    for (final key in order) {
+      final recipe = _recipeById(key);
+      final g = groups[key]!;
+      if (recipe == null) {
+        extra.addAll(g); // recipe deleted → treat as extra
+        continue;
+      }
+      widgets.add(_recipeHeader(recipe, g.length));
+      widgets.add(_itemCard(context, g));
+      widgets.add(const SizedBox(height: 18));
+    }
+
+    // 3) Extra items added by the user.
     if (extra.isNotEmpty) {
       widgets.add(_extraHeader());
       widgets.add(_itemCard(context, extra));
       widgets.add(const SizedBox(height: 18));
     }
     return widgets;
+  }
+
+  /// Group items by (case-insensitive) name, preserving first-seen order.
+  List<_MergedItem> _mergeByName(List<GroceryItem> list) {
+    final order = <String>[];
+    final map = <String, List<GroceryItem>>{};
+    for (final it in list) {
+      final k = it.name.toLowerCase();
+      if (!map.containsKey(k)) {
+        map[k] = [];
+        order.add(k);
+      }
+      map[k]!.add(it);
+    }
+    return [
+      for (final k in order)
+        _MergedItem(map[k]!.first.name, map[k]!.first.aisle, map[k]!),
+    ];
+  }
+
+  void _toggleExpanded(String key) {
+    if (_expandedKeys.contains(key)) {
+      _expandedKeys.remove(key);
+    } else {
+      _expandedKeys.add(key);
+    }
+    // Nudge the reactive list so the enclosing Obx rebuilds with the new state.
+    store.items.refresh();
+  }
+
+  // Light banner explaining the merge behaviour (matches the design).
+  Widget _infoBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1EEFB),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE3DCF7)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const OnboardingLineIcon('spark', size: 16, color: Color(0xFF7C6BD1)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Ingredients used in more than one meal are merged into one line.',
+              style: _G.f(
+                12.5,
+                FontWeight.w600,
+                const Color(0xFF6B5CA5),
+                h: 1.35,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _usedInManyHeader() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 9),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: _G.goldBg,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const OnboardingLineIcon(
+              'bookmark',
+              size: 17,
+              color: _G.gold,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Used in many meals',
+                  style: _G.f(14, FontWeight.w800, _G.textDark),
+                ),
+                Text(
+                  'Buy once for the week',
+                  style: _G.f(11, FontWeight.w600, _G.textHint),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _manyMealsCard(BuildContext context, List<_MergedItem> merged) {
+    final allChecked = merged.every((m) => m.parts.every((p) => p.checked));
+    return Container(
+      decoration: BoxDecoration(
+        color: allChecked ? _G.checkedBg : _G.card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _G.border),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          for (int i = 0; i < merged.length; i++)
+            _manyMealsRow(context, merged[i], last: i == merged.length - 1),
+        ],
+      ),
+    );
+  }
+
+  Widget _manyMealsRow(
+    BuildContext context,
+    _MergedItem m, {
+    required bool last,
+  }) {
+    // Distinct key namespace ('meal::') so tapping a merged row here never
+    // collides with the identically-named row in the By-category view.
+    final key = 'meal::${m.name.toLowerCase()}';
+    final expanded = _expandedKeys.contains(key);
+    final allChecked = m.parts.every((p) => p.checked);
+    final combined = GroceryStore.combineQuantities(
+      m.parts.map((p) => p.quantity),
+    );
+    return Container(
+      decoration: BoxDecoration(
+        border: (last && !expanded)
+            ? null
+            : const Border(bottom: BorderSide(color: _G.rowLine)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _checkbox(
+                allChecked,
+                onTap: () => store.setCheckedAll(m.parts, !allChecked),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                // Tap the "N meals combined" label to reveal the recipe names
+                // it comes from — mirrors the By-category expandable row.
+                child: GestureDetector(
+                  onTap: () => _toggleExpanded(key),
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          m.name,
+                          style: _G
+                              .f(
+                                14,
+                                FontWeight.w700,
+                                allChecked ? _G.textHint : _G.textDark,
+                              )
+                              .copyWith(
+                                decoration: allChecked
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                              ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                _mealsBreakdown(m),
+                                style: _G.f(11, FontWeight.w600, _G.gold),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '· tap to ${expanded ? 'hide' : 'view'}',
+                              style: _G.f(11, FontWeight.w600, _G.gold),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              if (combined.trim().isNotEmpty) ...[
+                const SizedBox(width: 8),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 120),
+                  child: Text(
+                    UnitConverter.applySystemQuantity(
+                      combined,
+                      m.name,
+                      settings.unitSystem,
+                    ),
+                    textAlign: TextAlign.right,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: _G
+                        .f(
+                          13,
+                          FontWeight.w700,
+                          allChecked ? const Color(0xFFC7BCAC) : _G.textMed,
+                        )
+                        .copyWith(
+                          decoration: allChecked
+                              ? TextDecoration.lineThrough
+                              : null,
+                        ),
+                  ),
+                ),
+              ],
+              GestureDetector(
+                onTap: () => _showItemOptions(context, m.parts.first),
+                behavior: HitTestBehavior.opaque,
+                child: const Padding(
+                  padding: EdgeInsets.fromLTRB(6, 12, 12, 12),
+                  child: OnboardingLineIcon(
+                    'dots',
+                    size: 18,
+                    color: Color(0xFFB0A899),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          // Per-recipe breakdown when expanded (one row PER recipe) — shows the
+          // meal/recipe names this merged ingredient is used in.
+          if (expanded) ..._recipeBreakdown(m),
+        ],
+      ),
+    );
+  }
+
+  /// "2 meals · 3 + 2 cloves" when the units match, else "N meals combined".
+  String _mealsBreakdown(_MergedItem m) {
+    final n = m.parts
+        .map((p) => p.recipeId)
+        .where((r) => r.isNotEmpty)
+        .toSet()
+        .length;
+    final nums = <String>[];
+    String? unit;
+    for (final p in m.parts) {
+      final match = RegExp(
+        r'^\s*([\d./½⅓⅔¼¾⅛⅜⅝⅞\s]+?)\s*(.*)$',
+      ).firstMatch(p.quantity.trim());
+      if (match == null) return '$n meals combined';
+      final num = match.group(1)!.trim();
+      final u = match.group(2)!.trim();
+      if (num.isEmpty) return '$n meals combined';
+      unit ??= u;
+      if (u.toLowerCase() != unit.toLowerCase()) return '$n meals combined';
+      nums.add(num);
+    }
+    if (nums.length < 2) return '$n meals combined';
+    final unitStr = (unit == null || unit.isEmpty) ? '' : ' $unit';
+    return '$n meals · ${nums.join(' + ')}$unitStr';
+  }
+
+  Widget _checkbox(bool checked, {required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 2, 12),
+        child: Container(
+          width: 23,
+          height: 23,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(7),
+            color: checked ? _G.green : Colors.transparent,
+            border: checked
+                ? null
+                : Border.all(color: _G.checkBorder, width: 2),
+          ),
+          child: checked
+              ? const OnboardingLineIcon('check', size: 14, color: Colors.white)
+              : null,
+        ),
+      ),
+    );
   }
 
   RecipeModel? _recipeById(String id) =>
@@ -366,12 +753,19 @@ class GroceriesScreen extends StatelessWidget {
 
   // ── By category (grouped by aisle) ─────────────────────────────────────────
   List<Widget> _buildByCategory(BuildContext context, List<GroceryItem> items) {
-    final byAisle = store.byAisle;
-    final aisles = store.sortedAisles;
+    // Merge same-named items FIRST (across recipes AND aisles) so an ingredient
+    // that different recipes filed under slightly different aisles still lands
+    // on one line — then bucket each merged line into a single aisle.
+    final merged = _mergeByName(items);
+    final byAisle = <String, List<_MergedItem>>{};
+    for (final m in merged) {
+      byAisle.putIfAbsent(m.aisle, () => []).add(m);
+    }
+
     final widgets = <Widget>[];
-    for (final aisle in aisles) {
-      final group = byAisle[aisle] ?? [];
-      if (group.isEmpty) continue;
+    for (final aisle in store.sortedAisles) {
+      final list = byAisle[aisle] ?? const <_MergedItem>[];
+      if (list.isEmpty) continue;
       widgets.add(
         Padding(
           padding: const EdgeInsets.only(bottom: 8),
@@ -382,17 +776,238 @@ class GroceriesScreen extends StatelessWidget {
               Text(aisle, style: _G.f(14, FontWeight.w800, _G.textDark)),
               const SizedBox(width: 6),
               Text(
-                '· ${group.length}',
+                '· ${list.length}',
                 style: _G.f(12, FontWeight.w600, _G.textHint),
               ),
             ],
           ),
         ),
       );
-      widgets.add(_itemCard(context, group));
+      widgets.add(_mergedCategoryCard(context, list));
       widgets.add(const SizedBox(height: 16));
     }
     return widgets;
+  }
+
+  Widget _mergedCategoryCard(BuildContext context, List<_MergedItem> merged) {
+    final allChecked = merged.every((m) => m.parts.every((p) => p.checked));
+    final rows = <Widget>[];
+    for (int i = 0; i < merged.length; i++) {
+      final m = merged[i];
+      final isLast = i == merged.length - 1;
+      final recipeIds = m.parts
+          .map((p) => p.recipeId)
+          .where((r) => r.isNotEmpty)
+          .toSet();
+      if (recipeIds.length > 1) {
+        rows.add(_mergedMultiRow(context, m, recipeIds.length, last: isLast));
+      } else {
+        // Single-source item(s) — render as normal rows.
+        for (int j = 0; j < m.parts.length; j++) {
+          rows.add(
+            _itemRow(
+              context,
+              m.parts[j],
+              last: isLast && j == m.parts.length - 1,
+            ),
+          );
+        }
+      }
+    }
+    return Container(
+      decoration: BoxDecoration(
+        color: allChecked ? _G.checkedBg : _G.card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _G.border),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(children: rows),
+    );
+  }
+
+  Widget _mergedMultiRow(
+    BuildContext context,
+    _MergedItem m,
+    int recipeCount, {
+    required bool last,
+  }) {
+    final key = '${m.aisle}::${m.name.toLowerCase()}';
+    final expanded = _expandedKeys.contains(key);
+    final allChecked = m.parts.every((p) => p.checked);
+    final combined = GroceryStore.combineQuantities(
+      m.parts.map((p) => p.quantity),
+    );
+    return Container(
+      decoration: BoxDecoration(
+        border: (last && !expanded)
+            ? null
+            : const Border(bottom: BorderSide(color: _G.rowLine)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              _checkbox(
+                allChecked,
+                onTap: () => store.setCheckedAll(m.parts, !allChecked),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => _toggleExpanded(key),
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                m.name,
+                                style: _G
+                                    .f(
+                                      14,
+                                      FontWeight.w700,
+                                      allChecked ? _G.textHint : _G.textDark,
+                                    )
+                                    .copyWith(
+                                      decoration: allChecked
+                                          ? TextDecoration.lineThrough
+                                          : null,
+                                    ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 1,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _G.noteBg,
+                                borderRadius: BorderRadius.circular(7),
+                              ),
+                              child: Text(
+                                '+$recipeCount',
+                                style: _G.f(10.5, FontWeight.w800, _G.primary),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'from $recipeCount recipes · tap to '
+                          '${expanded ? 'hide' : 'view'}',
+                          style: _G.f(11, FontWeight.w600, _G.primary),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              if (combined.trim().isNotEmpty) ...[
+                const SizedBox(width: 8),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 120),
+                  child: Text(
+                    UnitConverter.applySystemQuantity(
+                      combined,
+                      m.name,
+                      settings.unitSystem,
+                    ),
+                    textAlign: TextAlign.right,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: _G
+                        .f(
+                          13,
+                          FontWeight.w700,
+                          allChecked ? const Color(0xFFC7BCAC) : _G.textMed,
+                        )
+                        .copyWith(
+                          decoration: allChecked
+                              ? TextDecoration.lineThrough
+                              : null,
+                        ),
+                  ),
+                ),
+              ],
+              GestureDetector(
+                onTap: () => _showItemOptions(context, m.parts.first),
+                behavior: HitTestBehavior.opaque,
+                child: const Padding(
+                  padding: EdgeInsets.fromLTRB(6, 12, 12, 12),
+                  child: OnboardingLineIcon(
+                    'dots',
+                    size: 18,
+                    color: Color(0xFFB0A899),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          // Per-recipe breakdown when expanded (one row PER recipe).
+          if (expanded) ..._recipeBreakdown(m),
+        ],
+      ),
+    );
+  }
+
+  /// One breakdown row per DISTINCT recipe (an ingredient listed twice in the
+  /// same recipe is combined, so a recipe never appears twice).
+  List<Widget> _recipeBreakdown(_MergedItem m) {
+    final order = <String>[];
+    final byRecipe = <String, List<GroceryItem>>{};
+    for (final p in m.parts) {
+      if (p.recipeId.isEmpty) continue;
+      if (!byRecipe.containsKey(p.recipeId)) {
+        byRecipe[p.recipeId] = [];
+        order.add(p.recipeId);
+      }
+      byRecipe[p.recipeId]!.add(p);
+    }
+    return [for (final id in order) _subRecipeRow(id, byRecipe[id]!)];
+  }
+
+  Widget _subRecipeRow(String recipeId, List<GroceryItem> parts) {
+    final recipe = _recipeById(recipeId);
+    final name = recipe?.title ?? 'Recipe';
+    final qty = GroceryStore.combineQuantities(parts.map((p) => p.quantity));
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(47, 0, 14, 9),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              name,
+              style: _G.f(12.5, FontWeight.w500, _G.textMed),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 8),
+          if (qty.trim().isNotEmpty)
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 120),
+              child: Text(
+                UnitConverter.applySystemQuantity(
+                  qty,
+                  parts.first.name,
+                  settings.unitSystem,
+                ),
+                textAlign: TextAlign.right,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: _G.f(12.5, FontWeight.w600, _G.textMed),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   // ── Shared item card + rows ────────────────────────────────────────────────
@@ -474,7 +1089,11 @@ class GroceriesScreen extends StatelessWidget {
             Text(
               // Convert the stored quantity to the active unit system on
               // display (reactive via the enclosing Obx over store.items).
-              UnitConverter.applySystem(item.quantity, settings.unitSystem),
+              UnitConverter.applySystemQuantity(
+                item.quantity,
+                item.name,
+                settings.unitSystem,
+              ),
               style: _G
                   .f(
                     13,
@@ -1412,7 +2031,7 @@ class _MoreMenuButton extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // Add / Edit item form sheet (Item + Quantity + Category)
 // ─────────────────────────────────────────────────────────────────────────────
-class _ItemFormSheet extends StatelessWidget {
+class _ItemFormSheet extends StatefulWidget {
   final String title;
   final TextEditingController nameCtrl;
   final RxString nameRx;
@@ -1436,6 +2055,13 @@ class _ItemFormSheet extends StatelessWidget {
   });
 
   @override
+  State<_ItemFormSheet> createState() => _ItemFormSheetState();
+}
+
+class _ItemFormSheetState extends State<_ItemFormSheet> {
+  final _formKey = GlobalKey<FormState>();
+
+  @override
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.only(
@@ -1447,142 +2073,157 @@ class _ItemFormSheet extends StatelessWidget {
           color: _G.card,
           borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 42,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE7E0D2),
-                  borderRadius: BorderRadius.circular(3),
+        child: Form(
+          key: _formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE7E0D2),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Text(title, style: _G.f(19, FontWeight.w800, _G.textDark)),
-                const Spacer(),
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    padding: const EdgeInsets.all(5),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF4F1EA),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const OnboardingLineIcon(
-                      'x',
-                      size: 17,
-                      color: _G.textMed,
-                    ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Text(
+                    widget.title,
+                    style: _G.f(19, FontWeight.w800, _G.textDark),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _label('Item'),
-            const SizedBox(height: 7),
-            _field(
-              nameCtrl,
-              'e.g. Paper towels',
-              focused: true,
-              autofocus: true,
-            ),
-            const SizedBox(height: 16),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _label('Quantity'),
-                      const SizedBox(height: 7),
-                      _field(qtyCtrl, 'e.g. 2'),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _label('Category'),
-                      const SizedBox(height: 7),
-                      GestureDetector(
-                        onTap: onPickCategory,
-                        child: Obx(() {
-                          final typed = nameRx.value.trim();
-                          final cat =
-                              category.value == 'Other' && typed.isNotEmpty
-                              ? autoDetect(typed)
-                              : category.value;
-                          return Container(
-                            height: 50,
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            decoration: BoxDecoration(
-                              color: _G.fieldBg,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: _G.fieldBorder),
-                            ),
-                            child: Row(
-                              children: [
-                                Text(
-                                  _G.emoji(cat),
-                                  style: const TextStyle(fontSize: 16),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    cat,
-                                    style: _G.f(
-                                      13,
-                                      FontWeight.w600,
-                                      _G.textDark,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                const OnboardingLineIcon(
-                                  'chevDown',
-                                  size: 18,
-                                  color: _G.textHint,
-                                ),
-                              ],
-                            ),
-                          );
-                        }),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      padding: const EdgeInsets.all(5),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFF4F1EA),
+                        shape: BoxShape.circle,
                       ),
-                    ],
+                      child: const OnboardingLineIcon(
+                        'x',
+                        size: 17,
+                        color: _G.textMed,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _label('Item'),
+              const SizedBox(height: 7),
+              _field(
+                widget.nameCtrl,
+                'e.g. Paper towels',
+                focused: true,
+                autofocus: true,
+                keyboardType: TextInputType.text,
+                validator: (v) => ValidationHelper.required(v, field: 'Item'),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _label('Quantity'),
+                        const SizedBox(height: 7),
+                        _field(widget.qtyCtrl, 'e.g. 2'),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _label('Category'),
+                        const SizedBox(height: 7),
+                        GestureDetector(
+                          onTap: widget.onPickCategory,
+                          child: Obx(() {
+                            final typed = widget.nameRx.value.trim();
+                            final cat =
+                                widget.category.value == 'Other' &&
+                                    typed.isNotEmpty
+                                ? widget.autoDetect(typed)
+                                : widget.category.value;
+                            return Container(
+                              height: 50,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _G.fieldBg,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: _G.fieldBorder),
+                              ),
+                              child: Row(
+                                children: [
+                                  Text(
+                                    _G.emoji(cat),
+                                    style: const TextStyle(fontSize: 16),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      cat,
+                                      style: _G.f(
+                                        13,
+                                        FontWeight.w600,
+                                        _G.textDark,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const OnboardingLineIcon(
+                                    'chevDown',
+                                    size: 18,
+                                    color: _G.textHint,
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              GestureDetector(
+                onTap: () {
+                  if (!(_formKey.currentState?.validate() ?? false)) return;
+                  widget.onSubmit();
+                },
+                child: Container(
+                  width: double.infinity,
+                  height: 52,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: _G.primary,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Text(
+                    widget.buttonLabel,
+                    style: _G.f(16, FontWeight.w700, Colors.white),
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            GestureDetector(
-              onTap: onSubmit,
-              child: Container(
-                width: double.infinity,
-                height: 52,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: _G.primary,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Text(
-                  buttonLabel,
-                  style: _G.f(16, FontWeight.w700, Colors.white),
-                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1598,6 +2239,9 @@ class _ItemFormSheet extends StatelessWidget {
     String hint, {
     bool focused = false,
     bool autofocus = false,
+    String? Function(String?)? validator,
+    TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return Container(
       height: 50,
@@ -1620,11 +2264,14 @@ class _ItemFormSheet extends StatelessWidget {
               ]
             : null,
       ),
-      child: TextField(
+      child: TextFormField(
         controller: c,
         autofocus: autofocus,
         cursorColor: _G.primary,
         style: _G.f(16, FontWeight.w600, _G.textDark),
+        keyboardType: keyboardType,
+        inputFormatters: inputFormatters,
+        validator: validator,
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: _G.f(15, FontWeight.w400, _G.textHint),
@@ -1633,6 +2280,9 @@ class _ItemFormSheet extends StatelessWidget {
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
+          errorBorder: InputBorder.none,
+          focusedErrorBorder: InputBorder.none,
+          errorStyle: const TextStyle(height: 0, fontSize: 0),
           contentPadding: EdgeInsets.zero,
         ),
       ),

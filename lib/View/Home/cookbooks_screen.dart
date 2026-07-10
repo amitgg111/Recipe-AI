@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:recipe_ai/widgets/app_wordmark.dart';
+import 'package:recipe_ai/widgets/app_network_image.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/Controllers/cookbook_controller.dart';
@@ -19,6 +20,8 @@ import 'package:recipe_ai/theme/app_dimensions.dart';
 import 'package:recipe_ai/widgets/sliding_segmented.dart';
 import 'package:recipe_ai/widgets/app_search_bar.dart';
 import 'package:recipe_ai/screens/import/add_menu_sheet.dart';
+import 'package:recipe_ai/screens/import/add_cookbook_sheet.dart';
+import 'package:recipe_ai/screens/import/import_picker_screen.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/widgets/empty_plate_illustration.dart';
@@ -36,6 +39,10 @@ class _CookbooksScreenState extends State<CookbooksScreen>
   int _sortIndex = 0;
   late AnimationController _fabPulseController;
 
+  // ── Search ──────────────────────────────────────────────────────────────
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
   @override
   void initState() {
     super.initState();
@@ -48,6 +55,7 @@ class _CookbooksScreenState extends State<CookbooksScreen>
   @override
   void dispose() {
     _fabPulseController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -239,6 +247,7 @@ class _CookbooksScreenState extends State<CookbooksScreen>
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
             child: AppSearchBar(
+              controller: _searchController,
               hintText: _selectedSegment == 0
                   ? 'Search cookbooks'
                   : 'Search recipes',
@@ -256,6 +265,9 @@ class _CookbooksScreenState extends State<CookbooksScreen>
                 size: 20,
                 color: Color(0xFFA89F90),
               ),
+              onChanged: (value) {
+                setState(() => _searchQuery = value.trim());
+              },
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -266,6 +278,14 @@ class _CookbooksScreenState extends State<CookbooksScreen>
         ],
       ),
     );
+  }
+
+  List<CookbookModel> _filterCookbooks(List<CookbookModel> cookbooks) {
+    if (_searchQuery.isEmpty) return cookbooks;
+    final query = _searchQuery.toLowerCase();
+    return cookbooks
+        .where((c) => c.name.toLowerCase().contains(query))
+        .toList();
   }
 
   List<CookbookModel> _sortCookbooks(List<CookbookModel> cookbooks) {
@@ -293,7 +313,9 @@ class _CookbooksScreenState extends State<CookbooksScreen>
   Widget _buildCookbooksGrid(HomeController controller) {
     return Obx(() {
       final cookbookController = Get.find<CookbookController>();
-      final cookbooks = _sortCookbooks(cookbookController.cookbooks);
+      final cookbooks = _sortCookbooks(
+        _filterCookbooks(cookbookController.cookbooks),
+      );
       if (cookbooks.isEmpty) {
         return Padding(
           padding: const EdgeInsets.symmetric(
@@ -302,7 +324,10 @@ class _CookbooksScreenState extends State<CookbooksScreen>
           ),
           child: Center(
             child: Text(
-              'No cookbooks yet',
+              _searchQuery.isEmpty
+                  ? 'No cookbooks yet'
+                  : 'No cookbooks match "$_searchQuery"',
+              textAlign: TextAlign.center,
               style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.textMedium,
               ),
@@ -338,6 +363,12 @@ class _CookbooksScreenState extends State<CookbooksScreen>
     });
   }
 
+  List<RecipeModel> _filterRecipes(List<RecipeModel> recipes) {
+    if (_searchQuery.isEmpty) return recipes;
+    final query = _searchQuery.toLowerCase();
+    return recipes.where((r) => r.title.toLowerCase().contains(query)).toList();
+  }
+
   List<RecipeModel> _sortRecipes(List<RecipeModel> recipes) {
     final sorted = List<RecipeModel>.from(recipes);
     switch (_sortIndex) {
@@ -362,7 +393,7 @@ class _CookbooksScreenState extends State<CookbooksScreen>
 
   Widget _buildRecipesGrid(HomeController controller) {
     return Obx(() {
-      final recipes = _sortRecipes(controller.recipes);
+      final recipes = _sortRecipes(_filterRecipes(controller.recipes));
       if (recipes.isEmpty) {
         return Padding(
           padding: const EdgeInsets.symmetric(
@@ -371,7 +402,10 @@ class _CookbooksScreenState extends State<CookbooksScreen>
           ),
           child: Center(
             child: Text(
-              'No recipes yet. Add one to get started!',
+              _searchQuery.isEmpty
+                  ? 'No recipes yet. Add one to get started!'
+                  : 'No recipes match "$_searchQuery"',
+              textAlign: TextAlign.center,
               style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.textMedium,
               ),
@@ -615,180 +649,21 @@ class _CookbooksScreenState extends State<CookbooksScreen>
       onAddRecipe: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const ImportSourcePickerScreen()),
+          MaterialPageRoute(builder: (_) => const ImportPickerScreen()),
         );
       },
-      onAddCookbook: () => _showNewCookbookSheet(context),
+      onAddCookbook: () => showNewCookbookSheet(context),
     );
   }
 
   // ── New Cookbook bottom sheet ───────────────────────────────────────────────
-  void _showNewCookbookSheet(BuildContext context) {
-    final nameController = TextEditingController();
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
-          ),
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-            decoration: const BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Drag handle + close
-                Row(
-                  children: [
-                    const Spacer(),
-                    Container(
-                      width: 50,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                    const Spacer(),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Spacer(),
-                    GestureDetector(
-                      onTap: () => Navigator.pop(sheetContext),
-                      child: Container(
-                        width: 32,
-                        height: 32,
-                        padding: const EdgeInsets.all(5),
-                        decoration: const BoxDecoration(
-                          color: AppColors.divider,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const OnboardingLineIcon(
-                          'x',
-                          color: Colors.grey,
-                          size: 18,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                // Title
-                Text('New cookbook', style: AppTextStyles.screenTitle),
-                const SizedBox(height: 20),
-                // Name label
-                Text('Title', style: AppTextStyles.inputLabel),
-                const SizedBox(height: 8),
-                // Text field
-                Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(11),
-                    border: Border.all(color: AppColors.primary, width: 1.5),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.1),
-                        blurRadius: 0,
-                        spreadRadius: 3,
-                      ),
-                    ],
-                  ),
-                  child: TextField(
-                    controller: nameController,
-                    autofocus: true,
-
-                    style: AppTextStyles.inputText,
-                    decoration: InputDecoration(
-                      hintText: 'e.g. Weeknight Dinners',
-                      hintStyle: AppTextStyles.inputHint,
-                      filled: false,
-                      isDense: false,
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      disabledBorder: InputBorder.none,
-                      errorBorder: InputBorder.none,
-                      focusedErrorBorder: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Text(
-                      '0 / 40',
-                      style: AppTextStyles.smallLabel.copyWith(
-                        color: AppColors.textHint,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                // Create cookbook button
-                GestureDetector(
-                  onTap: () {
-                    final name = nameController.text.trim();
-                    if (name.isEmpty) return;
-                    final cookbookCtrl = Get.find<CookbookController>();
-                    cookbookCtrl.createCookbook(name);
-                    Navigator.pop(sheetContext);
-                  },
-                  child: Container(
-                    width: double.infinity,
-                    height: AppDimensions.buttonHeight,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(
-                        AppDimensions.radiusButton,
-                      ),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: AppColors.primaryShadow,
-                          blurRadius: 30,
-                          offset: Offset(0, 16),
-                          spreadRadius: -10,
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const OnboardingLineIcon(
-                          'plus',
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Create cookbook',
-                          style: AppTextStyles.buttonLabel,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
+  void showNewCookbookSheet(BuildContext context) async {
+    // Design-accurate "New cookbook" sheet (screen 27). It returns the typed
+    // title; we create the cookbook here.
+    final name = await AddCookbookSheet.show(context);
+    if (name != null && name.trim().isNotEmpty) {
+      Get.find<CookbookController>().createCookbook(name.trim());
+    }
   }
 }
 
@@ -1174,15 +1049,12 @@ class _CookbookCard extends StatelessWidget {
 
   Widget _gridCell(List<String?> urls, int index) {
     if (index < urls.length && urls[index] != null) {
-      return Image.network(
+      return AppNetworkImage(
         urls[index]!,
         fit: BoxFit.cover,
         cacheWidth: 300,
-        errorBuilder: (_, __, ___) => _placeholder(),
-        loadingBuilder: (_, child, loading) {
-          if (loading == null) return child;
-          return _placeholder();
-        },
+        placeholder: _placeholder(),
+        error: _placeholder(),
       );
     }
     return _placeholder();
@@ -1192,7 +1064,9 @@ class _CookbookCard extends StatelessWidget {
     return Container(
       color: const Color(0xFFE7DECE),
       child: const Center(
-        child: Icon(Icons.image_outlined, color: Color(0xFFCFC5B4), size: 20),
+        // Design's exact image-placeholder glyph (rect + mountain + sun),
+        // matching the HTML cookbook cover cell — not Material's image_outlined.
+        child: OnboardingLineIcon('image', size: 20, color: Color(0xFFCFC5B4)),
       ),
     );
   }
@@ -1306,17 +1180,14 @@ class _RecipeCard extends StatelessWidget {
 
   Widget _buildImage() {
     if (recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty) {
-      return Image.network(
+      return AppNetworkImage(
         recipe.imageUrl!,
         width: double.infinity,
         height: double.infinity,
         fit: BoxFit.cover,
         cacheWidth: 600,
-        errorBuilder: (_, __, ___) => _imagePlaceholder(),
-        loadingBuilder: (_, child, loading) {
-          if (loading == null) return child;
-          return _imagePlaceholder();
-        },
+        placeholder: _imagePlaceholder(),
+        error: _imagePlaceholder(),
       );
     }
     return _imagePlaceholder();
@@ -1357,22 +1228,18 @@ class RecipeImage extends StatelessWidget {
     if (imageUrl == null || imageUrl!.isEmpty) {
       return _ImagePlaceholder(width: width ?? 50, height: height ?? 50);
     }
-    return Image.network(
+    return AppNetworkImage(
       imageUrl!,
       width: width ?? 50,
       height: height ?? 50,
       fit: BoxFit.cover,
       cacheWidth: 150,
-      errorBuilder: (_, __, ___) =>
-          _ImagePlaceholder(width: width ?? 50, height: height ?? 50),
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return _ImagePlaceholder(
-          width: width ?? 50,
-          height: height ?? 50,
-          showLoader: true,
-        );
-      },
+      placeholder: _ImagePlaceholder(
+        width: width ?? 50,
+        height: height ?? 50,
+        showLoader: true,
+      ),
+      error: _ImagePlaceholder(width: width ?? 50, height: height ?? 50),
     );
   }
 }

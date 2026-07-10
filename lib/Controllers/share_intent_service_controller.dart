@@ -12,19 +12,27 @@ import 'package:recipe_ai/Service/import_with_image_api_calling_service.dart';
 class ShareIntentService extends GetxService {
   bool _isProcessing = false;
 
+  /// Media shared while the app was terminated (cold start). Held until the
+  /// home screen is on-screen — see [consumePendingInitialShare]. Processing it
+  /// during main()/splash would push the import's processing screen only for
+  /// the splash → home redirect to immediately wipe it out, and the review
+  /// screen would then pop up over home mid-flow.
+  List<SharedMediaFile>? _pendingInitialMedia;
+
   Future<void> init() async {
     try {
       // Content shared while the app was terminated (cold start via share sheet).
       final initialMedia =
           await ReceiveSharingIntent.instance.getInitialMedia();
       if (initialMedia.isNotEmpty) {
-        await _handleSharedMedia(initialMedia);
+        _pendingInitialMedia = initialMedia; // defer — see the field doc above.
       }
       // Tell the plugin we've consumed the initial intent so it isn't replayed
       // on the next launch.
       await ReceiveSharingIntent.instance.reset();
 
-      // Content shared while the app is already running / backgrounded.
+      // Content shared while the app is already running / backgrounded — no
+      // navigation race here (home is already up), so handle it immediately.
       ReceiveSharingIntent.instance.getMediaStream().listen(
         (sharedMedia) async {
           await _handleSharedMedia(sharedMedia);
@@ -34,6 +42,17 @@ class ShareIntentService extends GetxService {
     } catch (e) {
       log('Share Handler Error: $e');
     }
+  }
+
+  /// Process a cold-start share once the home screen is visible. The import's
+  /// processing screen is then pushed on top of home and stays until the API
+  /// responds — after which the review screen replaces it. No-op if nothing is
+  /// pending, and safe to call more than once.
+  Future<void> consumePendingInitialShare() async {
+    final media = _pendingInitialMedia;
+    if (media == null) return;
+    _pendingInitialMedia = null;
+    await _handleSharedMedia(media);
   }
 
   Future<void> _handleSharedMedia(List<SharedMediaFile> media) async {

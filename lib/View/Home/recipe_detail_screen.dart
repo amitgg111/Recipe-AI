@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show listEquals;
+import 'package:recipe_ai/screens/import/add_cookbook_sheet.dart';
+import 'package:recipe_ai/widgets/app_network_image.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
@@ -18,8 +21,12 @@ import 'package:recipe_ai/Helper/instruction_scaler.dart';
 import 'package:recipe_ai/Helper/premium_gate.dart';
 import 'package:recipe_ai/Controllers/settings_controller.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
-import 'package:recipe_ai/theme/app_text_styles.dart';
+import 'package:recipe_ai/widgets/cannot_publish_dialog.dart';
+import 'package:recipe_ai/widgets/comments_sheet.dart';
+import 'package:recipe_ai/Service/auth_service.dart';
+import 'package:recipe_ai/Helper/recipe_publish_policy.dart';
 import 'package:recipe_ai/theme/app_dimensions.dart';
+import 'package:recipe_ai/utils/validation_helper.dart';
 import 'package:recipe_ai/View/Home/cook_mode_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
@@ -47,7 +54,6 @@ class _C {
   static const purple = Color(0xFF8B5CF6);
   static const purpleBg = Color(0xFFF4EEFD);
   static const purpleBorder = Color(0xFFE0D2F7);
-  static const gold = Color(0xFFD98A12);
   static const goldBg = Color(0xFFFBF1E4);
   static const noteBg = Color(0xFFFCE3DB);
 
@@ -86,7 +92,15 @@ BoxDecoration _cardDeco() => BoxDecoration(
 
 class RecipeDetailScreen extends StatefulWidget {
   final RecipeModel recipe;
-  const RecipeDetailScreen({super.key, required this.recipe});
+
+  /// When opened from a comment notification, the id of the comment to reveal —
+  /// the comments sheet opens automatically and highlights it.
+  final String? focusCommentId;
+  const RecipeDetailScreen({
+    super.key,
+    required this.recipe,
+    this.focusCommentId,
+  });
 
   @override
   State<RecipeDetailScreen> createState() => _RecipeDetailScreenState();
@@ -101,8 +115,22 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   final Set<int> _checkedIngredients = {};
   final SettingsController _settings = Get.find<SettingsController>();
   final GroceryStore _grocery = Get.find<GroceryStore>();
+  final HomeController _home = Get.find<HomeController>();
 
-  RecipeModel get recipe => widget.recipe;
+  // Live copy of the recipe. Starts from the one passed in, then refreshes in
+  // real time whenever the owner saves edits: the editor writes to Firestore,
+  // HomeController.recipes re-emits, and the worker below pulls the fresh copy.
+  late RecipeModel _recipe = widget.recipe;
+  Worker? _recipeWorker;
+  // True once we've begun closing this screen because its recipe was deleted —
+  // guards the pop-to-Home from firing more than once.
+  bool _closing = false;
+  // Whether this recipe has been present in the owner's list. Only a recipe
+  // that was seen and then vanished counts as "deleted" — a detail opened from
+  // a source not backed by the recipes stream must never auto-close spuriously.
+  bool _seenInList = false;
+
+  RecipeModel get recipe => _recipe;
 
   @override
   void initState() {
@@ -110,23 +138,106 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     _isPublic = recipe.isPublic;
     // Migration: back-fill `visibility` on legacy docs when opened.
     if (!recipe.visibilityWasStored) {
-      Get.find<HomeController>().migrateVisibility(
-        recipe.id,
-        recipe.visibility,
-      );
+      _home.migrateVisibility(recipe.id, recipe.visibility);
     }
+    _initialServings = _parseServings(recipe);
+    _servings = _initialServings;
+    _seenInList = _home.recipes.any((r) => r.id == _recipe.id);
+
+    // Keep this screen in sync with the recipe stream:
+    //  • edits → pull the fresh copy in (live, no manual refresh),
+    //  • deletion (here or on another device) → close back to Home so a detail
+    //    of a gone recipe is never shown and Back can't return to it.
+    _recipeWorker = ever<List<RecipeModel>>(_home.recipes, (list) {
+      final idx = list.indexWhere((r) => r.id == _recipe.id);
+      if (idx == -1) {
+        if (_seenInList) _handleRecipeDeleted();
+        return;
+      }
+      _seenInList = true;
+      final r = list[idx];
+      if (!_recipeChanged(r) || !mounted) return;
+      final servingsChanged = r.servings != _recipe.servings;
+      setState(() {
+        _recipe = r;
+        _isPublic = r.isPublic;
+        if (servingsChanged) {
+          _initialServings = _parseServings(r);
+          _servings = _initialServings;
+        }
+      });
+    });
+
+    // Opened from a comment notification → reveal the comments (owner is the
+    // current user, so ownerId == our uid) and highlight the tapped comment.
+    final focusId = widget.focusCommentId;
+    if (focusId != null && focusId.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final uid = AuthService.currentUser?.uid;
+        if (!mounted || uid == null) return;
+        CommentsSheet.show(
+          context,
+          ownerId: uid,
+          recipeId: _recipe.id,
+          highlightCommentId: focusId,
+        );
+      });
+    }
+  }
+
+  /// The recipe backing this screen is gone from the stream (deleted). Close
+  /// every recipe route back to Home exactly once — Back can't return to the
+  /// stale detail, and no "recipe not found" state is ever rendered.
+  void _handleRecipeDeleted() {
+    if (_closing || !mounted) return;
+    _closing = true;
+    // Navigate after the current frame — the worker fires during a stream
+    // update, when synchronous navigation would be unsafe.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Get.until((route) => route.isFirst);
+    });
+  }
+
+  @override
+  void dispose() {
+    _recipeWorker?.dispose();
+    super.dispose();
+  }
+
+  int _parseServings(RecipeModel r) {
     int parsed = 2;
-    if (recipe.servings != null) {
-      final m = RegExp(r'\d+').firstMatch(recipe.servings!);
+    if (r.servings != null) {
+      final m = RegExp(r'\d+').firstMatch(r.servings!);
       if (m != null) parsed = int.tryParse(m.group(0)!) ?? 2;
     }
-    _initialServings = parsed <= 0 ? 2 : parsed;
-    _servings = _initialServings;
+    return parsed <= 0 ? 2 : parsed;
   }
+
+  /// Whether [r] differs from the current recipe in any displayed field — used
+  /// to skip needless rebuilds (the stream re-emits new instances for every
+  /// recipe on any change, most of which are identical here).
+  bool _recipeChanged(RecipeModel r) =>
+      r.title != _recipe.title ||
+      r.description != _recipe.description ||
+      r.imageUrl != _recipe.imageUrl ||
+      r.servings != _recipe.servings ||
+      r.prepTime != _recipe.prepTime ||
+      r.cookTime != _recipe.cookTime ||
+      r.totalTime != _recipe.totalTime ||
+      r.category != _recipe.category ||
+      r.isPublic != _recipe.isPublic ||
+      !listEquals(r.ingredients, _recipe.ingredients) ||
+      !listEquals(r.instructions, _recipe.instructions);
 
   // Ask for confirmation, then flip public/private (owner only).
   void _toggleVisibility() {
     final makePublic = !_isPublic;
+    // A recipe saved from Discover can never be published: show the block
+    // popup, leave the toggle OFF, and change nothing.
+    if (makePublic && !recipe.canBePublished) {
+      showCannotPublishDialog();
+      return;
+    }
     showDialog(
       context: context,
       builder: (ctx) => _VisibilityConfirmDialog(
@@ -167,9 +278,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                   offset: const Offset(0, -10),
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(
-                      _C.outerPad,
+                      _C.outerPad - 5,
                       6,
-                      _C.outerPad,
+                      _C.outerPad - 5,
                       34,
                     ),
                     child: Column(
@@ -271,11 +382,12 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         fit: StackFit.expand,
         children: [
           recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty
-              ? Image.network(
+              ? AppNetworkImage(
                   recipe.imageUrl!,
                   fit: BoxFit.cover,
                   cacheWidth: 900,
-                  errorBuilder: (_, __, ___) => _imagePlaceholder(),
+                  placeholder: _imagePlaceholder(),
+                  error: _imagePlaceholder(),
                 )
               : _imagePlaceholder(),
           // Gradient: dark at top, fades to background at the bottom
@@ -387,39 +499,64 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
   Widget _buildVisibilityPill() {
     final isPublic = _isPublic;
+    // Recipes saved from Discover can never be published.
+    final discovered = recipe.isDiscoveredCopy;
     final fg = isPublic ? _C.green : _C.textMedium;
     final bg = isPublic ? _C.greenBg : _C.surfaceLight;
     final bd = isPublic ? _C.greenBorder : _C.border;
-    return GestureDetector(
-      onTap: _toggleVisibility,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: bd),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GestureDetector(
+          onTap: _toggleVisibility,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: bd),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                OnboardingLineIcon(
+                  isPublic ? 'globe' : 'lock',
+                  size: 14,
+                  color: fg,
+                ),
+                const SizedBox(width: 7),
+                Text(
+                  isPublic ? 'Public' : 'Private',
+                  style: _font(12.5, FontWeight.w800, fg),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  discovered ? '· locked' : '· tap to change',
+                  style:
+                      _font(11, FontWeight.w600, fg.withValues(alpha: 0.75)),
+                ),
+              ],
+            ),
+          ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            OnboardingLineIcon(
-              isPublic ? 'globe' : 'lock',
-              size: 14,
-              color: fg,
-            ),
-            const SizedBox(width: 7),
-            Text(
-              isPublic ? 'Public' : 'Private',
-              style: _font(12.5, FontWeight.w800, fg),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              '· tap to change',
-              style: _font(11, FontWeight.w600, fg.withValues(alpha: 0.75)),
-            ),
-          ],
-        ),
-      ),
+        // Small info text under the Public toggle for saved-from-Discover
+        // recipes (they can be used privately but never published).
+        if (discovered) ...[
+          const SizedBox(height: 6),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const OnboardingLineIcon('lock', size: 11, color: _C.textHint),
+              const SizedBox(width: 5),
+              Text(
+                RecipePublishPolicy.savedFromDiscoverHint,
+                style: _font(10.5, FontWeight.w600, _C.textHint),
+              ),
+            ],
+          ),
+        ],
+      ],
     );
   }
 
@@ -428,13 +565,20 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   // ═══════════════════════════════════════════════════════════════════════════
 
   Widget _buildMetaRow() {
-    final time = recipe.totalTime ?? recipe.cookTime ?? recipe.prepTime ?? '';
+    // Pick the first NON-EMPTY time. `??` alone is wrong here: imported recipes
+    // often store totalTime as "" (empty, not null) while cook/prep have values,
+    // and `?? ` only falls through on null — so the time would never show.
+    final time = _firstNonEmpty([
+      recipe.totalTime,
+      recipe.cookTime,
+      recipe.prepTime,
+    ]);
     final children = <Widget>[];
-    if (time.isNotEmpty) {
+    if (time != null) {
       children.add(_metaItem('clock', time));
     }
     children.add(_metaItem('friend', '$_servings servings'));
-    children.add(_metaItem('spark', 'Easy'));
+    children.add(Expanded(child: _metaItem('spark', _difficultyLabel())));
 
     final row = <Widget>[];
     for (var i = 0; i < children.length; i++) {
@@ -460,9 +604,67 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       children: [
         OnboardingLineIcon(icon, size: 16, color: _C.primary),
         const SizedBox(width: 6),
-        Text(label, style: _font(13.5, FontWeight.w700, _C.textBody)),
+        Text(label, style: _font(11, FontWeight.w700, _C.textBody)),
       ],
     );
+  }
+
+  /// First value that is non-null AND not blank (empty strings are skipped).
+  String? _firstNonEmpty(List<String?> values) {
+    for (final v in values) {
+      if (v != null && v.trim().isNotEmpty) return v.trim();
+    }
+    return null;
+  }
+
+  /// Minutes parsed from the recipe's time string(s): handles "20 mins",
+  /// "1h 20m", "1 hr 30 min" and a bare "45".
+  int _totalMinutes() {
+    final t = _firstNonEmpty([
+      recipe.totalTime,
+      recipe.cookTime,
+      recipe.prepTime,
+    ]);
+    if (t == null) return 0;
+    final hourMatch = RegExp(r'(\d+)\s*h', caseSensitive: false).firstMatch(t);
+    final minMatch = RegExp(r'(\d+)\s*m', caseSensitive: false).firstMatch(t);
+    var total = 0;
+    if (hourMatch != null)
+      total += (int.tryParse(hourMatch.group(1)!) ?? 0) * 60;
+    if (minMatch != null) total += int.tryParse(minMatch.group(1)!) ?? 0;
+    if (total == 0) {
+      final bare = RegExp(r'\d+').firstMatch(t);
+      if (bare != null) total = int.tryParse(bare.group(0)!) ?? 0;
+    }
+    return total;
+  }
+
+  /// A real Easy / Medium / Hard label derived from the recipe's complexity —
+  /// the import source never provides one, so it's estimated from the number of
+  /// ingredients, number of steps, and total time.
+  String _difficultyLabel() {
+    final ingredients = recipe.ingredients.length;
+    final steps = recipe.instructions.length;
+    final mins = _totalMinutes();
+    var score = 0;
+    if (ingredients >= 13) {
+      score += 2;
+    } else if (ingredients >= 8) {
+      score += 1;
+    }
+    if (steps >= 11) {
+      score += 2;
+    } else if (steps >= 6) {
+      score += 1;
+    }
+    if (mins >= 90) {
+      score += 2;
+    } else if (mins >= 45) {
+      score += 1;
+    }
+    if (score >= 4) return 'Hard';
+    if (score >= 2) return 'Medium';
+    return 'Easy';
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -674,10 +876,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             ],
           ),
           const SizedBox(height: 6),
-          Text(
-            'Tap to check off · amounts scale with servings',
-            style: _font(12, FontWeight.w500, const Color(0xFF9A938A)),
-          ),
+          // Text(
+          //   'Tap to check off · amounts scale with servings',
+          //   style: _font(12, FontWeight.w500, const Color(0xFF9A938A)),
+          // ),
           const SizedBox(height: 12),
           // Units switcher + ingredient list rebuild reactively when the user
           // toggles Metric/US (globally via SettingsController), so every
@@ -695,7 +897,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           }),
           const SizedBox(height: 14),
           GestureDetector(
-            onTap: _addToGroceries,
+            onTap: _showGrocerySelectionSheet,
             child: Container(
               height: 46,
               decoration: BoxDecoration(
@@ -709,7 +911,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                   const OnboardingLineIcon('cart', size: 18, color: _C.primary),
                   const SizedBox(width: 9),
                   Text(
-                    'Add all to groceries',
+                    'Add to groceries',
                     style: _font(14, FontWeight.w700, _C.primary),
                   ),
                 ],
@@ -975,93 +1177,63 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     final checked = _checkedIngredients.contains(index);
     final parts = _parseIngredient(text);
 
-    return GestureDetector(
-      onTap: () => setState(() {
-        checked
-            ? _checkedIngredients.remove(index)
-            : _checkedIngredients.add(index);
-      }),
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 9),
-        decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: _C.rowLine)),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Checkbox
-            Container(
-              width: 22,
-              height: 22,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(6),
-                color: checked ? _C.primary : Colors.transparent,
-                border: checked
-                    ? null
-                    : Border.all(color: _C.borderInner, width: 2),
-              ),
-              child: checked
-                  ? const Center(
-                      child: OnboardingLineIcon(
-                        'check',
-                        color: Colors.white,
-                        size: 14,
-                      ),
-                    )
-                  : null,
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 9),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: _C.rowLine)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Grocery category icon (same emoji the Groceries screen uses),
+          // detected from the ingredient name.
+          Container(
+            width: 28,
+            height: 28,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: _C.goldBg,
+              borderRadius: BorderRadius.circular(9),
             ),
-            const SizedBox(width: 12),
-            // Grocery category icon (same emoji the Groceries screen uses),
-            // detected from the ingredient name.
-            Container(
-              width: 28,
-              height: 28,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: _C.goldBg,
-                borderRadius: BorderRadius.circular(9),
-              ),
-              child: Text(
-                _grocery.emojiForIngredient(parts.$2),
-                style: const TextStyle(fontSize: 15),
-              ),
+            child: Text(
+              _grocery.emojiForIngredient(parts.$2),
+              style: const TextStyle(fontSize: 15),
             ),
-            const SizedBox(width: 12),
-            // Quantity (bold)
-            if (parts.$1 != null) ...[
-              ConstrainedBox(
-                constraints: const BoxConstraints(minWidth: 54),
-                child: Text(
-                  parts.$1!,
-                  style:
-                      _font(
-                        14,
-                        FontWeight.w800,
-                        checked ? _C.textHint : _C.textDark,
-                      ).copyWith(
-                        decoration: checked ? TextDecoration.lineThrough : null,
-                      ),
-                ),
-              ),
-            ],
-            // Name
-            Expanded(
+          ),
+          const SizedBox(width: 12),
+          // Quantity (bold)
+          if (parts.$1 != null) ...[
+            ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 54),
               child: Text(
-                parts.$2,
+                "${parts.$1!}  ",
                 style:
                     _font(
                       14,
-                      FontWeight.w500,
-                      checked ? _C.textHint : _C.textBody,
-                      h: 1.35,
+                      FontWeight.w800,
+                      checked ? _C.textHint : _C.textDark,
                     ).copyWith(
                       decoration: checked ? TextDecoration.lineThrough : null,
                     ),
               ),
             ),
           ],
-        ),
+          // Name
+          Expanded(
+            child: Text(
+              parts.$2,
+              style:
+                  _font(
+                    14,
+                    FontWeight.w500,
+                    checked ? _C.textHint : _C.textBody,
+                    h: 1.35,
+                  ).copyWith(
+                    decoration: checked ? TextDecoration.lineThrough : null,
+                  ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1154,7 +1326,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
   Widget _instructionRow(int number, String text) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(15, 9, 0, 9),
+      padding: const EdgeInsets.fromLTRB(0, 9, 0, 9),
       decoration: const BoxDecoration(
         border: Border(bottom: BorderSide(color: _C.rowLine)),
       ),
@@ -1164,6 +1336,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           Container(
             width: 25,
             height: 25,
+            // padding: EdgeInsets.all(5),
             decoration: BoxDecoration(
               color: _C.noteBg,
               borderRadius: BorderRadius.circular(8),
@@ -1171,7 +1344,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             child: Center(
               child: Text(
                 '$number',
-                style: _font(13, FontWeight.w800, _C.primary),
+                style: _font(10, FontWeight.w800, _C.primary),
               ),
             ),
           ),
@@ -1204,7 +1377,14 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          Text(name, style: _font(14, FontWeight.w800, _C.textDark)),
+          Expanded(
+            child: Text(
+              name,
+              style: _font(14, FontWeight.w800, _C.textDark),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
+            ),
+          ),
         ],
       ),
     );
@@ -1439,20 +1619,336 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     Share.share(buf.toString(), subject: recipe.title);
   }
 
-  void _addToGroceries() {
-    final groceryController = Get.find<GroceryStore>();
+  void _showGrocerySelectionSheet() {
+    final system = _settings.unitSystem;
     final multiplier = _servings / _initialServings;
-    final scaled = recipe.ingredients
-        .map((i) => IngredientScaleHelper.scaleIngredient(i, multiplier))
-        .toList();
-    groceryController.addFromRecipe(recipe.id, scaled);
-    CustomSnackbar.show(
-      title: '${recipe.ingredients.length} ingredients added to groceries',
-      actionText: 'View',
-      onAction: () {
-        Get.offUntil(
-          MaterialPageRoute(builder: (_) => const HomeScreen(initialIndex: 3)),
-          (route) => route.isFirst,
+    final selectedIndices = List<bool>.generate(
+      recipe.ingredients.length,
+      (_) => true,
+    );
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: const Color(0x801E1B18),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setStateSheet) {
+            final checkedCount = selectedIndices.where((c) => c).length;
+            final hasSections = recipe.ingredientSections.any(
+              (s) => s.items.isNotEmpty,
+            );
+
+            final widgets = <Widget>[];
+
+            void toggleIndex(int idx) {
+              setStateSheet(() {
+                selectedIndices[idx] = !selectedIndices[idx];
+              });
+            }
+
+            Widget selectionRow(String text, int globalIdx) {
+              final isChecked = selectedIndices[globalIdx];
+              final parts = _parseIngredient(text);
+              return GestureDetector(
+                onTap: () => toggleIndex(globalIdx),
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: const BoxDecoration(
+                    border: Border(bottom: BorderSide(color: _C.rowLine)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(6),
+                          color: isChecked ? _C.primary : Colors.transparent,
+                          border: isChecked
+                              ? null
+                              : Border.all(color: _C.borderInner, width: 2),
+                        ),
+                        child: isChecked
+                            ? const Center(
+                                child: OnboardingLineIcon(
+                                  'check',
+                                  color: Colors.white,
+                                  size: 14,
+                                ),
+                              )
+                            : null,
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        width: 28,
+                        height: 28,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: _C.goldBg,
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                        child: Text(
+                          _grocery.emojiForIngredient(parts.$2),
+                          style: const TextStyle(fontSize: 15),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      if (parts.$1 != null) ...[
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(minWidth: 54),
+                          child: Text(
+                            "${parts.$1!}  ",
+                            style: _font(
+                              14,
+                              FontWeight.w800,
+                              isChecked ? _C.textDark : _C.textHint,
+                            ),
+                          ),
+                        ),
+                      ],
+                      Expanded(
+                        child: Text(
+                          parts.$2,
+                          style: _font(
+                            14,
+                            FontWeight.w500,
+                            isChecked ? _C.textBody : _C.textHint,
+                            h: 1.35,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            if (hasSections) {
+              int globalIdx = 0;
+              for (final section in recipe.ingredientSections) {
+                if (section.items.isEmpty) continue;
+                if (section.name != null && section.name!.isNotEmpty) {
+                  widgets.add(
+                    Padding(
+                      padding: const EdgeInsets.only(top: 14, bottom: 6),
+                      child: Text(
+                        section.name!.toUpperCase(),
+                        style: _font(
+                          11.5,
+                          FontWeight.w800,
+                          _C.primary,
+                          ls: 0.8,
+                        ),
+                      ),
+                    ),
+                  );
+                }
+                for (var i = 0; i < section.items.length; i++) {
+                  final scaled = UnitConverter.scaleAndConvert(
+                    section.items[i],
+                    multiplier,
+                    system,
+                  );
+                  widgets.add(selectionRow(scaled, globalIdx));
+                  globalIdx++;
+                }
+              }
+            } else {
+              for (var i = 0; i < recipe.ingredients.length; i++) {
+                final scaled = UnitConverter.scaleAndConvert(
+                  recipe.ingredients[i],
+                  multiplier,
+                  system,
+                );
+                widgets.add(selectionRow(scaled, i));
+              }
+            }
+
+            final allChecked = selectedIndices.every((c) => c);
+
+            return Container(
+              height: MediaQuery.of(ctx).size.height * 0.75,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+              ),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(22, 14, 22, 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: Container(
+                            width: 42,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE7E0D2),
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        Row(
+                          children: [
+                            Text(
+                              'Add to Groceries',
+                              style: _font(
+                                20,
+                                FontWeight.w800,
+                                _C.textDark,
+                                ls: -0.4,
+                              ),
+                            ),
+                            const Spacer(),
+                            GestureDetector(
+                              onTap: () => Navigator.pop(ctx),
+                              child: Container(
+                                width: 34,
+                                height: 34,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFF4F1EA),
+                                  shape: BoxShape.circle,
+                                ),
+                                alignment: Alignment.center,
+                                child: const OnboardingLineIcon(
+                                  'x',
+                                  size: 17,
+                                  color: _C.textMedium,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Select items to purchase',
+                              style: _font(
+                                13.5,
+                                FontWeight.w600,
+                                _C.textMedium,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                setStateSheet(() {
+                                  final target = !allChecked;
+                                  for (
+                                    var i = 0;
+                                    i < selectedIndices.length;
+                                    i++
+                                  ) {
+                                    selectedIndices[i] = target;
+                                  }
+                                });
+                              },
+                              child: Text(
+                                allChecked ? 'Deselect All' : 'Select All',
+                                style: _font(13, FontWeight.w700, _C.primary),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(color: _C.rowLine, height: 1, thickness: 1),
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 22,
+                        vertical: 8,
+                      ),
+                      children: widgets,
+                    ),
+                  ),
+                  Container(
+                    padding: EdgeInsets.fromLTRB(
+                      22,
+                      12,
+                      22,
+                      MediaQuery.of(ctx).padding.bottom + 16,
+                    ),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      border: Border(top: BorderSide(color: _C.rowLine)),
+                    ),
+                    child: GestureDetector(
+                      onTap: checkedCount == 0
+                          ? null
+                          : () {
+                              Navigator.pop(ctx);
+                              final groceryController =
+                                  Get.find<GroceryStore>();
+                              final toAdd = <String>[];
+                              for (
+                                var i = 0;
+                                i < recipe.ingredients.length;
+                                i++
+                              ) {
+                                if (selectedIndices[i]) {
+                                  final scaledIng =
+                                      IngredientScaleHelper.scaleIngredient(
+                                        recipe.ingredients[i],
+                                        multiplier,
+                                      );
+                                  toAdd.add(scaledIng);
+                                }
+                              }
+
+                              groceryController.addFromRecipe(recipe.id, toAdd);
+
+                              CustomSnackbar.show(
+                                title:
+                                    '$checkedCount ingredients added to groceries',
+                                actionText: 'View',
+                                onAction: () {
+                                  Get.offUntil(
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          const HomeScreen(initialIndex: 3),
+                                    ),
+                                    (route) => route.isFirst,
+                                  );
+                                },
+                              );
+                            },
+                      child: Container(
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: checkedCount == 0
+                              ? const Color(0xFFF4F1EA)
+                              : _C.primary,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          checkedCount == 0
+                              ? 'Select items to add'
+                              : checkedCount == 1
+                              ? 'Add 1 item to groceries'
+                              : 'Add $checkedCount items to groceries',
+                          style: _font(
+                            15,
+                            FontWeight.w700,
+                            checkedCount == 0 ? _C.textHint : Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
     );
@@ -1464,6 +1960,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
   void _showAddNoteSheet() {
     final ctrl = TextEditingController(text: _note);
+    final noteFormKey = GlobalKey<FormState>();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1547,35 +2044,46 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          TextField(
-                            controller: ctrl,
-                            autofocus: true,
-                            maxLines: 4,
-                            maxLength: 300,
-                            cursorColor: _C.primary,
-                            style: _font(
-                              15,
-                              FontWeight.w400,
-                              _C.textDark,
-                              h: 1.5,
-                            ),
-                            onChanged: (_) => setSheet(() {}),
-                            decoration: InputDecoration(
-                              hintText:
-                                  'Used 1.5 cans of coconut milk for extra sauce…',
-                              hintStyle: _font(
+                          Form(
+                            key: noteFormKey,
+                            autovalidateMode:
+                                AutovalidateMode.onUserInteraction,
+                            child: TextFormField(
+                              controller: ctrl,
+                              autofocus: true,
+                              maxLines: 4,
+                              maxLength: 300,
+                              keyboardType: TextInputType.multiline,
+                              cursorColor: _C.primary,
+                              validator: (v) => ValidationHelper.notes(
+                                v,
+                                max: 500,
+                                field: 'Note',
+                              ),
+                              style: _font(
                                 15,
                                 FontWeight.w400,
-                                _C.textHint,
+                                _C.textDark,
                                 h: 1.5,
                               ),
-                              isDense: true,
-                              filled: false,
-                              border: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              contentPadding: EdgeInsets.zero,
-                              counterText: '',
+                              onChanged: (_) => setSheet(() {}),
+                              decoration: InputDecoration(
+                                hintText:
+                                    'Used 1.5 cans of coconut milk for extra sauce…',
+                                hintStyle: _font(
+                                  15,
+                                  FontWeight.w400,
+                                  _C.textHint,
+                                  h: 1.5,
+                                ),
+                                isDense: true,
+                                filled: false,
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                contentPadding: EdgeInsets.zero,
+                                counterText: '',
+                              ),
                             ),
                           ),
                           Row(
@@ -1607,6 +2115,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 const SizedBox(height: 18),
                 GestureDetector(
                   onTap: () {
+                    if (!(noteFormKey.currentState?.validate() ?? false)) {
+                      return;
+                    }
                     setState(() => _note = ctrl.text.trim());
                     Navigator.pop(ctx);
                   },
@@ -1969,9 +2480,15 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                     Expanded(
                       child: GestureDetector(
                         onTap: () async {
-                          Navigator.pop(ctx);
-                          Navigator.pop(context);
-                          await Get.find<HomeController>().deleteRecipe(recipe);
+                          Navigator.pop(ctx); // close the confirm dialog
+                          final deleted = await Get.find<HomeController>()
+                              .deleteRecipe(recipe);
+                          // On success, close the detail (and any recipe routes)
+                          // back to Home — never leave a deleted recipe's detail
+                          // in the stack.
+                          if (deleted) {
+                            Get.until((route) => route.isFirst);
+                          }
                         },
                         child: Container(
                           height: 48,
@@ -2369,125 +2886,6 @@ class _CookbookPickerSheetState extends State<CookbookPickerSheet> {
     }
   }
 
-  // Create a cookbook and auto-select it in the list.
-  void _createCookbook() {
-    final tc = TextEditingController();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-          decoration: const BoxDecoration(
-            color: _C.card,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    'New cookbook',
-                    style: _font(20, FontWeight.w800, _C.textDark),
-                  ),
-                  const Spacer(),
-                  GestureDetector(
-                    onTap: () => Navigator.pop(ctx),
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: const BoxDecoration(
-                        color: _C.primary,
-                        shape: BoxShape.circle,
-                      ),
-                      alignment: Alignment.center,
-                      child: const OnboardingLineIcon(
-                        'x',
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Container(
-                height: AppDimensions.inputHeight,
-                decoration: BoxDecoration(
-                  color: _C.card,
-                  borderRadius: BorderRadius.circular(11),
-                  border: Border.all(color: _C.primary, width: 1.5),
-                ),
-                child: TextField(
-                  controller: tc,
-                  autofocus: true,
-                  style: AppTextStyles.inputText,
-                  decoration: InputDecoration(
-                    hintText: 'e.g. Weekend Dinners',
-                    hintStyle: AppTextStyles.inputHint,
-                    filled: false,
-                    isDense: false,
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    disabledBorder: InputBorder.none,
-                    errorBorder: InputBorder.none,
-                    focusedErrorBorder: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              GestureDetector(
-                onTap: () async {
-                  final name = tc.text.trim();
-                  if (name.isEmpty) return;
-                  Navigator.pop(ctx);
-                  await widget.cookbookController.createCookbook(name);
-                  await Future.delayed(const Duration(milliseconds: 800));
-                  final nb = widget.cookbookController.cookbooks
-                      .firstWhereOrNull((c) => c.name == name);
-                  if (nb != null && mounted) {
-                    setState(() => _selected.add(nb.id));
-                  }
-                },
-                child: Container(
-                  width: double.infinity,
-                  height: AppDimensions.buttonHeight,
-                  decoration: BoxDecoration(
-                    color: _C.primary,
-                    borderRadius: BorderRadius.circular(
-                      AppDimensions.radiusButton,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const OnboardingLineIcon(
-                        'plus',
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text('Create cookbook', style: AppTextStyles.buttonLabel),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   // 2×2 image collage thumbnail (design 36), built from the cookbook's recipe
   // images with an empty-tile fallback.
   Widget _thumb(CookbookModel cb) {
@@ -2695,7 +3093,9 @@ class _CookbookPickerSheetState extends State<CookbookPickerSheet> {
           ),
           // New cookbook
           GestureDetector(
-            onTap: _createCookbook,
+            onTap: () {
+              AddCookbookSheet.show(context);
+            },
             behavior: HitTestBehavior.opaque,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
@@ -2885,8 +3285,11 @@ void showDeleteRecipeDialog(RecipeModel recipe, HomeController controller) {
                 Expanded(
                   child: GestureDetector(
                     onTap: () async {
-                      Get.back();
-                      await controller.deleteRecipe(recipe);
+                      Get.back(); // close the confirm dialog
+                      final deleted = await controller.deleteRecipe(recipe);
+                      if (deleted) {
+                        Get.until((route) => route.isFirst);
+                      }
                     },
                     child: Container(
                       height: 48,

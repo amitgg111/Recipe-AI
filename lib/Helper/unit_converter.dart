@@ -1,4 +1,5 @@
 import 'package:recipe_ai/Helper/ingredient_scale_helper.dart';
+import 'package:recipe_ai/Helper/ingredient_density.dart';
 
 /// The two measurement systems the app supports.
 enum UnitSystem { metric, imperial }
@@ -80,25 +81,52 @@ class UnitConverter {
   // Without this the spelled-out forms would be treated as distinct units and
   // wrongly considered "already metric".
   static const Map<String, String> _normalise = {
-    'teaspoon': 'tsp', 'teaspoons': 'tsp', 'tsps': 'tsp',
-    'tablespoon': 'tbsp', 'tablespoons': 'tbsp', 'tbsps': 'tbsp', 'tbs': 'tbsp',
+    'teaspoon': 'tsp',
+    'teaspoons': 'tsp',
+    'tsps': 'tsp',
+    'tablespoon': 'tbsp',
+    'tablespoons': 'tbsp',
+    'tbsps': 'tbsp',
+    'tbs': 'tbsp',
     'cups': 'cup',
-    'gram': 'g', 'grams': 'g', 'gm': 'g', 'gms': 'g',
-    'kilogram': 'kg', 'kilograms': 'kg',
-    'milligram': 'mg', 'milligrams': 'mg',
-    'ounce': 'oz', 'ounces': 'oz',
-    'pound': 'lb', 'pounds': 'lb', 'lbs': 'lb',
-    'liter': 'l', 'liters': 'l', 'litre': 'l', 'litres': 'l',
-    'milliliter': 'ml', 'milliliters': 'ml',
-    'millilitre': 'ml', 'millilitres': 'ml',
-    'centimeter': 'cm', 'centimeters': 'cm',
-    'centimetre': 'cm', 'centimetres': 'cm',
-    'inches': 'inch', 'in': 'inch',
-    'foot': 'ft', 'feet': 'ft',
-    'fluid ounce': 'fl oz', 'fluid ounces': 'fl oz', 'floz': 'fl oz',
-    'gallon': 'gal', 'gallons': 'gal',
-    'quart': 'qt', 'quarts': 'qt',
-    'pint': 'pt', 'pints': 'pt',
+    'gram': 'g',
+    'grams': 'g',
+    'gm': 'g',
+    'gms': 'g',
+    'kilogram': 'kg',
+    'kilograms': 'kg',
+    'milligram': 'mg',
+    'milligrams': 'mg',
+    'ounce': 'oz',
+    'ounces': 'oz',
+    'pound': 'lb',
+    'pounds': 'lb',
+    'lbs': 'lb',
+    'liter': 'l',
+    'liters': 'l',
+    'litre': 'l',
+    'litres': 'l',
+    'milliliter': 'ml',
+    'milliliters': 'ml',
+    'millilitre': 'ml',
+    'millilitres': 'ml',
+    'centimeter': 'cm',
+    'centimeters': 'cm',
+    'centimetre': 'cm',
+    'centimetres': 'cm',
+    'inches': 'inch',
+    'in': 'inch',
+    'foot': 'ft',
+    'feet': 'ft',
+    'fluid ounce': 'fl oz',
+    'fluid ounces': 'fl oz',
+    'floz': 'fl oz',
+    'gallon': 'gal',
+    'gallons': 'gal',
+    'quart': 'qt',
+    'quarts': 'qt',
+    'pint': 'pt',
+    'pints': 'pt',
   };
 
   /// Canonical short spelling for a recognised unit, or null if unknown.
@@ -125,6 +153,22 @@ class UnitConverter {
 
   /// True when [unit] is one this engine can convert.
   static bool isConvertible(String unit) => _canonical(unit) != null;
+
+  /// Every unit spelling this engine recognises — all table keys plus their
+  /// spelled-out and plural aliases (e.g. "gram", "grams", "kilograms",
+  /// "pounds", "gallons"). Ingredient parsing uses this to reliably split a
+  /// quantity+unit off the ingredient name, and to keep the unit in a form
+  /// [convert]/[toSystem] can move between systems.
+  static final Set<String> knownUnitWords = {
+    ..._volumeToMl.keys,
+    ..._massToG.keys,
+    ..._lengthToCm.keys,
+    ..._normalise.keys,
+  };
+
+  /// True when [word] is a recognised (convertible) single-word unit spelling.
+  static bool isUnitWord(String word) =>
+      knownUnitWords.contains(word.toLowerCase().trim());
 
   // ── Core conversion ───────────────────────────────────────────────────────
   /// Convert [value] from [fromUnit] to [toUnit]. Returns null when the units
@@ -184,27 +228,58 @@ class UnitConverter {
             : _bestImperialMass(value, canonical);
       case UnitDimension.length:
         return system == UnitSystem.metric
-            ? (value: convert(value: value, fromUnit: canonical, toUnit: 'cm')!, unit: 'cm')
-            : (value: convert(value: value, fromUnit: canonical, toUnit: 'inch')!, unit: 'inch');
+            ? (
+                value: convert(
+                  value: value,
+                  fromUnit: canonical,
+                  toUnit: 'cm',
+                )!,
+                unit: 'cm',
+              )
+            : (
+                value: convert(
+                  value: value,
+                  fromUnit: canonical,
+                  toUnit: 'inch',
+                )!,
+                unit: 'inch',
+              );
       case UnitDimension.temperature:
       case UnitDimension.count:
         return (value: value, unit: unit);
     }
   }
 
-  static const _imperialVolumeUnits = {'tsp', 'tbsp', 'fl oz', 'cup', 'pint', 'pt', 'quart', 'qt', 'gallon', 'gal'};
+  static const _imperialVolumeUnits = {
+    'tsp',
+    'tbsp',
+    'fl oz',
+    'cup',
+    'pint',
+    'pt',
+    'quart',
+    'qt',
+    'gallon',
+    'gal',
+  };
   static const _imperialMassUnits = {'oz', 'ounce', 'lb', 'lbs', 'pound'};
 
-  static ({double value, String unit}) _bestMetricVolume(double v, String from) {
-    if (!_imperialVolumeUnits.contains(from)) return (value: v, unit: from); // already metric
+  static ({double value, String unit}) _bestMetricVolume(
+    double v,
+    String from,
+  ) {
+    if (!_imperialVolumeUnits.contains(from))
+      return (value: v, unit: from); // already metric
     final ml = convert(value: v, fromUnit: from, toUnit: 'ml')!;
-    return ml >= 1000
-        ? (value: ml / 1000, unit: 'l')
-        : (value: ml, unit: 'ml');
+    return ml >= 1000 ? (value: ml / 1000, unit: 'l') : (value: ml, unit: 'ml');
   }
 
-  static ({double value, String unit}) _bestImperialVolume(double v, String from) {
-    if (_imperialVolumeUnits.contains(from)) return (value: v, unit: from); // already imperial
+  static ({double value, String unit}) _bestImperialVolume(
+    double v,
+    String from,
+  ) {
+    if (_imperialVolumeUnits.contains(from))
+      return (value: v, unit: from); // already imperial
     final ml = convert(value: v, fromUnit: from, toUnit: 'ml')!;
     if (ml >= 236.588) return (value: ml / 236.588, unit: 'cup');
     if (ml >= 14.7868) return (value: ml / 14.7868, unit: 'tbsp');
@@ -212,15 +287,22 @@ class UnitConverter {
   }
 
   static ({double value, String unit}) _bestMetricMass(double v, String from) {
-    if (!_imperialMassUnits.contains(from)) return (value: v, unit: from); // already metric
+    if (!_imperialMassUnits.contains(from))
+      return (value: v, unit: from); // already metric
     final g = convert(value: v, fromUnit: from, toUnit: 'g')!;
     return g >= 1000 ? (value: g / 1000, unit: 'kg') : (value: g, unit: 'g');
   }
 
-  static ({double value, String unit}) _bestImperialMass(double v, String from) {
-    if (_imperialMassUnits.contains(from)) return (value: v, unit: from); // already imperial
+  static ({double value, String unit}) _bestImperialMass(
+    double v,
+    String from,
+  ) {
+    if (_imperialMassUnits.contains(from))
+      return (value: v, unit: from); // already imperial
     final g = convert(value: v, fromUnit: from, toUnit: 'g')!;
-    return g >= 453.592 ? (value: g / 453.592, unit: 'lb') : (value: g / 28.3495, unit: 'oz');
+    return g >= 453.592
+        ? (value: g / 453.592, unit: 'lb')
+        : (value: g / 28.3495, unit: 'oz');
   }
 
   /// Human-friendly formatting of a converted quantity.
@@ -242,7 +324,8 @@ class UnitConverter {
       // Imperial cooking units → fractions, matching the rest of the app.
       number = IngredientScaleHelper.formatDouble(value);
     }
-    return unit.isEmpty ? number : '$number $unit';
+    // Units are shown UPPERCASE in the UI (e.g. "133 G", "22 ML", "2.19 L").
+    return unit.isEmpty ? number : '$number ${unit.toUpperCase()}';
   }
 
   static String _trimDecimal(double value, int places) {
@@ -267,30 +350,7 @@ class UnitConverter {
     final trimmed = line.trimLeft();
     if (trimmed.isEmpty) return line;
 
-    double? value;
-    int consumed = 0;
-
-    // "1 3/4" (mixed) → 1.75
-    var m = RegExp(r'^(\d+)\s+(\d+)/(\d+)').firstMatch(trimmed);
-    if (m != null) {
-      value = double.parse(m.group(1)!) +
-          double.parse(m.group(2)!) / double.parse(m.group(3)!);
-      consumed = m.end;
-    } else {
-      // "3/4" (simple fraction)
-      m = RegExp(r'^(\d+)/(\d+)').firstMatch(trimmed);
-      if (m != null) {
-        value = double.parse(m.group(1)!) / double.parse(m.group(2)!);
-        consumed = m.end;
-      } else {
-        // "1.5" or "2" (decimal / integer)
-        m = RegExp(r'^(\d+(?:\.\d+)?)').firstMatch(trimmed);
-        if (m != null) {
-          value = double.parse(m.group(1)!);
-          consumed = m.end;
-        }
-      }
-    }
+    final (value, consumed) = _parseLeadingValue(trimmed);
     if (value == null) return line;
 
     final afterNumber = trimmed.substring(consumed);
@@ -300,9 +360,112 @@ class UnitConverter {
     final unit = unitMatch.group(1)!;
     if (!isConvertible(unit)) return line;
 
+    // Everything after the unit is the ingredient name — used to decide
+    // whether a solid measured by volume should be shown as a weight.
     final rest = afterNumber.substring(unitMatch.end);
-    final converted = toSystem(value, unit, system);
+    final converted = _convertMeasure(value, unit, rest.trim(), system);
     return '${format(converted.value, converted.unit)}$rest';
+  }
+
+  /// Convert a quantity string when the ingredient [name] is held separately
+  /// (the grocery list stores quantity and name in different fields, so the
+  /// quantity alone carries no ingredient to weigh). Returns just the converted
+  /// quantity; falls back to the input when there's nothing convertible.
+  static String applySystemQuantity(
+    String quantity,
+    String name,
+    UnitSystem system,
+  ) {
+    final trimmed = quantity.trimLeft();
+    if (trimmed.isEmpty) return quantity;
+
+    final (value, consumed) = _parseLeadingValue(trimmed);
+    if (value == null) return quantity;
+
+    final afterNumber = trimmed.substring(consumed);
+    final unitMatch = RegExp(r'^\s*([a-zA-Z]+)').firstMatch(afterNumber);
+    if (unitMatch == null) return quantity;
+
+    final unit = unitMatch.group(1)!;
+    if (!isConvertible(unit)) return quantity;
+
+    final rest = afterNumber.substring(unitMatch.end);
+    final converted = _convertMeasure(value, unit, name.trim(), system);
+    return '${format(converted.value, converted.unit)}$rest';
+  }
+
+  /// Parse a leading numeric amount ("1½", "½", "1 3/4", "3/4", "1.5", "2")
+  /// off [trimmed]. Returns the value and how many characters it consumed
+  /// (value is null when there is no leading number).
+  static (double?, int) _parseLeadingValue(String trimmed) {
+    const vulgar = IngredientScaleHelper.vulgarFractions;
+    double? value;
+    var consumed = 0;
+
+    // Unicode vulgar fractions first: "1½" / "1 ½" (mixed) or "½" (simple).
+    var m = RegExp(r'^(\d+)\s*([¼½¾⅓⅔⅛⅜⅝⅞])').firstMatch(trimmed);
+    if (m != null) {
+      value = double.parse(m.group(1)!) + (vulgar[m.group(2)!] ?? 0.0);
+      consumed = m.end;
+    }
+    if (value == null) {
+      m = RegExp(r'^([¼½¾⅓⅔⅛⅜⅝⅞])').firstMatch(trimmed);
+      if (m != null) {
+        value = vulgar[m.group(1)!] ?? 0.0;
+        consumed = m.end;
+      }
+    }
+    if (value == null) {
+      m = RegExp(r'^(\d+)\s+(\d+)/(\d+)').firstMatch(trimmed);
+      if (m != null) {
+        value =
+            double.parse(m.group(1)!) +
+            double.parse(m.group(2)!) / double.parse(m.group(3)!);
+        consumed = m.end;
+      }
+    }
+    if (value == null) {
+      m = RegExp(r'^(\d+)/(\d+)').firstMatch(trimmed);
+      if (m != null) {
+        value = double.parse(m.group(1)!) / double.parse(m.group(2)!);
+        consumed = m.end;
+      }
+    }
+    if (value == null) {
+      m = RegExp(r'^(\d+(?:\.\d+)?)').firstMatch(trimmed);
+      if (m != null) {
+        value = double.parse(m.group(1)!);
+        consumed = m.end;
+      }
+    }
+    return (value, consumed);
+  }
+
+  /// Convert ([value], [unit]) to [system]. A SOLID ingredient measured by
+  /// VOLUME (cups/tbsp/tsp) is converted to WEIGHT via [IngredientDensity] so
+  /// Metric shows grams (not millilitres) and Imperial shows ounces; liquids
+  /// and already-weight/count units use the plain same-dimension conversion.
+  static ({double value, String unit}) _convertMeasure(
+    double value,
+    String unit,
+    String ingredientName,
+    UnitSystem system,
+  ) {
+    final canonical = _canonical(unit);
+    final dim = canonical == null ? null : dimensionOf(canonical);
+    if (canonical == null || dim == null) return (value: value, unit: unit);
+
+    if (dim == UnitDimension.volume &&
+        ingredientName.isNotEmpty &&
+        IngredientDensity.isSolid(ingredientName)) {
+      final ml = convert(value: value, fromUnit: canonical, toUnit: 'ml')!;
+      final grams = ml * IngredientDensity.gramsPerMl(ingredientName);
+      return system == UnitSystem.metric
+          ? _bestMetricMass(grams, 'g')
+          : _bestImperialMass(grams, 'g');
+    }
+
+    return toSystem(value, unit, system);
   }
 
   /// The single entry point display code should call for an ingredient line:

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/app_logo.dart';
-import 'package:recipe_ai/widgets/crown_icon.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
@@ -39,6 +38,10 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
   // Fixed per-tag data: rotation (deg) and float phase (0..1).
   static const List<double> _tagRot = [0, 0, 0, 0];
   static const List<double> _tagPhase = [0.0, 0.25, 0.5, 0.75];
+
+  // The close button is hidden at first and fades in ~2s later, after the
+  // entrance animation has played out.
+  bool _showClose = false;
 
   static double _cl(double v) => v < 0.0 ? 0.0 : (v > 1.0 ? 1.0 : v);
 
@@ -103,6 +106,11 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
     )..repeat();
 
     _entrance.forward();
+
+    // Reveal the close button ~2s in, once the entrance animation has settled.
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _showClose = true);
+    });
   }
 
   @override
@@ -141,26 +149,36 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    GestureDetector(
-                      onTap:
-                          widget.onClose ??
-                          () => Get.to(
-                            () => const PlusComparisonScreen(),
-                            transition: Transition.noTransition,
+                    // Hidden and untappable until it fades in ~2s later.
+                    IgnorePointer(
+                      ignoring: !_showClose,
+                      child: AnimatedOpacity(
+                        opacity: _showClose ? 1.0 : 0.0,
+                        duration: const Duration(milliseconds: 350),
+                        curve: Curves.easeOut,
+                        child: GestureDetector(
+                          onTap:
+                              widget.onClose ??
+                              () => Get.to(
+                                () => const PlusComparisonScreen(),
+                                transition: Transition.noTransition,
+                              ),
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            padding: const EdgeInsets.all(5),
+                            decoration: BoxDecoration(
+                              color: const Color(
+                                0xFF2A211B,
+                              ).withValues(alpha: 0.07),
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            child: const OnboardingLineIcon(
+                              'x',
+                              size: 18,
+                              color: AppColors.textMedium,
+                            ),
                           ),
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: const Color(
-                            0xFF2A211B,
-                          ).withValues(alpha: 0.07),
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: const OnboardingLineIcon(
-                          'x',
-                          size: 18,
-                          color: AppColors.textMedium,
                         ),
                       ),
                     ),

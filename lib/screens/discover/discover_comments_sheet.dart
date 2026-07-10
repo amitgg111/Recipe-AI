@@ -49,7 +49,8 @@ class _CommentsContent extends StatelessWidget {
         name: 'Alex Kim',
         initials: 'AK',
         timeAgo: '1h ago',
-        text: 'Made this last night and it was incredible! The red pepper flakes really make it.',
+        text:
+            'Made this last night and it was incredible! The red pepper flakes really make it.',
       ),
       const _CommentData(
         name: 'Maria Lopez',
@@ -61,13 +62,15 @@ class _CommentsContent extends StatelessWidget {
         name: 'Tom Wilson',
         initials: 'TW',
         timeAgo: '6h ago',
-        text: 'Added some Italian sausage and it was next level! My whole family loved it.',
+        text:
+            'Added some Italian sausage and it was next level! My whole family loved it.',
       ),
       const _CommentData(
         name: 'Priya Sharma',
         initials: 'PS',
         timeAgo: '8h ago',
-        text: 'This is now a weekly staple in our house. Thank you for sharing!',
+        text:
+            'This is now a weekly staple in our house. Thank you for sharing!',
       ),
       const _CommentData(
         name: 'James Chen',
@@ -98,7 +101,9 @@ class _CommentsContent extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: AppColors.surfaceBorder,
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusRound),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusRound,
+                  ),
                 ),
                 child: Text(
                   '28',
@@ -132,9 +137,7 @@ class _CommentsContent extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
           decoration: const BoxDecoration(
             color: AppColors.surface,
-            border: Border(
-              top: BorderSide(color: AppColors.divider),
-            ),
+            border: Border(top: BorderSide(color: AppColors.divider)),
           ),
           child: SafeArea(
             top: false,
@@ -146,7 +149,9 @@ class _CommentsContent extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 14),
                     decoration: BoxDecoration(
                       color: AppColors.background,
-                      borderRadius: BorderRadius.circular(AppDimensions.radiusRound),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusRound,
+                      ),
                       border: Border.all(color: AppColors.surfaceBorderLight),
                     ),
                     alignment: Alignment.centerLeft,
@@ -160,11 +165,12 @@ class _CommentsContent extends StatelessWidget {
                 Container(
                   width: 42,
                   height: 42,
+
                   decoration: const BoxDecoration(
                     color: AppColors.primary,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.send, color: Colors.white, size: 18),
+                  child: const Icon(Icons.send, color: Colors.white, size: 16),
                 ),
               ],
             ),
