@@ -148,4 +148,24 @@ class NotificationController extends GetxController {
       log('markAllRead error: $e');
     }
   }
+
+  /// Delete a single notification (swipe-to-delete). The user owns their own
+  /// notifications per the security rules. Removed from the UI instantly via
+  /// the feed stream.
+  Future<void> delete(AppNotification n) async {
+    try {
+      await _col.doc(n.id).delete();
+    } catch (e) {
+      log('delete notification error: $e');
+    }
+  }
+
+  /// Pull-to-refresh: re-subscribe the live streams. They're already real-time,
+  /// so this mainly gives the refresh control something to await.
+  Future<void> refresh() async {
+    if (_uid == null) return;
+    _listenUnread();
+    _listenFeed();
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
 }

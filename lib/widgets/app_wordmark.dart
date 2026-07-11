@@ -32,8 +32,8 @@ class AppWordmark extends StatelessWidget {
     return Text.rich(
       TextSpan(
         style: base.copyWith(color: recipeColor ?? AppColors.textDark),
-        children: [
-          const TextSpan(text: 'Recipe'),
+        children: const [
+          TextSpan(text: 'Recipe'),
           TextSpan( 
             text: ' AI',
             style: TextStyle(color: AppColors.primary),

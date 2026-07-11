@@ -10,7 +10,10 @@ import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 
 class MyRecipesScreen extends StatefulWidget {
-  const MyRecipesScreen({super.key});
+  /// When true, only favourited recipes are shown and the header reads
+  /// "Favorite recipes" — used by the Favorites entry in settings.
+  final bool favoritesOnly;
+  const MyRecipesScreen({super.key, this.favoritesOnly = false});
 
   @override
   State<MyRecipesScreen> createState() => _MyRecipesScreenState();
@@ -27,7 +30,10 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Obx(() {
-          final all = _home.recipes;
+          // In favourites mode start from only the favourited recipes.
+          final all = widget.favoritesOnly
+              ? _home.recipes.where((r) => r.isFavorite).toList()
+              : _home.recipes.toList();
           final publicCount = all.where((r) => r.isPublic).length;
           final privateCount = all.length - publicCount;
 
@@ -46,7 +52,8 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(18, 4, 18, 0),
-                child: SettingsUi.header('My recipes'),
+                child: SettingsUi.header(
+                    widget.favoritesOnly ? 'Favorite recipes' : 'My recipes'),
               ),
               const SizedBox(height: 14),
               Padding(

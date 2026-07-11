@@ -1111,18 +1111,23 @@ class _RecipeCard extends StatelessWidget {
                   Positioned(
                     top: 8,
                     right: 8,
-                    child: Container(
-                      width: 28,
-                      height: 28,
-                      padding: const EdgeInsets.all(5),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.92),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const OnboardingLineIcon(
-                        'heartO',
-                        size: 18,
-                        color: AppColors.pinterest,
+                    child: GestureDetector(
+                      onTap: () => Get.find<HomeController>()
+                          .toggleFavorite(recipe.id, !recipe.isFavorite),
+                      behavior: HitTestBehavior.opaque,
+                      child: Container(
+                        width: 28,
+                        height: 28,
+                        padding: const EdgeInsets.all(5),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.92),
+                          shape: BoxShape.circle,
+                        ),
+                        child: OnboardingLineIcon(
+                          recipe.isFavorite ? 'heart' : 'heartO',
+                          size: 18,
+                          color: AppColors.pinterest,
+                        ),
                       ),
                     ),
                   ),

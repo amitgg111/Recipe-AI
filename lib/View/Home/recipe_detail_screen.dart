@@ -2537,6 +2537,8 @@ class _MealPlanPickerSheet extends StatefulWidget {
 
 class _MealPlanPickerSheetState extends State<_MealPlanPickerSheet> {
   DateTime _selectedDay = DateTime.now();
+  late DateTime _visibleMonth =
+      DateTime(_selectedDay.year, _selectedDay.month);
   String _selectedMealType = 'Dinner';
   bool _isAdding = false;
 
@@ -2554,18 +2556,168 @@ class _MealPlanPickerSheetState extends State<_MealPlanPickerSheet> {
     'Snack': Icons.cookie_outlined,
   };
 
-  List<DateTime> get _days =>
-      List.generate(14, (i) => DateTime.now().add(Duration(days: i)));
-  String _dayLabel(DateTime d) {
-    final now = DateTime.now();
-    if (d.day == now.day && d.month == now.month && d.year == now.year) {
-      return 'Today';
-    }
-    return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][d.weekday - 1];
-  }
-
   bool _sameDay(DateTime a, DateTime b) =>
       a.day == b.day && a.month == b.month && a.year == b.year;
+
+  static const _monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
+  ];
+
+  // ── Month calendar (matches the Meal Plan calendar) ────────────────────────
+  // Past dates (before today) are shown greyed out and can't be selected — you
+  // can only plan meals for today onwards.
+  Widget _calendar(Color color) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final month = _visibleMonth;
+    final firstOfMonth = DateTime(month.year, month.month, 1);
+    final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
+    final leading = firstOfMonth.weekday - 1; // Monday-first blanks
+
+    // Never let the user page back into a month that's entirely in the past.
+    final canGoPrev = month.year > today.year ||
+        (month.year == today.year && month.month > today.month);
+
+    final cells = <Widget>[];
+    for (var i = 0; i < leading; i++) {
+      cells.add(const SizedBox.shrink());
+    }
+    for (var d = 1; d <= daysInMonth; d++) {
+      final date = DateTime(month.year, month.month, d);
+      cells.add(_dayCell(
+        date,
+        d,
+        isPast: date.isBefore(today),
+        isSelected: _sameDay(date, _selectedDay),
+        isToday: _sameDay(date, today),
+        color: color,
+      ));
+    }
+
+    return Column(
+      children: [
+        // Month header with prev/next arrows.
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              _navArrow(
+                Icons.chevron_left,
+                canGoPrev
+                    ? () => setState(() => _visibleMonth =
+                        DateTime(month.year, month.month - 1))
+                    : null,
+              ),
+              Expanded(
+                child: Center(
+                  child: Text(
+                    '${_monthNames[month.month - 1]} ${month.year}',
+                    style: _font(15.5, FontWeight.w800, _C.textDark),
+                  ),
+                ),
+              ),
+              _navArrow(
+                Icons.chevron_right,
+                () => setState(() => _visibleMonth =
+                    DateTime(month.year, month.month + 1)),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        // Weekday header (Monday-first).
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          child: Row(
+            children: ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+                .map((w) => Expanded(
+                      child: Center(
+                        child: Text(w,
+                            style: _font(11, FontWeight.w700, _C.textHint)),
+                      ),
+                    ))
+                .toList(),
+          ),
+        ),
+        const SizedBox(height: 4),
+        // Day grid.
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 7,
+            childAspectRatio: 1.05,
+            children: cells,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _dayCell(
+    DateTime date,
+    int day, {
+    required bool isPast,
+    required bool isSelected,
+    required bool isToday,
+    required Color color,
+  }) {
+    return GestureDetector(
+      onTap: isPast ? null : () => setState(() => _selectedDay = date),
+      behavior: HitTestBehavior.opaque,
+      child: Center(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          width: 38,
+          height: 38,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isSelected ? color : Colors.transparent,
+            shape: BoxShape.circle,
+            border: (isToday && !isSelected)
+                ? Border.all(color: color, width: 1.4)
+                : null,
+          ),
+          child: Text(
+            '$day',
+            style: _font(
+              14,
+              (isSelected || isToday) ? FontWeight.w800 : FontWeight.w600,
+              isSelected
+                  ? Colors.white
+                  : isPast
+                      ? _C.textHint.withValues(alpha: 0.4)
+                      : _C.textDark,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _navArrow(IconData icon, VoidCallback? onTap) {
+    final enabled = onTap != null;
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 34,
+        height: 34,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: _C.surfaceLight,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(
+          icon,
+          size: 20,
+          color: enabled ? _C.textDark : _C.textHint.withValues(alpha: 0.35),
+        ),
+      ),
+    );
+  }
 
   Future<void> _confirm() async {
     setState(() => _isAdding = true);
@@ -2593,7 +2745,8 @@ class _MealPlanPickerSheetState extends State<_MealPlanPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final color = _mealColors[_selectedMealType] ?? _C.primary;
+    // The sheet's accent (calendar highlight + Add button) stays the app
+    // primary — only the meal-type TAB shows its own colour.
     return Container(
       decoration: const BoxDecoration(
         color: _C.card,
@@ -2602,7 +2755,12 @@ class _MealPlanPickerSheetState extends State<_MealPlanPickerSheet> {
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,
       ),
-      child: Column(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.9,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2652,61 +2810,13 @@ class _MealPlanPickerSheetState extends State<_MealPlanPickerSheet> {
           ),
           const SizedBox(height: 20),
           Padding(
-            padding: const EdgeInsets.only(left: 20, bottom: 8),
+            padding: const EdgeInsets.only(left: 20, bottom: 10),
             child: Text(
-              'SELECT DAY',
+              'SELECT DATE',
               style: _font(11, FontWeight.w700, _C.textHint, ls: 0.8),
             ),
           ),
-          SizedBox(
-            height: 72,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _days.length,
-              itemBuilder: (_, i) {
-                final day = _days[i];
-                final sel = _sameDay(day, _selectedDay);
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedDay = day),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    width: 56,
-                    decoration: BoxDecoration(
-                      color: sel ? color : _C.card,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: sel ? color : _C.border),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          _dayLabel(day),
-                          style: _font(
-                            11,
-                            FontWeight.w600,
-                            sel
-                                ? Colors.white.withValues(alpha: 0.85)
-                                : _C.textHint,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${day.day}',
-                          style: _font(
-                            18,
-                            FontWeight.w800,
-                            sel ? Colors.white : _C.textDark,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
+          _calendar(_C.primary),
           const SizedBox(height: 20),
           Padding(
             padding: const EdgeInsets.only(left: 20, bottom: 10),
@@ -2715,8 +2825,11 @@ class _MealPlanPickerSheetState extends State<_MealPlanPickerSheet> {
               style: _font(11, FontWeight.w700, _C.textHint, ls: 0.8),
             ),
           ),
+          // Colored pill tabs — each meal type keeps its own colour; the
+          // selected one fills solid, the rest show a light tint. Only these
+          // tabs are coloured (the calendar + button stay the app primary).
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 14),
             child: Row(
               children: _mealTypes.map((type) {
                 final sel = _selectedMealType == type;
@@ -2727,35 +2840,22 @@ class _MealPlanPickerSheetState extends State<_MealPlanPickerSheet> {
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       margin: const EdgeInsets.symmetric(horizontal: 4),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      padding: const EdgeInsets.symmetric(vertical: 11),
+                      alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: sel ? c.withValues(alpha: 0.12) : _C.card,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: sel ? c : _C.border,
-                          width: sel ? 1.5 : 1,
-                        ),
+                        color: sel ? c : c.withValues(alpha: 0.13),
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      child: Column(
-                        children: [
-                          Icon(
-                            _mealIcons[type]!,
-                            size: 20,
-                            color: sel ? c : _C.textHint,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            type,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                            style: _font(
-                              10,
-                              FontWeight.w600,
-                              sel ? c : _C.textHint,
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        type,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: _font(
+                          12.5,
+                          sel ? FontWeight.w800 : FontWeight.w700,
+                          sel ? Colors.white : c,
+                        ),
                       ),
                     ),
                   ),
@@ -2772,7 +2872,7 @@ class _MealPlanPickerSheetState extends State<_MealPlanPickerSheet> {
                 width: double.infinity,
                 height: AppDimensions.buttonHeight,
                 decoration: BoxDecoration(
-                  color: color,
+                  color: _C.primary,
                   borderRadius: BorderRadius.circular(
                     AppDimensions.radiusButton,
                   ),
@@ -2807,6 +2907,8 @@ class _MealPlanPickerSheetState extends State<_MealPlanPickerSheet> {
             ),
           ),
         ],
+      ),
+        ),
       ),
     );
   }

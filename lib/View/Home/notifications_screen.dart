@@ -8,6 +8,7 @@ import 'package:recipe_ai/Controllers/home_controller.dart';
 import 'package:recipe_ai/Controllers/notification_controller.dart';
 import 'package:recipe_ai/Model/notification_model.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
+import 'package:recipe_ai/Service/follow_service.dart';
 import 'package:recipe_ai/View/Home/recipe_detail_screen.dart';
 import 'package:recipe_ai/View/Home/social/creator_profile_screen.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
@@ -97,28 +98,31 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     child: CircularProgressIndicator(color: _N.primary));
               }
               final items = _c.items;
-              if (items.isEmpty) return _empty();
-              return ListView.separated(
-                controller: _scroll,
-                padding: const EdgeInsets.fromLTRB(14, 8, 14, 24),
-                itemCount: items.length + (_c.hasMore.value ? 1 : 0),
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (_, i) {
-                  if (i >= items.length) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                      child: Center(
-                        child: SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: _N.primary),
-                        ),
+              return RefreshIndicator(
+                color: _N.primary,
+                onRefresh: _c.refresh,
+                child: items.isEmpty
+                    ? ListView(
+                        // Scrollable so pull-to-refresh still works when empty.
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: [
+                          SizedBox(
+                              height:
+                                  MediaQuery.of(context).size.height * 0.24),
+                          _empty(),
+                        ],
+                      )
+                    : ListView.separated(
+                        controller: _scroll,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(14, 10, 14, 28),
+                        itemCount: items.length + (_c.hasMore.value ? 1 : 0),
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        itemBuilder: (_, i) {
+                          if (i >= items.length) return _loadingMore();
+                          return _tile(items[i]);
+                        },
                       ),
-                    );
-                  }
-                  return _tile(items[i]);
-                },
               );
             }),
           ),
@@ -145,66 +149,165 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  Widget _tile(AppNotification n) {
-    return GestureDetector(
-      onTap: () => _open(n),
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        decoration: BoxDecoration(
-          color: n.isRead ? _N.card : _N.unreadBg,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-              color: n.isRead ? _N.line : _N.primary.withValues(alpha: 0.25)),
+  Widget _loadingMore() => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16),
+        child: Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child:
+                CircularProgressIndicator(strokeWidth: 2, color: _N.primary),
+          ),
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
+      );
+
+  Widget _tile(AppNotification n) {
+    // Swipe-to-delete (endToStart) over a modern card. The unread → read
+    // colour/border change animates smoothly via AnimatedContainer.
+    return Dismissible(
+      key: ValueKey(n.id),
+      direction: DismissDirection.endToStart,
+      onDismissed: (_) => _c.delete(n),
+      background: _swipeBg(),
+      child: GestureDetector(
+        onTap: () => _open(n),
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 260),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+          decoration: BoxDecoration(
+            color: n.isRead ? _N.card : _N.unreadBg,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: n.isRead ? _N.line : _N.primary.withValues(alpha: 0.30),
+              width: n.isRead ? 1 : 1.4,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _avatarWithBadge(n),
+              const SizedBox(width: 12),
+              Expanded(child: _textBlock(n)),
+              const SizedBox(width: 10),
+              _trailing(n),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _swipeBg() {
+    return Container(
+      alignment: Alignment.centerRight,
+      padding: const EdgeInsets.only(right: 24),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE0481F),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: const OnboardingLineIcon('trash', size: 22, color: Colors.white),
+    );
+  }
+
+  // Avatar (tap → sender profile) with a small type badge in the corner, the
+  // way Instagram/Facebook mark each notification.
+  Widget _avatarWithBadge(AppNotification n) {
+    return GestureDetector(
+      onTap: () => _openProfile(n),
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: 52,
+        height: 52,
+        child: Stack(
+          clipBehavior: Clip.none,
           children: [
             _senderAvatar(n),
-            const SizedBox(width: 12),
-            // Text block
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text.rich(
-                    TextSpan(
-                      style: _f(13.5, FontWeight.w500, _N.textBody, h: 1.35),
-                      children: [
-                        TextSpan(
-                          text: n.senderName,
-                          style: _f(13.5, FontWeight.w800, _N.textDark),
-                        ),
-                        TextSpan(text: ' ${_action(n)}'),
-                      ],
-                    ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 3),
-                  Text(_relativeTime(n.createdAt),
-                      style: _f(11.5, FontWeight.w600, _N.textHint)),
-                ],
+            Positioned(right: -1, bottom: -1, child: _typeBadge(n)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _typeBadge(AppNotification n) {
+    final color = n.isFollow
+        ? _N.green
+        : n.isComment
+            ? const Color(0xFF3B82F6)
+            : _N.primary;
+    final icon = n.isFollow
+        ? 'user'
+        : n.isComment
+            ? 'comment'
+            : 'heart';
+    return Container(
+      width: 22,
+      height: 22,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 2),
+      ),
+      child: OnboardingLineIcon(icon, size: 11, color: Colors.white),
+    );
+  }
+
+  Widget _textBlock(AppNotification n) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text.rich(
+          TextSpan(
+            style: _f(13.5, FontWeight.w500, _N.textBody, h: 1.35),
+            children: [
+              TextSpan(
+                text: n.senderName,
+                style: _f(13.5, FontWeight.w800, _N.textDark),
               ),
-            ),
-            const SizedBox(width: 10),
-            if (n.hasRecipe && (n.recipeImage?.isNotEmpty ?? false))
-              _recipeThumb(n.recipeImage!)
-            else
-              _typeGlyph(n),
+              TextSpan(text: ' ${_action(n)}'),
+            ],
+          ),
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            Text(_relativeTime(n.createdAt),
+                style: _f(11.5, FontWeight.w600, _N.textHint)),
             if (!n.isRead) ...[
-              const SizedBox(width: 10),
+              const SizedBox(width: 7),
               Container(
-                width: 9,
-                height: 9,
+                width: 6,
+                height: 6,
                 decoration: const BoxDecoration(
                     color: _N.primary, shape: BoxShape.circle),
               ),
             ],
           ],
         ),
-      ),
+      ],
     );
+  }
+
+  // Follow notifications get a Follow/Following button; like/comment get the
+  // recipe thumbnail.
+  Widget _trailing(AppNotification n) {
+    if (n.isFollow) return _FollowButton(targetUid: n.senderUserId);
+    if (n.hasRecipe && (n.recipeImage?.isNotEmpty ?? false)) {
+      return _recipeThumb(n.recipeImage!);
+    }
+    return const SizedBox.shrink();
   }
 
   // Human-friendly action phrase, kept in sync with the backend copy.
@@ -279,6 +382,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   // ── Navigation ─────────────────────────────────────────────────────────────
+  // Tapping the avatar always opens the sender's profile.
+  void _openProfile(AppNotification n) {
+    _c.markAsRead(n);
+    Get.to(() => CreatorProfileScreen(
+          userId: n.senderUserId,
+          fallbackName: n.senderName,
+          fallbackAvatar: n.senderPhoto,
+        ));
+  }
+
   Future<void> _open(AppNotification n) async {
     if (_opening) return;
     _opening = true;
@@ -343,5 +456,47 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     ];
     return '${months[dt.month - 1]} ${dt.day}';
+  }
+}
+
+/// Live Follow / Following button used on follow notifications. Reflects the
+/// current follow state in real time and toggles it on tap (backend handled by
+/// the existing FollowService — no notification backend is touched).
+class _FollowButton extends StatelessWidget {
+  final String targetUid;
+  const _FollowButton({required this.targetUid});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<bool>(
+      stream: FollowService.isFollowingStream(targetUid),
+      builder: (context, snap) {
+        final following = snap.data ?? false;
+        return GestureDetector(
+          onTap: () => FollowService.setFollow(targetUid, !following),
+          behavior: HitTestBehavior.opaque,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+            decoration: BoxDecoration(
+              color: following ? Colors.transparent : _N.primary,
+              borderRadius: BorderRadius.circular(11),
+              border: Border.all(
+                color: following ? _N.line : _N.primary,
+                width: 1.4,
+              ),
+            ),
+            child: Text(
+              following ? 'Following' : 'Follow',
+              style: _f(
+                12.5,
+                FontWeight.w800,
+                following ? _N.textBody : Colors.white,
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 }

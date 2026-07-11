@@ -182,6 +182,71 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
               const SizedBox(height: 9),
               _privacyNote(),
 
+              // Favorites — recipes the user hearted on their cards.
+              Padding(
+                padding: const EdgeInsets.only(top: 18),
+                child: GestureDetector(
+                  onTap: () => Get.to(
+                    () => const MyRecipesScreen(favoritesOnly: true),
+                  ),
+                  behavior: HitTestBehavior.opaque,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 14,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: AppColors.surfaceBorder),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 34,
+                          height: 34,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: AppColors.pinterest.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const OnboardingLineIcon(
+                            'heart',
+                            size: 18,
+                            color: AppColors.pinterest,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            'Favorite recipes',
+                            style: TextStyle(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textDark,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          '${recipes.where((r) => r.isFavorite).length}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textHint,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(
+                          Icons.chevron_right_rounded,
+                          color: AppColors.textHint,
+                          size: 20,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
               // My recipes
               Padding(
                 padding: const EdgeInsets.fromLTRB(4, 22, 4, 11),

@@ -11,6 +11,7 @@ import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_dimensions.dart';
 import 'package:recipe_ai/utils/validation_helper.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
+import 'package:recipe_ai/Helper/unit_converter.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Design constants — matched to the HTML "Recipe detail (edit)" design
@@ -199,84 +200,125 @@ class _PhotoBasicsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Image + change photo
-          Obx(() {
-            Widget img;
-            if (controller.imageFile.value != null) {
-              img = Image.file(controller.imageFile.value!, fit: BoxFit.cover);
-            } else if (controller.imagePath.value.isNotEmpty) {
-              final p = controller.imagePath.value;
-              img = p.startsWith('http')
-                  ? AppNetworkImage(p, fit: BoxFit.cover)
-                  : Image.file(File(p), fit: BoxFit.cover);
-            } else {
-              img = Container(
-                color: const Color(0xFFF0E6D6),
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.add_a_photo_outlined,
-                        size: 30,
-                        color: AppColors.textHint,
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Add photo',
-                        style: _f(13, FontWeight.w600, AppColors.textMedium),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }
-            return ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: SizedBox(
-                height: 140,
-                width: double.infinity,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    img,
-                    Positioned(
-                      right: 10,
-                      bottom: 10,
-                      child: GestureDetector(
-                        onTap: controller.pickImage,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.94),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const OnboardingLineIcon(
-                                'camera',
-                                size: 15,
-                                color: _E.primary,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                'Change photo',
-                                style: _f(13, FontWeight.w700, _E.textDark),
-                              ),
-                            ],
-                          ),
+          // Image + change photo (a photo is required to save).
+          FormField<String>(
+            validator: (_) {
+              final hasImage = controller.imageFile.value != null ||
+                  controller.imagePath.value.isNotEmpty;
+              return hasImage ? null : 'Add a recipe photo';
+            },
+            builder: (state) => Obx(() {
+              final hasImage = controller.imageFile.value != null ||
+                  controller.imagePath.value.isNotEmpty;
+              Widget img;
+              if (controller.imageFile.value != null) {
+                img =
+                    Image.file(controller.imageFile.value!, fit: BoxFit.cover);
+              } else if (controller.imagePath.value.isNotEmpty) {
+                final p = controller.imagePath.value;
+                img = p.startsWith('http')
+                    ? AppNetworkImage(p, fit: BoxFit.cover)
+                    : Image.file(File(p), fit: BoxFit.cover);
+              } else {
+                img = Container(
+                  color: const Color(0xFFF0E6D6),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.add_a_photo_outlined,
+                          size: 30,
+                          color: AppColors.textHint,
                         ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Add photo',
+                          style: _f(13, FontWeight.w600, AppColors.textMedium),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+              final showError = state.hasError && !hasImage;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: SizedBox(
+                      height: 140,
+                      width: double.infinity,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          img,
+                          Positioned.fill(
+                            child: GestureDetector(
+                              onTap: controller.pickImage,
+                              behavior: HitTestBehavior.opaque,
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  border: showError
+                                      ? Border.all(color: _E.redText, width: 1.5)
+                                      : null,
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            right: 10,
+                            bottom: 10,
+                            child: GestureDetector(
+                              onTap: controller.pickImage,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.94),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const OnboardingLineIcon(
+                                      'camera',
+                                      size: 15,
+                                      color: _E.primary,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Change photo',
+                                      style:
+                                          _f(13, FontWeight.w700, _E.textDark),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (showError) ...[
+                    const SizedBox(height: 6),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 2),
+                      child: Text(
+                        state.errorText ?? '',
+                        style: _f(11.5, FontWeight.w500, _E.redText),
                       ),
                     ),
                   ],
-                ),
-              ),
-            );
-          }),
+                ],
+              );
+            }),
+          ),
           const SizedBox(height: 16),
           // Title
           _fieldLabel('Title'),
@@ -295,6 +337,7 @@ class _PhotoBasicsCard extends StatelessWidget {
           const SizedBox(height: 14),
           // Servings + total time
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Column(
@@ -302,11 +345,28 @@ class _PhotoBasicsCard extends StatelessWidget {
                   children: [
                     _fieldLabel('Servings'),
                     const SizedBox(height: 7),
+                    // Servings can be set only while CREATING a recipe. Editing
+                    // an existing one keeps it locked (scaling happens on the
+                    // detail screen instead), so it's only validated on create.
                     _FocusField(
                       controller: controller.servingsController,
                       hint: '2',
                       height: 46,
-                      enabled: false,
+                      enabled: !controller.isEdit,
+                      keyboardType: const TextInputType.numberWithOptions(),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
+                      validator: controller.isEdit
+                          ? null
+                          : (v) {
+                              final t = (v ?? '').trim();
+                              if (t.isEmpty) return 'Required';
+                              if ((int.tryParse(t) ?? 0) <= 0) {
+                                return 'Enter servings';
+                              }
+                              return null;
+                            },
                     ),
                   ],
                 ),
@@ -320,6 +380,7 @@ class _PhotoBasicsCard extends StatelessWidget {
                     _fieldLabel('Total time'),
                     const SizedBox(height: 7),
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Numbers-only value.
                         Expanded(
@@ -333,6 +394,14 @@ class _PhotoBasicsCard extends StatelessWidget {
                             inputFormatters: [
                               FilteringTextInputFormatter.digitsOnly,
                             ],
+                            validator: (v) {
+                              final t = (v ?? '').trim();
+                              if (t.isEmpty) return 'Required';
+                              if ((int.tryParse(t) ?? 0) <= 0) {
+                                return 'Enter time';
+                              }
+                              return null;
+                            },
                           ),
                         ),
                         const SizedBox(width: 2),
@@ -702,8 +771,27 @@ class _IngredientsEditor extends StatelessWidget {
       children: [
         if (section.name != null && section.name!.isNotEmpty)
           _SectionHeader(name: section.name!),
-        for (int i = 0; i < section.items.length; i++)
-          _ingredientRow(sectionIdx, i, section.items[i]),
+        // Drag-to-reorder ingredients within this section — grab the grip
+        // handle (⋮⋮) and drop the row anywhere in the list.
+        if (section.items.isNotEmpty)
+          ReorderableListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            buildDefaultDragHandles: false,
+            itemCount: section.items.length,
+            onReorder: (oldIndex, newIndex) => controller
+                .reorderIngredientInSection(sectionIdx, oldIndex, newIndex),
+            proxyDecorator: (child, index, animation) => Material(
+              color: Colors.transparent,
+              child: child,
+            ),
+            itemBuilder: (_, i) => _ingredientRow(
+              sectionIdx,
+              i,
+              section.items[i],
+              key: ValueKey('ing_${sectionIdx}_${i}_${section.items[i]}'),
+            ),
+          ),
         if (showAdd)
           _AddItemButton(
             label: 'Add ingredient',
@@ -713,71 +801,94 @@ class _IngredientsEditor extends StatelessWidget {
     );
   }
 
-  Widget _ingredientRow(int sectionIdx, int itemIdx, String text) {
+  Widget _ingredientRow(int sectionIdx, int itemIdx, String text, {Key? key}) {
     final parts = _parseQty(text);
+    final qty = parts.$1;
+    final name = parts.$2;
     return GestureDetector(
+      key: key,
       onTap: () => _showEditItemSheet(sectionIdx, itemIdx, text),
       child: Container(
         margin: const EdgeInsets.only(bottom: 6),
-        height: 40,
+        // No fixed height — the row grows so long ingredients show in full.
+        constraints: const BoxConstraints(minHeight: 44),
         decoration: BoxDecoration(
           color: _E.card,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(color: _E.fieldBorder),
         ),
         clipBehavior: Clip.antiAlias,
-        child: Row(
-          children: [
-            const SizedBox(width: 22, child: Center(child: _DragDots())),
-            _vLine(),
-            SizedBox(
-              width: 56,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Text(
-                  parts.$1,
-                  style: _f(13, FontWeight.w700, _E.textDark),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Only the grip starts a drag — tapping elsewhere still edits.
+              ReorderableDragStartListener(
+                index: itemIdx,
+                child: const SizedBox(
+                  width: 26,
+                  child: Center(child: _DragDots()),
                 ),
               ),
-            ),
-            _vLine(),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Text(
-                  parts.$2,
-                  style: _f(14, FontWeight.w500, _E.textDark),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+              _vLine(),
+              // Single merged column: quantity + unit (BOLD) followed by the
+              // ingredient name, wrapping over up to 3 lines so nothing is cut.
+              Expanded(
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          if (qty.isNotEmpty)
+                            TextSpan(
+                              text: '$qty ',
+                              style: _f(14, FontWeight.w800, _E.textDark),
+                            ),
+                          TextSpan(
+                            text: name,
+                            style: _f(14, FontWeight.w500, _E.textDark),
+                          ),
+                        ],
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 ),
               ),
-            ),
-            _vLine(),
-            GestureDetector(
-              onTap: () =>
-                  controller.removeIngredientFromSection(sectionIdx, itemIdx),
-              behavior: HitTestBehavior.opaque,
-              child: const SizedBox(
-                width: 34,
-                child: OnboardingLineIcon('trash', size: 18, color: _E.trash),
+              _vLine(),
+              GestureDetector(
+                onTap: () =>
+                    controller.removeIngredientFromSection(sectionIdx, itemIdx),
+                behavior: HitTestBehavior.opaque,
+                child: const SizedBox(
+                  width: 40,
+                  child: Center(
+                    child: OnboardingLineIcon(
+                      'trash',
+                      size: 18,
+                      color: _E.trash,
+                    ),
+                  ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
   void _showAddItemSheet(int sectionIdx) {
-    final tc = TextEditingController();
     Get.bottomSheet(
-      _EditorBottomSheet(
+      _IngredientEditorSheet(
         title: 'Add ingredient',
-        hint: 'e.g. 2 cups flour',
-        textController: tc,
-        onConfirm: () => controller.addIngredientToSection(sectionIdx, tc.text),
+        buttonLabel: 'Add',
+        initial: '',
+        onConfirm: (v) => controller.addIngredientToSection(sectionIdx, v),
       ),
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -785,15 +896,13 @@ class _IngredientsEditor extends StatelessWidget {
   }
 
   void _showEditItemSheet(int sectionIdx, int itemIdx, String current) {
-    final tc = TextEditingController(text: current);
     Get.bottomSheet(
-      _EditorBottomSheet(
+      _IngredientEditorSheet(
         title: 'Edit ingredient',
-        hint: 'e.g. 2 cups flour',
-        textController: tc,
         buttonLabel: 'Save',
-        onConfirm: () =>
-            controller.updateIngredientInSection(sectionIdx, itemIdx, tc.text),
+        initial: current,
+        onConfirm: (v) =>
+            controller.updateIngredientInSection(sectionIdx, itemIdx, v),
       ),
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -818,23 +927,76 @@ class _IngredientsEditor extends StatelessWidget {
     );
   }
 
+  // Non-convertible "count" / container units (recognised in addition to the
+  // convertible units from UnitConverter) so the full unit is captured — and
+  // therefore shown bold — rather than leaking into the ingredient name.
+  static const Set<String> _countUnits = {
+    'clove', 'cloves', 'piece', 'pieces', 'pc', 'pcs', 'can', 'cans', 'tin',
+    'tins', 'jar', 'jars', 'bottle', 'bottles', 'pack', 'packs', 'packet',
+    'packets', 'box', 'boxes', 'bag', 'bags', 'bunch', 'bunches', 'head',
+    'heads', 'stalk', 'stalks', 'stick', 'sticks', 'sprig', 'sprigs', 'slice',
+    'slices', 'sheet', 'sheets', 'leaf', 'leaves', 'pinch', 'pinches', 'dash',
+    'dashes', 'handful', 'handfuls', 'drop', 'drops', 'scoop', 'scoops',
+    'inch', 'inches', 'small', 'medium', 'large', 'whole',
+  };
+
+  static bool _isUnitToken(String token) {
+    final t = token.toLowerCase();
+    return UnitConverter.isUnitWord(t) || _countUnits.contains(t);
+  }
+
+  static final RegExp _numToken = RegExp(r'^[\d½⅓⅔¼¾⅛⅜⅝⅞./-]+$');
+  static final RegExp _hasDigit = RegExp(r'[\d½⅓⅔¼¾⅛⅜⅝⅞]');
+
+  /// Split an ingredient into (quantity+unit, name). Recognises spelled-out and
+  /// plural units ("teaspoon", "grams", "gallons"…) via UnitConverter so the
+  /// whole measure is captured for the bold prefix.
   static (String, String) _parseQty(String text) {
-    final match = RegExp(
-      r'^([\d½¼¾⅓⅔⅛⅜⅝⅞/.\s]+(?:\s*(?:cup|cups|tbsp|tsp|oz|lb|lbs|g|kg|ml|l|piece|pieces|clove|cloves|inch|pinch|bunch|handful|can|cans|packet|packets|slice|slices|medium|large|small)\b)?)\s+(.*)$',
-      caseSensitive: false,
-    ).firstMatch(text);
-    if (match != null) {
-      final qty = match.group(1)!.trim();
-      final rest = match.group(2)!.trim();
-      if (qty.isNotEmpty && rest.isNotEmpty) return (qty, rest);
+    final cleaned = text.trim().replaceAll(RegExp(r'\s+'), ' ');
+    if (cleaned.isEmpty) return ('', '');
+    final tokens = cleaned.split(' ');
+    var i = 0;
+
+    // Leading amount (integer / decimal / fraction / "1 1/2" / range "2-3").
+    final numberTokens = <String>[];
+    while (i < tokens.length &&
+        _numToken.hasMatch(tokens[i]) &&
+        _hasDigit.hasMatch(tokens[i])) {
+      numberTokens.add(tokens[i]);
+      i++;
+      if (i + 1 < tokens.length &&
+          tokens[i].toLowerCase() == 'to' &&
+          _numToken.hasMatch(tokens[i + 1]) &&
+          _hasDigit.hasMatch(tokens[i + 1])) {
+        numberTokens.add(tokens[i]);
+        i++;
+      }
     }
-    final simple = RegExp(r'^([\d½¼¾⅓⅔⅛/.\s]+)\s+(.*)$').firstMatch(text);
-    if (simple != null) {
-      final qty = simple.group(1)!.trim();
-      final rest = simple.group(2)!.trim();
-      if (qty.isNotEmpty && rest.isNotEmpty) return (qty, rest);
+    if (numberTokens.isEmpty) return ('', cleaned);
+
+    // Optional unit after the number (two-word "fl oz" first).
+    var unit = '';
+    if (i < tokens.length) {
+      final t1 = tokens[i].toLowerCase();
+      final t2 = (i + 1 < tokens.length) ? tokens[i + 1].toLowerCase() : '';
+      if ((t1 == 'fl' && t2 == 'oz') ||
+          (t1 == 'fluid' && (t2 == 'oz' || t2 == 'ounce' || t2 == 'ounces'))) {
+        unit = '${tokens[i]} ${tokens[i + 1]}';
+        i += 2;
+      } else if (_isUnitToken(t1)) {
+        unit = tokens[i];
+        i++;
+      }
     }
-    return ('', text);
+
+    final name = tokens
+        .sublist(i)
+        .join(' ')
+        .replaceAll(RegExp(r'^of\s+', caseSensitive: false), '')
+        .trim();
+    final qty = [...numberTokens, if (unit.isNotEmpty) unit].join(' ');
+    if (name.isEmpty) return ('', cleaned);
+    return (qty, name);
   }
 }
 
@@ -885,8 +1047,28 @@ class _InstructionsEditor extends StatelessWidget {
       children: [
         if (section.name != null && section.name!.isNotEmpty)
           _SectionHeader(name: section.name!),
-        for (int i = 0; i < section.steps.length; i++)
-          _stepRow(sectionIdx, i, stepNum + i, section.steps[i]),
+        // Drag-to-reorder steps within this section (grab the grip ⋮⋮). Step
+        // numbers recompute automatically after a move.
+        if ((section.steps as List).isNotEmpty)
+          ReorderableListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            buildDefaultDragHandles: false,
+            itemCount: section.steps.length,
+            onReorder: (oldIndex, newIndex) => controller
+                .reorderInstructionInSection(sectionIdx, oldIndex, newIndex),
+            proxyDecorator: (child, index, animation) => Material(
+              color: Colors.transparent,
+              child: child,
+            ),
+            itemBuilder: (_, i) => _stepRow(
+              sectionIdx,
+              i,
+              stepNum + i,
+              section.steps[i],
+              key: ValueKey('step_${sectionIdx}_${i}_${section.steps[i]}'),
+            ),
+          ),
         if (showAdd)
           _AddItemButton(
             label: 'Add step',
@@ -896,8 +1078,15 @@ class _InstructionsEditor extends StatelessWidget {
     );
   }
 
-  Widget _stepRow(int sectionIdx, int stepIdx, int stepNumber, String text) {
+  Widget _stepRow(
+    int sectionIdx,
+    int stepIdx,
+    int stepNumber,
+    String text, {
+    Key? key,
+  }) {
     return GestureDetector(
+      key: key,
       onTap: () => _showEditStepSheet(sectionIdx, stepIdx, text),
       child: Container(
         margin: const EdgeInsets.only(bottom: 6),
@@ -912,7 +1101,14 @@ class _InstructionsEditor extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(width: 22, child: Center(child: _DragDots())),
+              // Only the grip starts a drag — tapping elsewhere still edits.
+              ReorderableDragStartListener(
+                index: stepIdx,
+                child: const SizedBox(
+                  width: 22,
+                  child: Center(child: _DragDots()),
+                ),
+              ),
               _vLine(),
               SizedBox(
                 width: 24,
@@ -1258,4 +1454,403 @@ class _EditorBottomSheet extends StatelessWidget {
       ),
     );
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Ingredient unit system — the selectable units offered in the editor. Every
+// token here is one the app's UnitConverter understands, so switching a recipe
+// between Metric/Imperial keeps converting cleanly.
+// (label shown in the picker, token written into the ingredient string)
+// ─────────────────────────────────────────────────────────────────────────────
+const List<(String, String)> _kIngredientUnits = [
+  ('No unit', ''),
+  ('Milliliter', 'ml'),
+  ('Centiliter', 'cl'),
+  ('Deciliter', 'dl'),
+  ('Liter', 'l'),
+  ('Teaspoon', 'tsp'),
+  ('Tablespoon', 'tbsp'),
+  ('Fluid ounce', 'fl oz'),
+  ('Cup', 'cup'),
+  ('Pint', 'pint'),
+  ('Quart', 'quart'),
+  ('Gallon', 'gallon'),
+  ('Gram', 'g'),
+  ('Kilogram', 'kg'),
+  ('Ounce', 'oz'),
+  ('Pound', 'lb'),
+];
+
+// Every spelling/abbreviation the parser recognises → the canonical token above.
+const Map<String, String> _kUnitAliases = {
+  'ml': 'ml', 'milliliter': 'ml', 'milliliters': 'ml', 'millilitre': 'ml',
+  'millilitres': 'ml',
+  'cl': 'cl', 'centiliter': 'cl', 'centiliters': 'cl', 'centilitre': 'cl',
+  'centilitres': 'cl',
+  'dl': 'dl', 'deciliter': 'dl', 'deciliters': 'dl', 'decilitre': 'dl',
+  'decilitres': 'dl',
+  'l': 'l', 'liter': 'l', 'liters': 'l', 'litre': 'l', 'litres': 'l',
+  'tsp': 'tsp', 'tsps': 'tsp', 'teaspoon': 'tsp', 'teaspoons': 'tsp',
+  'tbsp': 'tbsp', 'tbsps': 'tbsp', 'tbs': 'tbsp', 'tablespoon': 'tbsp',
+  'tablespoons': 'tbsp',
+  'cup': 'cup', 'cups': 'cup',
+  'pint': 'pint', 'pints': 'pint', 'pt': 'pint',
+  'quart': 'quart', 'quarts': 'quart', 'qt': 'quart',
+  'gallon': 'gallon', 'gallons': 'gallon', 'gal': 'gallon',
+  'g': 'g', 'gram': 'g', 'grams': 'g', 'gm': 'g', 'gms': 'g',
+  'kg': 'kg', 'kilogram': 'kg', 'kilograms': 'kg', 'kgs': 'kg',
+  'oz': 'oz', 'ounce': 'oz', 'ounces': 'oz',
+  'lb': 'lb', 'lbs': 'lb', 'pound': 'lb', 'pounds': 'lb',
+};
+
+/// Splits a free-form ingredient line ("2½ cups organic flour") into its
+/// (quantity, unit-token, name) parts. A leading unit is only pulled out when
+/// it's a recognised unit — anything else (e.g. "2 cloves garlic") is left in
+/// the name so nothing is ever lost on a round-trip.
+(String, String, String) _splitIngredient(String text) {
+  final t = text.trim();
+  if (t.isEmpty) return ('', '', '');
+
+  String qty = '';
+  String rest = t;
+  final qtyM = RegExp(
+    r'^([0-9¼½¾⅓⅔⅛⅜⅝⅞][0-9¼½¾⅓⅔⅛⅜⅝⅞.,/\s-]*)',
+  ).firstMatch(t);
+  if (qtyM != null) {
+    qty = qtyM.group(1)!.trim();
+    rest = t.substring(qtyM.end).trim();
+  }
+
+  String unit = '';
+  final flozM = RegExp(r'^fl\.?\s*oz\.?', caseSensitive: false).firstMatch(rest);
+  if (flozM != null) {
+    unit = 'fl oz';
+    rest = rest.substring(flozM.end).trim();
+  } else {
+    final wM = RegExp(r'^([A-Za-z]+)\.?').firstMatch(rest);
+    if (wM != null) {
+      final canon = _kUnitAliases[wM.group(1)!.toLowerCase()];
+      if (canon != null) {
+        unit = canon;
+        rest = rest.substring(wM.end).trim();
+      }
+    }
+  }
+  return (qty, unit, rest);
+}
+
+/// Recombines the three parts back into a single ingredient line.
+String _composeIngredient(String qty, String unit, String name) {
+  final parts = <String>[
+    if (qty.trim().isNotEmpty) qty.trim(),
+    if (unit.trim().isNotEmpty) unit.trim(),
+    if (name.trim().isNotEmpty) name.trim(),
+  ];
+  return parts.join(' ');
+}
+
+String _unitLabel(String token) {
+  if (token.isEmpty) return 'No unit';
+  for (final u in _kIngredientUnits) {
+    if (u.$2 == token) return '${u.$1} (${u.$2})';
+  }
+  return token;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Ingredient editor sheet: quantity + unit picker + name, so the unit can be
+// chosen from a proper list instead of typed free-hand.
+// ─────────────────────────────────────────────────────────────────────────────
+class _IngredientEditorSheet extends StatefulWidget {
+  final String title;
+  final String buttonLabel;
+  final String initial;
+  final void Function(String composed) onConfirm;
+
+  const _IngredientEditorSheet({
+    required this.title,
+    required this.buttonLabel,
+    required this.initial,
+    required this.onConfirm,
+  });
+
+  @override
+  State<_IngredientEditorSheet> createState() => _IngredientEditorSheetState();
+}
+
+class _IngredientEditorSheetState extends State<_IngredientEditorSheet> {
+  late final TextEditingController _qty;
+  late final TextEditingController _name;
+  late String _unit;
+
+  @override
+  void initState() {
+    super.initState();
+    final parts = _splitIngredient(widget.initial);
+    _qty = TextEditingController(text: parts.$1);
+    _unit = parts.$2;
+    _name = TextEditingController(text: parts.$3);
+  }
+
+  @override
+  void dispose() {
+    _qty.dispose();
+    _name.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    final composed = _composeIngredient(_qty.text, _unit, _name.text);
+    if (composed.isEmpty) return;
+    widget.onConfirm(composed);
+    Navigator.pop(context);
+  }
+
+  void _openUnitPicker() {
+    FocusScope.of(context).unfocus();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.6,
+        ),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 14),
+            Container(
+              width: 42,
+              height: 5,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE7E0D2),
+                borderRadius: BorderRadius.circular(3),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 14, 24, 6),
+              child: Row(
+                children: [
+                  Text('Select unit', style: _f(17, FontWeight.w800, _E.textDark)),
+                ],
+              ),
+            ),
+            Flexible(
+              child: ListView.builder(
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 20),
+                itemCount: _kIngredientUnits.length,
+                itemBuilder: (_, i) {
+                  final u = _kIngredientUnits[i];
+                  final selected = u.$2 == _unit;
+                  return GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {
+                      setState(() => _unit = u.$2);
+                      Navigator.pop(context);
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: selected ? _E.fieldBg : Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: selected ? _E.primary : _E.fieldBorder,
+                          width: selected ? 1.5 : 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              u.$1,
+                              style: _f(
+                                15,
+                                selected ? FontWeight.w700 : FontWeight.w500,
+                                _E.textDark,
+                              ),
+                            ),
+                          ),
+                          if (u.$2.isNotEmpty)
+                            Text(
+                              u.$2,
+                              style: _f(13, FontWeight.w600, _E.label),
+                            ),
+                          if (selected) ...[
+                            const SizedBox(width: 10),
+                            const OnboardingLineIcon(
+                              'check',
+                              size: 16,
+                              color: _E.primary,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(widget.title, style: _f(18, FontWeight.w800, _E.textDark)),
+              const Spacer(),
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  width: 30,
+                  height: 30,
+                  padding: const EdgeInsets.all(5),
+                  decoration: const BoxDecoration(
+                    color: _E.bg,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const OnboardingLineIcon(
+                    'x',
+                    color: Colors.grey,
+                    size: 16,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Quantity + Unit row.
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 96,
+                child: _fieldBox(
+                  child: TextField(
+                    controller: _qty,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    cursorColor: _E.primary,
+                    style: _f(15, FontWeight.w600, _E.textDark),
+                    decoration: _fieldDeco('Qty'),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: GestureDetector(
+                  onTap: _openUnitPicker,
+                  child: Container(
+                    height: 50,
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    decoration: BoxDecoration(
+                      color: _E.fieldBg,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: _E.fieldBorder, width: 1.5),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _unitLabel(_unit),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: _f(
+                              15,
+                              FontWeight.w600,
+                              _unit.isEmpty ? AppColors.textHint : _E.textDark,
+                            ),
+                          ),
+                        ),
+                        const OnboardingLineIcon(
+                          'chevDown',
+                          size: 18,
+                          color: _E.label,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          // Ingredient name.
+          _fieldBox(
+            child: TextField(
+              controller: _name,
+              autofocus: true,
+              maxLines: 1,
+              textCapitalization: TextCapitalization.sentences,
+              cursorColor: _E.primary,
+              style: _f(15, FontWeight.w500, _E.textDark),
+              decoration: _fieldDeco('Ingredient (e.g. organic flour)'),
+            ),
+          ),
+          const SizedBox(height: 16),
+          GestureDetector(
+            onTap: _save,
+            child: Container(
+              width: double.infinity,
+              height: AppDimensions.buttonHeight,
+              decoration: BoxDecoration(
+                color: _E.primary,
+                borderRadius: BorderRadius.circular(AppDimensions.radiusButton),
+              ),
+              child: Center(
+                child: Text(widget.buttonLabel, style: AppTextStyles.buttonLabel),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _fieldBox({required Widget child}) => Container(
+    decoration: BoxDecoration(
+      color: _E.fieldBg,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: _E.fieldBorder, width: 1.5),
+    ),
+    padding: const EdgeInsets.symmetric(horizontal: 14),
+    child: child,
+  );
+
+  InputDecoration _fieldDeco(String hint) => InputDecoration(
+    hintText: hint,
+    hintStyle: _f(14, FontWeight.w400, AppColors.textHint),
+    isDense: true,
+    filled: false,
+    border: InputBorder.none,
+    enabledBorder: InputBorder.none,
+    focusedBorder: InputBorder.none,
+    contentPadding: const EdgeInsets.symmetric(vertical: 14),
+  );
 }

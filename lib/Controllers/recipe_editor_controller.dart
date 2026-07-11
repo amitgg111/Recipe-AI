@@ -93,6 +93,9 @@ class RecipeEditorController extends GetxController {
     if (recipe != null) {
       _loadRecipe();
     } else {
+      // A brand-new recipe starts with a sensible default serving count the
+      // user can edit before saving.
+      servingsController.text = '2';
       // Seed one default unnamed section so the "Add ingredient" / "Add step"
       // buttons render for a brand-new recipe (they only appear inside a
       // section). An unnamed section shows no header and matches the save-time
@@ -301,6 +304,22 @@ class RecipeEditorController extends GetxController {
     _syncFlatFromSections();
   }
 
+  /// Drag-to-reorder an ingredient within its section. [oldIndex]/[newIndex]
+  /// come straight from ReorderableListView (newIndex is in the pre-removal
+  /// list, so it's adjusted here).
+  void reorderIngredientInSection(int sectionIdx, int oldIndex, int newIndex) {
+    if (sectionIdx < 0 || sectionIdx >= ingredientSections.length) return;
+    final s = ingredientSections[sectionIdx];
+    final items = List<String>.from(s.items);
+    if (oldIndex < 0 || oldIndex >= items.length) return;
+    if (newIndex > oldIndex) newIndex -= 1;
+    newIndex = newIndex.clamp(0, items.length - 1);
+    final item = items.removeAt(oldIndex);
+    items.insert(newIndex, item);
+    ingredientSections[sectionIdx] = IngredientSection(name: s.name, items: items);
+    _syncFlatFromSections();
+  }
+
   void addIngredientGroup(String name) {
     ingredientSections.add(IngredientSection(name: name.trim(), items: []));
   }
@@ -337,6 +356,21 @@ class RecipeEditorController extends GetxController {
     final newSteps = List<String>.from(s.steps);
     newSteps[stepIdx] = value;
     instructionSections[sectionIdx] = InstructionSection(name: s.name, steps: newSteps);
+    _syncFlatFromSections();
+  }
+
+  /// Drag-to-reorder a step within its section. [oldIndex]/[newIndex] come
+  /// straight from ReorderableListView (newIndex is in the pre-removal list).
+  void reorderInstructionInSection(int sectionIdx, int oldIndex, int newIndex) {
+    if (sectionIdx < 0 || sectionIdx >= instructionSections.length) return;
+    final s = instructionSections[sectionIdx];
+    final steps = List<String>.from(s.steps);
+    if (oldIndex < 0 || oldIndex >= steps.length) return;
+    if (newIndex > oldIndex) newIndex -= 1;
+    newIndex = newIndex.clamp(0, steps.length - 1);
+    final step = steps.removeAt(oldIndex);
+    steps.insert(newIndex, step);
+    instructionSections[sectionIdx] = InstructionSection(name: s.name, steps: steps);
     _syncFlatFromSections();
   }
 

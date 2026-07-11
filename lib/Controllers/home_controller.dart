@@ -35,6 +35,10 @@ class RecipeModel {
   final String visibility;
   final bool isDeleted;
 
+  /// The owner favourited this recipe (heart on the card). Surfaces it in the
+  /// Favorites list.
+  final bool isFavorite;
+
   /// False when the document had no `visibility` field yet (needs migration).
   final bool visibilityWasStored;
 
@@ -72,6 +76,7 @@ class RecipeModel {
     this.likesCount = 0,
     this.recipeSource = RecipePublishPolicy.sourceUserCreated,
     this.originalRecipeId,
+    this.isFavorite = false,
   });
 
   bool get isPublic => visibility == 'public';
@@ -120,6 +125,7 @@ class RecipeModel {
       ),
       originalRecipeId:
           (data['originalRecipeId'] ?? data['savedFromRecipeId']) as String?,
+      isFavorite: data['isFavorite'] == true,
     );
   }
   double get servingCount {
@@ -292,6 +298,26 @@ class HomeController extends GetxController {
 
   /// Owner-only: change a recipe's privacy. Writes the canonical [visibility]
   /// field plus the mirrored [isPublic] flag and an [updatedAt] stamp.
+  /// Toggle the owner's favourite flag on a recipe. The live recipes stream
+  /// re-emits, so the heart on cards and the Favorites list update in real time.
+  Future<void> toggleFavorite(String recipeId, bool isFavorite) async {
+    try {
+      final uid = AuthService.currentUser?.uid;
+      if (uid == null) return;
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('recipes')
+          .doc(recipeId)
+          .update({
+            'isFavorite': isFavorite,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+    } catch (e) {
+      log('toggleFavorite error: $e');
+    }
+  }
+
   Future<void> updateRecipeVisibility(String recipeId, bool isPublic) async {
     try {
       final uid = AuthService.currentUser?.uid;
