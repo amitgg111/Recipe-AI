@@ -33,6 +33,13 @@ class RecipeModel {
   final List<IngredientSection> ingredientSections;
   final List<InstructionSection> instructionSections;
 
+  /// The user's free-text note for this recipe (persisted on the recipe doc).
+  final String? note;
+
+  /// Cached nutrition estimate (per-serving map from [NutritionModel.toMap]),
+  /// stored on the recipe doc so it isn't recomputed every session.
+  final Map<String, dynamic>? nutritionData;
+
   /// "private" | "public" — canonical privacy field. [isPublic] mirrors it.
   final String visibility;
   final bool isDeleted;
@@ -76,6 +83,8 @@ class RecipeModel {
     required this.instructions,
     required this.ingredientSections,
     required this.instructionSections,
+    this.note,
+    this.nutritionData,
     this.visibility = 'private',
     this.isDeleted = false,
     this.visibilityWasStored = true,
@@ -117,6 +126,8 @@ class RecipeModel {
       instructions: parsed.instructions,
       ingredientSections: parsed.ingredientSections,
       instructionSections: parsed.instructionSections,
+      note: data['note']?.toString(),
+      nutritionData: (data['nutrition'] as Map?)?.cast<String, dynamic>(),
       visibility:
           (data['visibility'] as String?) ??
           (data['isPublic'] == true ? 'public' : 'private'),
@@ -342,6 +353,43 @@ class HomeController extends GetxController {
           });
     } catch (e) {
       log('toggleFavorite error: $e');
+    }
+  }
+
+  /// Persist the user's free-text note on a recipe. The live recipes stream
+  /// re-emits, so the note survives app restarts and syncs across devices.
+  Future<void> setNote(String recipeId, String note) async {
+    try {
+      final uid = AuthService.currentUser?.uid;
+      if (uid == null) return;
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('recipes')
+          .doc(recipeId)
+          .set({
+        'note': note,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      log('setNote error: $e');
+    }
+  }
+
+  /// Persist a computed nutrition estimate so it isn't recomputed every session.
+  Future<void> setNutrition(
+      String recipeId, Map<String, dynamic> nutrition) async {
+    try {
+      final uid = AuthService.currentUser?.uid;
+      if (uid == null) return;
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('recipes')
+          .doc(recipeId)
+          .set({'nutrition': nutrition}, SetOptions(merge: true));
+    } catch (e) {
+      log('setNutrition error: $e');
     }
   }
 

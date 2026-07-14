@@ -64,18 +64,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Future<void> _save() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+
     setState(() => _saving = true);
+    final name = _nameController.text.trim();
+
     try {
-      final user = FirebaseAuth.instance.currentUser!;
-      final name = _nameController.text.trim();
-
-      // Preserve existing behaviour: update FirebaseAuth display name + reload.
-      if (name.isNotEmpty && name != user.displayName) {
-        await user.updateDisplayName(name);
-      }
-      await user.reload();
-
-      // Sync to the users/{uid} document (additive, merge-safe).
+      // Source of truth = the users/{uid} document. This resolves against the
+      // local cache immediately (even offline), so it never blocks the UI.
       final uid = AuthService.currentUser?.uid;
       if (uid != null) {
         await FirebaseFirestore.instance.collection('users').doc(uid).set({
@@ -85,25 +80,34 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           'updatedAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
       }
-
       // Keep the local profile cache in sync.
       await _profile.updateName(name);
 
-      CustomSnackbar.show(
-        title: 'success'.tr,
-        message: 'profile_updated_successfully'.tr,
-        type: SnackbarType.success,
-      );
-      Get.back();
+      // The FirebaseAuth display name + reload are network-only calls that can
+      // hang/throw offline — run them best-effort WITHOUT blocking, so Save
+      // always closes the screen and shows feedback.
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null && name.isNotEmpty && name != user.displayName) {
+        user.updateDisplayName(name).then((_) => user.reload()).ignore();
+      }
     } catch (e) {
+      if (mounted) setState(() => _saving = false);
       CustomSnackbar.show(
         title: 'error'.tr,
         message: e.toString(),
         type: SnackbarType.error,
       );
-    } finally {
-      if (mounted) setState(() => _saving = false);
+      return;
     }
+
+    if (!mounted) return;
+    setState(() => _saving = false);
+    Get.back();
+    CustomSnackbar.show(
+      title: 'success'.tr,
+      message: 'profile_updated_successfully'.tr,
+      type: SnackbarType.success,
+    );
   }
 
   @override
@@ -119,128 +123,131 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
             children: [
-            // Header: close · title · Save
-            SizedBox(
-              height: 44,
-              child: Row(
-                children: [
-                  SettingsUi.squareIconButton(
-                    icon: Icons.close_rounded,
-                    onTap: () => Get.back(),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        'edit_profile'.tr,
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textDark,
-                        ),
-                      ),
+              // Header: close · title · Save
+              SizedBox(
+                height: 44,
+                child: Row(
+                  children: [
+                    SettingsUi.squareIconButton(
+                      icon: Icons.close_rounded,
+                      onTap: () => Get.back(),
                     ),
-                  ),
-                  _saveButton(),
-                ],
-              ),
-            ),
-            const SizedBox(height: 18),
-
-            // Avatar + change photo
-            Center(
-              child: Column(
-                children: [
-                  Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 3),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.textDark.withValues(alpha: 0.25),
-                              blurRadius: 18,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: const ProfileAvatar(size: 90),
-                      ),
-                      Positioned(
-                        right: -2,
-                        bottom: -2,
-                        child: GestureDetector(
-                          onTap: _profile.pickImage,
-                          child: Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: AppColors.background,
-                                width: 3,
-                              ),
-                            ),
-                            child: const OnboardingLineIcon(
-                              'camera',
-                              size: 15,
-                              color: Colors.white,
-                            ),
+                    Expanded(
+                      child: Center(
+                        child: Text(
+                          'edit_profile'.tr,
+                          style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textDark,
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  GestureDetector(
-                    onTap: _profile.pickImage,
-                    child: Text(
-                      'change_photo'.tr,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
+                    ),
+                    _saveButton(),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+
+              // Avatar + change photo
+              Center(
+                child: Column(
+                  children: [
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 3),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.textDark.withValues(
+                                  alpha: 0.25,
+                                ),
+                                blurRadius: 18,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
+                          ),
+                          child: const ProfileAvatar(size: 90),
+                        ),
+                        Positioned(
+                          right: -2,
+                          bottom: -2,
+                          child: GestureDetector(
+                            onTap: _profile.pickImage,
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: AppColors.background,
+                                  width: 3,
+                                ),
+                              ),
+                              child: const OnboardingLineIcon(
+                                'camera',
+                                size: 15,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    GestureDetector(
+                      onTap: _profile.pickImage,
+                      child: Text(
+                        'change_photo'.tr,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 22),
+              const SizedBox(height: 22),
 
-            _label('field_label_name'.tr),
-            _field(
-              controller: _nameController,
-              focused: true,
-              keyboardType: TextInputType.name,
-              validator: (v) => ValidationHelper.name(v),
-            ),
-            const SizedBox(height: 13),
+              _label('field_label_name'.tr),
+              _field(
+                controller: _nameController,
+                focused: true,
+                keyboardType: TextInputType.name,
+                validator: (v) => ValidationHelper.name(v),
+              ),
+              const SizedBox(height: 13),
 
-            _label('field_label_email'.tr),
-            _readOnlyField(user?.email ?? ''),
-            const SizedBox(height: 13),
+              _label('field_label_email'.tr),
+              _readOnlyField(user?.email ?? ''),
+              const SizedBox(height: 13),
 
-            _label('field_label_contact'.tr),
-            _field(
-              controller: _contactController,
-              keyboardType: TextInputType.phone,
-              hint: 'add_phone_number'.tr,
-              inputFormatters: ValidationHelper.digitsOnly,
-              validator: (v) => ValidationHelper.phone(v, required: false),
-            ),
-            const SizedBox(height: 13),
+              _label('field_label_contact'.tr),
+              _field(
+                controller: _contactController,
+                keyboardType: TextInputType.phone,
+                hint: 'add_phone_number'.tr,
+                inputFormatters: ValidationHelper.digitsOnly,
+                validator: (v) => ValidationHelper.phone(v, required: false),
+              ),
+              const SizedBox(height: 13),
 
-            _label('field_label_bio'.tr),
-            _field(
-              controller: _bioController,
-              maxLines: 3,
-              hint: 'bio_hint'.tr,
-              keyboardType: TextInputType.multiline,
-              validator: (v) => ValidationHelper.notes(v, max: 160, field: 'Bio'),
-            ),
+              _label('field_label_bio'.tr),
+              _field(
+                controller: _bioController,
+                maxLines: 3,
+                hint: 'bio_hint'.tr,
+                keyboardType: TextInputType.multiline,
+                validator: (v) =>
+                    ValidationHelper.notes(v, max: 160, field: 'Bio'),
+              ),
             ],
           ),
         ),
@@ -253,7 +260,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       height: 40,
       width: 84,
       child: ElevatedButton(
-        onPressed: _saving ? null : _save,
+        onPressed: () => _saving ? null : _save(),
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.6),

@@ -258,6 +258,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
+        top: false,
         child: Column(
           children: [
             // Fixed top: app name, then back button + animated progress
@@ -265,7 +266,10 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
             // indicator only appears from screen 2 onward.
             if (_page > 0) ...[
               const SizedBox(height: 10),
-              const _AppNameLogo(),
+              const Padding(
+                padding: EdgeInsets.only(top: 40),
+                child: _AppNameLogo(),
+              ),
               const SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -307,10 +311,10 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
                           _page == _settingUpPage && !_settingUpReady;
                       final VoidCallback? onPressed =
                           !canContinue || busy || hideForSetup
-                              ? null
-                              : (isNotifPage
-                                  ? () => _completeNotifications(optIn: true)
-                                  : _onContinue);
+                          ? null
+                          : (isNotifPage
+                                ? () => _completeNotifications(optIn: true)
+                                : _onContinue);
                       return AnimatedOpacity(
                         duration: const Duration(milliseconds: 300),
                         opacity: hideForSetup

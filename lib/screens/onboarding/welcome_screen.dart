@@ -131,213 +131,222 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     return MediaQuery(
       // Render at the design's 1.0 text scale so the screen matches the mock
       // regardless of the device's system font-size (accessibility) setting.
-      data: MediaQuery.of(context).copyWith(
-        textScaler: const TextScaler.linear(1.0),
-      ),
+      data: MediaQuery.of(
+        context,
+      ).copyWith(textScaler: const TextScaler.linear(1.0)),
       child: AnnotatedRegion<SystemUiOverlayStyle>(
-      // Transparent status bar so the background gradient runs edge-to-edge
-      // up into the status bar area (dark icons for the light background).
-      value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
-      ),
-      child: Scaffold(
-        // backgroundColor: AppColors.background,
-        body: Stack(
-          children: [
-            const Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    center: Alignment.topCenter,
-                    radius: 1.2,
-                    colors: [Color(0x15F2623E), Colors.transparent],
-                  ),
-                ),
-              ),
-            ),
-            const Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    center: Alignment.bottomLeft,
-                    radius: 1.0,
-                    colors: [Color(0x101F7A5E), Colors.transparent],
-                  ),
-                ),
-              ),
-            ),
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 28),
-                child: Column(
-                children: [
-                  const SizedBox(height: 18),
-                  // Logo
-                  _animatedSlide(
-                    _logoFade,
-                    _logoSlide,
-                    const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        AppLogo(size: 32),
-                        SizedBox(width: 10),
-                        AppWordmark(fontSize: 22, fontWeight: FontWeight.w800),
-                      ],
+        // Transparent status bar so the background gradient runs edge-to-edge
+        // up into the status bar area (dark icons for the light background).
+        value: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
+        ),
+        child: Scaffold(
+          // backgroundColor: AppColors.background,
+          body: Stack(
+            children: [
+              const Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      center: Alignment.topCenter,
+                      radius: 1.2,
+                      colors: [Color(0x15F2623E), Colors.transparent],
                     ),
                   ),
-                  const SizedBox(height: 22),
-                  // Title
-                  _animatedSlide(
-                    _titleFade,
-                    _titleSlide,
-                    RichText(
-                      textAlign: TextAlign.center,
-                      text: TextSpan(
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 33,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textDark,
-                          height: 1.08,
-                          letterSpacing: -1.0,
+                ),
+              ),
+              const Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      center: Alignment.bottomLeft,
+                      radius: 1.0,
+                      colors: [Color(0x101F7A5E), Colors.transparent],
+                    ),
+                  ),
+                ),
+              ),
+              SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 28),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 18),
+                      // Logo
+                      _animatedSlide(
+                        _logoFade,
+                        _logoSlide,
+                        const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            AppLogo(size: 32),
+                            SizedBox(width: 10),
+                            AppWordmark(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ],
                         ),
-                        children: [
-                          TextSpan(text: 'welcome_title_cook_prefix'.tr),
-                          TextSpan(
-                            text: 'welcome_title_anything'.tr,
-                            style: const TextStyle(
-                              color: AppColors.primary,
-                              fontStyle: FontStyle.normal,
+                      ),
+                      const SizedBox(height: 22),
+                      // Title
+                      _animatedSlide(
+                        _titleFade,
+                        _titleSlide,
+                        RichText(
+                          textAlign: TextAlign.center,
+                          text: TextSpan(
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 33,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textDark,
+                              height: 1.08,
+                              letterSpacing: -1.0,
+                            ),
+                            children: [
+                              TextSpan(text: 'welcome_title_cook_prefix'.tr),
+                              TextSpan(
+                                text: 'welcome_title_anything'.tr,
+                                style: const TextStyle(
+                                  color: AppColors.primary,
+                                  fontStyle: FontStyle.normal,
+                                ),
+                              ),
+                              TextSpan(text: 'welcome_title_suffix'.tr),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 13),
+                      // Subtitle
+                      _animatedSlide(
+                        _subtitleFade,
+                        _subtitleSlide,
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Text(
+                            'welcome_subtitle'.tr,
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textMedium,
+                              height: 1.5,
                             ),
                           ),
-                          TextSpan(text: 'welcome_title_suffix'.tr),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Animation area
+                      Expanded(
+                        child: AnimatedBuilder(
+                          animation: _entranceController,
+                          builder: (context, child) => Opacity(
+                            opacity: _potFade.value,
+                            child: Transform.scale(
+                              scale: _potScale.value,
+                              child: child,
+                            ),
+                          ),
+                          child: const WelcomeCookingAnimation(),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      // Get Started button
+                      // _animatedSlide(
+                      // _buttonFade,
+                      // _buttonSlide,
+                      Stack(
+                        children: [
+                          PrimaryButton(
+                            label: 'get_started'.tr,
+                            enableSheen: false,
+
+                            height: 54,
+                            onPressed: () =>
+                                Get.to(() => const SocialProofScreen()),
+                          ),
+                          Positioned.fill(
+                            child: IgnorePointer(
+                              child: ClipRect(
+                                child: AnimatedBuilder(
+                                  animation: _sheenAnimation,
+                                  builder: (context, _) {
+                                    return FractionalTranslation(
+                                      translation: Offset(
+                                        _sheenAnimation.value,
+                                        0,
+                                      ),
+                                      child: DecoratedBox(
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin: Alignment.centerLeft,
+                                            end: Alignment.centerRight,
+                                            colors: [
+                                              Colors.white.withValues(alpha: 0),
+                                              Colors.white.withValues(
+                                                alpha: 0.22,
+                                              ),
+                                              Colors.white.withValues(alpha: 0),
+                                            ],
+                                            stops: const [0.35, 0.5, 0.65],
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 13),
-                  // Subtitle
-                  _animatedSlide(
-                    _subtitleFade,
-                    _subtitleSlide,
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Text(
-                        'welcome_subtitle'.tr,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 15.5,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textMedium,
-                          height: 1.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Animation area
-                  Expanded(
-                    child: AnimatedBuilder(
-                      animation: _entranceController,
-                      builder: (context, child) => Opacity(
-                        opacity: _potFade.value,
-                        child: Transform.scale(
-                          scale: _potScale.value,
-                          child: child,
-                        ),
-                      ),
-                      child: const WelcomeCookingAnimation(),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  // Get Started button
-                  // _animatedSlide(
-                  // _buttonFade,
-                  // _buttonSlide,
-                  Stack(
-                    children: [
-                      PrimaryButton(
-                        label: 'get_started'.tr,
-                        enableSheen: false,
-
-                        height: 54,
-                        onPressed: () =>
-                            Get.to(() => const SocialProofScreen()),
-                      ),
-                      Positioned.fill(
-                        child: IgnorePointer(
-                          child: ClipRect(
-                            child: AnimatedBuilder(
-                              animation: _sheenAnimation,
-                              builder: (context, _) {
-                                return FractionalTranslation(
-                                  translation: Offset(_sheenAnimation.value, 0),
-                                  child: DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        begin: Alignment.centerLeft,
-                                        end: Alignment.centerRight,
-                                        colors: [
-                                          Colors.white.withValues(alpha: 0),
-                                          Colors.white.withValues(alpha: 0.22),
-                                          Colors.white.withValues(alpha: 0),
-                                        ],
-                                        stops: const [0.35, 0.5, 0.65],
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
+                      // ),
+                      const SizedBox(height: 16),
+                      // Login link
+                      AnimatedBuilder(
+                        animation: _loginFade,
+                        builder: (context, child) =>
+                            Opacity(opacity: _loginFade.value, child: child),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'already_have_account'.tr,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.textMedium,
+                              ),
                             ),
-                          ),
+                            GestureDetector(
+                              onTap: () => Get.to(() => const LoginScreen()),
+                              child: Text(
+                                'log_in'.tr,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textDark,
+                                  decoration: TextDecoration.underline,
+                                  decorationThickness: 1.5,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
+                      const SizedBox(height: 28),
                     ],
                   ),
-                  // ),
-                  const SizedBox(height: 16),
-                  // Login link
-                  AnimatedBuilder(
-                    animation: _loginFade,
-                    builder: (context, child) =>
-                        Opacity(opacity: _loginFade.value, child: child),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'already_have_account'.tr,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.textMedium,
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () => Get.to(() => const LoginScreen()),
-                          child: Text(
-                            'log_in'.tr,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textDark,
-                              decoration: TextDecoration.underline,
-                              decorationThickness: 1.5,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
-          ],
         ),
       ),
-    ));
+    );
   }
 }
 
@@ -412,7 +421,7 @@ class _WelcomeBodyState extends State<WelcomeBody>
                 Opacity(opacity: _fade.value, child: child),
             child: Column(
               children: [
-                const SizedBox(height: 24),
+                const SizedBox(height: 44),
                 // Logo
                 const Row(
                   mainAxisAlignment: MainAxisAlignment.center,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:recipe_ai/screens/import/add_cookbook_sheet.dart';
+import 'package:recipe_ai/screens/recipe/export_pdf_sheet.dart';
 import 'package:recipe_ai/widgets/app_network_image.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'dart:math' as math;
@@ -23,6 +24,10 @@ import 'package:recipe_ai/Controllers/settings_controller.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:recipe_ai/Service/subscription_service.dart';
 import 'package:recipe_ai/widgets/premium_lock_overlay.dart';
+import 'package:recipe_ai/Controllers/nutrition_controller.dart';
+import 'package:recipe_ai/widgets/nutrition_preview_card.dart';
+import 'package:recipe_ai/widgets/nutrition_locked_card.dart';
+import 'package:recipe_ai/View/Home/nutrition/nutrition_screen.dart';
 import 'package:recipe_ai/widgets/cannot_publish_dialog.dart';
 import 'package:recipe_ai/widgets/comments_sheet.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
@@ -144,6 +149,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     }
     _initialServings = _parseServings(recipe);
     _servings = _initialServings;
+    _note = _recipe.note ?? '';
     _seenInList = _home.recipes.any((r) => r.id == _recipe.id);
 
     // Keep this screen in sync with the recipe stream:
@@ -1454,169 +1460,39 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   // ═══════════════════════════════════════════════════════════════════════════
 
   Widget _buildNutritionCard() {
-    // Nutrition is a Plus feature. Free users see the blurred teaser; tapping
-    // opens the upgrade flow. (Real nutrition values require a calculation
-    // engine that isn't built yet — this is the paywall entry point.)
-    return GestureDetector(
-      onTap: () =>
-          showUpgradeDialog(context, feature: 'nutrition_calculator'.tr),
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(_C.cardPad),
-      decoration: _cardDeco(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'nutrition'.tr.toUpperCase(),
-            style: _font(13, FontWeight.w800, _C.primary, ls: 0.6),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            'per_1_serving'.tr,
-            style: _font(12.5, FontWeight.w500, const Color(0xFF9A938A)),
-          ),
-          const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFBF1C9),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const OnboardingLineIcon('crown', size: 18, color: _C.purple),
-                const SizedBox(width: 11),
-                Expanded(
-                  child: Text.rich(
-                    TextSpan(
-                      style: _font(
-                        13.5,
-                        FontWeight.w500,
-                        _C.textBodyDark,
-                        h: 1.45,
-                      ),
-                      children: [
-                        TextSpan(text: 'this_is_plus_feature'.tr),
-                        TextSpan(
-                          text: 'subscribe_now'.tr,
-                          style: _font(13.5, FontWeight.w800, _C.purple),
-                        ),
-                        TextSpan(
-                          text: 'unlock_nutrition_calculator'.tr,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 18),
-          ImageFiltered(
-            imageFilter: ui.ImageFilter.blur(sigmaX: 3, sigmaY: 3),
-            child: Opacity(
-              opacity: 0.85,
-              child: Row(
-                children: [
-                  Container(
-                    width: 104,
-                    height: 104,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: SweepGradient(
-                        colors: [
-                          Color(0xFFF2A24C),
-                          Color(0xFFF2A24C),
-                          Color(0xFFF08FB0),
-                          Color(0xFFF08FB0),
-                          Color(0xFF7FD0A8),
-                          Color(0xFF7FD0A8),
-                        ],
-                        stops: [0.0, 0.46, 0.46, 0.72, 0.72, 1.0],
-                      ),
-                    ),
-                    child: Center(
-                      child: Container(
-                        width: 74,
-                        height: 74,
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: Text(
-                            '430',
-                            style: _font(
-                              18,
-                              FontWeight.w800,
-                              const Color(0xFF9A938A),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 22),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        _nutriBar(const Color(0xFFF08FB0)),
-                        const SizedBox(height: 14),
-                        _nutriBar(const Color(0xFFF2A24C)),
-                        const SizedBox(height: 14),
-                        _nutriBar(const Color(0xFF7FD0A8)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-      ),
-    );
-  }
-
-  Widget _nutriBar(Color dot) {
-    return Row(
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(
-            color: dot,
-            borderRadius: BorderRadius.circular(3),
-          ),
-        ),
-        const SizedBox(width: 9),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 54,
-              height: 8,
-              decoration: BoxDecoration(
-                color: const Color(0xFFE2D8C7),
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Container(
-              width: 34,
-              height: 7,
-              decoration: BoxDecoration(
-                color: _C.border,
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
+    // Nutrition is a Plus feature (design 32d). Plus members see the real
+    // preview + can open the full flow; free users see the "NUTRITION · Per 1
+    // serving" heading with a yellow "Subscribe now" banner and the donut/macros
+    // blurred underneath (NutritionLockedCard) — tapping opens the upgrade
+    // dialog. Values are estimated from the recipe ingredients by
+    // NutritionEstimator, using the live serving count (_servings) so changing
+    // the stepper recalculates without reopening (spec step 7). Reacts live to
+    // the plan via Obx, so upgrading swaps in the real card immediately.
+    final n = NutritionController.to
+        .calculateNutrition(recipe, servingsOverride: _servings);
+    if (n.isEmpty) return const SizedBox.shrink();
+    return Obx(() {
+      final isPlus = SubscriptionService.instance.isPlusListenable.value;
+      if (!isPlus) {
+        return NutritionLockedCard(
+          nutrition: n,
+          onTap: () =>
+              showUpgradeDialog(context, feature: 'nutrition_calculator'.tr),
+        );
+      }
+      return NutritionPreviewCard(
+        nutrition: n,
+        servings: n.servings,
+        onViewBreakdown: () {
+          Get.to(
+            () => NutritionScreen(recipeName: recipe.title, nutrition: n),
+            transition: Transition.fadeIn,
+            duration: const Duration(milliseconds: 320),
+            curve: Curves.easeOutCubic,
+          );
+        },
+      );
+    });
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -2150,7 +2026,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                     if (!(noteFormKey.currentState?.validate() ?? false)) {
                       return;
                     }
-                    setState(() => _note = ctrl.text.trim());
+                    final text = ctrl.text.trim();
+                    setState(() => _note = text);
+                    // Persist to Firestore so the note survives restarts.
+                    _home.setNote(_recipe.id, text);
                     Navigator.pop(ctx);
                   },
                   child: Container(
@@ -2269,11 +2148,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                                 showUpgradeDialog(context,
                                     feature: 'export_pdf'.tr);
                               } else {
-                                CustomSnackbar.show(
-                                  title: 'export_pdf'.tr,
-                                  message: 'pdf_export_coming_soon'.tr,
-                                  type: SnackbarType.info,
-                                );
+                                ExportPdfSheet.open(_recipe, note: _note);
                               }
                             },
                             plus: true,
@@ -2289,11 +2164,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                                 showUpgradeDialog(context,
                                     feature: 'print_recipe'.tr);
                               } else {
-                                CustomSnackbar.show(
-                                  title: 'print_recipe'.tr,
-                                  message: 'printing_coming_soon'.tr,
-                                  type: SnackbarType.info,
-                                );
+                                ExportPdfSheet.open(_recipe, note: _note);
                               }
                             },
                             plus: true,

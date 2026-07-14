@@ -9,6 +9,7 @@ import 'package:recipe_ai/Service/subscription_service.dart';
 import 'package:recipe_ai/View/Auth/auth_wrapper.dart';
 import 'package:recipe_ai/View/Home/settings/help_center_screen.dart';
 import 'package:recipe_ai/View/Home/settings/language_screen.dart';
+import 'package:recipe_ai/View/Home/settings/manage_subscription_screen.dart';
 import 'package:recipe_ai/View/Home/settings/notification_settings_screen.dart';
 import 'package:recipe_ai/View/Home/settings/privacy_terms_screen.dart';
 import 'package:recipe_ai/View/Home/settings/profile_view_screen.dart';
@@ -55,17 +56,27 @@ class SettingsScreen extends StatelessWidget {
 
               const SizedBox(height: 14),
 
-              // ---- Upgrade to Plus banner ----
-              _plusBanner(),
+              // ---- Membership card: the free "Upgrade" banner fades into the
+              // active-plan card once the user is Plus (only premium difference).
+              _membershipArea(),
 
               const SizedBox(height: 14),
 
               // ---- Import credits ----
               _creditsCard(),
 
+              // ---- RECIPE AI PLUS section (shown to Plus users only) ----
+              _premiumSection(),
+
               // ---- APP section ----
               SettingsUi.label('section_app'.tr),
-              SettingsUi.card(
+              // Units (Metric/US) is a Plus feature, so the tile is shown to
+              // Plus users only and hidden for free users. Obx keeps it live —
+              // upgrading reveals the tile without leaving the screen.
+              Obx(() {
+                final plus =
+                    SubscriptionService.instance.isPlusListenable.value;
+                return SettingsUi.card(
                 rows: [
                   SettingsUi.row(
                     leadingIcon: const OnboardingLineIcon(
@@ -77,7 +88,7 @@ class SettingsScreen extends StatelessWidget {
                     onTap: () =>
                         Get.to(() => const NotificationSettingsScreen()),
                   ),
-                  _unitsRow(settings),
+                  if (plus) _unitsRow(settings),
                   SettingsUi.row(
                     leadingIcon: const OnboardingLineIcon(
                       'globe',
@@ -98,7 +109,8 @@ class SettingsScreen extends StatelessWidget {
                     onTap: () => Get.to(() => const LanguageScreen()),
                   ),
                 ],
-              ),
+                );
+              }),
 
               // ---- SUPPORT section ----
               SettingsUi.label('section_support'.tr),
@@ -292,6 +304,193 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
+  /// Free "Upgrade" banner ⇄ active-plan card, cross-faded on plan change.
+  Widget _membershipArea() {
+    return Obx(() {
+      final plus = SubscriptionService.instance.isPlusListenable.value;
+      return AnimatedSwitcher(
+        duration: const Duration(milliseconds: 250),
+        transitionBuilder: (child, anim) =>
+            FadeTransition(opacity: anim, child: child),
+        child: plus
+            ? KeyedSubtree(
+                key: const ValueKey('plusCard'),
+                child: _premiumMembershipCard(),
+              )
+            : KeyedSubtree(
+                key: const ValueKey('freeCard'),
+                child: _plusBanner(),
+              ),
+      );
+    });
+  }
+
+  /// Active-plan card — identical geometry to [_plusBanner] (padding / radius /
+  /// shadow / row layout); only the deeper gradient, the copy and the ACTIVE
+  /// badge differ, so the two feel like the same card upgraded.
+  Widget _premiumMembershipCard() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF7C3AED), Color(0xFF9333EA)],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF7C3AED).withValues(alpha: 0.6),
+            blurRadius: 30,
+            offset: const Offset(0, 16),
+            spreadRadius: -16,
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // ── Top: crown · title/renewal · ACTIVE badge ──
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 15, 16, 13),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.white.withValues(alpha: 0.18),
+                  ),
+                  child: const OnboardingLineIcon(
+                    'crown',
+                    size: 20,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 13),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Recipe AI Plus',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'plus_active_renews'.trParams(
+                          {'date': ManageSubscriptionScreen.renewDate},
+                        ),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xD9FFFFFF),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.22),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    'plus_active'.tr,
+                    style: const TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Divider(
+            height: 1,
+            thickness: 1,
+            indent: 16,
+            endIndent: 16,
+            color: Colors.white.withValues(alpha: 0.22),
+          ),
+          // ── Bottom: price · Manage plan ──
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 13),
+            child: Row(
+              children: [
+                Text(
+                  'plus_yearly_yr'.tr,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xE6FFFFFF),
+                  ),
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () =>
+                      Get.to(() => const ManageSubscriptionScreen()),
+                  behavior: HitTestBehavior.opaque,
+                  child: Text(
+                    'manage_plan'.tr,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// "RECIPE AI PLUS" feature list — inserted above the app settings for Plus
+  /// users only, built from the same [SettingsUi] label / card / row widgets as
+  /// every other section (no new tile widget, no design drift).
+  Widget _premiumSection() {
+    return Obx(() {
+      final plus = SubscriptionService.instance.isPlusListenable.value;
+      if (!plus) return const SizedBox.shrink();
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SettingsUi.label('recipe_ai_plus'.tr),
+          SettingsUi.card(
+            rows: [
+              _premiumFeatureTile('sparkF2', const Color(0xFF8B5CF6), 'bnf_imports'.tr),
+              _premiumFeatureTile('chat', const Color(0xFF2D6FE0), 'bnf_assistant'.tr),
+              _premiumFeatureTile('bowl', const Color(0xFF1F8A5B), 'bnf_nutrition'.tr),
+              _premiumFeatureTile('cal', const Color(0xFFE0481F), 'bnf_mealplan'.tr),
+              _premiumFeatureTile('ruler', const Color(0xFFC0860F), 'bnf_converter'.tr),
+              _premiumFeatureTile('file', const Color(0xFF8B5CF6), 'bnf_pdf'.tr),
+            ],
+          ),
+        ],
+      );
+    });
+  }
+
+  Widget _premiumFeatureTile(String icon, Color color, String label) {
+    return SettingsUi.row(
+      leadingIcon: OnboardingLineIcon(icon, size: 20, color: color),
+      label: label,
+      onTap: () {},
+    );
+  }
+
   Widget _creditsCard() {
     return Obx(() {
       final sub = SubscriptionService.instance;
@@ -335,9 +534,9 @@ class SettingsScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Import credits',
-                    style: TextStyle(
+                  Text(
+                    plus ? 'recipe_imports'.tr : 'import_credits'.tr,
+                    style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textDark,
@@ -345,7 +544,11 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 1),
                   Text(
-                    plus ? 'Unlimited imports' : '$remaining of $max left',
+                    plus
+                        ? 'unlimited_with_plus'.tr
+                        : 'credits_left_week'.trParams(
+                            {'count': '$remaining', 'max': '$max'},
+                          ),
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -355,22 +558,39 @@ class SettingsScreen extends StatelessWidget {
                 ],
               ),
             ),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: SizedBox(
-                width: 64,
-                height: 7,
-                child: Stack(
-                  children: [
-                    Container(color: const Color(0xFFF0EADD)),
-                    FractionallySizedBox(
-                      widthFactor: frac,
-                      child: Container(color: accent),
-                    ),
-                  ],
+            // Plus → an infinity chip; Free → the weekly-credits progress bar.
+            if (plus)
+              Container(
+                width: 34,
+                height: 34,
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(
+                  color: AppColors.purpleBg,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.all_inclusive_rounded,
+                  size: 18,
+                  color: AppColors.purpleDark,
+                ),
+              )
+            else
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: SizedBox(
+                  width: 64,
+                  height: 7,
+                  child: Stack(
+                    children: [
+                      Container(color: const Color(0xFFF0EADD)),
+                      FractionallySizedBox(
+                        widthFactor: frac,
+                        child: Container(color: accent),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
           ],
         ),
         ),

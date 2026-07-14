@@ -73,6 +73,8 @@ dependencies:
   flutter_timezone: ^3.0.1
   app_settings: ^5.1.1
   change_app_package_name: ^1.5.0
+  pdf: ^3.11.3
+  printing: ^5.14.3
 
 dev_dependencies:
   flutter_test:
@@ -95,6 +97,14 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # Fonts embedded into generated recipe PDFs (loaded via rootBundle, not as
+  # Flutter UI fonts). Lato covers Latin + typographic punctuation so scraped
+  # recipe text (em-dashes, curly quotes, fractions) renders cleanly.
+  assets:
+    - assets/fonts/Lato-Regular.ttf
+    - assets/fonts/Lato-Bold.ttf
+    - assets/fonts/Lato-Italic.ttf
 
   # To add assets to your application, add an assets section, like this:
   # assets:
