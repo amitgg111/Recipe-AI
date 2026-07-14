@@ -64,11 +64,11 @@ class _SocialProofScreenState extends State<SocialProofScreen> {
                     height: 1.15,
                     letterSpacing: -0.54,
                   ),
-                  children: const [
-                    TextSpan(text: "We've helped\n"),
+                  children: [
+                    TextSpan(text: 'social_proof_weve_helped'.tr),
                     TextSpan(
-                      text: '10+ million cooks',
-                      style: TextStyle(color: AppColors.primary),
+                      text: 'social_proof_million_cooks'.tr,
+                      style: const TextStyle(color: AppColors.primary),
                     ),
                   ],
                 ),
@@ -77,7 +77,7 @@ class _SocialProofScreenState extends State<SocialProofScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: Text(
-                  'be more organized and save time in the kitchen',
+                  'social_proof_subtitle'.tr,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 15,
@@ -135,7 +135,7 @@ class _SocialProofScreenState extends State<SocialProofScreen> {
                             const SizedBox(height: 14),
                             // Review title
                             Text(
-                              'Life-changing for my recipe collection!',
+                              'review_title'.tr,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
@@ -146,7 +146,7 @@ class _SocialProofScreenState extends State<SocialProofScreen> {
                             const SizedBox(height: 12),
                             // Review text
                             Text(
-                              'I used to screenshot recipes from Instagram and Pinterest, and they were always lost in my camera roll. Now I import them directly and keep everything organized in one place.',
+                              'review_text'.tr,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 14.5,
                                 fontWeight: FontWeight.w500,
@@ -204,7 +204,7 @@ class _SocialProofScreenState extends State<SocialProofScreen> {
               ),
               // Continue button
               PrimaryButton(
-                label: 'Continue',
+                label: 'continue_'.tr,
                 onPressed: () {
                   Get.to(() => const GoalsScreen());
                 },
@@ -242,11 +242,11 @@ class SocialProofBody extends StatelessWidget {
                 height: 1.15,
                 letterSpacing: -0.54,
               ),
-              children: const [
-                TextSpan(text: "We've helped\n"),
+              children: [
+                TextSpan(text: 'social_proof_weve_helped'.tr),
                 TextSpan(
-                  text: '10+ million cooks',
-                  style: TextStyle(color: AppColors.primary),
+                  text: 'social_proof_million_cooks'.tr,
+                  style: const TextStyle(color: AppColors.primary),
                 ),
               ],
             ),
@@ -255,7 +255,7 @@ class SocialProofBody extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: Text(
-              'be more organized and save time in the kitchen',
+              'social_proof_subtitle'.tr,
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 12,
@@ -311,7 +311,7 @@ class SocialProofBody extends StatelessWidget {
                         const SizedBox(height: 14),
                         // Review title
                         Text(
-                          'Life-changing for my recipe collection!',
+                          'review_title'.tr,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
@@ -322,7 +322,7 @@ class SocialProofBody extends StatelessWidget {
                         const SizedBox(height: 12),
                         // Review text
                         Text(
-                          'I used to screenshot recipes from Instagram and Pinterest, and they were always lost in my camera roll. Now I import them directly and keep everything organized in one place.',
+                          'review_text'.tr,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,

@@ -205,7 +205,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
   }
 
   String get _firstName => recipe.userName.trim().isEmpty
-      ? 'the author'
+      ? 'the_author'.tr
       : recipe.userName.split(' ').first;
 
   @override
@@ -325,7 +325,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'Public recipe',
+                      'public_recipe'.tr,
                       style: _f(12, FontWeight.w800, Colors.white),
                     ),
                   ],
@@ -420,13 +420,13 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
     items.add(
       _metaItem(
         const OnboardingLineIcon('friend', size: 16, color: _P.primary),
-        '$_servings servings',
+        'n_servings'.trParams({'count': '$_servings'}),
       ),
     );
     items.add(
       _metaItem(
         const OnboardingLineIcon('sparkF', size: 16, color: _P.primary),
-        'Easy',
+        'easy'.tr,
       ),
     );
     final row = <Widget>[];
@@ -502,7 +502,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                       u?.displayName ??
                       (recipe.userName.isNotEmpty
                           ? recipe.userName
-                          : 'Recipe creator');
+                          : 'recipe_creator'.tr);
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -526,9 +526,12 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                         builder: (context, rSnap) {
                           final rc = rSnap.data?.length ?? 0;
                           final followers = u?.followersCount ?? 0;
+                          final recipesPart = rc == 1
+                              ? 'n_recipe_lc'.trParams({'count': '$rc'})
+                              : 'n_recipes_lc'.trParams({'count': '$rc'});
                           final sub =
-                              '$rc ${rc == 1 ? 'recipe' : 'recipes'} · '
-                              '${_fmtCount(followers)} followers';
+                              '$recipesPart · '
+                              '${'n_followers'.trParams({'count': _fmtCount(followers)})}';
                           return Text(
                             sub,
                             style: _f(12, FontWeight.w600, _P.textMedium),
@@ -572,7 +575,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
               const OnboardingLineIcon('pencil', size: 16, color: _P.primary),
               const SizedBox(width: 8),
               Text(
-                'Note from $_firstName',
+                'note_from'.trParams({'name': _firstName}),
                 style: _f(16, FontWeight.w800, _P.textDark),
               ),
             ],
@@ -598,7 +601,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
         children: [
           Row(
             children: [
-              Text('Ingredients', style: _f(18, FontWeight.w800, _P.textDark)),
+              Text('ingredients'.tr, style: _f(18, FontWeight.w800, _P.textDark)),
               const Spacer(),
               _buildStepper(),
             ],
@@ -626,7 +629,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                   const OnboardingLineIcon('cart', size: 18, color: _P.primary),
                   const SizedBox(width: 9),
                   Text(
-                    'Add to groceries',
+                    'add_to_groceries'.tr,
                     style: _f(14, FontWeight.w700, _P.primary),
                   ),
                 ],
@@ -654,7 +657,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Text(
-            'No ingredients listed',
+            'no_ingredients_listed'.tr,
             style: _f(13, FontWeight.w500, _P.textHint),
           ),
         ),
@@ -689,7 +692,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                 Text('$_servings', style: _f(14, FontWeight.w800, _P.textDark)),
                 const SizedBox(width: 3),
                 Text(
-                  'serv',
+                  'serv'.tr,
                   style: _f(10, FontWeight.w600, const Color(0xFF9A938A)),
                 ),
               ],
@@ -795,13 +798,13 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Instructions', style: _f(18, FontWeight.w800, _P.textDark)),
+          Text('instructions'.tr, style: _f(18, FontWeight.w800, _P.textDark)),
           const SizedBox(height: 6),
           if (recipe.instructions.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Text(
-                'No instructions listed',
+                'no_instructions_listed'.tr,
                 style: _f(13, FontWeight.w500, _P.textHint),
               ),
             )
@@ -894,7 +897,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
             const OnboardingLineIcon('play', color: Colors.white, size: 22),
             const SizedBox(width: 9),
             Text(
-              'Cook step-by-step',
+              'cook_step_by_step'.tr,
               style: _f(16, FontWeight.w700, Colors.white),
             ),
           ],
@@ -913,12 +916,12 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'NUTRITION',
+            'nutrition'.tr.toUpperCase(),
             style: _f(13, FontWeight.w800, _P.primary, ls: 0.6),
           ),
           const SizedBox(height: 2),
           Text(
-            'Per 1 serving',
+            'per_1_serving'.tr,
             style: _f(12.5, FontWeight.w500, const Color(0xFF9A938A)),
           ),
           const SizedBox(height: 14),
@@ -943,13 +946,13 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                         h: 1.45,
                       ),
                       children: [
-                        const TextSpan(text: 'This is a Plus feature. '),
+                        TextSpan(text: 'this_is_plus_feature'.tr),
                         TextSpan(
-                          text: 'Subscribe now',
+                          text: 'subscribe_now'.tr,
                           style: _f(13.5, FontWeight.w800, _P.purple),
                         ),
-                        const TextSpan(
-                          text: " to unlock Recipe AI's nutrition calculator!",
+                        TextSpan(
+                          text: 'unlock_nutrition_calculator'.tr,
                         ),
                       ],
                     ),
@@ -1071,7 +1074,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
       child: Column(
         children: [
           Text(
-            'Cooked it? Rate this recipe',
+            'cooked_it_rate'.tr,
             style: _f(16, FontWeight.w800, _P.textDark),
           ),
           if (_ratingCount > 0) ...[
@@ -1083,7 +1086,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                 const SizedBox(width: 5),
                 Text(
                   '${_avgRating.toStringAsFixed(1)}  ·  '
-                  '${_ratingCount == 1 ? '1 rating' : '$_ratingCount ratings'}',
+                  '${_ratingCount == 1 ? '1_rating'.tr : 'n_ratings'.trParams({'count': '$_ratingCount'})}',
                   style: _f(12.5, FontWeight.w700, _P.textBody),
                 ),
               ],
@@ -1110,7 +1113,9 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
           ),
           const SizedBox(height: 9),
           Text(
-            _myRating == 0 ? 'Tap a star to rate' : 'You rated $_myRating / 5',
+            _myRating == 0
+                ? 'tap_a_star_to_rate'.tr
+                : 'you_rated_n'.trParams({'rating': '$_myRating'}),
             style: _f(12, FontWeight.w600, const Color(0xFF9A938A)),
           ),
         ],
@@ -1121,8 +1126,10 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
   // ── Engagement row — 3 stat cards (Likes / Saves / Ratings), like the HTML ──
   Widget _buildEngagementBar() {
     final ratingLabel = _ratingCount == 0
-        ? 'Ratings'
-        : (_ratingCount == 1 ? '1 rating' : '$_ratingCount ratings');
+        ? 'ratings'.tr
+        : (_ratingCount == 1
+              ? '1_rating'.tr
+              : 'n_ratings'.trParams({'count': '$_ratingCount'}));
     return Row(
       children: [
         Expanded(
@@ -1133,7 +1140,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
               color: _P.primary,
             ),
             value: '$_likes',
-            label: 'Likes',
+            label: 'likes'.tr,
             onTap: _toggleLike,
           ),
         ),
@@ -1146,7 +1153,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
               color: _P.green,
             ),
             value: '$_saves',
-            label: 'Saves',
+            label: 'saves'.tr,
             onTap: _saveToCookbook,
           ),
         ),
@@ -1215,7 +1222,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
         children: [
           Row(
             children: [
-              Text('Comments', style: _f(18, FontWeight.w800, _P.textDark)),
+              Text('comments'.tr, style: _f(18, FontWeight.w800, _P.textDark)),
               const Spacer(),
               Text(
                 '$_commentsCount',
@@ -1236,7 +1243,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 14),
                   child: Text(
-                    'Be the first to comment.',
+                    'be_first_to_comment'.tr,
                     style: _f(13.5, FontWeight.w500, _P.textHint),
                   ),
                 );
@@ -1252,7 +1259,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
               onTap: _openComments,
               behavior: HitTestBehavior.opaque,
               child: Text(
-                'View all $_commentsCount comments',
+                'view_all_n_comments'.trParams({'count': '$_commentsCount'}),
                 style: _f(13, FontWeight.w700, _P.primary),
               ),
             ),
@@ -1271,7 +1278,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                 children: [
                   Expanded(
                     child: Text(
-                      'Add a comment…',
+                      'add_a_comment'.tr,
                       style: _f(14, FontWeight.w500, _P.textHint),
                     ),
                   ),
@@ -1300,7 +1307,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
 
   Widget _commentPreview(Map<String, dynamic> d) {
     final name = (d['userName'] as String?)?.trim();
-    final display = (name != null && name.isNotEmpty) ? name : 'Anonymous';
+    final display = (name != null && name.isNotEmpty) ? name : 'anonymous'.tr;
     final avatar = d['userAvatar'] as String?;
     final text = (d['text'] as String?) ?? '';
     final ts = d['createdAt'];
@@ -1367,7 +1374,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
     if (diff.inDays >= 1) return '${diff.inDays}d';
     if (diff.inHours >= 1) return '${diff.inHours}h';
     if (diff.inMinutes >= 1) return '${diff.inMinutes}m';
-    return 'now';
+    return 'now'.tr;
   }
 
   // ── Save button ──────────────────────────────────────────────────────────────
@@ -1394,7 +1401,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
             const OnboardingLineIcon('bookmark', color: Colors.white, size: 20),
             const SizedBox(width: 9),
             Text(
-              'Save to my cookbook',
+              'save_to_my_cookbook'.tr,
               style: _f(16, FontWeight.w700, Colors.white),
             ),
           ],
@@ -1588,7 +1595,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                         Row(
                           children: [
                             Text(
-                              'Add to Groceries',
+                              'add_to_groceries_title'.tr,
                               style: _f(
                                 20,
                                 FontWeight.w800,
@@ -1621,7 +1628,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Select items to purchase',
+                              'select_items_to_purchase'.tr,
                               style: _f(13.5, FontWeight.w600, _P.textMedium),
                             ),
                             GestureDetector(
@@ -1638,7 +1645,9 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                                 });
                               },
                               child: Text(
-                                allChecked ? 'Deselect All' : 'Select All',
+                                allChecked
+                                    ? 'deselect_all'.tr
+                                    : 'select_all'.tr,
                                 style: _f(13, FontWeight.w700, _P.primary),
                               ),
                             ),
@@ -1694,9 +1703,10 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                               groceryController.addFromRecipe(recipe.id, toAdd);
 
                               CustomSnackbar.show(
-                                title:
-                                    '$checkedCount ingredients added to groceries',
-                                actionText: 'View',
+                                title: 'n_ingredients_added'.trParams({
+                                  'count': '$checkedCount',
+                                }),
+                                actionText: 'view'.tr,
                                 onAction: () {
                                   Get.offUntil(
                                     MaterialPageRoute(
@@ -1719,10 +1729,12 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                         alignment: Alignment.center,
                         child: Text(
                           checkedCount == 0
-                              ? 'Select items to add'
+                              ? 'select_items_to_add'.tr
                               : checkedCount == 1
-                              ? 'Add 1 item to groceries'
-                              : 'Add $checkedCount items to groceries',
+                              ? 'add_1_item_to_groceries'.tr
+                              : 'add_n_items_to_groceries'.trParams({
+                                  'count': '$checkedCount',
+                                }),
                           style: _f(
                             15,
                             FontWeight.w700,

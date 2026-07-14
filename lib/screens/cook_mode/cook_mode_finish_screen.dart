@@ -125,7 +125,7 @@ class _CookModeFinishScreenState extends State<CookModeFinishScreen>
                   _buildRatingCard(),
                   const SizedBox(height: 28),
                   PrimaryButton(
-                    label: 'Save & finish',
+                    label: 'save_and_finish'.tr,
                     onPressed: widget.onSaveFinish,
                   ),
                   const SizedBox(height: 12),
@@ -284,7 +284,10 @@ class _CookModeFinishScreenState extends State<CookModeFinishScreen>
           const Text('🔥', style: TextStyle(fontSize: 12)),
           const SizedBox(width: 6),
           Text(
-            '${widget.totalSteps} STEPS · ${widget.totalMinutes} MIN',
+            'steps_min_caps'.trParams({
+              'steps': '${widget.totalSteps}',
+              'min': '${widget.totalMinutes}',
+            }),
             style: GoogleFonts.plusJakartaSans(
               fontSize: 12,
               fontWeight: FontWeight.w800,
@@ -299,7 +302,7 @@ class _CookModeFinishScreenState extends State<CookModeFinishScreen>
 
   Widget _buildTitle() {
     return Text(
-      'Enjoy Your Meal! 🍽️',
+      'enjoy_your_meal'.tr,
       style: GoogleFonts.plusJakartaSans(
         fontSize: 30,
         fontWeight: FontWeight.w800,
@@ -311,7 +314,7 @@ class _CookModeFinishScreenState extends State<CookModeFinishScreen>
 
   Widget _buildSubtitle() {
     return Text(
-      'You just cooked ${widget.recipeName}. How did it turn out?',
+      'you_just_cooked_full'.trParams({'recipe': widget.recipeName}),
       textAlign: TextAlign.center,
       style: GoogleFonts.plusJakartaSans(
         fontSize: 15,
@@ -334,7 +337,7 @@ class _CookModeFinishScreenState extends State<CookModeFinishScreen>
       child: Column(
         children: [
           Text(
-            'Rate this recipe',
+            'rate_this_recipe'.tr,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 15,
               fontWeight: FontWeight.w600,
@@ -387,7 +390,7 @@ class _CookModeFinishScreenState extends State<CookModeFinishScreen>
             const Icon(Icons.share_outlined, size: 18, color: AppColors.textDark),
             const SizedBox(width: 8),
             Text(
-              'Share your dish',
+              'share_your_dish'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,

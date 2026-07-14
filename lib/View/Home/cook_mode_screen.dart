@@ -112,7 +112,7 @@ class _CookModeScreenState extends State<CookModeScreen>
     }
     if (steps.isEmpty) {
       steps.add(_CookStep(
-        text: 'No instructions available for this recipe.',
+        text: 'no_instructions_available'.tr,
         label: 'Step',
         detectedSeconds: null,
       ));
@@ -200,8 +200,11 @@ class _CookModeScreenState extends State<CookModeScreen>
           // Alert like the lock-screen notification when it's a background step.
           if (index != _currentPage) {
             CustomSnackbar.show(
-              title: 'Timer done — Step ${index + 1} ⏰',
-              message: '${widget.recipe.title} · ${t.label.toLowerCase()} finished',
+              title: 'timer_done_step'.trParams({'step': '${index + 1}'}),
+              message: 'timer_finished_msg'.trParams({
+                'recipe': widget.recipe.title,
+                'label': t.label.toLowerCase(),
+              }),
               type: SnackbarType.success,
               duration: const Duration(seconds: 4),
             );
@@ -299,8 +302,11 @@ class _CookModeScreenState extends State<CookModeScreen>
     local.scheduleCookTimerAlert(
       slot: index,
       fireAt: DateTime.now().add(Duration(seconds: t.remaining)),
-      title: 'Timer done — Step ${index + 1} ⏰',
-      body: '${widget.recipe.title} · ${t.label.toLowerCase()} finished',
+      title: 'timer_done_step'.trParams({'step': '${index + 1}'}),
+      body: 'timer_finished_msg'.trParams({
+        'recipe': widget.recipe.title,
+        'label': t.label.toLowerCase(),
+      }),
     );
   }
 
@@ -350,7 +356,10 @@ class _CookModeScreenState extends State<CookModeScreen>
               _header(),
               const SizedBox(height: 12),
               Text(
-                'STEP ${_currentPage + 1} OF ${_steps.length}',
+                'step_of'.trParams({
+                  'current': '${_currentPage + 1}',
+                  'total': '${_steps.length}',
+                }),
                 style: _f(13, FontWeight.w800, _C.textMed, spacing: 0.5),
               ),
               Expanded(
@@ -454,14 +463,14 @@ class _CookModeScreenState extends State<CookModeScreen>
             _outlineTimerButton(
               iconWidget: const OnboardingLineIcon('clock',
                   size: 20, color: _C.primary),
-              label: 'Start timer · ${_fmt(duration)}',
+              label: 'start_timer_duration'.trParams({'duration': _fmt(duration)}),
               onTap: () => _startTimer(index, duration),
             )
           else
             _outlineTimerButton(
               iconWidget:
                   const Icon(Icons.add_alarm_rounded, size: 20, color: _C.primary),
-              label: 'Add a timer',
+              label: 'add_a_timer'.tr,
               onTap: () => _openSetTimerSheet(index),
             ),
           const SizedBox(height: 6),
@@ -572,7 +581,11 @@ class _CookModeScreenState extends State<CookModeScreen>
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              paused ? 'paused' : 'of ${_fmt(t.total)}',
+                              paused
+                                  ? 'paused'.tr
+                                  : 'of_duration'.trParams({
+                                      'duration': _fmt(t.total),
+                                    }),
                               style: _f(13, FontWeight.w700, _C.textMed),
                             ),
                           ],
@@ -591,7 +604,7 @@ class _CookModeScreenState extends State<CookModeScreen>
                     _pillBtn(
                       iconWidget: OnboardingLineIcon(paused ? 'play' : 'pause',
                           size: 20, color: Colors.white),
-                      label: paused ? 'Resume' : 'Pause',
+                      label: paused ? 'resume'.tr : 'pause'.tr,
                       onTap: () => paused ? _resume(index) : _pause(index),
                     ),
                     const SizedBox(width: 12),
@@ -704,7 +717,7 @@ class _CookModeScreenState extends State<CookModeScreen>
                                 size: 32, color: Colors.white),
                           ),
                           const SizedBox(height: 10),
-                          Text('Done!',
+                          Text('cook_done'.tr,
                               style: _f(30, FontWeight.w800, _C.green,
                                   spacing: -0.4)),
                           const SizedBox(height: 4),
@@ -730,7 +743,7 @@ class _CookModeScreenState extends State<CookModeScreen>
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(color: _C.borderInput),
                         ),
-                        child: Text('+1 min',
+                        child: Text('plus_one_min'.tr,
                             style: _f(15, FontWeight.w600,
                                 const Color(0xFF5A5147))),
                       ),
@@ -739,7 +752,7 @@ class _CookModeScreenState extends State<CookModeScreen>
                     _pillBtn(
                       iconWidget: const OnboardingLineIcon('check',
                           size: 20, color: Colors.white),
-                      label: 'Dismiss',
+                      label: 'dismiss'.tr,
                       color: _C.green,
                       onTap: () => _dismiss(index),
                     ),
@@ -854,7 +867,10 @@ class _CookModeScreenState extends State<CookModeScreen>
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: _f(big ? 11 : 10, FontWeight.w700, _C.textMed)),
-                  Text(big ? '${_fmt(t.remaining)} left' : _fmt(t.remaining),
+                  Text(
+                      big
+                          ? 'time_left'.trParams({'time': _fmt(t.remaining)})
+                          : _fmt(t.remaining),
                       style: _f(big ? 15 : 14, FontWeight.w800, _C.textDark)),
                 ],
               ),
@@ -899,7 +915,7 @@ class _CookModeScreenState extends State<CookModeScreen>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(isLast ? 'Finish' : 'Next step',
+                  Text(isLast ? 'finish'.tr : 'next_step'.tr,
                       style: _f(16, FontWeight.w700, Colors.white)),
                   const SizedBox(width: 9),
                   OnboardingLineIcon(isLast ? 'check' : 'chevR',
@@ -945,10 +961,10 @@ class _CookModeScreenState extends State<CookModeScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Leave Cook Mode?',
+              Text('leave_cook_mode'.tr,
                   style: _f(18, FontWeight.w800, _C.textDark)),
               const SizedBox(height: 8),
-              Text('Your timers and progress won\'t be saved.',
+              Text('timers_not_saved'.tr,
                   textAlign: TextAlign.center,
                   style: _f(13.5, FontWeight.w500, _C.textMed, height: 1.4)),
               const SizedBox(height: 20),
@@ -965,7 +981,7 @@ class _CookModeScreenState extends State<CookModeScreen>
                           borderRadius: BorderRadius.circular(13),
                           border: Border.all(color: _C.border),
                         ),
-                        child: Text('Stay',
+                        child: Text('stay'.tr,
                             style: _f(14.5, FontWeight.w700, _C.textDark)),
                       ),
                     ),
@@ -984,7 +1000,7 @@ class _CookModeScreenState extends State<CookModeScreen>
                           color: _C.primary,
                           borderRadius: BorderRadius.circular(13),
                         ),
-                        child: Text('Leave',
+                        child: Text('leave'.tr,
                             style: _f(14.5, FontWeight.w700, Colors.white)),
                       ),
                     ),
@@ -1100,7 +1116,10 @@ class _FinishViewState extends State<_FinishView>
                                       color: _C.primary),
                                   const SizedBox(width: 6),
                                   Text(
-                                    '${widget.stepCount} STEPS$_timeText',
+                                    'steps_count_caps'.trParams({
+                                          'count': '${widget.stepCount}',
+                                        }) +
+                                        _timeText,
                                     style: _f(12, FontWeight.w800, _C.primary,
                                         spacing: 0.5),
                                   ),
@@ -1108,7 +1127,7 @@ class _FinishViewState extends State<_FinishView>
                               ),
                             ),
                             const SizedBox(height: 14),
-                            Text('Bon appétit! 🎉',
+                            Text('bon_appetit'.tr,
                                 style: _f(30, FontWeight.w800, _C.textDark,
                                     spacing: -0.5)),
                             const SizedBox(height: 8),
@@ -1117,12 +1136,12 @@ class _FinishViewState extends State<_FinishView>
                                 style: _f(15, FontWeight.w500, _C.textMed,
                                     height: 1.5),
                                 children: [
-                                  const TextSpan(text: 'You just cooked '),
+                                  TextSpan(text: 'you_just_cooked'.tr),
                                   TextSpan(
                                       text: recipe.title,
                                       style: _f(15, FontWeight.w800,
                                           _C.textDark)),
-                                  const TextSpan(text: '.\nHow did it turn out?'),
+                                  TextSpan(text: 'how_did_it_turn_out'.tr),
                                 ],
                               ),
                               textAlign: TextAlign.center,
@@ -1214,7 +1233,7 @@ class _FinishViewState extends State<_FinishView>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Rate this recipe',
+          Text('rate_this_recipe'.tr,
               style: _f(13, FontWeight.w700, _C.textLight)),
           const SizedBox(height: 10),
           Row(
@@ -1245,8 +1264,8 @@ class _FinishViewState extends State<_FinishView>
         GestureDetector(
           onTap: () {
             CustomSnackbar.show(
-              title: 'Nice work! 🎉',
-              message: 'Enjoy your ${recipe.title}.',
+              title: 'nice_work'.tr,
+              message: 'enjoy_your_recipe'.trParams({'recipe': recipe.title}),
               type: SnackbarType.success,
             );
             widget.onClose();
@@ -1267,14 +1286,14 @@ class _FinishViewState extends State<_FinishView>
                 ),
               ],
             ),
-            child: Text('Save & finish',
+            child: Text('save_and_finish'.tr,
                 style: _f(16, FontWeight.w600, Colors.white)),
           ),
         ),
         const SizedBox(height: 12),
         GestureDetector(
           onTap: () => Share.share(
-              'I just cooked ${recipe.title}! 🍳 Made with Recipe AI.',
+              'share_cooked_text'.trParams({'recipe': recipe.title}),
               subject: recipe.title),
           child: Container(
             height: 50,
@@ -1290,7 +1309,7 @@ class _FinishViewState extends State<_FinishView>
               children: [
                 const OnboardingLineIcon('share', size: 18, color: _C.primary),
                 const SizedBox(width: 8),
-                Text('Share your dish',
+                Text('share_your_dish'.tr,
                     style: _f(15, FontWeight.w700, _C.textDark)),
               ],
             ),
@@ -1380,7 +1399,7 @@ class _SetTimerSheetState extends State<_SetTimerSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Step timer', style: _f(20, FontWeight.w800, _C.textDark,
+              Text('step_timer'.tr, style: _f(20, FontWeight.w800, _C.textDark,
                   spacing: -0.3)),
               GestureDetector(
                 onTap: () => Navigator.pop(context),
@@ -1401,11 +1420,13 @@ class _SetTimerSheetState extends State<_SetTimerSheet> {
             TextSpan(
               style: _f(13, FontWeight.w500, _C.textLight),
               children: [
-                const TextSpan(text: 'Adds a tappable timer to '),
+                TextSpan(text: 'adds_tappable_timer'.tr),
                 TextSpan(
-                    text: 'Step ${widget.stepNumber}',
+                    text: 'step_number'.trParams({
+                      'number': '${widget.stepNumber}',
+                    }),
                     style: _f(13, FontWeight.w700, const Color(0xFF5A5147))),
-                const TextSpan(text: ' while cooking.'),
+                TextSpan(text: 'while_cooking'.tr),
               ],
             ),
           ),
@@ -1417,7 +1438,7 @@ class _SetTimerSheetState extends State<_SetTimerSheet> {
             children: [
               _numberBox(
                 value: _two(_min),
-                unit: 'MIN',
+                unit: 'min_unit'.tr,
                 highlight: true,
                 onInc: () => setState(() => _min = (_min + 1).clamp(0, 99)),
                 onDec: () => setState(() => _min = (_min - 1).clamp(0, 99)),
@@ -1429,7 +1450,7 @@ class _SetTimerSheetState extends State<_SetTimerSheet> {
               ),
               _numberBox(
                 value: _two(_sec),
-                unit: 'SEC',
+                unit: 'sec_unit'.tr,
                 highlight: false,
                 onInc: () => setState(() => _sec = (_sec + 5) % 60),
                 onDec: () => setState(() => _sec = (_sec + 55) % 60),
@@ -1437,7 +1458,7 @@ class _SetTimerSheetState extends State<_SetTimerSheet> {
             ],
           ),
           const SizedBox(height: 20),
-          Text('Quick pick', style: _f(12, FontWeight.w700, _C.textLight)),
+          Text('quick_pick'.tr, style: _f(12, FontWeight.w700, _C.textLight)),
           const SizedBox(height: 9),
           Wrap(
             spacing: 8,
@@ -1469,7 +1490,10 @@ class _SetTimerSheetState extends State<_SetTimerSheet> {
                         ),
                       ],
               ),
-              child: Text('Add timer · ${_two(_min)}:${_two(_sec)}',
+              child: Text(
+                  'add_timer_time'.trParams({
+                    'time': '${_two(_min)}:${_two(_sec)}',
+                  }),
                   style: _f(17, FontWeight.w600, Colors.white)),
             ),
           ),
@@ -1531,7 +1555,7 @@ class _SetTimerSheetState extends State<_SetTimerSheet> {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: active ? _C.primary : _C.borderInput),
         ),
-        child: Text('$m min',
+        child: Text('minutes_short'.trParams({'count': '$m'}),
             style: _f(13, active ? FontWeight.w800 : FontWeight.w700,
                 active ? Colors.white : const Color(0xFF5A5147))),
       ),

@@ -180,7 +180,7 @@ class _LoginScreenState extends State<LoginScreen> {
       Get.offAll(() => const AuthWrapper());
     } catch (e) {
       CustomSnackbar.show(
-        title: 'Login failed',
+        title: 'login_failed'.tr,
         message: AuthErrorMapper.message(e),
         type: SnackbarType.error,
       );
@@ -213,14 +213,14 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _signupPasswordController.text,
       );
       CustomSnackbar.show(
-        title: 'Welcome!',
-        message: 'Your account has been created.',
+        title: 'welcome_exclaim'.tr,
+        message: 'account_created_message'.tr,
         type: SnackbarType.success,
       );
       Get.offAll(() => const AuthWrapper());
     } catch (e) {
       CustomSnackbar.show(
-        title: 'Sign up failed',
+        title: 'sign_up_failed'.tr,
         message: AuthErrorMapper.message(e),
         type: SnackbarType.error,
       );
@@ -239,7 +239,7 @@ class _LoginScreenState extends State<LoginScreen> {
       Get.offAll(() => const AuthWrapper());
     } catch (e) {
       CustomSnackbar.show(
-        title: 'Google sign-in failed',
+        title: 'google_sign_in_failed'.tr,
         message: AuthErrorMapper.message(e),
         type: SnackbarType.error,
       );
@@ -259,8 +259,8 @@ class _LoginScreenState extends State<LoginScreen> {
         Get.offAll(() => const AuthWrapper());
       } else {
         CustomSnackbar.show(
-          title: 'Apple sign-in failed',
-          message: result.errorMessage ?? 'Could not sign in with Apple',
+          title: 'apple_sign_in_failed'.tr,
+          message: result.errorMessage ?? 'could_not_sign_in_with_apple'.tr,
           type: SnackbarType.error,
         );
       }
@@ -358,7 +358,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     // Segmented tabs (fixed — switches content, no navigation)
                     SlidingSegmented.tabs(
-                      labels: const ['Log in', 'Sign up'],
+                      labels: ['login'.tr, 'sign_up'.tr],
                       selectedIndex: _tab,
                       onChanged: _setTab,
                       height: 38,
@@ -428,7 +428,7 @@ class _LoginScreenState extends State<LoginScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          isLogin ? 'Log in' : 'Create account',
+          isLogin ? 'login'.tr : 'create_account'.tr,
           style: GoogleFonts.plusJakartaSans(
             fontSize: 22,
             fontWeight: FontWeight.w800,
@@ -439,8 +439,8 @@ class _LoginScreenState extends State<LoginScreen> {
         const SizedBox(height: 4),
         Text(
           isLogin
-              ? "Welcome back — let's get cooking."
-              : 'Save & plan recipes in seconds.',
+              ? 'welcome_back_lets_cook'.tr
+              : 'save_plan_recipes_seconds'.tr,
           style: GoogleFonts.plusJakartaSans(
             fontSize: 13.5,
             fontWeight: FontWeight.w400,
@@ -456,12 +456,12 @@ class _LoginScreenState extends State<LoginScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        _buildLabel('Email'),
+        _buildLabel('email'.tr),
         const SizedBox(height: 6),
         _buildTextField(
           controller: _loginEmailController,
           focusNode: _loginEmailFocus,
-          hint: 'Enter The Email',
+          hint: 'enter_the_email'.tr,
           prefixIconName: 'mail',
           keyboardType: TextInputType.emailAddress,
           errorText: _loginEmailError,
@@ -472,7 +472,7 @@ class _LoginScreenState extends State<LoginScreen> {
               FocusScope.of(context).requestFocus(_loginPasswordFocus),
         ),
         const SizedBox(height: 16),
-        _buildLabel('Password'),
+        _buildLabel('password'.tr),
         const SizedBox(height: 6),
         _buildTextField(
           controller: _loginPasswordController,
@@ -496,7 +496,7 @@ class _LoginScreenState extends State<LoginScreen> {
           child: GestureDetector(
             onTap: _onForgotPassword,
             child: Text(
-              'Forgot password?',
+              'forgot_password'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -507,7 +507,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         const SizedBox(height: 16),
         _PrimaryActionButton(
-          label: 'Log in',
+          label: 'login'.tr,
           isLoading: _isLoading,
           enabled: _isLoginValid,
           onTap: _onLogin,
@@ -525,12 +525,12 @@ class _LoginScreenState extends State<LoginScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        _buildLabel('Name'),
+        _buildLabel('name'.tr),
         const SizedBox(height: 6),
         _buildTextField(
           controller: _signupNameController,
           focusNode: _signupNameFocus,
-          hint: 'Enter The Name',
+          hint: 'enter_the_name'.tr,
           prefixIconName: 'user',
           keyboardType: TextInputType.name,
           errorText: _signupNameError,
@@ -541,12 +541,12 @@ class _LoginScreenState extends State<LoginScreen> {
               FocusScope.of(context).requestFocus(_signupEmailFocus),
         ),
         const SizedBox(height: 11),
-        _buildLabel('Email'),
+        _buildLabel('email'.tr),
         const SizedBox(height: 6),
         _buildTextField(
           controller: _signupEmailController,
           focusNode: _signupEmailFocus,
-          hint: 'Enter The Email',
+          hint: 'enter_the_email'.tr,
           prefixIconName: 'mail',
           keyboardType: TextInputType.emailAddress,
           errorText: _signupEmailError,
@@ -557,12 +557,12 @@ class _LoginScreenState extends State<LoginScreen> {
               FocusScope.of(context).requestFocus(_signupPasswordFocus),
         ),
         const SizedBox(height: 11),
-        _buildLabel('Password'),
+        _buildLabel('password'.tr),
         const SizedBox(height: 6),
         _buildTextField(
           controller: _signupPasswordController,
           focusNode: _signupPasswordFocus,
-          hint: 'Create a password',
+          hint: 'create_a_password'.tr,
           prefixIconName: 'lock',
           obscure: _obscurePassword,
           suffixIcon: _eyeToggle(),
@@ -616,9 +616,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     height: 1.5,
                   ),
                   children: [
-                    const TextSpan(text: 'By continuing you agree to our '),
+                    TextSpan(text: '${'by_continuing_agree'.tr} '),
                     TextSpan(
-                      text: 'Terms',
+                      text: 'terms'.tr,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
@@ -628,7 +628,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const TextSpan(text: ' & '),
                     TextSpan(
-                      text: 'Privacy Policy',
+                      text: 'privacy_policy'.tr,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
@@ -646,7 +646,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         const SizedBox(height: 12),
         _PrimaryActionButton(
-          label: 'Create account',
+          label: 'create_account'.tr,
           isLoading: _isLoading,
           enabled: _isSignupValid && _agreedToTerms,
           onTap: _onCreateAccount,
@@ -670,9 +670,13 @@ class _LoginScreenState extends State<LoginScreen> {
           color: const Color(0xFF8A7E70),
         ),
         children: [
-          TextSpan(text: isLogin ? 'New here? ' : 'Already have an account? '),
           TextSpan(
-            text: isLogin ? 'Create an account' : 'Log in',
+            text: isLogin
+                ? '${'new_here'.tr} '
+                : '${'already_have_account'.tr} ',
+          ),
+          TextSpan(
+            text: isLogin ? 'create_an_account'.tr : 'login'.tr,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 14,
               fontWeight: FontWeight.w700,
@@ -691,7 +695,7 @@ class _LoginScreenState extends State<LoginScreen> {
       children: [
         Expanded(
           child: _SocialButton(
-            label: 'Google',
+            label: 'google'.tr,
             onTap: _isLoading ? null : _onGoogleSignIn,
             leading: Container(
               width: 20,
@@ -715,7 +719,7 @@ class _LoginScreenState extends State<LoginScreen> {
         const SizedBox(width: 10),
         Expanded(
           child: _SocialButton(
-            label: 'Apple',
+            label: 'apple'.tr,
             onTap: _isLoading ? null : _onAppleSignIn,
           ),
         ),
@@ -941,7 +945,7 @@ class _OrDivider extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
-            'or',
+            'or'.tr,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 12,
               fontWeight: FontWeight.w600,

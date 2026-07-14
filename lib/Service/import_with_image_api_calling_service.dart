@@ -18,6 +18,7 @@ import 'package:recipe_ai/Model/recipe_section_model.dart';
 import 'package:recipe_ai/View/Home/import_processing_screen.dart';
 import 'package:recipe_ai/View/Home/import_complete_screen.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
+import 'package:recipe_ai/Service/subscription_service.dart';
 
 /// Thrown when an imported image/post doesn't actually contain a recipe, so the
 /// import is aborted (no recipe generated, no save) with a clear message.
@@ -220,6 +221,11 @@ class RecipeImportService {
           'createdAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
         });
+
+    // Count this import against the free-tier quota. Image / Text / Social all
+    // route through here; Website imports use a separate path and stay free.
+    // No-op for Plus users.
+    await SubscriptionService.instance.incrementImportCount();
 
     final recipeModel = RecipeModel(
       id: docRef.id,

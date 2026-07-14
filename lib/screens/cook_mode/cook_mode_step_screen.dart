@@ -105,7 +105,7 @@ class CookModeStepScreen extends StatelessWidget {
 
   Widget _buildStepLabel() {
     return Text(
-      'STEP $currentStep OF $totalSteps',
+      'step_of'.trParams({'current': '$currentStep', 'total': '$totalSteps'}),
       style: GoogleFonts.plusJakartaSans(
         fontSize: 13,
         fontWeight: FontWeight.w800,
@@ -180,7 +180,7 @@ class CookModeStepScreen extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: PrimaryButton(
-            label: 'Next step',
+            label: 'next_step'.tr,
             leadingIcon: const Icon(Icons.arrow_forward, size: 18, color: Colors.white),
             onPressed: onNext,
           ),

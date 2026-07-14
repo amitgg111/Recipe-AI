@@ -131,7 +131,7 @@ class _AwesomeImportScreenState extends State<AwesomeImportScreen>
                     ),
                     const SizedBox(width: 7),
                     Text(
-                      'ANY LINK → RECIPE',
+                      'any_link_recipe'.tr,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w800,
@@ -152,7 +152,7 @@ class _AwesomeImportScreenState extends State<AwesomeImportScreen>
                     letterSpacing: -0.54,
                   ),
                   children: [
-                    const TextSpan(text: 'Import from '),
+                    TextSpan(text: 'import_from'.tr),
                     TextSpan(
                       text: '95%',
                       style: GoogleFonts.plusJakartaSans(
@@ -162,7 +162,7 @@ class _AwesomeImportScreenState extends State<AwesomeImportScreen>
                       ),
                     ),
                     TextSpan(
-                      text: ' of sites',
+                      text: 'of_sites'.tr,
                       style: GoogleFonts.plusJakartaSans(
                         fontWeight: FontWeight.bold,
                       ),
@@ -175,7 +175,7 @@ class _AwesomeImportScreenState extends State<AwesomeImportScreen>
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 6),
                 child: Text(
-                  'Paste or share a link from anywhere — we turn it into a clean, cookable recipe.',
+                  'import_subtitle'.tr,
                   textAlign: TextAlign.center,
                   style: AppTextStyles.bodySmall.copyWith(height: 1.5),
                 ),
@@ -218,7 +218,7 @@ class _AwesomeImportScreenState extends State<AwesomeImportScreen>
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      '…and 1,000s more sites',
+                      'and_1000s_more_sites'.tr,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -231,7 +231,7 @@ class _AwesomeImportScreenState extends State<AwesomeImportScreen>
               const SizedBox(height: 18),
               // Show me how button
               PrimaryButton(
-                label: 'Show me how',
+                label: 'show_me_how'.tr,
                 onPressed: () => Get.to(() => const AgeScreen()),
               ),
             ],
@@ -475,7 +475,7 @@ class _AwesomeImportBodyState extends State<AwesomeImportBody>
                 ),
                 const SizedBox(width: 7),
                 Text(
-                  'ANY LINK → RECIPE',
+                  'any_link_recipe'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w800,
@@ -498,7 +498,7 @@ class _AwesomeImportBodyState extends State<AwesomeImportBody>
               ),
               children: [
                 TextSpan(
-                  text: 'Import from ',
+                  text: 'import_from'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -515,7 +515,7 @@ class _AwesomeImportBodyState extends State<AwesomeImportBody>
                   ),
                 ),
                 TextSpan(
-                  text: ' of sites',
+                  text: 'of_sites'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     fontWeight: FontWeight.bold,
                   ),
@@ -528,7 +528,7 @@ class _AwesomeImportBodyState extends State<AwesomeImportBody>
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 6),
             child: Text(
-              'Paste or share a link from anywhere — we turn it into a clean, cookable recipe.',
+              'import_subtitle'.tr,
               textAlign: TextAlign.center,
               style: AppTextStyles.bodySmall.copyWith(height: 1.5),
             ),
@@ -568,7 +568,7 @@ class _AwesomeImportBodyState extends State<AwesomeImportBody>
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  '…and 1,000s more sites',
+                  'and_1000s_more_sites'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,

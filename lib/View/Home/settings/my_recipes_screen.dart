@@ -52,8 +52,9 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(18, 4, 18, 0),
-                child: SettingsUi.header(
-                    widget.favoritesOnly ? 'Favorite recipes' : 'My recipes'),
+                child: SettingsUi.header(widget.favoritesOnly
+                    ? 'favorite_recipes'.tr
+                    : 'my_recipes'.tr),
               ),
               const SizedBox(height: 14),
               Padding(
@@ -67,17 +68,22 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 18),
                   children: [
-                    _chip('All · ${all.length}', 0),
+                    _chip(
+                      'filter_all_count'.trParams({'count': '${all.length}'}),
+                      0,
+                    ),
                     const SizedBox(width: 8),
                     _chip(
-                      'Public · $publicCount',
+                      'filter_public_count'.trParams({'count': '$publicCount'}),
                       1,
                       iconName: 'globe',
                       iconColor: AppColors.green,
                     ),
                     const SizedBox(width: 8),
                     _chip(
-                      'Private · $privateCount',
+                      'filter_private_count'.trParams({
+                        'count': '$privateCount',
+                      }),
                       2,
                       iconName: 'lock',
                       iconColor: AppColors.textMedium,
@@ -143,11 +149,11 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
                 fontWeight: FontWeight.w500,
                 color: AppColors.textDark,
               ),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 isDense: true,
                 filled: false,
-                hintText: 'Search my recipes',
-                hintStyle: TextStyle(
+                hintText: 'search_my_recipes'.tr,
+                hintStyle: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   color: AppColors.textHint,
@@ -233,7 +239,7 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
                       Text(
                         recipe.category?.isNotEmpty == true
                             ? recipe.category!
-                            : 'Recipe',
+                            : 'recipe'.tr,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -327,7 +333,7 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
           children: [
             _sheetItem(
               icon: Icons.open_in_new_rounded,
-              label: 'View recipe',
+              label: 'view_recipe'.tr,
               onTap: () {
                 Get.back();
                 Get.to(() => RecipeDetailScreen(recipe: recipe));
@@ -339,7 +345,7 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
                 size: 21,
                 color: makePublic ? AppColors.green : AppColors.textDark,
               ),
-              label: makePublic ? 'Make public' : 'Make private',
+              label: makePublic ? 'make_public'.tr : 'make_private'.tr,
               color: makePublic ? AppColors.green : AppColors.textDark,
               onTap: () async {
                 Get.back();
@@ -351,10 +357,10 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
                 }
                 await _home.updateRecipeVisibility(recipe.id, makePublic);
                 CustomSnackbar.show(
-                  title: makePublic ? 'Now public' : 'Now private',
+                  title: makePublic ? 'now_public'.tr : 'now_private'.tr,
                   message: makePublic
-                      ? 'This recipe is visible in Discover.'
-                      : 'This recipe is only visible to you.',
+                      ? 'recipe_visible_in_discover'.tr
+                      : 'recipe_only_visible_to_you'.tr,
                   type: SnackbarType.success,
                 );
               },
@@ -407,7 +413,7 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            _query.isNotEmpty ? 'No matches' : 'No recipes here yet',
+            _query.isNotEmpty ? 'no_matches'.tr : 'no_recipes_here_yet'.tr,
             style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,

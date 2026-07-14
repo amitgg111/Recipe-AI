@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_dimensions.dart';
@@ -44,14 +45,14 @@ class _MealPlanDayScreenState extends State<MealPlanDayScreen> {
                   _buildGroceryButton(),
                   const SizedBox(height: 22),
                   _buildMealSection(
-                    'BREAKFAST',
+                    'breakfast'.tr,
                     AppColors.gold,
                     [
                       const _RecipeItem('Avocado Toast with Eggs', '15 min'),
                     ],
                   ),
                   _buildMealSection(
-                    'LUNCH',
+                    'lunch'.tr,
                     AppColors.green,
                     [
                       const _RecipeItem('Mediterranean Quinoa Salad', '20 min'),
@@ -59,14 +60,14 @@ class _MealPlanDayScreenState extends State<MealPlanDayScreen> {
                     ],
                   ),
                   _buildMealSection(
-                    'DINNER',
+                    'dinner'.tr,
                     AppColors.blue,
                     [
                       const _RecipeItem('Spicy Tomato Rigatoni', '35 min'),
                     ],
                   ),
                   _buildMealSection(
-                    'SNACK',
+                    'snack'.tr,
                     AppColors.red,
                     [],
                   ),
@@ -90,7 +91,7 @@ class _MealPlanDayScreenState extends State<MealPlanDayScreen> {
       child: Row(
         children: [
           Text(
-            'Meal Plan',
+            'meal_plan'.tr,
             style: AppTextStyles.cardTitle.copyWith(fontSize: 22),
           ),
           const Spacer(),
@@ -103,8 +104,8 @@ class _MealPlanDayScreenState extends State<MealPlanDayScreen> {
             ),
             child: Row(
               children: [
-                _segmentTab('Day', 0),
-                _segmentTab('Month', 1),
+                _segmentTab('day'.tr, 0),
+                _segmentTab('month'.tr, 1),
               ],
             ),
           ),
@@ -240,7 +241,7 @@ class _MealPlanDayScreenState extends State<MealPlanDayScreen> {
               const Icon(Icons.shopping_cart_outlined, size: 18, color: AppColors.primary),
               const SizedBox(width: 8),
               Text(
-                'Add this week to groceries',
+                'add_this_week_to_groceries'.tr,
                 style: AppTextStyles.chipLabel.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w700,
@@ -272,7 +273,7 @@ class _MealPlanDayScreenState extends State<MealPlanDayScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                title,
+                title.toUpperCase(),
                 style: AppTextStyles.tagLabel.copyWith(
                   color: color,
                   fontSize: 13,
@@ -372,7 +373,7 @@ class _MealPlanDayScreenState extends State<MealPlanDayScreen> {
             const Icon(Icons.add, size: 18, color: AppColors.primary),
             const SizedBox(width: 6),
             Text(
-              'Add $mealType',
+              '${'add'.tr} $mealType',
               style: AppTextStyles.chipLabel.copyWith(
                 color: AppColors.primary,
                 fontWeight: FontWeight.w700,

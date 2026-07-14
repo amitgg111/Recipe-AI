@@ -1,4 +1,3 @@
-
 const {onCall} = require("firebase-functions/v2/https");
 const {setGlobalOptions} = require("firebase-functions/v2");
 const {GoogleGenAI} = require("@google/genai");
@@ -384,7 +383,7 @@ async function generateAndStoreRecipeImage(ai, recipe) {
       "text, watermark or any non-food subject.";
 
     const response = await ai.models.generateImages({
-      model: "imagen-3.0-generate-002",
+      model: "imagen-4.0-generate-001",
       prompt,
       config: {
         numberOfImages: 1,
@@ -584,6 +583,94 @@ OTHER:
 - imageUrl: leave empty string unless a thumbnail URL is provided in context
 `;
 
+
+const RECIPE_TEXT_PROMPT = `
+You are a world-class chef and recipe developer.
+
+You will be given ONLY the name of a dish (no image, no video, no caption).
+Using your culinary knowledge, generate the most accurate, authentic,
+complete recipe for that dish.
+
+CRITICAL — SECTION STRUCTURE (MUST FOLLOW):
+- ingredientSections and instructionSections are the PRIMARY structure.
+- ALWAYS split multi-component dishes into separate named sections.
+- NEVER put all ingredients in one section when the dish has distinct parts.
+- NEVER put all steps in one section when the dish has distinct cooking
+  phases.
+
+Examples of REQUIRED section splits:
+
+Veg Manchurian:
+ingredientSections: [
+  {"name":"For Manchurian Balls","items":[
+    "1¼ cup cabbage finely chopped","½ cup carrot grated", "..."
+  ]},
+  {"name":"For Manchurian Sauce","items":[
+    "1½ tablespoons oil","¾ tablespoon garlic", "..."
+  ]}
+]
+instructionSections: [
+  {"name":"Prepare Manchurian Balls","steps":[
+    "Mix vegetables...", "Shape into balls...", "..."
+  ]},
+  {"name":"Prepare Manchurian Sauce","steps":[
+    "Heat oil...", "Add sauces...", "..."
+  ]},
+  {"name":"Combine and Serve","steps":[
+    "Toss balls in sauce...", "..."
+  ]}
+]
+
+Burger: sections for Patty, Sauce, Assembly.
+Pizza: sections for Dough, Sauce, Toppings.
+Cake: sections for Batter, Frosting.
+
+For simple single-component dishes use one section named "Main Recipe".
+
+INGREDIENT FORMAT:
+- Every item MUST include quantity: "1 cup rice", "2 tablespoons oil"
+- Minimum 8 ingredients total.
+
+INSTRUCTION FORMAT:
+- Each step is one clear actionable sentence.
+- Minimum 5 steps total.
+- No step numbers in the text.
+
+FLAT LISTS:
+- "ingredients" = ALL items from every ingredientSection combined in order.
+- "instructions" = ALL steps from every instructionSection combined in order.
+
+IMAGE PROMPT (VERY IMPORTANT — this text is sent directly to an AI image
+generator, no other context is given to it):
+- Fill "imagePrompt" with a single, self-contained food-photography
+  description of THIS exact finished dish — plated, filling the frame.
+- Name the dish and describe its real, specific appearance: colours,
+  textures, shape, sauce/gravy consistency, garnish, and the type of plate
+  or bowl it is served in.
+  Example for Veg Manchurian: "Glossy dark-brown fried vegetable
+  Manchurian balls tossed in a thick, shiny soy-chili-garlic sauce,
+  garnished with chopped spring onions and sesame seeds, served in a
+  black ceramic bowl."
+- Food only — never landscapes, scenery, nature, people, buildings, text,
+  or a different dish.
+- Always end the imagePrompt with: "ultra realistic professional
+  restaurant food photo, DSLR, 4K, natural lighting, 45-degree close-up
+  hero shot."
+- This field must NEVER be left empty.
+
+TITLE:
+- Use the proper, correctly-spelled dish name.
+
+OTHER:
+- servings: numeric string only, e.g. "4"
+- prepTime/cookTime/totalTime: e.g. "20 mins", "30 mins", "50 mins"
+- category: Breakfast|Lunch|Dinner|Snack|Dessert|Beverage
+- cuisine: e.g. "Indo-Chinese", "Italian", "Gujarati"
+- keywords: 8-15 relevant tags
+- sourceUrl: "AI Generated"
+- imageUrl: leave empty string — the image is generated separately from
+  imagePrompt.
+`;
 
 const RECIPE_VIDEO_PROMPT = `
 You are an expert chef and recipe developer. 
@@ -1036,23 +1123,30 @@ exports.generateRecipeFromName = onCall(
         const ai = getAI();
 
         const prompt = `
-${RECIPE_SOCIAL_PROMPT}
+${RECIPE_TEXT_PROMPT}
 
 Generate a complete recipe for: ${recipeName}
-
-Source URL should be: "AI Generated"
-
-Leave the imageUrl field as an empty string. The image will be generated
-separately.
 `;
 
         const recipe = await generateStructuredRecipe(ai, prompt);
+
+        console.log(
+            "generateRecipeFromName: title=",
+            recipe.title,
+            "imagePrompt=",
+            recipe.imagePrompt ? recipe.imagePrompt.slice(0, 80) : "(empty)",
+        );
 
         // Always try a real AI-generated food photo first.
         const generatedUrl = await generateAndStoreRecipeImage(ai, recipe);
         if (generatedUrl) {
           recipe.imageUrl = generatedUrl;
         } else {
+          console.error(
+              "generateRecipeFromName: image generation failed for",
+              recipeName,
+              "— falling back to picsum placeholder.",
+          );
           // Deterministic fallback so the UI never shows a broken image.
           const seed = encodeURIComponent(
               recipeName.trim().toLowerCase().replace(/ /g, "-"),

@@ -77,7 +77,7 @@ class CookbookRecipesScreen extends StatelessWidget {
                     horizontal: AppSpacing.xl,
                   ),
                   child: Text(
-                    '${recipes.length} ${recipes.length == 1 ? 'recipe' : 'recipes'} · updated today',
+                    '${recipes.length == 1 ? 'n_recipe_lc'.trParams({'count': '${recipes.length}'}) : 'n_recipes_lc'.trParams({'count': '${recipes.length}'})} · ${'updated_today'.tr}',
                     style: AppTextStyles.smallLabel.copyWith(
                       color: AppColors.textMedium,
                     ),
@@ -90,7 +90,7 @@ class CookbookRecipesScreen extends StatelessWidget {
                     horizontal: AppSpacing.xl,
                   ),
                   child: Text(
-                    'No recipes yet',
+                    'no_recipes_yet'.tr,
                     style: AppTextStyles.smallLabel.copyWith(
                       color: AppColors.textMedium,
                     ),
@@ -193,7 +193,7 @@ class CookbookRecipesScreen extends StatelessWidget {
                               size: 20,
                               color: Color(0xFF5A5147),
                             ),
-                            label: 'Edit',
+                            label: 'edit'.tr,
                             labelColor: const Color(0xFF2A211B),
                             onTap: () {
                               Navigator.pop(ctx);
@@ -213,7 +213,7 @@ class CookbookRecipesScreen extends StatelessWidget {
                               size: 20,
                               color: Color(0xFFE0481F),
                             ),
-                            label: 'Delete',
+                            label: 'delete'.tr,
                             labelColor: const Color(0xFFE0481F),
                             onTap: () {
                               Navigator.pop(ctx);
@@ -314,7 +314,7 @@ class CookbookRecipesScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  'Delete this cookbook?',
+                  'delete_this_cookbook'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
@@ -323,7 +323,7 @@ class CookbookRecipesScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'Are you sure you want to delete this cookbook? Note that this will not delete any of the individual recipes themselves.',
+                  'delete_cookbook_message'.tr,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 13.5,
@@ -350,7 +350,7 @@ class CookbookRecipesScreen extends StatelessWidget {
                           ),
                           child: Center(
                             child: Text(
-                              'Cancel',
+                              'cancel'.tr,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
@@ -380,7 +380,7 @@ class CookbookRecipesScreen extends StatelessWidget {
                           ),
                           child: Center(
                             child: Text(
-                              'Delete',
+                              'delete'.tr,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
@@ -666,7 +666,7 @@ class _EmptyStateState extends State<_EmptyState>
             ),
             const SizedBox(height: 28),
             Text(
-              'This cookbook is empty',
+              'this_cookbook_is_empty'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
@@ -675,7 +675,7 @@ class _EmptyStateState extends State<_EmptyState>
             ),
             const SizedBox(height: 8),
             Text(
-              'Add your first recipe and it\'ll show up here,\nready to cook.',
+              'cookbook_empty_add_first'.tr,
               textAlign: TextAlign.center,
               style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.textMedium,
@@ -716,7 +716,7 @@ class _EmptyStateState extends State<_EmptyState>
                       size: 20,
                     ),
                     const SizedBox(width: 8),
-                    Text('Add a recipe', style: AppTextStyles.buttonLabel),
+                    Text('add_a_recipe'.tr, style: AppTextStyles.buttonLabel),
                   ],
                 ),
               ),
@@ -786,9 +786,9 @@ class _RecipeList extends StatelessWidget {
       children: [
         const SizedBox(height: 16),
         // Search bar
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-          child: AppSearchBar(hintText: 'Search recipes'),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+          child: AppSearchBar(hintText: 'search_recipes'.tr),
         ),
         const SizedBox(height: 12),
         // Recipe list
@@ -1002,7 +1002,7 @@ class _RenameCookbookSheetState extends State<_RenameCookbookSheet> {
             Row(
               children: [
                 Text(
-                  'Rename cookbook',
+                  'rename_cookbook'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 21,
                     fontWeight: FontWeight.w800,
@@ -1058,7 +1058,7 @@ class _RenameCookbookSheetState extends State<_RenameCookbookSheet> {
                 ),
                 onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
-                  hintText: 'Cookbook name',
+                  hintText: 'cookbook_name'.tr,
                   hintStyle: AppTextStyles.inputHint,
                   filled: false,
                   isCollapsed: false,
@@ -1135,7 +1135,7 @@ class _RenameCookbookSheetState extends State<_RenameCookbookSheet> {
                 ),
                 child: Center(
                   child: Text(
-                    'Save changes',
+                    'save_changes'.tr,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 17,
                       fontWeight: FontWeight.w600,

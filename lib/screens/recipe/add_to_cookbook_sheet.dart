@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
@@ -52,7 +53,7 @@ class _AddToCookbookSheetState extends State<AddToCookbookSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Add to cookbook', style: AppTextStyles.listTitle),
+              Text('add_to_cookbook'.tr, style: AppTextStyles.listTitle),
               GestureDetector(
                 onTap: () => Navigator.pop(context),
                 child: Container(
@@ -88,7 +89,7 @@ class _AddToCookbookSheetState extends State<AddToCookbookSheet> {
           ),
           const SizedBox(height: 20),
           PrimaryButton(
-            label: 'Done',
+            label: 'done'.tr,
             onPressed: () => Navigator.pop(context, _selected.toList()),
           ),
           SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
@@ -158,7 +159,7 @@ class _AddToCookbookSheetState extends State<AddToCookbookSheet> {
                     ),
                   ),
                   Text(
-                    '${cookbook.count} recipes',
+                    'n_recipes_lc'.trParams({'count': '${cookbook.count}'}),
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
@@ -217,7 +218,7 @@ class _AddToCookbookSheetState extends State<AddToCookbookSheet> {
             ),
             const SizedBox(width: 14),
             Text(
-              'New cookbook',
+              'new_cookbook'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,

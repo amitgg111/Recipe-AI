@@ -14,10 +14,14 @@
 ///       SubscriptionService.instance.isPro;
 ///
 /// No other code changes are needed — call sites already read the getter.
+library;
+
+import 'package:recipe_ai/Service/subscription_service.dart';
+
 class PremiumGate {
   PremiumGate._();
 
-  /// Metric/Imperial unit switching. TEMP: always on for dev/testing.
-  /// Flip the body to a subscription check to gate it for paying users only.
-  static bool get unitConversionUnlocked => true;
+  /// Metric/Imperial unit switching — a Plus feature.
+  static bool get unitConversionUnlocked =>
+      SubscriptionService.instance.canUseConverter();
 }

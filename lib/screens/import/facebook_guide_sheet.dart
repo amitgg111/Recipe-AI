@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_spacing.dart';
@@ -104,7 +105,7 @@ class _FacebookGuideSheetState extends State<FacebookGuideSheet> {
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Text(
-                  'Import from Facebook',
+                  'import_from_facebook'.tr,
                   style: AppTextStyles.listTitle.copyWith(
                     fontSize: 19,
                     fontWeight: FontWeight.w800,
@@ -161,7 +162,7 @@ class _FacebookGuideSheetState extends State<FacebookGuideSheet> {
               MediaQuery.of(context).padding.bottom + AppSpacing.lg,
             ),
             child: PrimaryButton(
-              label: 'Open Facebook to find a recipe',
+              label: 'open_facebook_find_recipe'.tr,
               leadingIcon: const OnboardingLineIcon(
                 'chat',
                 color: Colors.white,
@@ -272,7 +273,7 @@ class _FacebookSlide1 extends StatelessWidget {
                               size: 20, color: AppColors.textMedium),
                           const SizedBox(width: 6),
                           Text(
-                            'Like',
+                            'like'.tr,
                             style: AppTextStyles.smallLabel.copyWith(
                               color: AppColors.textMedium,
                               fontWeight: FontWeight.w600,
@@ -290,7 +291,7 @@ class _FacebookSlide1 extends StatelessWidget {
                               size: 20, color: AppColors.textMedium),
                           const SizedBox(width: 6),
                           Text(
-                            'Comment',
+                            'comment'.tr,
                             style: AppTextStyles.smallLabel.copyWith(
                               color: AppColors.textMedium,
                               fontWeight: FontWeight.w600,
@@ -321,7 +322,7 @@ class _FacebookSlide1 extends StatelessWidget {
                                 size: 20, color: AppColors.primary),
                             const SizedBox(width: 6),
                             Text(
-                              'Share',
+                              'share'.tr,
                               style: AppTextStyles.smallLabel.copyWith(
                                 color: AppColors.primary,
                                 fontWeight: FontWeight.w700,
@@ -337,20 +338,20 @@ class _FacebookSlide1 extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'tap share',
-                style: TextStyle(
+                'tap_share'.tr,
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   fontStyle: FontStyle.italic,
                   color: AppColors.blueArrow,
                 ),
               ),
-              SizedBox(width: 6),
-              Icon(
+              const SizedBox(width: 6),
+              const Icon(
                 Icons.arrow_upward_rounded,
                 size: 18,
                 color: AppColors.blueArrow,
@@ -372,9 +373,9 @@ class _FacebookSlide2 extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text(
-            'tap share to',
-            style: TextStyle(
+          Text(
+            'tap_share_to'.tr,
+            style: const TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.w700,
               fontStyle: FontStyle.italic,
@@ -429,7 +430,7 @@ class _FacebookSlide2 extends StatelessWidget {
                       const OnboardingLineIcon('search', size: 18, color: AppColors.textLight),
                       const SizedBox(width: 8),
                       Text(
-                        'Search',
+                        'search'.tr,
                         style: AppTextStyles.smallLabel.copyWith(
                           color: AppColors.textHint,
                         ),
@@ -486,7 +487,7 @@ class _FacebookSlide2 extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Share to...',
+                        'share_to'.tr,
                         style: AppTextStyles.bodyLarge.copyWith(
                           color: AppColors.primary,
                           fontWeight: FontWeight.w700,
@@ -513,9 +514,9 @@ class _FacebookSlide3 extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text(
-            'tap Recipe AI',
-            style: TextStyle(
+          Text(
+            'tap_recipe_ai'.tr,
+            style: const TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.w700,
               fontStyle: FontStyle.italic,
@@ -592,7 +593,7 @@ class _FacebookSlide3 extends StatelessWidget {
                 _appIcon(
                   const Color(0xFF2D6FE0),
                   '',
-                  'Chat',
+                  'chat'.tr,
                   iconWidget: const OnboardingLineIcon('chat',
                       size: 22, color: Color(0xFF2D6FE0)),
                 ),
@@ -600,7 +601,7 @@ class _FacebookSlide3 extends StatelessWidget {
                 _appIcon(
                   const Color(0xFF34A853),
                   '',
-                  'Share',
+                  'share'.tr,
                   icon: Icons.change_history_rounded,
                 ),
               ],

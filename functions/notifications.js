@@ -7,6 +7,7 @@
  *   • onNewFollower  → "New followers"        toggle: newFollowers
  *   • onNewLike      → "Likes & comments"     toggle: likesAndComments
  *   • onNewComment   → "Likes & comments"     toggle: likesAndComments
+ *   • onNewSave      → "Likes & comments"     toggle: likesAndComments
  *
  * Notification docs are created ONLY here (trusted backend), so clients can be
  * denied create access in the security rules. Like/follow docs use a
@@ -207,6 +208,43 @@ exports.onNewLike = onDocumentCreated(
             "New Like",
             `❤️ ${sender.name} liked your recipe`,
             {type: "like", recipeId},
+        ),
+      ]);
+    },
+);
+
+// ─────────────────────────────── New save ──────────────────────────────────
+// Path: users/{ownerId}/recipes/{recipeId}/saves/{saverUid}
+// Mirrors onNewLike: another user saving your recipe notifies you (in-app +
+// push), gated by the same "Likes & comments" toggle.
+exports.onNewSave = onDocumentCreated(
+    "users/{ownerId}/recipes/{recipeId}/saves/{saverUid}",
+    async (event) => {
+      const {ownerId, recipeId, saverUid} = event.params;
+      if (ownerId === saverUid) return;
+      const [sender, recipe] = await Promise.all([
+        getUserBrief(saverUid),
+        getRecipeBrief(ownerId, recipeId),
+      ]);
+      await Promise.all([
+        writeNotification({
+          // Deterministic → re-saving never creates a duplicate.
+          docId: `save_${ownerId}_${recipeId}_${saverUid}`,
+          receiverUserId: ownerId,
+          senderUserId: saverUid,
+          type: "save",
+          recipeId,
+          title: "Recipe Saved",
+          message: `${sender.name} saved your recipe.`,
+          sender,
+          recipe,
+        }),
+        sendIfEnabled(
+            ownerId,
+            "likesAndComments",
+            "Recipe Saved",
+            `🔖 ${sender.name} saved your recipe`,
+            {type: "save", recipeId},
         ),
       ]);
     },

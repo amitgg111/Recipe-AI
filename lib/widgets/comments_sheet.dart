@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -183,7 +184,7 @@ class _CommentsSheetState extends State<CommentsSheet> {
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 14),
                   child: Text(
-                    'Comments · $count',
+                    '${'comments'.tr} · $count',
                     style: _f(16, FontWeight.w800, _C.textDark),
                   ),
                 );
@@ -224,12 +225,12 @@ class _CommentsSheetState extends State<CommentsSheet> {
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            'No comments yet',
+                            'no_comments_yet'.tr,
                             style: _f(15, FontWeight.w700, _C.textBody),
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            'Be the first to leave one.',
+                            'be_first_comment'.tr,
                             style: _f(13, FontWeight.w500, _C.textLight),
                           ),
                         ],
@@ -264,7 +265,7 @@ class _CommentsSheetState extends State<CommentsSheet> {
     final text = d['text'] as String? ?? '';
     final ts = d['createdAt'];
     final when = ts is Timestamp ? _ago(ts.toDate()) : '';
-    final display = (name != null && name.isNotEmpty) ? name : 'Anonymous';
+    final display = (name != null && name.isNotEmpty) ? name : 'anonymous'.tr;
     final highlighted = id == widget.highlightCommentId;
 
     return Container(
@@ -309,7 +310,7 @@ class _CommentsSheetState extends State<CommentsSheet> {
                   onTap: () => _reply(display),
                   behavior: HitTestBehavior.opaque,
                   child: Text(
-                    'Reply',
+                    'reply'.tr,
                     style: _f(12, FontWeight.w700, _C.textLight),
                   ),
                 ),
@@ -323,7 +324,7 @@ class _CommentsSheetState extends State<CommentsSheet> {
 
   Widget _composer() {
     final avatar = AuthService.currentUser?.photoURL;
-    final name = AuthService.currentUser?.displayName ?? 'You';
+    final name = AuthService.currentUser?.displayName ?? 'you'.tr;
     return Container(
       decoration: const BoxDecoration(
         border: Border(top: BorderSide(color: _C.line)),
@@ -361,7 +362,7 @@ class _CommentsSheetState extends State<CommentsSheet> {
                         cursorColor: _C.primary,
                         style: _f(14, FontWeight.w500, _C.textDark),
                         decoration: InputDecoration(
-                          hintText: 'Add a comment…',
+                          hintText: 'add_a_comment'.tr,
                           hintStyle: _f(14, FontWeight.w500, _C.textHint),
                           isDense: true,
                           filled: false,

@@ -127,7 +127,7 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
               ),
             ),
           ),
-          Text('Edit recipe', style: AppTextStyles.navLabel),
+          Text('edit_recipe'.tr, style: AppTextStyles.navLabel),
           GestureDetector(
             onTap: () => Get.back(),
             child: Container(
@@ -137,7 +137,7 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
                 borderRadius: BorderRadius.circular(11),
               ),
               child: Text(
-                'Save',
+                'save'.tr,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
@@ -200,7 +200,7 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
                           const Icon(Icons.camera_alt_outlined, size: 16),
                           const SizedBox(width: 6),
                           Text(
-                            'Change photo',
+                            'change_photo'.tr,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
@@ -217,7 +217,7 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
           ),
           const SizedBox(height: 16),
           // Title field
-          _buildEditLabel('Title'),
+          _buildEditLabel('title'.tr),
           const SizedBox(height: 6),
           _buildFocusedInput(controller: _titleController),
           const SizedBox(height: 14),
@@ -228,7 +228,7 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildEditLabel('Servings'),
+                    _buildEditLabel('servings'.tr),
                     const SizedBox(height: 6),
                     _buildSimpleInput(controller: _servingsController),
                   ],
@@ -239,7 +239,7 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildEditLabel('Total time'),
+                    _buildEditLabel('total_time'.tr),
                     const SizedBox(height: 6),
                     _buildSimpleInput(controller: _timeController),
                   ],
@@ -319,13 +319,13 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Ingredients', style: AppTextStyles.cardTitle),
+        Text('ingredients'.tr, style: AppTextStyles.cardTitle),
         const SizedBox(height: 14),
         ..._ingredientGroups.asMap().entries.map((entry) {
           return _buildEditIngredientGroup(entry.key, entry.value);
         }),
         const SizedBox(height: 12),
-        _buildDashedAddButton('Add group', onTap: () {}),
+        _buildDashedAddButton('add_group'.tr, onTap: () {}),
       ],
     );
   }
@@ -401,7 +401,7 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
                 const Icon(Icons.add, size: 16, color: AppColors.primary),
                 const SizedBox(width: 4),
                 Text(
-                  'Add ingredient',
+                  'add_ingredient'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
@@ -508,13 +508,13 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Instructions', style: AppTextStyles.cardTitle),
+        Text('instructions'.tr, style: AppTextStyles.cardTitle),
         const SizedBox(height: 14),
         ..._instructions.asMap().entries.map((entry) {
           return _buildEditInstructionItem(entry.key, entry.value);
         }),
         const SizedBox(height: 12),
-        _buildDashedAddButton('Add step', onTap: () {}),
+        _buildDashedAddButton('add_step'.tr, onTap: () {}),
       ],
     );
   }
@@ -595,7 +595,7 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        'Add timer',
+                        'add_timer'.tr,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,
@@ -679,7 +679,7 @@ class _RecipeDetailEditScreenState extends State<RecipeDetailEditScreen> {
             const Icon(Icons.delete_outline, size: 20, color: AppColors.red),
             const SizedBox(width: 8),
             Text(
-              'Delete recipe',
+              'delete_recipe'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,

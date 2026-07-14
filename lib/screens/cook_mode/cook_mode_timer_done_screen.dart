@@ -37,7 +37,7 @@ class CookModeTimerDoneScreen extends StatelessWidget {
               _buildCheckmarkCircle(),
               const SizedBox(height: 28),
               Text(
-                'Timer complete!',
+                'timer_complete'.tr,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
@@ -46,7 +46,7 @@ class CookModeTimerDoneScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'Your timer has finished. Ready to continue?',
+                'timer_finished_ready'.tr,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
@@ -56,7 +56,7 @@ class CookModeTimerDoneScreen extends StatelessWidget {
               ),
               const Spacer(flex: 2),
               PrimaryButton(
-                label: 'Continue cooking',
+                label: 'continue_cooking'.tr,
                 onPressed: onContinue,
               ),
               const SizedBox(height: 16),
@@ -152,7 +152,7 @@ class CookModeTimerDoneScreen extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: PrimaryButton(
-            label: 'Next step',
+            label: 'next_step'.tr,
             leadingIcon: const Icon(Icons.arrow_forward, size: 18, color: Colors.white),
             onPressed: onContinue,
           ),

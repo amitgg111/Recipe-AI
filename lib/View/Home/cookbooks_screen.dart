@@ -13,6 +13,9 @@ import 'package:recipe_ai/View/Home/import_from_web.dart';
 import 'package:recipe_ai/View/Home/recipe_detail_screen.dart';
 import 'package:recipe_ai/View/Home/recipe_editor_screen.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
+import 'package:recipe_ai/Service/subscription_service.dart';
+import 'package:recipe_ai/widgets/premium_lock_overlay.dart';
+import 'package:recipe_ai/View/Home/settings/upgrade_plus_screen.dart';
 import 'package:recipe_ai/widgets/app_logo.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_spacing.dart';
@@ -115,31 +118,46 @@ class _CookbooksScreenState extends State<CookbooksScreen>
             letterSpacing: -0.3,
           ),
           const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-            decoration: BoxDecoration(
-              color: AppColors.goldBg,
-              borderRadius: BorderRadius.circular(AppDimensions.radiusRound),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const OnboardingLineIcon(
-                  'sparkF',
-                  size: 14,
-                  color: AppColors.primary,
+          Obx(() {
+            final sub = SubscriptionService.instance;
+            final plus = sub.isPlusListenable.value;
+            final remaining = (SubscriptionService.kFreeImportLimit -
+                    sub.importCountListenable.value)
+                .clamp(0, SubscriptionService.kFreeImportLimit);
+            return GestureDetector(
+              onTap: () => Get.to(() => const UpgradePlusScreen()),
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                decoration: BoxDecoration(
+                  color: plus ? AppColors.purpleBg : AppColors.goldBg,
+                  borderRadius:
+                      BorderRadius.circular(AppDimensions.radiusRound),
                 ),
-                const SizedBox(width: 5),
-                Text(
-                  '5/5',
-                  style: AppTextStyles.chipLabel.copyWith(
-                    color: AppColors.gold,
-                    fontSize: 13,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    OnboardingLineIcon(
+                      plus ? 'crown' : 'sparkF',
+                      size: 14,
+                      color: plus ? AppColors.purpleDark : AppColors.primary,
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      plus
+                          ? 'PLUS'
+                          : '$remaining/${SubscriptionService.kFreeImportLimit}',
+                      style: AppTextStyles.chipLabel.copyWith(
+                        color: plus ? AppColors.purpleDark : AppColors.gold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          }),
         ],
       ),
     );
@@ -155,7 +173,7 @@ class _CookbooksScreenState extends State<CookbooksScreen>
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Cookbooks',
+                'cookbooks'.tr,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -166,7 +184,7 @@ class _CookbooksScreenState extends State<CookbooksScreen>
             const EmptyPlateIllustration(),
             const SizedBox(height: AppSpacing.xxl),
             Text(
-              "Let's get cooking!",
+              'lets_get_cooking'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -174,7 +192,7 @@ class _CookbooksScreenState extends State<CookbooksScreen>
             ),
             const SizedBox(height: 9),
             Text(
-              'Your cookbook is empty for now. Save your first recipe and it\'ll have a cozy home right here.',
+              'cookbook_empty_subtitle'.tr,
               textAlign: TextAlign.center,
               style: AppTextStyles.bodyMedium.copyWith(
                 fontSize: 13,
@@ -184,7 +202,7 @@ class _CookbooksScreenState extends State<CookbooksScreen>
             ),
             const SizedBox(height: AppSpacing.xxl),
             PrimaryButton(
-              label: 'Add your first recipe',
+              label: 'add_your_first_recipe'.tr,
               width: 230,
               leadingIcon: const OnboardingLineIcon(
                 'plus',
@@ -215,7 +233,7 @@ class _CookbooksScreenState extends State<CookbooksScreen>
               children: [
                 Expanded(
                   child: SlidingSegmented.tabs(
-                    labels: const ['Cookbooks', 'Recipes'],
+                    labels: ['cookbooks'.tr, 'recipes'.tr],
                     selectedIndex: _selectedSegment,
                     onChanged: (i) => setState(() => _selectedSegment = i),
                     height: 36,
@@ -249,8 +267,8 @@ class _CookbooksScreenState extends State<CookbooksScreen>
             child: AppSearchBar(
               controller: _searchController,
               hintText: _selectedSegment == 0
-                  ? 'Search cookbooks'
-                  : 'Search recipes',
+                  ? 'search_cookbooks'.tr
+                  : 'search_recipes'.tr,
               height: 50,
               borderRadius: 14,
               borderColor: const Color(0xFFEDE3D2),
@@ -325,8 +343,8 @@ class _CookbooksScreenState extends State<CookbooksScreen>
           child: Center(
             child: Text(
               _searchQuery.isEmpty
-                  ? 'No cookbooks yet'
-                  : 'No cookbooks match "$_searchQuery"',
+                  ? 'no_cookbooks_yet'.tr
+                  : 'no_cookbooks_match'.trParams({'query': _searchQuery}),
               textAlign: TextAlign.center,
               style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.textMedium,
@@ -345,7 +363,10 @@ class _CookbooksScreenState extends State<CookbooksScreen>
             crossAxisCount: 2,
             mainAxisSpacing: 16,
             crossAxisSpacing: 16,
-            childAspectRatio: 0.72,
+            // Slightly taller cells so the label + count line below the square
+            // cover never overflows, even for taller scripts (Devanagari) or
+            // longer translations.
+            childAspectRatio: 0.70,
           ),
           itemCount: cookbooks.length,
           itemBuilder: (context, index) {
@@ -403,8 +424,8 @@ class _CookbooksScreenState extends State<CookbooksScreen>
           child: Center(
             child: Text(
               _searchQuery.isEmpty
-                  ? 'No recipes yet. Add one to get started!'
-                  : 'No recipes match "$_searchQuery"',
+                  ? 'no_recipes_yet_add_one'.tr
+                  : 'no_recipes_match'.trParams({'query': _searchQuery}),
               textAlign: TextAlign.center,
               style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.textMedium,
@@ -499,11 +520,11 @@ class _CookbooksScreenState extends State<CookbooksScreen>
 
   // ── Sort By bottom sheet ──────────────────────────────────────────────────
   void _showSortSheet(BuildContext context) {
-    const options = [
-      ('Newest first', 'clock'),
-      ('Oldest first', 'clock'),
-      ('Name A-Z', 'A'),
-      ('Name Z-A', 'Z'),
+    final options = [
+      ('newest_first'.tr, 'clock'),
+      ('oldest_first'.tr, 'clock'),
+      ('name_a_z'.tr, 'A'),
+      ('name_z_a'.tr, 'Z'),
     ];
     showModalBottomSheet(
       context: context,
@@ -536,7 +557,7 @@ class _CookbooksScreenState extends State<CookbooksScreen>
                   Padding(
                     padding: const EdgeInsets.only(left: 8, bottom: 14),
                     child: Text(
-                      'Sort by',
+                      'sort_by'.tr,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
@@ -706,7 +727,7 @@ class ImportSourcePickerScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    'Add a recipe',
+                    'add_a_recipe'.tr,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -715,11 +736,17 @@ class ImportSourcePickerScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
+              _ImportQuotaBanner(),
+              const SizedBox(height: 20),
 
               // Import from social media banner
               GestureDetector(
                 onTap: () {
+                  if (!SubscriptionService.instance.canUseRecipeImport()) {
+                    showUpgradeDialog(context, feature: 'Social imports');
+                    return;
+                  }
                   ImportFromSocialScreen.showPicker(context);
                 },
                 child: Container(
@@ -751,7 +778,7 @@ class ImportSourcePickerScreen extends StatelessWidget {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'Import from social media',
+                              'import_from_social_media'.tr,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
@@ -763,7 +790,7 @@ class ImportSourcePickerScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'Share to Recipe AI from Instagram, TikTok,\nFacebook and more',
+                        'import_from_social_desc'.tr,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w400,
@@ -796,9 +823,14 @@ class ImportSourcePickerScreen extends StatelessWidget {
                       iconName: 'camera',
                       iconBg: const Color(0xFFE4ECFB),
                       iconColor: const Color(0xFF2D6FE0),
-                      title: 'Import from\nphoto',
-                      subtitle: 'Scan a cookbook page',
+                      title: 'import_from_photo'.tr,
+                      subtitle: 'scan_a_cookbook_page'.tr,
                       onTap: () {
+                        if (!SubscriptionService.instance
+                            .canUseRecipeImport()) {
+                          showUpgradeDialog(context, feature: 'Photo import');
+                          return;
+                        }
                         Navigator.pop(context);
                         RecipeImportService.importRecipeFromGallery(context);
                       },
@@ -810,9 +842,14 @@ class ImportSourcePickerScreen extends StatelessWidget {
                       iconName: 'file',
                       iconBg: const Color(0xFFFDEBD2),
                       iconColor: const Color(0xFFD98A12),
-                      title: 'Import from text',
-                      subtitle: 'Enter recipe name',
+                      title: 'import_from_text'.tr,
+                      subtitle: 'enter_recipe_name'.tr,
                       onTap: () {
+                        if (!SubscriptionService.instance
+                            .canUseRecipeImport()) {
+                          showUpgradeDialog(context, feature: 'Text import');
+                          return;
+                        }
                         Navigator.pop(context);
                         Get.to(() => const GenerateRecipeScreen());
                       },
@@ -828,8 +865,8 @@ class ImportSourcePickerScreen extends StatelessWidget {
                       iconName: 'globe',
                       iconBg: const Color(0xFFEDE7FE),
                       iconColor: const Color(0xFF7C3AED),
-                      title: 'Import from web',
-                      subtitle: 'Paste a link',
+                      title: 'import_from_web'.tr,
+                      subtitle: 'paste_a_link'.tr,
                       onTap: () {
                         Navigator.pop(context);
                         Navigator.push(
@@ -847,8 +884,8 @@ class ImportSourcePickerScreen extends StatelessWidget {
                       iconName: 'pencil',
                       iconBg: const Color(0xFFDBF0E7),
                       iconColor: const Color(0xFF1F7A5E),
-                      title: 'Write from\nscratch',
-                      subtitle: 'Create manually',
+                      title: 'write_from_scratch'.tr,
+                      subtitle: 'create_manually'.tr,
                       onTap: () {
                         Navigator.pop(context);
                         Get.to(() => const RecipeEditorScreen());
@@ -875,6 +912,109 @@ class ImportSourcePickerScreen extends StatelessWidget {
       ),
       child: OnboardingLineIcon(iconName, size: 20, color: color),
     );
+  }
+}
+
+/// Free-tier import quota strip on the "Add a recipe" screen. Reacts live to the
+/// count; hidden entirely for Plus users (they have unlimited imports).
+class _ImportQuotaBanner extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final sub = SubscriptionService.instance;
+      if (sub.isPlusListenable.value) return const SizedBox.shrink();
+      final used = sub.importCountListenable.value;
+      const max = SubscriptionService.kFreeImportLimit;
+      final remaining = (max - used).clamp(0, max);
+      final exhausted = remaining <= 0;
+      final accent = exhausted ? AppColors.purpleDark : AppColors.primary;
+      return GestureDetector(
+        onTap: exhausted ? () => showUpgradeDialog(context) : null,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+          decoration: BoxDecoration(
+            color: exhausted ? AppColors.purpleBgLight : AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: exhausted ? AppColors.purpleBorder : AppColors.surfaceBorder,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  exhausted
+                      ? Icons.lock_rounded
+                      : Icons.auto_awesome_rounded,
+                  size: 20,
+                  color: accent,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'recipe_imports'.tr,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textDark,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      exhausted
+                          ? 'imports_remaining_upgrade'.tr
+                          : 'n_of_m_remaining'.trParams({
+                              'remaining': '$remaining',
+                              'max': '$max',
+                            }),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: exhausted ? AppColors.purpleDark : AppColors.textMedium,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        value: max == 0 ? 0 : used / max,
+                        minHeight: 6,
+                        backgroundColor: accent.withValues(alpha: 0.15),
+                        valueColor: AlwaysStoppedAnimation(accent),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              if (exhausted)
+                const PlusBadge()
+              else
+                Text(
+                  '$used/$max',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: accent,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+    });
   }
 }
 
@@ -981,17 +1121,23 @@ class _CookbookCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AspectRatio(
-            aspectRatio: 1,
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFEDE5D7),
-                borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-                border: Border.all(color: AppColors.surfaceBorder),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(AppDimensions.radiusLg - 1),
-                child: _buildImageGrid(),
+          // Flexible so the square image yields a couple of pixels when the
+          // labels below are taller (e.g. Devanagari text) — prevents the
+          // fixed grid cell from overflowing.
+          Flexible(
+            child: AspectRatio(
+              aspectRatio: 1,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEDE5D7),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+                  border: Border.all(color: AppColors.surfaceBorder),
+                ),
+                child: ClipRRect(
+                  borderRadius:
+                      BorderRadius.circular(AppDimensions.radiusLg - 1),
+                  child: _buildImageGrid(),
+                ),
               ),
             ),
           ),
@@ -1008,7 +1154,9 @@ class _CookbookCard extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            '${cookbook.recipeCount} ${cookbook.recipeCount == 1 ? 'recipe' : 'recipes'}',
+            cookbook.recipeCount == 1
+                ? 'n_recipe_lc'.trParams({'count': '${cookbook.recipeCount}'})
+                : 'n_recipes_lc'.trParams({'count': '${cookbook.recipeCount}'}),
             style: GoogleFonts.plusJakartaSans(
               fontSize: 13,
               fontWeight: FontWeight.w400,
@@ -1317,16 +1465,16 @@ class ImportRecipeBottomSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          Text('Add Recipe', style: AppTextStyles.screenTitle),
+          Text('add_recipe'.tr, style: AppTextStyles.screenTitle),
           const SizedBox(height: 6),
           Text(
-            "Choose how you'd like to add a recipe",
+            'choose_how_add_recipe'.tr,
             style: AppTextStyles.bodyMedium,
           ),
           const SizedBox(height: 25),
           _ImportOptionTile(
             icon: Icons.video_library_outlined,
-            title: 'Import from Social Media',
+            title: 'import_from_social_media'.tr,
             subtitle: 'Instagram, Facebook, TikTok',
             onTap: () {
               Navigator.pop(context);
@@ -1340,16 +1488,16 @@ class ImportRecipeBottomSheet extends StatelessWidget {
           ),
           _ImportOptionTile(
             icon: Icons.language,
-            title: 'Import from Text',
-            subtitle: 'Just Enter The Recipe Name!',
+            title: 'import_from_text'.tr,
+            subtitle: 'just_enter_recipe_name'.tr,
             onTap: () {
               Get.to(() => const GenerateRecipeScreen());
             },
           ),
           _ImportOptionTile(
             icon: Icons.language,
-            title: 'Import from Website',
-            subtitle: 'Paste recipe URL',
+            title: 'import_from_website'.tr,
+            subtitle: 'paste_recipe_url'.tr,
             onTap: () async {
               await Navigator.push(
                 context,
@@ -1359,16 +1507,16 @@ class ImportRecipeBottomSheet extends StatelessWidget {
           ),
           _ImportOptionTile(
             icon: Icons.photo_camera_outlined,
-            title: 'Import from Photo',
-            subtitle: 'Scan image or screenshot',
+            title: 'import_from_photo'.tr,
+            subtitle: 'scan_image_or_screenshot'.tr,
             onTap: () {
               RecipeImportService.importRecipeFromGallery(context);
             },
           ),
           _ImportOptionTile(
             icon: Icons.edit_note_outlined,
-            title: 'Create from Scratch',
-            subtitle: 'Write recipe manually',
+            title: 'create_from_scratch'.tr,
+            subtitle: 'write_recipe_manually'.tr,
             onTap: () {
               Get.to(() => const RecipeEditorScreen());
             },
@@ -1515,7 +1663,7 @@ class _PhotoImportLoadingOverlayState extends State<PhotoImportLoadingOverlay>
                 ),
               ),
               const SizedBox(height: 28),
-              Text('Analyzing Recipe', style: AppTextStyles.cardTitle),
+              Text('analyzing_recipe'.tr, style: AppTextStyles.cardTitle),
               const SizedBox(height: 10),
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 400),
@@ -1587,7 +1735,7 @@ class _PrivacyBadge extends StatelessWidget {
           OnboardingLineIcon(isPublic ? 'globe' : 'lock', size: 12, color: fg),
           const SizedBox(width: 4),
           Text(
-            isPublic ? 'Public' : 'Private',
+            isPublic ? 'public'.tr : 'private'.tr,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 10,
               fontWeight: FontWeight.w800,

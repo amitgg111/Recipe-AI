@@ -179,7 +179,7 @@ class _SplashScreenState extends State<SplashScreen>
                     child: SlideTransition(
                       position: _wordSlide,
                       child: Text(
-                        'Recipe AI',
+                        'app_name'.tr,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 34,
                           fontWeight: FontWeight.w800,
@@ -195,7 +195,7 @@ class _SplashScreenState extends State<SplashScreen>
                     child: SlideTransition(
                       position: _tagSlide,
                       child: Text(
-                        'COOK SMARTER',
+                        'Cook Smarter'.toUpperCase(),
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/Model/user_model.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
@@ -130,7 +131,7 @@ class _FollowButtonState extends State<FollowButton> {
         border: Border.all(color: AppColors.primary, width: 1.5),
       ),
       child: Text(
-        following ? 'Following' : 'Follow',
+        following ? 'following'.tr : 'follow'.tr,
         style: GoogleFonts.plusJakartaSans(
           fontSize: 13,
           fontWeight: FontWeight.w700,

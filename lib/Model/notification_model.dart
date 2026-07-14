@@ -41,10 +41,12 @@ class AppNotification {
   bool get isLike => type == 'like';
   bool get isComment => type == 'comment';
   bool get isFollow => type == 'follow';
+  bool get isSave => type == 'save';
 
   /// True for types that point at a recipe (and so show a recipe thumbnail).
   bool get hasRecipe =>
-      (recipeId != null && recipeId!.isNotEmpty) && (isLike || isComment);
+      (recipeId != null && recipeId!.isNotEmpty) &&
+      (isLike || isComment || isSave);
 
   factory AppNotification.fromDoc(
     DocumentSnapshot<Map<String, dynamic>> doc,

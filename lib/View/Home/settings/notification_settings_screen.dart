@@ -85,7 +85,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
         child: ListView(
           padding: const EdgeInsets.fromLTRB(18, 4, 18, 28),
           children: [
-            SettingsUi.header('Notifications'),
+            SettingsUi.header('notifications'.tr),
             const SizedBox(height: 4),
 
             if (showBanner) ...[
@@ -93,55 +93,55 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
               _PermissionBanner(onOpenSettings: _push.openSystemSettings),
             ],
 
-            SettingsUi.label('COOKING',
+            SettingsUi.label('section_cooking'.tr,
                 padding: const EdgeInsets.fromLTRB(4, 4, 4, 9)),
             SettingsUi.card(
               rows: [
                 _toggle(
-                  'Cook timer alerts',
-                  'When a step timer finishes',
+                  'cook_timer_alerts'.tr,
+                  'cook_timer_alerts_sub'.tr,
                   s.cookTimerAlerts,
                   s.setCookTimerAlerts,
                 ),
                 _toggle(
-                  'Meal plan reminders',
-                  'Daily at 9:00 AM',
+                  'meal_plan_reminders'.tr,
+                  'daily_at_9am'.tr,
                   s.mealPlanReminders,
                   s.setMealPlanReminders,
                 ),
               ],
             ),
 
-            SettingsUi.label('SHOPPING & COMMUNITY'),
+            SettingsUi.label('section_shopping_community'.tr),
             SettingsUi.card(
               rows: [
                 _toggle(
-                  'Weekly grocery reminder',
-                  'Sundays before shopping',
+                  'weekly_grocery_reminder'.tr,
+                  'sundays_before_shopping'.tr,
                   s.weeklyGroceryReminder,
                   s.setWeeklyGroceryReminder,
                 ),
                 _toggle(
-                  'Likes & comments',
-                  'Activity on your recipes',
+                  'likes_and_comments'.tr,
+                  'activity_on_your_recipes'.tr,
                   s.likesAndComments,
                   s.setLikesAndComments,
                 ),
                 _toggle(
-                  'New followers',
-                  'When someone follows you',
+                  'new_followers'.tr,
+                  'when_someone_follows_you'.tr,
                   s.newFollowers,
                   s.setNewFollowers,
                 ),
               ],
             ),
 
-            SettingsUi.label('GENERAL'),
+            SettingsUi.label('section_general'.tr),
             SettingsUi.card(
               rows: [
                 _toggle(
-                  'Product news & tips',
-                  'Occasional updates',
+                  'product_news_tips'.tr,
+                  'occasional_updates'.tr,
                   s.productNews,
                   s.setProductNews,
                 ),
@@ -215,22 +215,22 @@ class _PermissionBanner extends StatelessWidget {
           const Icon(Icons.notifications_off_rounded,
               size: 22, color: AppColors.primary),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Notifications are off',
-                  style: TextStyle(
+                  'notifications_are_off'.tr,
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textDark,
                   ),
                 ),
-                SizedBox(height: 2),
+                const SizedBox(height: 2),
                 Text(
-                  'Enable them in Settings to get alerts.',
-                  style: TextStyle(
+                  'enable_notifications_hint'.tr,
+                  style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textMedium,
@@ -249,9 +249,9 @@ class _PermissionBanner extends StatelessWidget {
                 color: AppColors.primary,
                 borderRadius: BorderRadius.circular(11),
               ),
-              child: const Text(
-                'Open',
-                style: TextStyle(
+              child: Text(
+                'open'.tr,
+                style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,

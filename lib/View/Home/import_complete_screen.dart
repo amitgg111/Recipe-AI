@@ -1074,7 +1074,7 @@ class ImportCompleteScreen extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        'Imported',
+                        'imported'.tr,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 12,
                           fontWeight: FontWeight.w800,
@@ -1160,7 +1160,9 @@ class ImportCompleteScreen extends StatelessWidget {
           const SizedBox(width: 11),
           Expanded(
             child: Text(
-              'AI pulled this from ${_sourceInfo().banner}. Check the details, then save.',
+              'ai_pulled_from_source'.trParams({
+                'source': _sourceInfo().banner,
+              }),
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 12.5,
                 height: 1.4,
@@ -1263,7 +1265,7 @@ class ImportCompleteScreen extends StatelessWidget {
     ].firstWhere((t) => t != null && t.trim().isNotEmpty, orElse: () => null);
     if (time != null) add('clock', time.trim());
     if (recipe.servings != null && recipe.servings!.isNotEmpty) {
-      add('user', '${recipe.servings} servings');
+      add('user', 'servings_count'.trParams({'count': '${recipe.servings}'}));
     }
 
     add('flame', _difficultyLabel());
@@ -1316,9 +1318,9 @@ class ImportCompleteScreen extends StatelessWidget {
     } else if (mins >= 45) {
       score += 1;
     }
-    if (score >= 4) return 'Hard';
-    if (score >= 2) return 'Medium';
-    return 'Easy';
+    if (score >= 4) return 'difficulty_hard'.tr;
+    if (score >= 2) return 'difficulty_medium'.tr;
+    return 'difficulty_easy'.tr;
   }
 
   // ─── Ingredients card (with Units switcher — matches RecipeDetailScreen) ────
@@ -1371,8 +1373,8 @@ class ImportCompleteScreen extends StatelessWidget {
       }
 
       return _card(
-        title: 'Ingredients',
-        count: '$count found',
+        title: 'ingredients'.tr,
+        count: 'count_found'.trParams({'count': '$count'}),
         children: [
           _buildUnitsBanner(settings),
           const SizedBox(height: 4),
@@ -1400,7 +1402,7 @@ class ImportCompleteScreen extends StatelessWidget {
           const SizedBox(width: 9),
           Expanded(
             child: Text(
-              'Units',
+              'units'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,
@@ -1465,7 +1467,7 @@ class ImportCompleteScreen extends StatelessWidget {
           const SizedBox(width: 9),
           Expanded(
             child: Text(
-              'Units',
+              'units'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,
@@ -1591,7 +1593,11 @@ class ImportCompleteScreen extends StatelessWidget {
       }
     }
 
-    return _card(title: 'Instructions', count: '$total steps', children: rows);
+    return _card(
+      title: 'instructions'.tr,
+      count: 'count_steps'.trParams({'count': '$total'}),
+      children: rows,
+    );
   }
 
   Widget _card({
@@ -1706,7 +1712,7 @@ class ImportCompleteScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'NUTRITION',
+            'nutrition'.tr,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 13,
               fontWeight: FontWeight.w800,
@@ -1716,7 +1722,7 @@ class ImportCompleteScreen extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            'Per 1 serving',
+            'per_1_serving'.tr,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 12.5,
               fontWeight: FontWeight.w500,
@@ -1749,17 +1755,17 @@ class ImportCompleteScreen extends StatelessWidget {
                         color: AppColors.textBodyDark,
                       ),
                       children: [
-                        const TextSpan(text: 'This is a Plus feature. '),
+                        TextSpan(text: 'plus_feature_prefix'.tr),
                         TextSpan(
-                          text: 'Subscribe now',
+                          text: 'subscribe_now'.tr,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 13.5,
                             fontWeight: FontWeight.w800,
                             color: AppColors.purple,
                           ),
                         ),
-                        const TextSpan(
-                          text: " to unlock Recipe AI's nutrition calculator!",
+                        TextSpan(
+                          text: 'unlock_nutrition_suffix'.tr,
                         ),
                       ],
                     ),
@@ -1897,7 +1903,7 @@ class ImportCompleteScreen extends StatelessWidget {
             const OnboardingLineIcon('book', size: 20, color: Colors.white),
             const SizedBox(width: 9),
             Text(
-              'Save to cookbook',
+              'save_to_cookbook'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -1933,7 +1939,7 @@ class ImportCompleteScreen extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              'Edit before saving',
+              'edit_before_saving'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,

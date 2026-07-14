@@ -22,9 +22,9 @@ class _WhenToCookScreenState extends State<WhenToCookScreen> {
   int selectedIndex = 0; // First option selected by default
 
   final List<String> _options = [
-    'In the morning, I like to plan ahead',
-    'Around lunch time, when I start thinking about it',
-    'In the evening, when I\'m ready to cook',
+    'when_option_morning'.tr,
+    'when_option_lunch'.tr,
+    'when_option_evening'.tr,
   ];
 
   @override
@@ -68,7 +68,7 @@ class _WhenToCookScreenState extends State<WhenToCookScreen> {
                 child: Column(
                   children: [
                     Text(
-                      'When do you usually think about what to cook?',
+                      'when_to_cook_title'.tr,
                       textAlign: TextAlign.center,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 22,
@@ -80,7 +80,7 @@ class _WhenToCookScreenState extends State<WhenToCookScreen> {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      "We'll check in at the right moment, not a random one.",
+                      'when_to_cook_subtitle'.tr,
                       textAlign: TextAlign.center,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 14.5,
@@ -171,7 +171,7 @@ class _WhenToCookScreenState extends State<WhenToCookScreen> {
               // Bottom: Continue button
               const SizedBox(height: 14),
               PrimaryButton(
-                label: 'Continue',
+                label: 'continue_'.tr,
                 onPressed: () {
                   Get.to(() => const NotificationsScreen());
                 },
@@ -206,9 +206,9 @@ class _WhenToCookBodyState extends State<WhenToCookBody> {
   }
 
   final List<String> _options = [
-    'In the morning, I like to plan ahead',
-    'Around lunch time, when I start thinking about it',
-    'In the evening, when I\'m ready to cook',
+    'when_option_morning'.tr,
+    'when_option_lunch'.tr,
+    'when_option_evening'.tr,
   ];
 
   @override
@@ -224,7 +224,7 @@ class _WhenToCookBodyState extends State<WhenToCookBody> {
             child: Column(
               children: [
                 Text(
-                  'When do you usually think about what to cook?',
+                  'when_to_cook_title'.tr,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 24,
@@ -236,7 +236,7 @@ class _WhenToCookBodyState extends State<WhenToCookBody> {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  "We'll check in at the right moment, not a random one.",
+                  'when_to_cook_subtitle'.tr,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 12,

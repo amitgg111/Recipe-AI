@@ -43,8 +43,8 @@ class _GenerateRecipeScreenState extends State<GenerateRecipeScreen> {
     final recipeName = recipeController.text.trim();
     if (recipeName.isEmpty) {
       CustomSnackbar.show(
-        title: 'Recipe name required',
-        message: 'Enter a dish name to generate.',
+        title: 'recipe_name_required'.tr,
+        message: 'enter_dish_name_to_generate'.tr,
         type: SnackbarType.warning,
       );
       return;
@@ -78,7 +78,7 @@ class _GenerateRecipeScreenState extends State<GenerateRecipeScreen> {
                     const AppLogo(size: 78),
                     const SizedBox(height: 20),
                     Text(
-                      'Generate Recipe by Name',
+                      'generate_recipe_by_name'.tr,
                       textAlign: TextAlign.center,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 24,
@@ -89,7 +89,7 @@ class _GenerateRecipeScreenState extends State<GenerateRecipeScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Enter any recipe name and AI will generate the complete recipe details.',
+                      'generate_recipe_description'.tr,
                       textAlign: TextAlign.center,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 14,
@@ -165,7 +165,7 @@ class _GenerateRecipeScreenState extends State<GenerateRecipeScreen> {
           ),
           const SizedBox(width: 14),
           Text(
-            'Generate Recipe',
+            'generate_recipe'.tr,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 17,
               fontWeight: FontWeight.w700,
@@ -218,7 +218,7 @@ class _GenerateRecipeScreenState extends State<GenerateRecipeScreen> {
                 decoration: InputDecoration(
                   isDense: true,
                   filled: false,
-                  hintText: 'e.g. Paneer Butter Masala',
+                  hintText: 'recipe_name_hint'.tr,
                   hintStyle: GoogleFonts.plusJakartaSans(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
@@ -284,7 +284,7 @@ class _GenerateRecipeScreenState extends State<GenerateRecipeScreen> {
                     ),
                     const SizedBox(width: 9),
                     Text(
-                      'Generate Recipe',
+                      'generate_recipe'.tr,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
@@ -319,7 +319,7 @@ class _GenerateRecipeScreenState extends State<GenerateRecipeScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Try one of these',
+                'try_one_of_these'.tr,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 13,
                   fontWeight: FontWeight.w800,

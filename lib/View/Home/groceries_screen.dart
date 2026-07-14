@@ -165,7 +165,7 @@ class GroceriesScreen extends StatelessWidget {
     return Row(
       children: [
         Text(
-          'Groceries',
+          'groceries'.tr,
           style: _G.f(22, FontWeight.w800, _G.textDark, ls: -0.4),
         ),
         const Spacer(),
@@ -193,7 +193,7 @@ class GroceriesScreen extends StatelessWidget {
                 const OnboardingLineIcon('plus', size: 17, color: Colors.white),
                 const SizedBox(width: 6),
                 Text(
-                  'Add item',
+                  'add_item'.tr,
                   style: _G.f(13, FontWeight.w700, Colors.white),
                 ),
               ],
@@ -233,9 +233,9 @@ class GroceriesScreen extends StatelessWidget {
   Widget _buildToggle() {
     return Row(
       children: [
-        _toggleChip('By meal', true),
+        _toggleChip('by_meal'.tr, true),
         const SizedBox(width: 7),
-        _toggleChip('By category', false),
+        _toggleChip('by_category'.tr, false),
       ],
     );
   }
@@ -386,6 +386,24 @@ class GroceriesScreen extends StatelessWidget {
     ];
   }
 
+  /// Merged total for a group, guaranteed to equal the sum of the per-part
+  /// values shown in the breakdown. Each part is converted to the active unit
+  /// system FIRST, then combined — combining the RAW parts and converting the
+  /// result once could drop or mis-add parts whose original units differed
+  /// (applySystemQuantity only converts the first unit of a string), which is
+  /// what made the merged totals wrong.
+  String _mergedQty(Iterable<GroceryItem> parts, String name) {
+    return GroceryStore.combineQuantities(
+      parts.map(
+        (p) => UnitConverter.applySystemQuantity(
+          p.quantity,
+          name,
+          settings.unitSystem,
+        ),
+      ),
+    );
+  }
+
   void _toggleExpanded(String key) {
     if (_expandedKeys.contains(key)) {
       _expandedKeys.remove(key);
@@ -413,7 +431,7 @@ class GroceriesScreen extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Ingredients used in more than one meal are merged into one line.',
+              'info_merged_line'.tr,
               style: _G.f(
                 12.5,
                 FontWeight.w600,
@@ -452,11 +470,11 @@ class GroceriesScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Used in many meals',
+                  'used_in_many_meals'.tr,
                   style: _G.f(14, FontWeight.w800, _G.textDark),
                 ),
                 Text(
-                  'Buy once for the week',
+                  'buy_once_for_week'.tr,
                   style: _G.f(11, FontWeight.w600, _G.textHint),
                 ),
               ],
@@ -495,9 +513,7 @@ class GroceriesScreen extends StatelessWidget {
     final key = 'meal::${m.name.toLowerCase()}';
     final expanded = _expandedKeys.contains(key);
     final allChecked = m.parts.every((p) => p.checked);
-    final combined = GroceryStore.combineQuantities(
-      m.parts.map((p) => p.quantity),
-    );
+    final combined = _mergedQty(m.parts, m.name);
     return Container(
       decoration: BoxDecoration(
         border: (last && !expanded)
@@ -554,7 +570,7 @@ class GroceriesScreen extends StatelessWidget {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              '· tap to ${expanded ? 'hide' : 'view'}',
+                              '· ${expanded ? 'tap_to_hide'.tr : 'tap_to_view'.tr}',
                               style: _G.f(11, FontWeight.w600, _G.gold),
                             ),
                           ],
@@ -569,11 +585,7 @@ class GroceriesScreen extends StatelessWidget {
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 120),
                   child: Text(
-                    UnitConverter.applySystemQuantity(
-                      combined,
-                      m.name,
-                      settings.unitSystem,
-                    ),
+                    combined,
                     textAlign: TextAlign.right,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -626,17 +638,19 @@ class GroceriesScreen extends StatelessWidget {
       final match = RegExp(
         r'^\s*([\d./½⅓⅔¼¾⅛⅜⅝⅞\s]+?)\s*(.*)$',
       ).firstMatch(p.quantity.trim());
-      if (match == null) return '$n meals combined';
+      if (match == null) return 'meals_combined'.trParams({'n': '$n'});
       final num = match.group(1)!.trim();
       final u = match.group(2)!.trim();
-      if (num.isEmpty) return '$n meals combined';
+      if (num.isEmpty) return 'meals_combined'.trParams({'n': '$n'});
       unit ??= u;
-      if (u.toLowerCase() != unit.toLowerCase()) return '$n meals combined';
+      if (u.toLowerCase() != unit.toLowerCase()) {
+        return 'meals_combined'.trParams({'n': '$n'});
+      }
       nums.add(num);
     }
-    if (nums.length < 2) return '$n meals combined';
+    if (nums.length < 2) return 'meals_combined'.trParams({'n': '$n'});
     final unitStr = (unit == null || unit.isEmpty) ? '' : ' $unit';
-    return '$n meals · ${nums.join(' + ')}$unitStr';
+    return '${'n_meals'.trParams({'n': '$n'})} · ${nums.join(' + ')}$unitStr';
   }
 
   Widget _checkbox(bool checked, {required VoidCallback onTap}) {
@@ -701,7 +715,9 @@ class GroceriesScreen extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  '$count item${count == 1 ? '' : 's'}',
+                  count == 1
+                      ? 'item_singular'.trParams({'count': '$count'})
+                      : 'item_plural'.trParams({'count': '$count'}),
                   style: _G.f(11, FontWeight.w600, _G.textHint),
                 ),
               ],
@@ -736,11 +752,11 @@ class GroceriesScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Extra items',
+                  'extra_items'.tr,
                   style: _G.f(14, FontWeight.w800, _G.textDark),
                 ),
                 Text(
-                  'Added by you',
+                  'added_by_you'.tr,
                   style: _G.f(11, FontWeight.w600, _G.textHint),
                 ),
               ],
@@ -809,6 +825,7 @@ class GroceriesScreen extends StatelessWidget {
               context,
               m.parts[j],
               last: isLast && j == m.parts.length - 1,
+              showEmoji: true,
             ),
           );
         }
@@ -834,9 +851,7 @@ class GroceriesScreen extends StatelessWidget {
     final key = '${m.aisle}::${m.name.toLowerCase()}';
     final expanded = _expandedKeys.contains(key);
     final allChecked = m.parts.every((p) => p.checked);
-    final combined = GroceryStore.combineQuantities(
-      m.parts.map((p) => p.quantity),
-    );
+    final combined = _mergedQty(m.parts, m.name);
     return Container(
       decoration: BoxDecoration(
         border: (last && !expanded)
@@ -852,6 +867,12 @@ class GroceriesScreen extends StatelessWidget {
                 onTap: () => store.setCheckedAll(m.parts, !allChecked),
               ),
               const SizedBox(width: 10),
+              // Per-ingredient emoji, matching the single-source rows.
+              Text(
+                store.emojiForIngredient(m.name),
+                style: const TextStyle(fontSize: 17),
+              ),
+              const SizedBox(width: 9),
               Expanded(
                 child: GestureDetector(
                   onTap: () => _toggleExpanded(key),
@@ -900,8 +921,8 @@ class GroceriesScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'from $recipeCount recipes · tap to '
-                          '${expanded ? 'hide' : 'view'}',
+                          '${'from_n_recipes'.trParams({'count': '$recipeCount'})} · '
+                          '${expanded ? 'tap_to_hide'.tr : 'tap_to_view'.tr}',
                           style: _G.f(11, FontWeight.w600, _G.primary),
                         ),
                       ],
@@ -914,11 +935,7 @@ class GroceriesScreen extends StatelessWidget {
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 120),
                   child: Text(
-                    UnitConverter.applySystemQuantity(
-                      combined,
-                      m.name,
-                      settings.unitSystem,
-                    ),
+                    combined,
                     textAlign: TextAlign.right,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -975,8 +992,8 @@ class GroceriesScreen extends StatelessWidget {
 
   Widget _subRecipeRow(String recipeId, List<GroceryItem> parts) {
     final recipe = _recipeById(recipeId);
-    final name = recipe?.title ?? 'Recipe';
-    final qty = GroceryStore.combineQuantities(parts.map((p) => p.quantity));
+    final name = recipe?.title ?? 'recipe'.tr;
+    final qty = _mergedQty(parts, parts.first.name);
     return Padding(
       padding: const EdgeInsets.fromLTRB(47, 0, 14, 9),
       child: Row(
@@ -994,11 +1011,7 @@ class GroceriesScreen extends StatelessWidget {
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 120),
               child: Text(
-                UnitConverter.applySystemQuantity(
-                  qty,
-                  parts.first.name,
-                  settings.unitSystem,
-                ),
+                qty,
                 textAlign: TextAlign.right,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -1033,6 +1046,7 @@ class GroceriesScreen extends StatelessWidget {
     BuildContext context,
     GroceryItem item, {
     required bool last,
+    bool showEmoji = false,
   }) {
     final checked = item.checked;
     return Container(
@@ -1069,6 +1083,15 @@ class GroceriesScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
+          // Per-ingredient emoji (By category) so each item reads like the
+          // recipe ingredient list — a distinct icon per ingredient.
+          if (showEmoji) ...[
+            Text(
+              store.emojiForIngredient(item.name),
+              style: const TextStyle(fontSize: 17),
+            ),
+            const SizedBox(width: 9),
+          ],
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1155,13 +1178,12 @@ class GroceriesScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             Text(
-              'No meal ingredients yet',
+              'no_meal_ingredients_yet'.tr,
               style: _G.f(20, FontWeight.w800, _G.textDark, ls: -0.4),
             ),
             const SizedBox(height: 8),
             Text(
-              'Add recipes to your meal plan and their ingredients show up '
-              'here, grouped by meal.',
+              'meal_ingredients_hint'.tr,
               textAlign: TextAlign.center,
               style: _G.f(14, FontWeight.w500, _G.textMed, h: 1.5),
             ),
@@ -1193,7 +1215,7 @@ class GroceriesScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Go to meal plan',
+                      'go_to_meal_plan'.tr,
                       style: _G.f(14, FontWeight.w700, Colors.white),
                     ),
                   ],
@@ -1202,7 +1224,7 @@ class GroceriesScreen extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             Text(
-              'Just need a few things?',
+              'just_need_a_few'.tr,
               style: _G.f(12, FontWeight.w600, _G.textHint),
             ),
             const SizedBox(height: 8),
@@ -1227,7 +1249,7 @@ class GroceriesScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: 7),
                     Text(
-                      'Add an item manually',
+                      'add_item_manually'.tr,
                       style: _G.f(13.5, FontWeight.w700, _G.textDark),
                     ),
                   ],
@@ -1251,12 +1273,12 @@ class GroceriesScreen extends StatelessWidget {
             const _EmptyGroceryArt(),
             const SizedBox(height: 22),
             Text(
-              'Your list is empty',
+              'your_list_is_empty'.tr,
               style: _G.f(23, FontWeight.w800, _G.textDark, ls: -0.4),
             ),
             const SizedBox(height: 8),
             Text(
-              "Pull ingredients from your meal plan or add items yourself — we'll keep everything tidy for the store.",
+              'empty_list_hint'.tr,
               textAlign: TextAlign.center,
               style: _G.f(14.5, FontWeight.w500, _G.textMed, h: 1.5),
             ),
@@ -1289,7 +1311,7 @@ class GroceriesScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Add first ingredient',
+                      'add_first_ingredient'.tr,
                       style: _G.f(15, FontWeight.w700, Colors.white),
                     ),
                   ],
@@ -1310,8 +1332,8 @@ class GroceriesScreen extends StatelessWidget {
       case 'clearChecked':
         store.clearChecked();
         CustomSnackbar.show(
-          title: 'Cleared',
-          message: 'Checked items removed',
+          title: 'cleared'.tr,
+          message: 'checked_items_removed'.tr,
           type: SnackbarType.info,
         );
       case 'clearAll':
@@ -1322,7 +1344,7 @@ class GroceriesScreen extends StatelessWidget {
   // Categorised text used for both the preview and the native share.
   String _shareText() {
     final byAisle = store.byAisle;
-    final buf = StringBuffer('🛒 My Grocery List\n');
+    final buf = StringBuffer('🛒 ${'my_grocery_list'.tr}\n');
     for (final aisle in store.sortedAisles) {
       final group = byAisle[aisle] ?? [];
       if (group.isEmpty) continue;
@@ -1365,7 +1387,7 @@ class GroceriesScreen extends StatelessWidget {
             Row(
               children: [
                 Text(
-                  'Share shopping list',
+                  'share_shopping_list'.tr,
                   style: _G.f(19, FontWeight.w800, _G.textDark),
                 ),
                 const Spacer(),
@@ -1403,12 +1425,12 @@ class GroceriesScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '🛒 My Grocery List',
+                        '🛒 ${'my_grocery_list'.tr}',
                         style: _G.f(14, FontWeight.w800, _G.textDark),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '$count item${count == 1 ? '' : 's'} · from Recipe AI',
+                        '${count == 1 ? 'item_singular'.trParams({'count': '$count'}) : 'item_plural'.trParams({'count': '$count'})} · from Recipe AI',
                         style: _G.f(12, FontWeight.w600, _G.textMed),
                       ),
                       const SizedBox(height: 12),
@@ -1467,7 +1489,7 @@ class GroceriesScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Share list',
+                      'share_list'.tr,
                       style: _G.f(16, FontWeight.w700, Colors.white),
                     ),
                   ],
@@ -1510,12 +1532,12 @@ class GroceriesScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'Clear all items?',
+              'clear_all_items_q'.tr,
               style: _G.f(18, FontWeight.w800, _G.textDark),
             ),
             const SizedBox(height: 6),
             Text(
-              'This removes every item from your grocery list.',
+              'clear_all_confirm'.tr,
               textAlign: TextAlign.center,
               style: _G.f(13, FontWeight.w500, _G.textHint),
             ),
@@ -1533,7 +1555,7 @@ class GroceriesScreen extends StatelessWidget {
                         border: Border.all(color: _G.border),
                       ),
                       child: Text(
-                        'Cancel',
+                        'cancel'.tr,
                         style: _G.f(14, FontWeight.w700, _G.textDark),
                       ),
                     ),
@@ -1554,7 +1576,7 @@ class GroceriesScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        'Clear all',
+                        'clear_all'.tr,
                         style: _G.f(14, FontWeight.w700, Colors.white),
                       ),
                     ),
@@ -1629,7 +1651,7 @@ class GroceriesScreen extends StatelessWidget {
             const Divider(height: 1, color: _G.rowLine),
             _optionRow(
               Icons.edit_outlined,
-              'Edit item',
+              'edit_item'.tr,
               () {
                 Navigator.pop(context);
                 _showEditItemSheet(context, item);
@@ -1642,13 +1664,13 @@ class GroceriesScreen extends StatelessWidget {
             ),
             _optionRow(
               item.checked ? Icons.remove_done_rounded : Icons.check_rounded,
-              item.checked ? 'Mark as not bought' : 'Mark as bought',
+              item.checked ? 'mark_as_not_bought'.tr : 'mark_as_bought'.tr,
               () {
                 Navigator.pop(context);
                 store.toggleItem(item);
               },
             ),
-            _optionRow(Icons.category_outlined, 'Change category', () {
+            _optionRow(Icons.category_outlined, 'change_category'.tr, () {
               Navigator.pop(context);
               _showCategoryPicker(context, item.aisle, (cat) {
                 _replaceItem(item, item.name, item.quantity, cat);
@@ -1656,13 +1678,13 @@ class GroceriesScreen extends StatelessWidget {
             }),
             _optionRow(
               Icons.delete_outline_rounded,
-              'Delete item',
+              'delete_item'.tr,
               () {
                 Navigator.pop(context);
                 store.removeItem(item);
                 CustomSnackbar.show(
-                  title: 'Removed',
-                  message: '${item.name} removed',
+                  title: 'removed'.tr,
+                  message: 'item_removed'.trParams({'name': item.name}),
                   type: SnackbarType.info,
                 );
               },
@@ -1725,12 +1747,12 @@ class GroceriesScreen extends StatelessWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => _ItemFormSheet(
-        title: 'Add an item',
+        title: 'add_an_item'.tr,
         nameCtrl: nameCtrl,
         nameRx: nameRx,
         qtyCtrl: qtyCtrl,
         category: category,
-        buttonLabel: 'Add to list',
+        buttonLabel: 'add_to_list'.tr,
         autoDetect: (name) => store.detectAisle(name),
         onPickCategory: () =>
             _showCategoryPicker(ctx, category.value, (c) => category.value = c),
@@ -1750,8 +1772,8 @@ class GroceriesScreen extends StatelessWidget {
           store.items.refresh();
           Navigator.pop(ctx);
           CustomSnackbar.show(
-            title: 'Added',
-            message: '$name added to your list',
+            title: 'added'.tr,
+            message: 'added_to_list'.trParams({'name': name}),
             type: SnackbarType.success,
           );
         },
@@ -1771,12 +1793,12 @@ class GroceriesScreen extends StatelessWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => _ItemFormSheet(
-        title: 'Edit item',
+        title: 'edit_item'.tr,
         nameCtrl: nameCtrl,
         nameRx: nameRx,
         qtyCtrl: qtyCtrl,
         category: category,
-        buttonLabel: 'Save changes',
+        buttonLabel: 'save_changes'.tr,
         autoDetect: (name) => store.detectAisle(name),
         onPickCategory: () =>
             _showCategoryPicker(ctx, category.value, (c) => category.value = c),
@@ -1833,7 +1855,7 @@ class GroceriesScreen extends StatelessWidget {
               child: Row(
                 children: [
                   Text(
-                    'Choose a category',
+                    'choose_a_category'.tr,
                     style: _G.f(19, FontWeight.w800, _G.textDark),
                   ),
                   const Spacer(),
@@ -1952,7 +1974,7 @@ class _MoreMenuButton extends StatelessWidget {
             _mi(
               'share',
               Icons.ios_share_rounded,
-              'Share list',
+              'share_list'.tr,
               iconWidget: const OnboardingLineIcon(
                 'share',
                 size: 19,
@@ -1962,7 +1984,7 @@ class _MoreMenuButton extends StatelessWidget {
             _mi(
               'clearChecked',
               Icons.check_circle_outline_rounded,
-              'Clear checked items',
+              'clear_checked_items'.tr,
               iconWidget: const OnboardingLineIcon(
                 'checkCircle',
                 size: 19,
@@ -1972,7 +1994,7 @@ class _MoreMenuButton extends StatelessWidget {
             _mi(
               'clearAll',
               Icons.delete_outline_rounded,
-              'Clear all',
+              'clear_all'.tr,
               destructive: true,
               iconWidget: const OnboardingLineIcon(
                 'trash',
@@ -2118,15 +2140,16 @@ class _ItemFormSheetState extends State<_ItemFormSheet> {
                 ],
               ),
               const SizedBox(height: 16),
-              _label('Item'),
+              _label('item'.tr),
               const SizedBox(height: 7),
               _field(
                 widget.nameCtrl,
-                'e.g. Paper towels',
+                'eg_paper_towels'.tr,
                 focused: true,
                 autofocus: true,
                 keyboardType: TextInputType.text,
-                validator: (v) => ValidationHelper.required(v, field: 'Item'),
+                validator: (v) =>
+                    ValidationHelper.required(v, field: 'item'.tr),
               ),
               const SizedBox(height: 16),
               Row(
@@ -2136,9 +2159,9 @@ class _ItemFormSheetState extends State<_ItemFormSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _label('Quantity'),
+                        _label('quantity'.tr),
                         const SizedBox(height: 7),
-                        _field(widget.qtyCtrl, 'e.g. 2'),
+                        _field(widget.qtyCtrl, 'eg_qty'.tr),
                       ],
                     ),
                   ),
@@ -2147,7 +2170,7 @@ class _ItemFormSheetState extends State<_ItemFormSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _label('Category'),
+                        _label('category'.tr),
                         const SizedBox(height: 7),
                         GestureDetector(
                           onTap: widget.onPickCategory,

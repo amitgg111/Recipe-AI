@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_dimensions.dart';
@@ -47,7 +48,7 @@ class SocialPickerSheet extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Import from social media',
+                  'import_from_social_media'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
@@ -57,7 +58,7 @@ class SocialPickerSheet extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Pick where your recipe is from.',
+                  'pick_recipe_source'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w400,
@@ -82,7 +83,7 @@ class SocialPickerSheet extends StatelessWidget {
                     ),
                   ),
                   title: 'Instagram',
-                  subtitle: 'Reels, posts & saved',
+                  subtitle: 'reels_posts_saved'.tr,
                   onTap: () => Navigator.pop(context, 'instagram'),
                 ),
                 const SizedBox(height: 11),
@@ -94,7 +95,7 @@ class SocialPickerSheet extends StatelessWidget {
                     color: const Color(0xFF1F1F24),
                   ),
                   title: 'TikTok',
-                  subtitle: 'Recipe videos',
+                  subtitle: 'recipe_videos'.tr,
                   onTap: () => Navigator.pop(context, 'tiktok'),
                 ),
                 const SizedBox(height: 11),
@@ -106,7 +107,7 @@ class SocialPickerSheet extends StatelessWidget {
                     color: const Color(0xFF2D6FE0),
                   ),
                   title: 'Facebook',
-                  subtitle: 'Posts & watch videos',
+                  subtitle: 'posts_watch_videos'.tr,
                   onTap: () => Navigator.pop(context, 'facebook'),
                 ),
 

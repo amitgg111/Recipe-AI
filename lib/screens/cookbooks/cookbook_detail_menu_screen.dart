@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_spacing.dart';
@@ -68,18 +69,18 @@ class _CookbookDetailMenuScreenState extends State<CookbookDetailMenuScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '${widget.recipeCount} recipes · updated today',
+                                '${'n_recipes_lc'.trParams({'count': '${widget.recipeCount}'})} · ${'updated_today'.tr}',
                                 style: AppTextStyles.smallLabel,
                               ),
                             ],
                           ),
                         ),
                         const SizedBox(height: AppSpacing.lg),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
                             horizontal: AppSpacing.xl,
                           ),
-                          child: AppSearchBar(hintText: 'Search recipes'),
+                          child: AppSearchBar(hintText: 'search_recipes'.tr),
                         ),
                         const SizedBox(height: AppSpacing.lg),
                         _buildRecipeList(),
@@ -196,7 +197,7 @@ class _CookbookDetailMenuScreenState extends State<CookbookDetailMenuScreen> {
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          'Edit',
+                          'edit'.tr,
                           style: AppTextStyles.bodyLarge.copyWith(
                             color: AppColors.textBodyDark,
                             fontWeight: FontWeight.w600,
@@ -232,7 +233,7 @@ class _CookbookDetailMenuScreenState extends State<CookbookDetailMenuScreen> {
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          'Delete',
+                          'delete'.tr,
                           style: AppTextStyles.bodyLarge.copyWith(
                             color: AppColors.red,
                             fontWeight: FontWeight.w600,

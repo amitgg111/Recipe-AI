@@ -20,10 +20,9 @@ class _ImportFromWebScreenState extends State<ImportFromWebScreen> {
   // Defensive: normally registered permanently in main(), but if it was ever
   // removed, re-create it here so entering this screen can never throw
   // "ImportWebController not found".
-  final ImportWebController controller =
-      Get.isRegistered<ImportWebController>()
-          ? Get.find<ImportWebController>()
-          : Get.put(ImportWebController(), permanent: true);
+  final ImportWebController controller = Get.isRegistered<ImportWebController>()
+      ? Get.find<ImportWebController>()
+      : Get.put(ImportWebController(), permanent: true);
 
   // True for the whole import (scrape → image → save). Keeps the full-screen
   // loader up, disables the Import button, and blocks back — set/reset only in
@@ -76,8 +75,8 @@ class _ImportFromWebScreenState extends State<ImportFromWebScreen> {
       );
     } catch (e) {
       CustomSnackbar.show(
-        title: 'Import failed',
-        message: "We couldn't import this recipe. Please try another page.",
+        title: 'import_failed'.tr,
+        message: 'import_failed_message'.tr,
         type: SnackbarType.error,
       );
     } finally {
@@ -181,12 +180,11 @@ class _ImportFromWebScreenState extends State<ImportFromWebScreen> {
           ),
         ],
       ),
-      child: Obx(
-        () {
-          // Loading for the WHOLE import (scrape → image → save), shown only on
-          // the button — no full-screen overlay.
-          final loading = _importing || controller.isImporting.value;
-          return Column(
+      child: Obx(() {
+        // Loading for the WHOLE import (scrape → image → save), shown only on
+        // the button — no full-screen overlay.
+        final loading = _importing || controller.isImporting.value;
+        return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             /// Handle
@@ -206,9 +204,7 @@ class _ImportFromWebScreenState extends State<ImportFromWebScreen> {
                 width: double.infinity,
                 height: 54,
                 child: ElevatedButton.icon(
-                  onPressed: loading
-                      ? null
-                      : () => _runWebImport(controller),
+                  onPressed: loading ? null : () => _runWebImport(controller),
                   icon: loading
                       ? const SizedBox(
                           height: 18,
@@ -220,9 +216,7 @@ class _ImportFromWebScreenState extends State<ImportFromWebScreen> {
                         )
                       : const Icon(Icons.download_rounded, color: Colors.white),
                   label: CustomText(
-                    loading
-                        ? "Importing..."
-                        : "Import Recipe",
+                    loading ? "importing".tr : "import_recipe".tr,
 
                     fontSize: 16,
                     color: Colors.white,
@@ -247,14 +241,14 @@ class _ImportFromWebScreenState extends State<ImportFromWebScreen> {
                     color: Colors.grey.shade500,
                   ),
                   const SizedBox(height: 8),
-                  const CustomText(
-                    "Open a recipe to import",
+                  CustomText(
+                    "open_a_recipe_to_import".tr,
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
                   ),
                   const SizedBox(height: 4),
-                  const CustomText(
-                    "Browse any recipe website and import instantly",
+                  CustomText(
+                    "browse_recipe_website".tr,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                   ),
@@ -262,58 +256,9 @@ class _ImportFromWebScreenState extends State<ImportFromWebScreen> {
               ),
 
             const SizedBox(height: 20),
-
-            // Row(
-            //   mainAxisAlignment: MainAxisAlignment.center,
-            //   children: [
-            //     _navButton(
-            //       iconWidget: const OnboardingLineIcon(
-            //         'back',
-            //         size: 22,
-            //         color: Color(0xFF4A4A4A),
-            //       ),
-            //       onTap: () {
-            //         controller.webViewController.canGoBack().then((can) {
-            //           if (can) {
-            //             controller.webViewController.goBack();
-            //           } else {
-            //             controller.loadLandingPage();
-            //           }
-            //         });
-            //       },
-            //     ),
-
-            //     const SizedBox(width: 20),
-
-            //     _navButton(
-            //       icon: Icons.refresh_rounded,
-            //       onTap: () {
-            //         controller.webViewController.reload();
-            //       },
-            //     ),
-
-            //     const SizedBox(width: 20),
-
-            //     _navButton(
-            //       iconWidget: const OnboardingLineIcon(
-            //         'chevR',
-            //         size: 22,
-            //         color: Color(0xFF4A4A4A),
-            //       ),
-            //       onTap: () {
-            //         controller.webViewController.canGoForward().then((can) {
-            //           if (can) {
-            //             controller.webViewController.goForward();
-            //           }
-            //         });
-            //       },
-            //     ),
-            //   ],
-            // ),
           ],
-          );
-        },
-      ),
+        );
+      }),
     );
   }
 }
@@ -340,16 +285,16 @@ class _PageLoadingOverlay extends StatelessWidget {
               ),
             ],
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              SizedBox(
+              const SizedBox(
                 width: 18,
                 height: 18,
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
-              SizedBox(width: 12),
-              CustomText('Loading recipe page', fontWeight: FontWeight.w600),
+              const SizedBox(width: 12),
+              CustomText('loading_recipe_page'.tr, fontWeight: FontWeight.w600),
             ],
           ),
         ),

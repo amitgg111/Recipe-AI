@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_spacing.dart';
@@ -60,7 +61,7 @@ class DeleteCookbookDialog extends StatelessWidget {
             const SizedBox(height: AppSpacing.xl),
             // Title
             Text(
-              'Delete this cookbook?',
+              'delete_this_cookbook'.tr,
               style: AppTextStyles.cardTitle.copyWith(fontSize: 21),
             ),
             const SizedBox(height: AppSpacing.md),
@@ -72,18 +73,16 @@ class DeleteCookbookDialog extends StatelessWidget {
                   color: AppColors.textBody,
                   height: 1.5,
                 ),
-                children: const [
+                children: [
                   TextSpan(
-                    text:
-                        'Are you sure you want to delete this cookbook? Note that this will ',
+                    text: 'delete_cookbook_note_prefix'.tr,
                   ),
                   TextSpan(
-                    text: 'not',
-                    style: TextStyle(fontWeight: FontWeight.w800),
+                    text: 'delete_cookbook_note_not'.tr,
+                    style: const TextStyle(fontWeight: FontWeight.w800),
                   ),
                   TextSpan(
-                    text:
-                        ' delete any of the individual recipes themselves.',
+                    text: 'delete_cookbook_note_suffix'.tr,
                   ),
                 ],
               ),
@@ -107,7 +106,7 @@ class DeleteCookbookDialog extends StatelessWidget {
                       ),
                       child: Center(
                         child: Text(
-                          'Cancel',
+                          'cancel'.tr,
                           style: AppTextStyles.buttonLabel.copyWith(
                             color: AppColors.textDark,
                           ),
@@ -139,7 +138,7 @@ class DeleteCookbookDialog extends StatelessWidget {
                       ),
                       child: Center(
                         child: Text(
-                          'Delete',
+                          'delete'.tr,
                           style: AppTextStyles.buttonLabel,
                         ),
                       ),

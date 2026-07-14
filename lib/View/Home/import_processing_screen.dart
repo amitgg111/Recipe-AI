@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/app_logo.dart';
@@ -127,7 +128,7 @@ class ImportProcessingScreenState extends State<ImportProcessingScreen>
 
                       const SizedBox(height: 34),
                       Text(
-                        'Reading your recipe…',
+                        'reading_your_recipe'.tr,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 23,
                           fontWeight: FontWeight.w800,
@@ -137,7 +138,7 @@ class ImportProcessingScreenState extends State<ImportProcessingScreen>
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        "Our AI is pulling out every detail so you don't have to.",
+                        'reading_recipe_subtitle'.tr,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 14,

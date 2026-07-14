@@ -47,9 +47,9 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
                             letterSpacing: -0.52,
                           ),
                           children: [
-                            const TextSpan(text: 'Choose your '),
+                            TextSpan(text: 'trial_title_1'.tr),
                             TextSpan(
-                              text: 'trial experience',
+                              text: 'trial_title_2'.tr,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 24,
                                 fontWeight: FontWeight.w800,
@@ -65,15 +65,15 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
                       // Trial option 1: FREE 7 day (selected)
                       _buildPlanOption(
                         index: 0,
-                        price: 'FREE',
-                        period: '7 day trial',
+                        price: 'free_caps'.tr,
+                        period: 'seven_day_trial'.tr,
                       ),
                       const SizedBox(height: 8),
                       // Trial option 2: 99.00 30 day
                       _buildPlanOption(
                         index: 1,
                         price: '₹99.00',
-                        period: '30 day trial',
+                        period: 'thirty_day_trial'.tr,
                       ),
                       const SizedBox(height: 8),
                       // Reminder toggle
@@ -83,7 +83,7 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
                       GestureDetector(
                         onTap: () {},
                         child: Text(
-                          'View all plans',
+                          'view_all_plans'.tr,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
@@ -102,7 +102,7 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
                       const SizedBox(height: 14),
                       // Button
                       PrimaryButton.purple(
-                        label: 'Redeem 7 days for ₹0.00',
+                        label: 'redeem_days_price'.tr,
                         onPressed: () => Get.offAll(
                           () => const CreateAccountScreen(),
                           transition: Transition.noTransition,
@@ -111,7 +111,7 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
                       const SizedBox(height: 10),
                       // Disclaimer
                       Text(
-                        '7 days free, then ₹1,700.00 / year · Cancel anytime',
+                        'trial_disclaimer'.tr,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w500,
@@ -223,7 +223,7 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
                   borderRadius: BorderRadius.circular(11),
                 ),
                 child: Text(
-                  'Healthy',
+                  'healthy'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
@@ -249,7 +249,7 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
                   borderRadius: BorderRadius.circular(11),
                 ),
                 child: Text(
-                  'Fall recipes',
+                  'fall_recipes'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
@@ -362,7 +362,7 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
         children: [
           Expanded(
             child: Text(
-              'Remind me before my trial ends',
+              'remind_me_before_trial_ends'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
@@ -417,7 +417,7 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
               ),
             ),
             Text(
-              'Happy cooks',
+              'happy_cooks'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
@@ -448,7 +448,7 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
             ),
             const SizedBox(height: 2),
             Text(
-              '4.8 rating',
+              'rating_4_8'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
@@ -474,7 +474,7 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
           ),
           const SizedBox(width: 7),
           Text(
-            'No payment now',
+            'no_payment_now'.tr,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 14,
               fontWeight: FontWeight.w700,

@@ -210,7 +210,7 @@ class _RecipeDetailViewScreenState extends State<RecipeDetailViewScreen> {
                   ),
                   const SizedBox(width: 5),
                   Text(
-                    'Public',
+                    'public'.tr,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -219,7 +219,7 @@ class _RecipeDetailViewScreenState extends State<RecipeDetailViewScreen> {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    '· tap to change',
+                    '· ${'tap_to_change'.tr}',
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
@@ -288,19 +288,19 @@ class _RecipeDetailViewScreenState extends State<RecipeDetailViewScreen> {
         children: [
           _buildActionButton(
             icon: Icons.menu_book_rounded,
-            label: 'Cookbook',
+            label: 'cookbook'.tr,
             onTap: () => AddToCookbookSheet.show(context),
           ),
           const SizedBox(width: 12),
           _buildActionButton(
             icon: Icons.calendar_today_rounded,
-            label: 'Meal Plan',
+            label: 'meal_plan'.tr,
             onTap: () {},
           ),
           const SizedBox(width: 12),
           _buildActionButton(
             icon: Icons.share_outlined,
-            label: 'Share',
+            label: 'share'.tr,
             onTap: () {},
           ),
         ],
@@ -362,7 +362,7 @@ class _RecipeDetailViewScreenState extends State<RecipeDetailViewScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Cookbooks',
+              'cookbooks'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
@@ -436,7 +436,7 @@ class _RecipeDetailViewScreenState extends State<RecipeDetailViewScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Add a note',
+                      'add_a_note'.tr,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 14.5,
                         fontWeight: FontWeight.w700,
@@ -444,7 +444,7 @@ class _RecipeDetailViewScreenState extends State<RecipeDetailViewScreen> {
                       ),
                     ),
                     Text(
-                      'Personal tips, tweaks, or memories',
+                      'personal_tips_tweaks'.tr,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w500,
@@ -503,13 +503,13 @@ class _RecipeDetailViewScreenState extends State<RecipeDetailViewScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Ingredients', style: AppTextStyles.cardTitle),
+                Text('ingredients'.tr, style: AppTextStyles.cardTitle),
                 _buildServingStepper(),
               ],
             ),
             const SizedBox(height: 6),
             Text(
-              'Tap to add to your grocery list',
+              'tap_to_add_to_grocery_list'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
@@ -558,7 +558,7 @@ class _RecipeDetailViewScreenState extends State<RecipeDetailViewScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Text(
-              '$_servings serv',
+              '$_servings ${'serv'.tr}',
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 13.5,
                 fontWeight: FontWeight.w700,
@@ -703,7 +703,7 @@ class _RecipeDetailViewScreenState extends State<RecipeDetailViewScreen> {
           borderRadius: BorderRadius.circular(AppDimensions.radiusButton),
           child: Center(
             child: Text(
-              'Add all to groceries',
+              'add_all_to_groceries'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
@@ -752,14 +752,14 @@ class _RecipeDetailViewScreenState extends State<RecipeDetailViewScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Instructions', style: AppTextStyles.cardTitle),
+            Text('instructions'.tr, style: AppTextStyles.cardTitle),
             const SizedBox(height: 16),
             ...steps.asMap().entries.map((entry) {
               return _buildInstructionStep(entry.key + 1, entry.value);
             }),
             const SizedBox(height: 16),
             PrimaryButton(
-              label: 'Cook step-by-step',
+              label: 'cook_step_by_step'.tr,
               leadingIcon: const Icon(
                 Icons.play_arrow_rounded,
                 color: Colors.white,
@@ -837,14 +837,14 @@ class _RecipeDetailViewScreenState extends State<RecipeDetailViewScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'NUTRITION',
+              'nutrition_upper'.tr,
               style: AppTextStyles.tinyLabel.copyWith(
                 color: AppColors.textMedium,
               ),
             ),
             const SizedBox(height: 4),
             Text(
-              'Per 1 serving',
+              'per_1_serving'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
@@ -872,7 +872,7 @@ class _RecipeDetailViewScreenState extends State<RecipeDetailViewScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Unlock nutrition info',
+                          'unlock_nutrition_info'.tr,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
@@ -880,7 +880,7 @@ class _RecipeDetailViewScreenState extends State<RecipeDetailViewScreen> {
                           ),
                         ),
                         Text(
-                          'Upgrade to Plus for detailed breakdowns',
+                          'upgrade_to_plus_breakdowns'.tr,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w500,

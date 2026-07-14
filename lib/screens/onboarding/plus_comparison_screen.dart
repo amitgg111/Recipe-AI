@@ -69,13 +69,13 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
   // Feature rows: (label, freeValue, plusValue)
   // plusValue: null means checkmark, String means text
   static const _features = <(String, String, String?)>[
-    ('Recipe imports', '5 / week', 'Unlimited'),
-    ('Recipe nutrition calculator', '—', null),
-    ('Create shopping lists in seconds', '—', null),
-    ('AI-powered cooking assistant', '—', null),
-    ('Convert measurements', '—', null),
-    ('Step-by-step cooking mode', '—', null),
-    ('Print / export recipes', '—', null),
+    ('comparison_feat_recipe_imports', 'qty_5_per_week', 'unlimited'),
+    ('comparison_feat_nutrition', '—', null),
+    ('comparison_feat_shopping_lists', '—', null),
+    ('comparison_feat_ai_assistant', '—', null),
+    ('plus_feature_convert_measurements', '—', null),
+    ('comparison_feat_cooking_mode', '—', null),
+    ('comparison_feat_print_export', '—', null),
   ];
 
   @override
@@ -291,7 +291,7 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  'MEMBER RESULTS',
+                                  'member_results'.tr,
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w800,
@@ -322,7 +322,7 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                               ),
                               children: [
                                 TextSpan(
-                                  text: '93% of members',
+                                  text: 'comparison_title_1'.tr,
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 26,
                                     fontWeight: FontWeight.w800,
@@ -331,8 +331,8 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                                     letterSpacing: -0.52,
                                   ),
                                 ),
-                                const TextSpan(
-                                  text: ' reported improved cooking habits',
+                                TextSpan(
+                                  text: 'comparison_title_2'.tr,
                                 ),
                               ],
                             ),
@@ -365,7 +365,7 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                 child: FadeTransition(
                   opacity: _ctaFade,
                   child: PrimaryButton.purple(
-                    label: 'Start my free week',
+                    label: 'start_my_free_week'.tr,
                     onPressed:
                         widget.onContinue ??
                         () => Get.to(
@@ -380,7 +380,7 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
               FadeTransition(
                 opacity: _discFade,
                 child: Text(
-                  '7 days free · cancel anytime',
+                  'seven_days_free_cancel_anytime'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w500,
@@ -434,7 +434,7 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                   alignment: Alignment.bottomLeft,
                   padding: const EdgeInsets.only(left: 16, bottom: 12),
                   child: Text(
-                    'What you get',
+                    'what_you_get'.tr,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -456,7 +456,7 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                       ),
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        _features[i].$1,
+                        _features[i].$1.tr,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -481,7 +481,7 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                   alignment: Alignment.bottomCenter,
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Text(
-                    'Free',
+                    'free'.tr,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -504,7 +504,7 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                       ),
                       alignment: Alignment.center,
                       child: Text(
-                        freeVal,
+                        freeVal.tr,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
@@ -584,7 +584,7 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                                     ),
                                   )
                                 : Text(
-                                    plusVal,
+                                    plusVal.tr,
                                     style: GoogleFonts.plusJakartaSans(
                                       fontSize: 13.5,
                                       fontWeight: FontWeight.bold,

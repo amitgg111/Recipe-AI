@@ -22,9 +22,9 @@ Future<void> showCannotPublishDialog() {
           onPressed: () {
             if (Get.isDialogOpen ?? false) Get.back();
           },
-          child: const Text(
-            'OK',
-            style: TextStyle(fontWeight: FontWeight.w700),
+          child: Text(
+            "ok".tr,
+            style: const TextStyle(fontWeight: FontWeight.w700),
           ),
         ),
       ],

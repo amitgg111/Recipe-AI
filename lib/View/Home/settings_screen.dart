@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/Controllers/profile_controller.dart';
 import 'package:recipe_ai/Controllers/settings_controller.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
+import 'package:recipe_ai/Service/subscription_service.dart';
 import 'package:recipe_ai/View/Auth/auth_wrapper.dart';
 import 'package:recipe_ai/View/Home/settings/help_center_screen.dart';
 import 'package:recipe_ai/View/Home/settings/language_screen.dart';
@@ -36,11 +37,11 @@ class SettingsScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
-                padding: EdgeInsets.only(bottom: 16),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
                 child: Text(
-                  'More',
-                  style: TextStyle(
+                  'more'.tr,
+                  style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                     color: AppColors.textDark,
@@ -63,7 +64,7 @@ class SettingsScreen extends StatelessWidget {
               _creditsCard(),
 
               // ---- APP section ----
-              SettingsUi.label('APP'),
+              SettingsUi.label('section_app'.tr),
               SettingsUi.card(
                 rows: [
                   SettingsUi.row(
@@ -72,7 +73,7 @@ class SettingsScreen extends StatelessWidget {
                       color: SettingsUi.rowIcon,
                       size: 20,
                     ),
-                    label: 'Notifications',
+                    label: 'notifications'.tr,
                     onTap: () =>
                         Get.to(() => const NotificationSettingsScreen()),
                   ),
@@ -83,7 +84,7 @@ class SettingsScreen extends StatelessWidget {
                       color: SettingsUi.rowIcon,
                       size: 20,
                     ),
-                    label: 'Language',
+                    label: 'language'.tr,
                     trailing: Obx(
                       () => Text(
                         settings.language.value,
@@ -100,7 +101,7 @@ class SettingsScreen extends StatelessWidget {
               ),
 
               // ---- SUPPORT section ----
-              SettingsUi.label('SUPPORT'),
+              SettingsUi.label('section_support'.tr),
               SettingsUi.card(
                 rows: [
                   SettingsUi.row(
@@ -109,7 +110,7 @@ class SettingsScreen extends StatelessWidget {
                       color: SettingsUi.rowIcon,
                       size: 20,
                     ),
-                    label: 'Help center',
+                    label: 'help_center'.tr,
                     onTap: () => Get.to(() => const HelpCenterScreen()),
                   ),
                   SettingsUi.row(
@@ -118,7 +119,7 @@ class SettingsScreen extends StatelessWidget {
                       color: SettingsUi.rowIcon,
                       size: 20,
                     ),
-                    label: 'Send feedback',
+                    label: 'send_feedback'.tr,
                     onTap: () => Get.to(() => const SendFeedbackScreen()),
                   ),
                   SettingsUi.row(
@@ -127,7 +128,7 @@ class SettingsScreen extends StatelessWidget {
                       color: SettingsUi.rowIcon,
                       size: 20,
                     ),
-                    label: 'Privacy & terms',
+                    label: 'privacy_and_terms'.tr,
                     onTap: () => Get.to(() => const PrivacyTermsScreen()),
                   ),
                 ],
@@ -292,75 +293,89 @@ class SettingsScreen extends StatelessWidget {
   }
 
   Widget _creditsCard() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.surfaceBorder),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            padding: const EdgeInsets.only(top: 5),
-            decoration: BoxDecoration(
-              color: AppColors.goldBg,
-              borderRadius: BorderRadius.circular(11),
-            ),
-            child: const Center(
-              child: OnboardingLineIcon(
-                'sparkF',
-                color: AppColors.gold,
-                size: 25,
+    return Obx(() {
+      final sub = SubscriptionService.instance;
+      final plus = sub.isPlusListenable.value;
+      final used = sub.importCountListenable.value;
+      const max = SubscriptionService.kFreeImportLimit;
+      final remaining = (max - used).clamp(0, max);
+      final frac = plus ? 1.0 : (max == 0 ? 0.0 : remaining / max);
+      final accent = plus ? AppColors.purpleDark : AppColors.primary;
+      return GestureDetector(
+        // Dev/testing shortcut: long-press to toggle Plus locally (no billing
+        // integration yet). Remove once a real purchase flow is wired.
+        onLongPress: () => sub.setPlus(!plus),
+        child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.surfaceBorder),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              padding: const EdgeInsets.only(top: 5),
+              decoration: BoxDecoration(
+                color: plus ? AppColors.purpleBg : AppColors.goldBg,
+                borderRadius: BorderRadius.circular(11),
+              ),
+              child: Center(
+                child: OnboardingLineIcon(
+                  plus ? 'crown' : 'sparkF',
+                  color: plus ? AppColors.purpleDark : AppColors.gold,
+                  size: 25,
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Import credits',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textDark,
-                  ),
-                ),
-                SizedBox(height: 1),
-                Text(
-                  '4 of 5 left this week',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textMedium,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: SizedBox(
-              width: 64,
-              height: 7,
-              child: Stack(
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(color: const Color(0xFFF0EADD)),
-                  FractionallySizedBox(
-                    widthFactor: 0.8,
-                    child: Container(color: AppColors.primary),
+                  const Text(
+                    'Import credits',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textDark,
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    plus ? 'Unlimited imports' : '$remaining of $max left',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textMedium,
+                    ),
                   ),
                 ],
               ),
             ),
-          ),
-        ],
-      ),
-    );
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: SizedBox(
+                width: 64,
+                height: 7,
+                child: Stack(
+                  children: [
+                    Container(color: const Color(0xFFF0EADD)),
+                    FractionallySizedBox(
+                      widthFactor: frac,
+                      child: Container(color: accent),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        ),
+      );
+    });
   }
 
   Widget _unitsRow(SettingsController settings) {
@@ -370,7 +385,7 @@ class SettingsScreen extends StatelessWidget {
         color: SettingsUi.rowIcon,
         size: 20,
       ),
-      label: 'Units',
+      label: 'units'.tr,
       showChevron: false,
       trailing: Obx(
         () => SlidingSegmented(
@@ -419,9 +434,9 @@ class SettingsScreen extends StatelessWidget {
           color: Color(0xFFE0481F),
           size: 20,
         ),
-        label: const Text(
-          'Log out',
-          style: TextStyle(
+        label: Text(
+          'log_out'.tr,
+          style: const TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w700,
             color: Color(0xFFE0481F),
@@ -447,9 +462,9 @@ class SettingsScreen extends StatelessWidget {
           color: Color(0xFFB0453A),
           size: 19,
         ),
-        label: const Text(
-          'Delete account',
-          style: TextStyle(
+        label: Text(
+          'delete_account'.tr,
+          style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w700,
             color: Color(0xFFB0453A),

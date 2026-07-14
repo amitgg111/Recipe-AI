@@ -57,7 +57,7 @@ class ImportFromSocialScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    'Add a recipe',
+                    'add_a_recipe'.tr,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -98,7 +98,7 @@ class ImportFromSocialScreen extends StatelessWidget {
                         ),
                         const SizedBox(width: 10),
                         Text(
-                          'Import from social media',
+                          'import_from_social_media'.tr,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
@@ -257,7 +257,7 @@ class _SocialGuideScreenState extends State<SocialGuideScreen> {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    'Import from $_platformName',
+                    'import_from_platform'.trParams({'platform': _platformName}),
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 19,
                       fontWeight: FontWeight.w800,
@@ -305,7 +305,9 @@ class _SocialGuideScreenState extends State<SocialGuideScreen> {
                       Icon(_platformIcon, color: Colors.white, size: 20),
                       const SizedBox(width: 8),
                       Text(
-                        'Open $_platformName to find a recipe',
+                        'open_platform_to_find_recipe'.trParams({
+                          'platform': _platformName,
+                        }),
                         style: AppTextStyles.buttonLabel,
                       ),
                     ],

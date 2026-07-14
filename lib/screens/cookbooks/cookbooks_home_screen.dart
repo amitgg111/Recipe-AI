@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_spacing.dart';
@@ -49,11 +50,11 @@ class _CookbooksHomeScreenState extends State<CookbooksHomeScreen> {
                         const SizedBox(height: AppSpacing.md),
                         _buildSegmentedRow(),
                         const SizedBox(height: AppSpacing.lg),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
                             horizontal: AppSpacing.xl,
                           ),
-                          child: AppSearchBar(hintText: 'Search cookbooks'),
+                          child: AppSearchBar(hintText: 'search_cookbooks'.tr),
                         ),
                         const SizedBox(height: AppSpacing.xl),
                         _buildGrid(),
@@ -134,7 +135,7 @@ class _CookbooksHomeScreenState extends State<CookbooksHomeScreen> {
         children: [
           Expanded(
             child: SegmentedControl(
-              segments: const ['Cookbooks', 'Recipes'],
+              segments: ['cookbooks'.tr, 'recipes'.tr],
               selectedIndex: _selectedSegment,
               onChanged: (i) => setState(() => _selectedSegment = i),
             ),

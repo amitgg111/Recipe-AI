@@ -1,7 +1,10 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:recipe_ai/Service/language_service.dart';
+import 'package:recipe_ai/translations/app_translations.dart';
 import 'package:recipe_ai/Controllers/cookbook_controller.dart';
 import 'package:recipe_ai/Controllers/grocery_store_controller.dart';
 import 'package:recipe_ai/Controllers/home_controller.dart';
@@ -10,6 +13,7 @@ import 'package:recipe_ai/Controllers/meal_plan_controller.dart';
 import 'package:recipe_ai/Controllers/profile_controller.dart';
 import 'package:recipe_ai/Controllers/recipe_editor_controller.dart';
 import 'package:recipe_ai/Controllers/settings_controller.dart';
+import 'package:recipe_ai/Service/subscription_service.dart';
 import 'package:recipe_ai/Controllers/onboarding_controller.dart';
 import 'package:recipe_ai/Controllers/notification_controller.dart';
 import 'package:recipe_ai/Controllers/share_intent_service_controller.dart';
@@ -87,6 +91,9 @@ void main() async {
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await GetStorage.init();
+  // Restore the saved language before the first frame so the app opens already
+  // localized (defaults to English when nothing is saved).
+  await LanguageService.init();
   runApp(const MyApp());
 
   Get.put(ThemeController(), permanent: true);
@@ -98,6 +105,7 @@ void main() async {
   Get.put(ProfileController(), permanent: true);
   Get.put(CookbookController(), permanent: true);
   Get.put(SettingsController(), permanent: true);
+  Get.put(SubscriptionService(), permanent: true);
   Get.put(OnboardingController(), permanent: true);
   // Real-time in-app notification feed + unread badge (self-binds to auth).
   Get.put(NotificationController(), permanent: true);
@@ -119,12 +127,15 @@ void main() async {
 /// current user, so an already-signed-in user is bound on cold start.
 void _bindNotificationsToAuth() {
   final settings = Get.find<SettingsController>();
+  final subscription = Get.find<SubscriptionService>();
   AuthService.authStateChanges.listen((user) async {
     if (user != null) {
       await NotificationService.instance.loginUser(user.uid);
       await settings.bindUser(user.uid);
+      await subscription.bindUser(user.uid);
     } else {
       await settings.onLogout();
+      subscription.onLogout();
     }
   });
 }
@@ -137,6 +148,16 @@ class MyApp extends StatelessWidget {
     return GetMaterialApp(
       title: 'Recipe AI',
       debugShowCheckedModeBanner: false,
+      // ── Localization ──
+      translations: AppTranslations(),
+      locale: LanguageService.locale,
+      fallbackLocale: LanguageService.fallbackLocale,
+      supportedLocales: LanguageService.supportedLocales,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       // Single-theme app: always the orange (light) theme. Dark mode removed —
       // darkTheme also points at the orange theme so nothing can render dark.
       theme: new_theme.AppTheme.light,

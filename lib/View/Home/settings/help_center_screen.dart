@@ -17,29 +17,17 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
   int? _expanded;
 
   static const _topics = [
-    ['Importing recipes', 'sparkF2', AppColors.primary, AppColors.redBg],
-    ['Meal planning', 'cal', AppColors.blue, AppColors.blueBg],
-    ['Groceries', 'cart', AppColors.green, AppColors.greenBgLight],
-    ['Plus & billing', 'crown', AppColors.purple, AppColors.purpleBg],
+    ['help_topic_importing', 'sparkF2', AppColors.primary, AppColors.redBg],
+    ['help_topic_meal_planning', 'cal', AppColors.blue, AppColors.blueBg],
+    ['groceries', 'cart', AppColors.green, AppColors.greenBgLight],
+    ['help_topic_plus_billing', 'crown', AppColors.purple, AppColors.purpleBg],
   ];
 
   static const _faqs = [
-    [
-      "Why didn't my recipe import?",
-      "Some sites block automated readers or don't publish structured recipe data. Try pasting the full recipe text manually, or use a different source link.",
-    ],
-    [
-      'How do cook timers work?',
-      'Timers appear automatically on steps that mention a duration. Tap one to start it — you\'ll get an alert when it finishes if timer notifications are on.',
-    ],
-    [
-      'Can I cancel Plus anytime?',
-      'Yes. Your Plus benefits stay active until the end of the current billing period, and you won\'t be charged again after cancelling.',
-    ],
-    [
-      'How do I make a recipe public?',
-      'Open one of your recipes, tap the ⋯ menu and choose the visibility option to switch it between Private and Public.',
-    ],
+    ['faq_q_import', 'faq_a_import'],
+    ['faq_q_timers', 'faq_a_timers'],
+    ['faq_q_cancel_plus', 'faq_a_cancel_plus'],
+    ['faq_q_make_public', 'faq_a_make_public'],
   ];
 
   @override
@@ -50,7 +38,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
         .where(
           (e) =>
               _query.isEmpty ||
-              e.value[0].toString().toLowerCase().contains(
+              (e.value[0]).tr.toLowerCase().contains(
                 _query.toLowerCase(),
               ),
         )
@@ -62,13 +50,13 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(18, 4, 18, 28),
           children: [
-            SettingsUi.header('Help center'),
+            SettingsUi.header('help_center'.tr),
             const SizedBox(height: 16),
             _searchBar(),
             const SizedBox(height: 18),
 
             SettingsUi.label(
-              'BROWSE TOPICS',
+              'browse_topics'.tr,
               padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
             ),
             GridView.count(
@@ -81,7 +69,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
               children: [
                 for (final t in _topics)
                   _topicCard(
-                    label: t[0] as String,
+                    label: (t[0] as String).tr,
                     iconName: t[1] as String,
                     color: t[2] as Color,
                     bg: t[3] as Color,
@@ -91,13 +79,13 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
 
             const SizedBox(height: 22),
             SettingsUi.label(
-              'POPULAR QUESTIONS',
+              'popular_questions'.tr,
               padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
             ),
             SettingsUi.card(
               rows: [
                 for (final e in faqs)
-                  _faqRow(e.key, e.value[0].toString(), e.value[1].toString()),
+                  _faqRow(e.key, (e.value[0]).tr, (e.value[1]).tr),
               ],
             ),
 
@@ -134,11 +122,11 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                 fontWeight: FontWeight.w500,
                 color: AppColors.textDark,
               ),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 isDense: true,
                 filled: false,
-                hintText: 'Search help articles',
-                hintStyle: TextStyle(
+                hintText: 'search_help_articles'.tr,
+                hintStyle: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   color: AppColors.textHint,
@@ -264,9 +252,9 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
           ),
         ),
         icon: const OnboardingLineIcon('chat', size: 19, color: Colors.white),
-        label: const Text(
-          'Contact support',
-          style: TextStyle(
+        label: Text(
+          'contact_support'.tr,
+          style: const TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w700,
             color: Colors.white,

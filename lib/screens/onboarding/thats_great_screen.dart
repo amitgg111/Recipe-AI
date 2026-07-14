@@ -79,7 +79,7 @@ class _ThatsGreatScreenState extends State<ThatsGreatScreen>
               // Title area
               const SizedBox(height: 18),
               Text(
-                "That's great!",
+                'thats_great_title'.tr,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 27,
@@ -92,7 +92,7 @@ class _ThatsGreatScreenState extends State<ThatsGreatScreen>
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Text(
-                  "Here's what members just like you are achieving with Recipe AI.",
+                  'thats_great_subtitle'.tr,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 15,
@@ -156,7 +156,7 @@ class _ThatsGreatScreenState extends State<ThatsGreatScreen>
                               ),
                               const SizedBox(height: 3),
                               Text(
-                                'report saving money',
+                                'report_saving_money'.tr,
                                 textAlign: TextAlign.center,
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 12,
@@ -267,7 +267,7 @@ class _ThatsGreatScreenState extends State<ThatsGreatScreen>
                                 const SizedBox(height: 4),
                                 // Quote
                                 Text(
-                                  'Saved over \$1,200 this year cooking at home.',
+                                  'saved_over_this_year'.tr,
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
@@ -285,7 +285,7 @@ class _ThatsGreatScreenState extends State<ThatsGreatScreen>
               ),
               // Continue button
               PrimaryButton(
-                label: 'Continue',
+                label: 'continue_'.tr,
                 onPressed: () {
                   Get.to(() => const GoalsHappenScreen());
                 },
@@ -354,7 +354,7 @@ class _ThatsGreatBodyState extends State<ThatsGreatBody>
           const SizedBox(height: 8),
           // Title area
           Text(
-            "That's great!",
+            'thats_great_title'.tr,
             textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 24,
@@ -367,7 +367,7 @@ class _ThatsGreatBodyState extends State<ThatsGreatBody>
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Text(
-              "Here's what members just like you are achieving with Recipe AI.",
+              'thats_great_subtitle'.tr,
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 14,
@@ -439,7 +439,7 @@ class _ThatsGreatBodyState extends State<ThatsGreatBody>
                                   ),
                                   const SizedBox(height: 3),
                                   Text(
-                                    'report saving money',
+                                    'report_saving_money'.tr,
                                     textAlign: TextAlign.center,
                                     style: GoogleFonts.plusJakartaSans(
                                       fontSize: 10,
@@ -545,7 +545,7 @@ class _ThatsGreatBodyState extends State<ThatsGreatBody>
                             const SizedBox(height: 4),
                             // Quote
                             Text(
-                              'Saved over \$1,200 this year cooking at home.',
+                              'saved_over_this_year'.tr,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,

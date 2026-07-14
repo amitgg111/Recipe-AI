@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/widgets/app_wordmark.dart';
@@ -56,10 +57,10 @@ class _ImportProcessingScreenState extends State<ImportProcessingScreen>
               const SizedBox(height: 46),
               _buildOrbitAnimation(),
               const SizedBox(height: 34),
-              Text('Reading your recipe…', style: AppTextStyles.sectionTitle.copyWith(fontSize: 23)),
+              Text('reading_your_recipe'.tr, style: AppTextStyles.sectionTitle.copyWith(fontSize: 23)),
               const SizedBox(height: 8),
               Text(
-                'Our AI is pulling out every detail so you don\'t have to.',
+                'reading_recipe_subtitle'.tr,
                 style: AppTextStyles.bodySmall,
                 textAlign: TextAlign.center,
               ),
@@ -218,11 +219,11 @@ class _ImportProcessingScreenState extends State<ImportProcessingScreen>
   Widget _buildChecklist() {
     return Column(
       children: [
-        _checkItem('Found recipe title', true, 0),
+        _checkItem('found_recipe_title'.tr, true, 0),
         const SizedBox(height: 12),
-        _checkItem('Extracting ingredients', true, 1),
+        _checkItem('extracting_ingredients'.tr, true, 1),
         const SizedBox(height: 12),
-        _checkItem('Reading the steps', false, 2),
+        _checkItem('reading_the_steps'.tr, false, 2),
       ],
     );
   }

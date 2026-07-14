@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_dimensions.dart';
@@ -59,7 +60,7 @@ class AddMenuSheet extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Add to Recipe AI',
+                  'add_to_recipe_ai'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
@@ -76,8 +77,8 @@ class AddMenuSheet extends StatelessWidget {
                     color: '#F2623E',
                     filled: true,
                   ),
-                  title: 'Add a Recipe',
-                  subtitle: 'Import from anywhere',
+                  title: 'add_a_recipe_option'.tr,
+                  subtitle: 'import_from_anywhere'.tr,
                   onTap: () {
                     Navigator.pop(context);
                     onAddRecipe?.call();
@@ -87,8 +88,8 @@ class AddMenuSheet extends StatelessWidget {
                 _OptionRow(
                   iconBgColor: const Color(0xFFEDE7FE),
                   iconGlyph: _glyph(_kBook, size: 22, color: '#7C3AED'),
-                  title: 'Add a Cookbook',
-                  subtitle: 'Start a new collection',
+                  title: 'add_a_cookbook'.tr,
+                  subtitle: 'start_new_collection'.tr,
                   onTap: () {
                     Navigator.pop(context);
                     onAddCookbook?.call();

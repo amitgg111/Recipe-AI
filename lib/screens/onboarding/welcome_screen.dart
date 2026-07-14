@@ -202,16 +202,16 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           height: 1.08,
                           letterSpacing: -1.0,
                         ),
-                        children: const [
-                          TextSpan(text: 'Cook '),
+                        children: [
+                          TextSpan(text: 'welcome_title_cook_prefix'.tr),
                           TextSpan(
-                            text: 'anything',
-                            style: TextStyle(
+                            text: 'welcome_title_anything'.tr,
+                            style: const TextStyle(
                               color: AppColors.primary,
                               fontStyle: FontStyle.normal,
                             ),
                           ),
-                          TextSpan(text: ',\nwithout the chaos'),
+                          TextSpan(text: 'welcome_title_suffix'.tr),
                         ],
                       ),
                     ),
@@ -224,7 +224,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: Text(
-                        'Import any recipe, build smart shopping lists, and plan your week — like a pro.',
+                        'welcome_subtitle'.tr,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 15.5,
@@ -258,7 +258,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                   Stack(
                     children: [
                       PrimaryButton(
-                        label: 'Get Started',
+                        label: 'get_started'.tr,
                         enableSheen: false,
 
                         height: 54,
@@ -306,7 +306,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'Already have an account? ',
+                          'already_have_account'.tr,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
@@ -316,7 +316,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         GestureDetector(
                           onTap: () => Get.to(() => const LoginScreen()),
                           child: Text(
-                            'Log in',
+                            'log_in'.tr,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
@@ -434,13 +434,13 @@ class _WelcomeBodyState extends State<WelcomeBody>
                       height: 1.08,
                       letterSpacing: -1.0,
                     ),
-                    children: const [
-                      TextSpan(text: 'Cook '),
+                    children: [
+                      TextSpan(text: 'welcome_title_cook_prefix'.tr),
                       TextSpan(
-                        text: 'anything',
-                        style: TextStyle(color: AppColors.primary),
+                        text: 'welcome_title_anything'.tr,
+                        style: const TextStyle(color: AppColors.primary),
                       ),
-                      TextSpan(text: ',\nwithout the chaos'),
+                      TextSpan(text: 'welcome_title_suffix'.tr),
                     ],
                   ),
                 ),
@@ -449,7 +449,7 @@ class _WelcomeBodyState extends State<WelcomeBody>
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: Text(
-                    'Import any recipe, build smart shopping lists, and plan your week — like a pro.',
+                    'welcome_subtitle'.tr,
                     textAlign: TextAlign.center,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 13,
@@ -573,7 +573,7 @@ class _WelcomeCookingAnimationState extends State<WelcomeCookingAnimation>
                     color: Color(0xFFD98A12),
                   ),
                 ),
-                label: 'Import any recipe',
+                label: 'chip_import_any_recipe'.tr,
               ),
               _chip(
                 topFraction: 0.48,
@@ -586,7 +586,7 @@ class _WelcomeCookingAnimationState extends State<WelcomeCookingAnimation>
                   size: 16,
                   color: Color(0xFF2D6FE0),
                 ),
-                label: 'Plan your week',
+                label: 'chip_plan_your_week'.tr,
               ),
               _chip(
                 bottom: 8,
@@ -599,7 +599,7 @@ class _WelcomeCookingAnimationState extends State<WelcomeCookingAnimation>
                   size: 16,
                   color: Color(0xFF1F7A5E),
                 ),
-                label: 'Auto shopping list',
+                label: 'chip_auto_shopping_list'.tr,
               ),
             ],
           ),

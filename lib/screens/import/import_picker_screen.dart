@@ -76,7 +76,7 @@ class ImportPickerScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: AppSpacing.md),
-                  Text('Add a recipe', style: AppTextStyles.listTitle),
+                  Text('add_a_recipe'.tr, style: AppTextStyles.listTitle),
                 ],
               ),
             ),
@@ -102,8 +102,8 @@ class ImportPickerScreen extends StatelessWidget {
                             icon: Icons.camera_alt_rounded,
                             iconBgColor: AppColors.blueBg,
                             iconColor: AppColors.blue,
-                            title: 'Import from photo',
-                            subtitle: 'Snap or upload a pic',
+                            title: 'import_from_photo'.tr,
+                            subtitle: 'snap_or_upload_pic'.tr,
                             onTap: () {
                               Navigator.pop(context);
                               RecipeImportService.importRecipeFromGallery(
@@ -118,8 +118,8 @@ class ImportPickerScreen extends StatelessWidget {
                             icon: Icons.description_rounded,
                             iconBgColor: AppColors.goldBgLight,
                             iconColor: AppColors.gold,
-                            title: 'Import from text',
-                            subtitle: 'Paste or type it in',
+                            title: 'import_from_text'.tr,
+                            subtitle: 'paste_or_type'.tr,
                             onTap: () {
                               Navigator.pop(context);
                               Get.to(() => const GenerateRecipeScreen());
@@ -136,8 +136,8 @@ class ImportPickerScreen extends StatelessWidget {
                             icon: Icons.language_rounded,
                             iconBgColor: const Color(0xFFEDE7FE),
                             iconColor: AppColors.primary,
-                            title: 'Import from web',
-                            subtitle: 'Paste a recipe URL',
+                            title: 'import_from_web'.tr,
+                            subtitle: 'paste_recipe_url'.tr,
                             onTap: () {
                               Navigator.pop(context);
                               Get.to(() => const ImportFromWebScreen());
@@ -150,8 +150,8 @@ class ImportPickerScreen extends StatelessWidget {
                             icon: Icons.edit_rounded,
                             iconBgColor: AppColors.greenBg,
                             iconColor: AppColors.green,
-                            title: 'Write from scratch',
-                            subtitle: 'Create your own',
+                            title: 'write_from_scratch'.tr,
+                            subtitle: 'create_your_own'.tr,
                             onTap: () {
                               Navigator.pop(context);
                               Get.to(() => const RecipeEditorScreen());
@@ -208,10 +208,10 @@ class ImportPickerScreen extends StatelessWidget {
                 child: _glyph('share', size: 18, color: '#FFFFFF'),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Import from social media',
-                  style: TextStyle(
+                  'import_from_social_media'.tr,
+                  style: const TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
@@ -222,7 +222,7 @@ class ImportPickerScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'Share to Recipe AI from Instagram, TikTok, Facebook and more.',
+            'share_to_recipe_ai'.tr,
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w400,

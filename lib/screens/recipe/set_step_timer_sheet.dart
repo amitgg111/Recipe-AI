@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
@@ -29,11 +30,11 @@ class _SetStepTimerSheetState extends State<SetStepTimerSheet> {
   int _selectedQuickPick = 3; // index of 15 min
 
   final List<_QuickPick> _quickPicks = [
-    _QuickPick('1 min', 1),
-    _QuickPick('5 min', 5),
-    _QuickPick('10 min', 10),
-    _QuickPick('15 min', 15),
-    _QuickPick('30 min', 30),
+    _QuickPick(1),
+    _QuickPick(5),
+    _QuickPick(10),
+    _QuickPick(15),
+    _QuickPick(30),
   ];
 
   String get _formattedTime {
@@ -59,7 +60,7 @@ class _SetStepTimerSheetState extends State<SetStepTimerSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Step timer', style: AppTextStyles.listTitle),
+              Text('step_timer'.tr, style: AppTextStyles.listTitle),
               GestureDetector(
                 onTap: () => Navigator.pop(context),
                 child: Container(
@@ -80,7 +81,9 @@ class _SetStepTimerSheetState extends State<SetStepTimerSheet> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Adds a tappable timer to Step ${widget.stepNumber} while cooking.',
+            '${'adds_tappable_timer'.tr}'
+            '${'step_number'.trParams({'number': '${widget.stepNumber}'})}'
+            '${'while_cooking'.tr}',
             style: GoogleFonts.plusJakartaSans(
               fontSize: 14,
               fontWeight: FontWeight.w500,
@@ -185,7 +188,9 @@ class _SetStepTimerSheetState extends State<SetStepTimerSheet> {
                       ),
                     ),
                     child: Text(
-                      entry.value.label,
+                      'minutes_short'.trParams({
+                        'count': '${entry.value.minutes}',
+                      }),
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -199,7 +204,7 @@ class _SetStepTimerSheetState extends State<SetStepTimerSheet> {
           ),
           const SizedBox(height: 28),
           PrimaryButton(
-            label: 'Add timer · $_formattedTime',
+            label: 'add_timer_time'.trParams({'time': _formattedTime}),
             onPressed: () => Navigator.pop(context, _formattedTime),
           ),
           SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
@@ -210,7 +215,6 @@ class _SetStepTimerSheetState extends State<SetStepTimerSheet> {
 }
 
 class _QuickPick {
-  final String label;
   final int minutes;
-  _QuickPick(this.label, this.minutes);
+  _QuickPick(this.minutes);
 }

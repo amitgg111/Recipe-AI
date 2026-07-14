@@ -36,41 +36,41 @@ class _GoalsScreenState extends State<GoalsScreen> {
   // Goals 0 and 1 are pre-selected
   final Set<int> _selectedGoals = {0, 1};
 
-  static const List<_GoalItem> _goals = [
+  static final List<_GoalItem> _goals = [
     _GoalItem(
-      label: 'Eat healthier',
-      bgColor: Color(0xFFDBF0E7),
-      fgColor: Color(0xFF1F7A5E),
+      label: 'goal_eat_healthier'.tr,
+      bgColor: const Color(0xFFDBF0E7),
+      fgColor: const Color(0xFF1F7A5E),
       iconKey: 'bowl',
     ),
     _GoalItem(
-      label: 'Save money',
-      bgColor: Color(0xFFFCEFD0),
-      fgColor: Color(0xFFC0860F),
+      label: 'goal_save_money'.tr,
+      bgColor: const Color(0xFFFCEFD0),
+      fgColor: const Color(0xFFC0860F),
       iconKey: 'wallet',
     ),
     _GoalItem(
-      label: 'Improve cooking skills',
-      bgColor: Color(0xFFFCE3DB),
-      fgColor: Color(0xFFE0552F),
+      label: 'goal_improve_cooking_skills'.tr,
+      bgColor: const Color(0xFFFCE3DB),
+      fgColor: const Color(0xFFE0552F),
       iconKey: 'hat',
     ),
     _GoalItem(
-      label: 'Organize recipes',
-      bgColor: Color(0xFFE6E7FB),
-      fgColor: Color(0xFF5559CE),
+      label: 'goal_organize_recipes'.tr,
+      bgColor: const Color(0xFFE6E7FB),
+      fgColor: const Color(0xFF5559CE),
       iconKey: 'folder',
     ),
     _GoalItem(
-      label: 'Plan out meals',
-      bgColor: Color(0xFFE7F0DC),
-      fgColor: Color(0xFF5E8A2C),
+      label: 'goal_plan_out_meals'.tr,
+      bgColor: const Color(0xFFE7F0DC),
+      fgColor: const Color(0xFF5E8A2C),
       iconKey: 'cal',
     ),
     _GoalItem(
-      label: 'Try new cuisines',
-      bgColor: Color(0xFFF4E1F0),
-      fgColor: Color(0xFFA23E8C),
+      label: 'goal_try_new_cuisines'.tr,
+      bgColor: const Color(0xFFF4E1F0),
+      fgColor: const Color(0xFFA23E8C),
       iconKey: 'globe',
     ),
   ];
@@ -122,7 +122,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
               // Title area
               const SizedBox(height: 16),
               Text(
-                'What are your goals?',
+                'goals_title'.tr,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 25,
@@ -133,7 +133,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                'Select all that apply',
+                'select_all_that_apply'.tr,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 14.5,
@@ -228,7 +228,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
               // Continue button with margin-top 14
               const SizedBox(height: 14),
               PrimaryButton(
-                label: 'Continue',
+                label: 'continue_'.tr,
                 onPressed: () {
                   Get.to(() => const ThatsGreatScreen());
                 },
@@ -261,41 +261,41 @@ class _GoalsBodyState extends State<GoalsBody> {
   // back and forth (and app restarts).
   late Set<int> _selectedGoals;
 
-  static const List<_GoalItem> _goals = [
+  static final List<_GoalItem> _goals = [
     _GoalItem(
-      label: 'Eat healthier',
-      bgColor: Color(0xFFDBF0E7),
-      fgColor: Color(0xFF1F7A5E),
+      label: 'goal_eat_healthier'.tr,
+      bgColor: const Color(0xFFDBF0E7),
+      fgColor: const Color(0xFF1F7A5E),
       iconKey: 'bowl',
     ),
     _GoalItem(
-      label: 'Save money',
-      bgColor: Color(0xFFFCEFD0),
-      fgColor: Color(0xFFC0860F),
+      label: 'goal_save_money'.tr,
+      bgColor: const Color(0xFFFCEFD0),
+      fgColor: const Color(0xFFC0860F),
       iconKey: 'wallet',
     ),
     _GoalItem(
-      label: 'Improve cooking skills',
-      bgColor: Color(0xFFFCE3DB),
-      fgColor: Color(0xFFE0552F),
+      label: 'goal_improve_cooking_skills'.tr,
+      bgColor: const Color(0xFFFCE3DB),
+      fgColor: const Color(0xFFE0552F),
       iconKey: 'hat',
     ),
     _GoalItem(
-      label: 'Organize recipes',
-      bgColor: Color(0xFFE6E7FB),
-      fgColor: Color(0xFF5559CE),
+      label: 'goal_organize_recipes'.tr,
+      bgColor: const Color(0xFFE6E7FB),
+      fgColor: const Color(0xFF5559CE),
       iconKey: 'folder',
     ),
     _GoalItem(
-      label: 'Plan out meals',
-      bgColor: Color(0xFFE7F0DC),
-      fgColor: Color(0xFF5E8A2C),
+      label: 'goal_plan_out_meals'.tr,
+      bgColor: const Color(0xFFE7F0DC),
+      fgColor: const Color(0xFF5E8A2C),
       iconKey: 'cal',
     ),
     _GoalItem(
-      label: 'Try new cuisines',
-      bgColor: Color(0xFFF4E1F0),
-      fgColor: Color(0xFFA23E8C),
+      label: 'goal_try_new_cuisines'.tr,
+      bgColor: const Color(0xFFF4E1F0),
+      fgColor: const Color(0xFFA23E8C),
       iconKey: 'globe',
     ),
   ];
@@ -332,7 +332,7 @@ class _GoalsBodyState extends State<GoalsBody> {
           const SizedBox(height: 8),
           // Title area
           Text(
-            'What are your goals?',
+            'goals_title'.tr,
             textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 25,
@@ -343,7 +343,7 @@ class _GoalsBodyState extends State<GoalsBody> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Select all that apply',
+            'select_all_that_apply'.tr,
             textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 14.5,

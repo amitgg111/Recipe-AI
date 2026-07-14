@@ -239,7 +239,7 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
               ),
               // Subtitle
               Text(
-                'Recipe AI is free to use, but…',
+                'plus_free_but'.tr,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
@@ -260,9 +260,9 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
                     letterSpacing: -0.58,
                   ),
                   children: [
-                    const TextSpan(text: 'We\'d love you to try '),
+                    TextSpan(text: 'plus_intro_title_1'.tr),
                     TextSpan(
-                      text: 'the full experience for 7 days, free!',
+                      text: 'plus_intro_title_2'.tr,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 25,
                         fontWeight: FontWeight.w800,
@@ -382,7 +382,7 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
 
                           left: 0,
                           top: 8,
-                          label: 'Unlimited Recipe imports',
+                          label: 'plus_feature_unlimited_imports'.tr,
                           iconName: 'spark',
                           color: AppColors.purple,
                         ),
@@ -390,7 +390,7 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
                           1,
                           right: 0,
                           top: 48,
-                          label: 'Nutrition calculator',
+                          label: 'plus_feature_nutrition_calculator'.tr,
                           iconName: 'checkCircle',
                           color: AppColors.green,
                         ),
@@ -398,7 +398,7 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
                           2,
                           left: 0,
                           bottom: 56,
-                          label: 'AI cooking assistant',
+                          label: 'plus_feature_ai_assistant'.tr,
                           iconName: 'spark',
                           color: AppColors.primary,
                         ),
@@ -406,7 +406,7 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
                           3,
                           right: 0,
                           bottom: 22,
-                          label: 'Convert measurements',
+                          label: 'plus_feature_convert_measurements'.tr,
                           iconName: 'globe',
                           color: AppColors.blue,
                         ),
@@ -430,7 +430,7 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
               ),
               // Bottom button
               PrimaryButton.purple(
-                label: 'Try for ₹0.00',
+                label: 'try_for_price'.tr,
                 onPressed:
                     widget.onContinue ??
                     () => Get.to(
@@ -494,7 +494,7 @@ class _PlusIntroScreenState extends State<PlusIntroScreen>
           ),
           const SizedBox(width: 3),
           Text(
-            'DAYS FREE',
+            'days_free'.tr,
             textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 5,

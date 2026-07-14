@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
@@ -105,29 +106,29 @@ class _RecipeMenuContentState extends State<_RecipeMenuContent> {
                       children: [
                         // Public recipe toggle
                         _buildToggleItem(
-                          label: 'Public recipe',
+                          label: 'public_recipe'.tr,
                           value: _isPublic,
                           onChanged: (v) => setState(() => _isPublic = v),
                         ),
                         _buildDivider(),
                         _buildMenuItem(
                           icon: Icons.share_outlined,
-                          label: 'Share recipe link',
+                          label: 'share_recipe_link'.tr,
                           onTap: () => Navigator.pop(context),
                         ),
                         _buildMenuItem(
                           icon: Icons.description_outlined,
-                          label: 'Export PDF',
+                          label: 'export_pdf'.tr,
                           onTap: () => Navigator.pop(context),
                         ),
                         _buildMenuItem(
                           icon: Icons.print_outlined,
-                          label: 'Print recipe',
+                          label: 'print_recipe'.tr,
                           onTap: () => Navigator.pop(context),
                         ),
                         _buildMenuItem(
                           icon: Icons.delete_outline,
-                          label: 'Delete recipe',
+                          label: 'delete_recipe'.tr,
                           isDestructive: true,
                           onTap: () => Navigator.pop(context),
                         ),

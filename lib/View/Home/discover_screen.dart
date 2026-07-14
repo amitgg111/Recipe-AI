@@ -4,8 +4,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:recipe_ai/Controllers/discover_controller.dart';
 import 'package:recipe_ai/Controllers/cookbook_controller.dart';
+import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:recipe_ai/Service/recipe_social_service.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
+import 'package:recipe_ai/Service/subscription_service.dart';
+import 'package:recipe_ai/View/Home/settings/upgrade_plus_screen.dart';
 import 'package:recipe_ai/widgets/app_logo.dart';
 import 'package:recipe_ai/widgets/notification_bell.dart';
 import 'package:recipe_ai/View/Home/public_recipe_view_screen.dart';
@@ -54,6 +57,31 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   void initState() {
     super.initState();
     controller = Get.put(DiscoverController(), permanent: true);
+  }
+
+  // Translates the displayed chip label only — the underlying category value
+  // (used for filtering in DiscoverController) is left untouched.
+  String _catLabel(String cat) {
+    switch (cat) {
+      case 'Trending':
+        return 'trending'.tr;
+      case 'Quick & Easy':
+        return 'quick_easy'.tr;
+      case 'Vegan':
+        return 'vegan'.tr;
+      case 'Desserts':
+        return 'desserts'.tr;
+      case 'Breakfast':
+        return 'breakfast'.tr;
+      case 'Lunch':
+        return 'lunch'.tr;
+      case 'Dinner':
+        return 'dinner'.tr;
+      case 'Drinks':
+        return 'drinks'.tr;
+      default:
+        return cat;
+    }
   }
 
   @override
@@ -151,7 +179,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                             ),
                             child: Text(
                               textAlign: TextAlign.center,
-                              cat,
+                              _catLabel(cat),
                               style: _f(
                                 13,
                                 on ? FontWeight.w700 : FontWeight.w600,
@@ -199,25 +227,45 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   }
 
   Widget _creditsBadge() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFCEFD0),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const OnboardingLineIcon(
-            'sparkF',
-            size: 13,
-            color: _D.primary,
+    return Obx(() {
+      final sub = SubscriptionService.instance;
+      final plus = sub.isPlusListenable.value;
+      final remaining = (SubscriptionService.kFreeImportLimit -
+              sub.importCountListenable.value)
+          .clamp(0, SubscriptionService.kFreeImportLimit);
+      return GestureDetector(
+        onTap: () => Get.to(() => const UpgradePlusScreen()),
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+            color: plus ? AppColors.purpleBg : const Color(0xFFFCEFD0),
+            borderRadius: BorderRadius.circular(20),
           ),
-          const SizedBox(width: 5),
-          Text('5/5', style: _f(13, FontWeight.w700, const Color(0xFFC0860F))),
-        ],
-      ),
-    );
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              OnboardingLineIcon(
+                plus ? 'crown' : 'sparkF',
+                size: 13,
+                color: plus ? AppColors.purpleDark : _D.primary,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                plus
+                    ? 'PLUS'
+                    : '$remaining/${SubscriptionService.kFreeImportLimit}',
+                style: _f(
+                  13,
+                  FontWeight.w700,
+                  plus ? AppColors.purpleDark : const Color(0xFFC0860F),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    });
   }
 
   Widget _emptyState() {
@@ -232,12 +280,12 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            'No recipes found',
+            'no_recipes_found'.tr,
             style: _f(16, FontWeight.w600, AppColors.textMedium),
           ),
           const SizedBox(height: 4),
           Text(
-            'Try a different category or search',
+            'try_different_category_or_search'.tr,
             style: _f(13, FontWeight.w400, _D.textHint),
           ),
         ],
@@ -274,7 +322,7 @@ class _SearchField extends StatelessWidget {
               cursorColor: _D.primary,
               style: _f(14, FontWeight.w500, _D.textDark),
               decoration: InputDecoration(
-                hintText: 'Search community recipes',
+                hintText: 'search_community_recipes'.tr,
                 hintStyle: _f(14, FontWeight.w500, _D.textHint),
                 filled: false,
                 isDense: true,
@@ -314,9 +362,11 @@ class _RecipeCardState extends State<_RecipeCard> {
   late int _saves = recipe.savesCount;
   late int _comments = recipe.commentsCount;
   bool _liked = false;
-  bool _saved = false;
   bool _busyLike = false;
   bool _busySave = false;
+
+  DiscoverController get _disc => Get.find<DiscoverController>();
+  bool get _saved => _disc.savedOriginalIds.contains(recipe.id);
 
   @override
   void initState() {
@@ -329,10 +379,14 @@ class _RecipeCardState extends State<_RecipeCard> {
       final liked = await RecipeSocialService.isLiked(recipe.userId, recipe.id);
       final saved = await RecipeSocialService.isSaved(recipe.userId, recipe.id);
       if (mounted) {
-        setState(() {
-          _liked = liked;
-          _saved = saved;
-        });
+        setState(() => _liked = liked);
+        // Seed the shared saved-set so every bookmark for this recipe (and the
+        // live delete path) stays in sync.
+        if (saved) {
+          _disc.savedOriginalIds.add(recipe.id);
+        } else {
+          _disc.savedOriginalIds.remove(recipe.id);
+        }
       }
     } catch (_) {}
   }
@@ -440,14 +494,53 @@ class _RecipeCardState extends State<_RecipeCard> {
           recipeImageUrl: recipe.imageUrl,
         ),
       );
-      // Copy now lives in My Recipes → mark as saved.
+      // Copy now lives in My Recipes → mark as saved (shared set drives every
+      // bookmark for this recipe).
       if (mounted && !_saved) {
-        setState(() {
-          _saved = true;
-          _saves += 1;
-        });
+        _disc.savedOriginalIds.add(recipe.id);
+        setState(() => _saves += 1);
       }
       RecipeSocialService.setSave(recipe.userId, recipe.id, true);
+    } finally {
+      _busySave = false;
+    }
+  }
+
+  // Tapping the bookmark toggles: save (copy in) when unsaved, or permanently
+  // remove the saved copy when already saved.
+  Future<void> _toggleSave() async {
+    if (_saved) {
+      await _unsave();
+    } else {
+      await _openSaveSheet();
+    }
+  }
+
+  // Un-save → permanently delete the saved copy from the user's recipes (and
+  // any cookbooks it was filed into), then flip the bookmark back to empty.
+  Future<void> _unsave() async {
+    if (_busySave) return;
+    _busySave = true;
+    try {
+      final deletedIds = await RecipeSocialService.removeSavedCopy(recipe);
+      if (deletedIds.isNotEmpty && Get.isRegistered<CookbookController>()) {
+        final cookbooks = Get.find<CookbookController>();
+        for (final id in deletedIds) {
+          await cookbooks.removeRecipeFromAllCookbooks(id);
+        }
+      }
+      RecipeSocialService.setSave(recipe.userId, recipe.id, false);
+      _disc.savedOriginalIds.remove(recipe.id);
+      if (mounted) {
+        setState(() {
+          if (_saves > 0) _saves -= 1;
+        });
+      }
+      CustomSnackbar.show(
+        title: 'removed'.tr,
+        message: 'recipe_removed_from_saved'.tr,
+        type: SnackbarType.info,
+      );
     } finally {
       _busySave = false;
     }
@@ -527,7 +620,7 @@ class _RecipeCardState extends State<_RecipeCard> {
                         Text(
                           recipe.userName.isNotEmpty
                               ? recipe.userName
-                              : 'Recipe creator',
+                              : 'recipe_creator'.tr,
                           style: _f(13.5, FontWeight.w800, _D.textDark),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -550,7 +643,7 @@ class _RecipeCardState extends State<_RecipeCard> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'View recipe',
+                        'view_recipe'.tr,
                         style: _f(12.5, FontWeight.w700, _D.primary),
                       ),
                       const OnboardingLineIcon(
@@ -709,16 +802,21 @@ class _RecipeCardState extends State<_RecipeCard> {
                   onTap: _share,
                 ),
                 const Spacer(),
-                _action(
-                  iconWidget: OnboardingLineIcon(
-                    _saved ? 'bookmarkF' : 'bookmark',
-                    size: 22,
-                    color: _saved ? _D.primary : _D.textDark,
-                  ),
-                  count: _saves,
-                  showCount: false,
-                  onTap: _openSaveSheet,
-                ),
+                // Bookmark observes the shared saved-set so it flips live when
+                // the saved copy is deleted from My Recipes / a cookbook.
+                Obx(() {
+                  final saved = _disc.savedOriginalIds.contains(recipe.id);
+                  return _action(
+                    iconWidget: OnboardingLineIcon(
+                      saved ? 'bookmarkF' : 'bookmark',
+                      size: 22,
+                      color: saved ? _D.primary : _D.textDark,
+                    ),
+                    count: _saves,
+                    showCount: false,
+                    onTap: _toggleSave,
+                  );
+                }),
               ],
             ),
           ),

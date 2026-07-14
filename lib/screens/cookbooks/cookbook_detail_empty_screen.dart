@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_spacing.dart';
@@ -60,7 +61,7 @@ class _CookbookDetailEmptyScreenState extends State<CookbookDetailEmptyScreen>
                     style: AppTextStyles.sectionTitle.copyWith(fontSize: 25),
                   ),
                   const SizedBox(height: 4),
-                  Text('No recipes yet', style: AppTextStyles.smallLabel),
+                  Text('no_recipes_yet'.tr, style: AppTextStyles.smallLabel),
                 ],
               ),
             ),
@@ -242,12 +243,12 @@ class _CookbookDetailEmptyScreenState extends State<CookbookDetailEmptyScreen>
             ),
             const SizedBox(height: AppSpacing.xxl),
             Text(
-              'This cookbook is empty',
+              'this_cookbook_is_empty'.tr,
               style: AppTextStyles.cardTitle.copyWith(fontSize: 24),
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              "Add your first recipe and it'll show up here, ready to cook.",
+              'cookbook_empty_add_first'.tr,
               textAlign: TextAlign.center,
               style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.textBody,
@@ -256,7 +257,7 @@ class _CookbookDetailEmptyScreenState extends State<CookbookDetailEmptyScreen>
             ),
             const SizedBox(height: AppSpacing.xxl),
             PrimaryButton(
-              label: 'Add a recipe',
+              label: 'add_a_recipe'.tr,
               leadingIcon: const Icon(Icons.add, color: Colors.white, size: 20),
               onPressed: () {},
               width: 180,

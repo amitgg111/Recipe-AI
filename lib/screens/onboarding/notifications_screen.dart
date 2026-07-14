@@ -92,7 +92,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               // Title
               const SizedBox(height: 18),
               Text(
-                'Get the right recipe at the right time',
+                'notif_title'.tr,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 22,
@@ -106,7 +106,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Text(
-                  "We'll send you a recipe idea at the time that works for you.",
+                  'notif_subtitle'.tr,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 15,
@@ -182,9 +182,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                         height: 1.35,
                                       ),
                                       children: [
-                                        const TextSpan(text: 'Allow '),
+                                        TextSpan(text: 'notif_allow_prefix'.tr),
                                         TextSpan(
-                                          text: 'Recipe AI',
+                                          text: 'app_name'.tr,
                                           style: GoogleFonts.plusJakartaSans(
                                             fontSize: 16,
                                             fontWeight: FontWeight.w600,
@@ -192,8 +192,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                             height: 1.35,
                                           ),
                                         ),
-                                        const TextSpan(
-                                          text: ' to send you notifications?',
+                                        TextSpan(
+                                          text: 'notif_allow_suffix'.tr,
                                         ),
                                       ],
                                     ),
@@ -226,7 +226,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                             ),
                                           )
                                         : Text(
-                                            'Allow',
+                                            'allow'.tr,
                                             style: GoogleFonts.plusJakartaSans(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w700,
@@ -253,7 +253,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                   padding: const EdgeInsets.all(15),
                                   child: Center(
                                     child: Text(
-                                      "Don't allow",
+                                      'dont_allow'.tr,
                                       style: GoogleFonts.plusJakartaSans(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w600,
@@ -271,7 +271,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     // Below card text
                     const SizedBox(height: 18),
                     Text(
-                      'Turn off notifications anytime',
+                      'turn_off_notifications_anytime'.tr,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
@@ -282,7 +282,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 ),
               ),
               // Bottom: Help me stay on track button
-              PrimaryButton(label: 'Help me stay on track', onPressed: _goNext),
+              PrimaryButton(label: 'help_me_stay_on_track'.tr, onPressed: _goNext),
             ],
           ),
         ),
@@ -318,7 +318,7 @@ class NotificationsBody extends StatefulWidget {
 class _NotificationsBodyState extends State<NotificationsBody> {
   // Sub-title under the card. Reflects the real permission state for a user who
   // navigates back to this step after already choosing.
-  String _statusText = 'Turn off notifications anytime';
+  String _statusText = 'turn_off_notifications_anytime'.tr;
 
   @override
   void initState() {
@@ -336,8 +336,8 @@ class _NotificationsBodyState extends State<NotificationsBody> {
     // Only show a resolved status once the user has completed the step before.
     if (onb.notificationsOptIn.value == null) return;
     final text = push.hasPermission
-        ? 'Notifications are on'
-        : 'You can turn these on later in Settings';
+        ? 'notifications_are_on'.tr
+        : 'turn_on_later_in_settings'.tr;
     if (mounted && text != _statusText) {
       setState(() => _statusText = text);
     }
@@ -352,7 +352,7 @@ class _NotificationsBodyState extends State<NotificationsBody> {
           const SizedBox(height: 8),
           // Title
           Text(
-            'Get the right recipe at the right time',
+            'notif_title'.tr,
             textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 24,
@@ -366,7 +366,7 @@ class _NotificationsBodyState extends State<NotificationsBody> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Text(
-              "We'll send you a recipe idea at the time that works for you.",
+              'notif_subtitle'.tr,
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 13,
@@ -437,9 +437,9 @@ class _NotificationsBodyState extends State<NotificationsBody> {
                                     height: 1.35,
                                   ),
                                   children: [
-                                    const TextSpan(text: 'Allow '),
+                                    TextSpan(text: 'notif_allow_prefix'.tr),
                                     TextSpan(
-                                      text: 'Recipe AI',
+                                      text: 'app_name'.tr,
                                       style: GoogleFonts.plusJakartaSans(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w600,
@@ -447,8 +447,8 @@ class _NotificationsBodyState extends State<NotificationsBody> {
                                         height: 1.35,
                                       ),
                                     ),
-                                    const TextSpan(
-                                      text: ' to send you notifications?',
+                                    TextSpan(
+                                      text: 'notif_allow_suffix'.tr,
                                     ),
                                   ],
                                 ),
@@ -481,7 +481,7 @@ class _NotificationsBodyState extends State<NotificationsBody> {
                                         ),
                                       )
                                     : Text(
-                                        'Allow',
+                                        'allow'.tr,
                                         style: GoogleFonts.plusJakartaSans(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w700,
@@ -508,7 +508,7 @@ class _NotificationsBodyState extends State<NotificationsBody> {
                               padding: const EdgeInsets.all(15),
                               child: Center(
                                 child: Text(
-                                  "Don't allow",
+                                  'dont_allow'.tr,
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,

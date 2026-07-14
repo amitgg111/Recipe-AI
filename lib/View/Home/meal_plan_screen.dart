@@ -9,6 +9,8 @@ import 'package:recipe_ai/View/Home/recipe_detail_screen.dart';
 import 'package:recipe_ai/widgets/sliding_segmented.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
+import 'package:recipe_ai/Service/subscription_service.dart';
+import 'package:recipe_ai/widgets/premium_lock_overlay.dart';
 import 'package:recipe_ai/widgets/app_search_bar.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -169,7 +171,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
               children: [
                 Flexible(
                   child: Text(
-                    'Meal Plan',
+                    'meal_plan'.tr,
                     style: _S.f(22, FontWeight.w800, _S.textDark, ls: -0.44),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -200,7 +202,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
 
   Widget _buildViewToggle() {
     return SlidingSegmented.standard(
-      labels: const ['Day', 'Month'],
+      labels: ['day'.tr, 'month'.tr],
       selectedIndex: _viewIndex,
       onChanged: (index) {
         setState(() => _viewIndex = index);
@@ -318,7 +320,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                               size: 24,
                               color: Color(0xFF6D3BD4),
                             ),
-                            'Auto-fill my week',
+                            'auto_fill_my_week'.tr,
                             const Color(0xFF2A211B),
                             FontWeight.w600,
                             () {
@@ -333,7 +335,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                               color: Color(0xFF5A5147),
                               size: 20,
                             ),
-                            'Share meal plan',
+                            'share_meal_plan'.tr,
                             const Color(0xFF2A211B),
                             FontWeight.w600,
                             () {
@@ -348,7 +350,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                               color: Color(0xFFE0481F),
                               size: 20,
                             ),
-                            'Clear this week',
+                            'clear_this_week'.tr,
                             const Color(0xFFE0481F),
                             FontWeight.w700,
                             () {
@@ -419,7 +421,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
   String _buildShareText() {
     final days = controller.getDaysOfWeek(controller.selectedWeekStart.value);
     final buf = StringBuffer()
-      ..writeln('📅 My Meal Plan')
+      ..writeln('📅 ${'my_meal_plan'.tr}')
       ..writeln('${_weekRangeLabel(days)} · from Recipe AI');
     for (final day in days) {
       final meals = controller.getMealsForDate(day);
@@ -467,7 +469,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
             Row(
               children: [
                 Text(
-                  'Share meal plan',
+                  'share_meal_plan'.tr,
                   style: _S.f(19, FontWeight.w800, _S.textDark),
                 ),
                 const Spacer(),
@@ -517,9 +519,13 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                   fg: Colors.white,
                   onTap: () => _shareVia('whatsapp'),
                 ),
-                _shareDest('copy', 'Copy text', onTap: () => _shareVia('copy')),
-                _shareDest('mail', 'Email', onTap: () => _shareVia('email')),
-                _shareDest('share', 'More', onTap: () => _shareVia('more')),
+                _shareDest(
+                  'copy',
+                  'copy_text'.tr,
+                  onTap: () => _shareVia('copy'),
+                ),
+                _shareDest('mail', 'email'.tr, onTap: () => _shareVia('email')),
+                _shareDest('share', 'more'.tr, onTap: () => _shareVia('more')),
               ],
             ),
           ],
@@ -531,7 +537,10 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
   Widget _buildSharePreview() {
     final days = controller.getDaysOfWeek(controller.selectedWeekStart.value);
     final children = <Widget>[
-      Text('📅 My Meal Plan', style: _S.f(14, FontWeight.w800, _S.textDark)),
+      Text(
+        '📅 ${'my_meal_plan'.tr}',
+        style: _S.f(14, FontWeight.w800, _S.textDark),
+      ),
       const SizedBox(height: 2),
       Text(
         '${_weekRangeLabel(days)} · from Recipe AI',
@@ -566,7 +575,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
     if (!any) {
       children.add(
         Text(
-          'No meals planned this week yet.',
+          'no_meals_this_week'.tr,
           style: _S.f(13, FontWeight.w500, _S.textMed),
         ),
       );
@@ -632,8 +641,8 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
       case 'copy':
         await Clipboard.setData(ClipboardData(text: text));
         CustomSnackbar.show(
-          title: 'Copied',
-          message: 'Meal plan copied to clipboard',
+          title: 'copied'.tr,
+          message: 'meal_plan_copied'.tr,
           type: SnackbarType.success,
         );
         return;
@@ -647,15 +656,15 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
         return;
       case 'email':
         final uri = Uri.parse(
-          'mailto:?subject=${Uri.encodeComponent('My meal plan')}'
+          'mailto:?subject=${Uri.encodeComponent('my_meal_plan'.tr)}'
           '&body=${Uri.encodeComponent(text)}',
         );
         if (!await launchUrl(uri)) {
-          await Share.share(text, subject: 'My meal plan');
+          await Share.share(text, subject: 'my_meal_plan'.tr);
         }
         return;
       default:
-        await Share.share(text, subject: 'My meal plan');
+        await Share.share(text, subject: 'my_meal_plan'.tr);
     }
   }
 
@@ -743,12 +752,12 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "See today's nutrition",
+                  'see_todays_nutrition'.tr,
                   style: _S.f(13.5, FontWeight.w800, _S.textDark),
                 ),
                 const SizedBox(height: 1),
                 Text(
-                  'Calories & macros across all meals',
+                  'calories_macros'.tr,
                   style: _S.f(11.5, FontWeight.w600, _S.textMed),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -768,7 +777,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
               ),
             ),
             child: Text(
-              'Unlock',
+              'unlock'.tr,
               style: _S.f(11, FontWeight.w800, Colors.white),
             ),
           ),
@@ -1234,7 +1243,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                           ),
                           const SizedBox(width: 5),
                           Text(
-                            'Add meal',
+                            'add_meal'.tr,
                             style: _S.f(12.5, FontWeight.w700, Colors.white),
                           ),
                         ],
@@ -1289,12 +1298,12 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                     ),
                     const SizedBox(height: 14),
                     Text(
-                      'No meals for this day',
+                      'no_meals_for_day'.tr,
                       style: _S.f(16, FontWeight.w800, _S.textDark),
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Add a recipe to breakfast, lunch, dinner or a snack.',
+                      'add_recipe_to_meals'.tr,
                       style: _S.f(13.5, FontWeight.w500, _S.textMed, h: 1.5),
                       textAlign: TextAlign.center,
                     ),
@@ -1327,7 +1336,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              'Add a meal',
+                              'add_a_meal'.tr,
                               style: _S.f(14, FontWeight.w700, Colors.white),
                             ),
                           ],
@@ -1373,7 +1382,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Auto-fill my week',
+                      'auto_fill_my_week'.tr,
                       style: _S.f(
                         13.5,
                         FontWeight.w700,
@@ -1559,17 +1568,19 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
     );
     if (recipe == null || recipe.ingredients.isEmpty) {
       CustomSnackbar.show(
-        title: 'No ingredients',
-        message: "Couldn't find ingredients for ${meal.recipeTitle}.",
+        title: 'no_ingredients'.tr,
+        message: 'no_ingredients_for'.trParams({'title': meal.recipeTitle}),
         type: SnackbarType.error,
       );
       return;
     }
     Get.find<GroceryStore>().addFromRecipe(meal.recipeId, recipe.ingredients);
     CustomSnackbar.show(
-      title: 'Added to groceries',
-      message:
-          '${recipe.ingredients.length} ingredients from ${meal.recipeTitle}',
+      title: 'added_to_groceries'.tr,
+      message: 'ingredients_from'.trParams({
+        'count': '${recipe.ingredients.length}',
+        'title': meal.recipeTitle,
+      }),
       type: SnackbarType.success,
     );
   }
@@ -1632,7 +1643,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
             _mealOptionRow(
               iconName: 'cart',
               iconColor: const Color(0xFF5A5147),
-              label: 'Add to groceries',
+              label: 'add_to_groceries'.tr,
               labelColor: _S.textDark,
               labelWeight: FontWeight.w600,
               onTap: () {
@@ -1650,15 +1661,17 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
             _mealOptionRow(
               iconName: 'trash',
               iconColor: const Color(0xFFE0481F),
-              label: 'Remove from plan',
+              label: 'remove_from_plan'.tr,
               labelColor: const Color(0xFFE0481F),
               labelWeight: FontWeight.w700,
               onTap: () {
                 Navigator.pop(context);
                 controller.deleteMealPlanItem(meal.id);
                 CustomSnackbar.show(
-                  title: 'Removed',
-                  message: '${meal.recipeTitle} removed from plan',
+                  title: 'removed'.tr,
+                  message: 'removed_from_plan'.trParams({
+                    'title': meal.recipeTitle,
+                  }),
                   type: SnackbarType.info,
                 );
               },
@@ -1736,12 +1749,12 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Clear this week?',
+              'clear_this_week_q'.tr,
               style: _S.f(18, FontWeight.w800, _S.textDark),
             ),
             const SizedBox(height: 6),
             Text(
-              'This will remove all meals from the current week.',
+              'clear_week_confirm'.tr,
               style: _S.f(13, FontWeight.w500, _S.textHint),
               textAlign: TextAlign.center,
             ),
@@ -1759,7 +1772,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                       ),
                       child: Center(
                         child: Text(
-                          'Cancel',
+                          'cancel'.tr,
                           style: _S.f(14, FontWeight.w700, _S.textDark),
                         ),
                       ),
@@ -1781,7 +1794,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                       ),
                       child: Center(
                         child: Text(
-                          'Clear',
+                          'clear'.tr,
                           style: _S.f(14, FontWeight.w700, Colors.white),
                         ),
                       ),
@@ -1801,6 +1814,11 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
   // ═══════════════════════════════════════════════════════════════
 
   void _showAutoFillSheet() {
+    // AI Auto-fill is a Plus feature — free users get the upgrade prompt.
+    if (!SubscriptionService.instance.canUseMealPlanner()) {
+      showUpgradeDialog(context, feature: 'ai_meal_plan_autofill'.tr);
+      return;
+    }
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1980,7 +1998,10 @@ class _AddMealSheetState extends State<_AddMealSheet> {
                   children: [
                     Expanded(
                       child: Text(
-                        'Add to ${widget.dayName}, $_selectedType',
+                        'add_to_day_meal'.trParams({
+                          'day': widget.dayName,
+                          'meal': _selectedType,
+                        }),
                         style: _S.f(19, FontWeight.w800, _S.textDark),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -2020,7 +2041,7 @@ class _AddMealSheetState extends State<_AddMealSheet> {
                 ),
                 const SizedBox(height: 12),
                 AppSearchBar(
-                  hintText: 'Search your recipes',
+                  hintText: 'search_your_recipes'.tr,
                   onChanged: (v) => setState(() => _search = v),
                 ),
                 const SizedBox(height: 10),
@@ -2040,7 +2061,7 @@ class _AddMealSheetState extends State<_AddMealSheet> {
               if (recipes.isEmpty) {
                 return Center(
                   child: Text(
-                    'No recipes found',
+                    'no_recipes_found'.tr,
                     style: _S.f(14, FontWeight.w500, _S.textHint),
                   ),
                 );
@@ -2086,7 +2107,7 @@ class _AddMealSheetState extends State<_AddMealSheet> {
                   ],
                 ),
                 child: Text(
-                  'Add to plan',
+                  'add_to_plan'.tr,
                   style: _S.f(16, FontWeight.w700, Colors.white),
                 ),
               ),
@@ -2266,7 +2287,7 @@ class _AutoFillSheetState extends State<_AutoFillSheet> {
                 Row(
                   children: [
                     Text(
-                      'Auto-fill my week',
+                      'auto_fill_my_week'.tr,
                       style: _S.f(18, FontWeight.w800, _S.textDark),
                     ),
                     const Spacer(),
@@ -2299,7 +2320,7 @@ class _AutoFillSheetState extends State<_AutoFillSheet> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'DIET & STYLE',
+                    'diet_and_style'.tr,
                     style: _S.f(11, FontWeight.w700, _S.textHint),
                   ),
                   const SizedBox(height: 10),
@@ -2365,7 +2386,7 @@ class _AutoFillSheetState extends State<_AutoFillSheet> {
                         ),
                         const SizedBox(width: 10),
                         Text(
-                          'Use my pantry',
+                          'use_my_pantry'.tr,
                           style: _S.f(14, FontWeight.w600, _S.textDark),
                         ),
                       ],
@@ -2373,7 +2394,7 @@ class _AutoFillSheetState extends State<_AutoFillSheet> {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    'WHICH MEALS',
+                    'which_meals'.tr,
                     style: _S.f(11, FontWeight.w700, _S.textHint),
                   ),
                   const SizedBox(height: 10),
@@ -2421,7 +2442,7 @@ class _AutoFillSheetState extends State<_AutoFillSheet> {
                   Row(
                     children: [
                       Text(
-                        'Servings',
+                        'servings'.tr,
                         style: _S.f(14, FontWeight.w700, _S.textDark),
                       ),
                       const Spacer(),
@@ -2454,7 +2475,7 @@ class _AutoFillSheetState extends State<_AutoFillSheet> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Scales every recipe',
+                    'scales_every_recipe'.tr,
                     style: _S.f(12, FontWeight.w500, _S.textHint),
                   ),
                   const SizedBox(height: 30),
@@ -2468,8 +2489,8 @@ class _AutoFillSheetState extends State<_AutoFillSheet> {
               onTap: () {
                 Navigator.pop(context);
                 CustomSnackbar.show(
-                  title: 'Coming Soon',
-                  message: 'AI meal plan generation coming soon!',
+                  title: 'coming_soon'.tr,
+                  message: 'ai_meal_gen_soon'.tr,
                   type: SnackbarType.info,
                 );
               },
@@ -2482,7 +2503,7 @@ class _AutoFillSheetState extends State<_AutoFillSheet> {
                 ),
                 child: Center(
                   child: Text(
-                    'Generate my week',
+                    'generate_my_week'.tr,
                     style: _S.f(15, FontWeight.w700, Colors.white),
                   ),
                 ),

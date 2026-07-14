@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../theme/app_dimensions.dart';
@@ -49,7 +50,8 @@ class CookbookGridCard extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            '$recipeCount ${recipeCount == 1 ? 'recipe' : 'recipes'}',
+            (recipeCount == 1 ? 'recipe_count_one' : 'recipe_count_other')
+                .trParams({'count': '$recipeCount'}),
             style: AppTextStyles.smallLabel,
           ),
         ],

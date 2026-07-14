@@ -5,13 +5,13 @@ import 'package:recipe_ai/theme/app_colors.dart';
 
 class CookModeLockNotification extends StatelessWidget {
   final String recipeName;
-  final String message;
+  final String? message;
   final VoidCallback? onTap;
 
   const CookModeLockNotification({
     super.key,
     this.recipeName = 'Coconut Chickpea Curry',
-    this.message = 'Timer done!',
+    this.message,
     this.onTap,
   });
 
@@ -103,7 +103,7 @@ class CookModeLockNotification extends StatelessWidget {
                                       ),
                                     ),
                                     Text(
-                                      'now',
+                                      'now'.tr,
                                       style: GoogleFonts.plusJakartaSans(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w400,
@@ -118,7 +118,7 @@ class CookModeLockNotification extends StatelessWidget {
                           const SizedBox(height: 10),
                           // Notification body
                           Text(
-                            message,
+                            message ?? 'timer_done'.tr,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
@@ -127,7 +127,7 @@ class CookModeLockNotification extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Your timer for "$recipeName" has finished. Time to check on your dish!',
+                            'timer_finished_body'.trParams({'recipe': recipeName}),
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 14,
                               fontWeight: FontWeight.w400,
@@ -152,7 +152,7 @@ class CookModeLockNotification extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Tap to dismiss',
+                          'tap_to_dismiss'.tr,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 13,
                             fontWeight: FontWeight.w400,

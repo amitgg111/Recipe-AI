@@ -89,7 +89,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
             children: [
               SettingsUi.header(
-                'Profile',
+                'profile'.tr,
                 trailing: SettingsUi.squareIconButton(
                   icon: Icons.edit_outlined,
                   onTap: () => Get.to(
@@ -120,7 +120,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                   Text(
                     user?.displayName?.isNotEmpty == true
                         ? user!.displayName!
-                        : 'User',
+                        : 'user'.tr,
                     style: const TextStyle(
                       fontSize: 21,
                       fontWeight: FontWeight.w800,
@@ -159,12 +159,12 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
               _statsCard(recipes.length),
 
               // Details
-              SettingsUi.label('DETAILS'),
+              SettingsUi.label('section_details'.tr),
               SettingsUi.card(
                 rows: [
                   _detailRow(
                     Icons.mail_outline_rounded,
-                    'Email',
+                    'email'.tr,
                     user?.email ?? '—',
                     iconWidget: const OnboardingLineIcon(
                       'mail',
@@ -174,8 +174,8 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                   ),
                   _detailRow(
                     Icons.phone_outlined,
-                    'Contact',
-                    _contact.isEmpty ? 'Not set' : _contact,
+                    'contact'.tr,
+                    _contact.isEmpty ? 'not_set'.tr : _contact,
                   ),
                 ],
               ),
@@ -217,10 +217,10 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        const Expanded(
+                        Expanded(
                           child: Text(
-                            'Favorite recipes',
-                            style: TextStyle(
+                            'favorite_recipes'.tr,
+                            style: const TextStyle(
                               fontSize: 14.5,
                               fontWeight: FontWeight.w700,
                               color: AppColors.textDark,
@@ -254,7 +254,9 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'MY RECIPES · ${recipes.length}',
+                      'my_recipes_count'.trParams({
+                        'count': '${recipes.length}',
+                      }),
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
@@ -265,9 +267,9 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                     if (recipes.isNotEmpty)
                       GestureDetector(
                         onTap: () => Get.to(() => const MyRecipesScreen()),
-                        child: const Text(
-                          'See all',
-                          style: TextStyle(
+                        child: Text(
+                          'see_all'.tr,
+                          style: const TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w700,
                             color: AppColors.primary,
@@ -303,7 +305,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
 
   Widget _statsCard(int recipeCount) {
     final uid = AuthService.currentUser?.uid;
-    final name = FirebaseAuth.instance.currentUser?.displayName ?? 'Profile';
+    final name = FirebaseAuth.instance.currentUser?.displayName ?? 'profile'.tr;
     void openList(bool followers) {
       if (uid == null) return;
       Get.to(
@@ -324,11 +326,11 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
       ),
       child: Row(
         children: [
-          _stat('$recipeCount', 'Recipes', null),
+          _stat('$recipeCount', 'recipes'.tr, null),
           _divider(),
-          _stat(_fmtCount(_followers), 'Followers', () => openList(true)),
+          _stat(_fmtCount(_followers), 'followers'.tr, () => openList(true)),
           _divider(),
-          _stat(_fmtCount(_following), 'Following', () => openList(false)),
+          _stat(_fmtCount(_following), 'following'.tr, () => openList(false)),
         ],
       ),
     );
@@ -429,7 +431,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
           const SizedBox(width: 9),
           Expanded(
             child: Text(
-              'Your email & contact are private — never shown to other users.',
+              'email_contact_private'.tr,
               style: TextStyle(
                 fontSize: 12,
                 height: 1.4,
@@ -472,7 +474,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                       Text(
                         recipe.category?.isNotEmpty == true
                             ? recipe.category!
-                            : 'Recipe',
+                            : 'recipe'.tr,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -543,13 +545,13 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.surfaceBorder),
       ),
-      child: const Column(
+      child: Column(
         children: [
-          OnboardingLineIcon('book', size: 34, color: AppColors.iconLight),
-          SizedBox(height: 10),
+          const OnboardingLineIcon('book', size: 34, color: AppColors.iconLight),
+          const SizedBox(height: 10),
           Text(
-            'No recipes yet',
-            style: TextStyle(
+            'no_recipes_yet'.tr,
+            style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
               color: AppColors.textDark,

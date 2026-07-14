@@ -7,7 +7,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_ai/Controllers/cookbook_controller.dart';
 import 'package:recipe_ai/Controllers/meal_plan_controller.dart';
 import 'package:recipe_ai/Controllers/grocery_store_controller.dart';
+import 'package:recipe_ai/Controllers/discover_controller.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
+import 'package:recipe_ai/Service/recipe_social_service.dart';
 import 'package:recipe_ai/Helper/recipe_response_parser.dart';
 import 'package:recipe_ai/Helper/recipe_publish_policy.dart';
 import 'package:recipe_ai/Model/recipe_section_model.dart';
@@ -53,6 +55,10 @@ class RecipeModel {
   /// copy of. Null for user-created / imported recipes.
   final String? originalRecipeId;
 
+  /// For 'discovered' recipes, the uid of the original recipe's owner — needed
+  /// to clear the Discover "saved" marker when this copy is deleted.
+  final String? savedFromOwnerId;
+
   RecipeModel({
     required this.id,
     required this.title,
@@ -76,6 +82,7 @@ class RecipeModel {
     this.likesCount = 0,
     this.recipeSource = RecipePublishPolicy.sourceUserCreated,
     this.originalRecipeId,
+    this.savedFromOwnerId,
     this.isFavorite = false,
   });
 
@@ -125,6 +132,7 @@ class RecipeModel {
       ),
       originalRecipeId:
           (data['originalRecipeId'] ?? data['savedFromRecipeId']) as String?,
+      savedFromOwnerId: data['savedFromOwnerId'] as String?,
       isFavorite: data['isFavorite'] == true,
     );
   }
@@ -278,6 +286,25 @@ class HomeController extends GetxController {
         await Get.find<CookbookController>().removeRecipeFromAllCookbooks(
           recipe.id,
         );
+      }
+
+      // If this was a recipe saved from Discover, clear the "saved" marker on
+      // the original so its Discover bookmark flips back to un-saved. Only
+      // discovered copies carry these fields, so owned recipes are unaffected.
+      if (recipe.isDiscoveredCopy &&
+          recipe.originalRecipeId != null &&
+          recipe.savedFromOwnerId != null) {
+        await RecipeSocialService.setSave(
+          recipe.savedFromOwnerId!,
+          recipe.originalRecipeId!,
+          false,
+        );
+        // Flip the Discover bookmark live (if the feed is loaded).
+        if (Get.isRegistered<DiscoverController>()) {
+          Get.find<DiscoverController>()
+              .savedOriginalIds
+              .remove(recipe.originalRecipeId);
+        }
       }
 
       CustomSnackbar.show(

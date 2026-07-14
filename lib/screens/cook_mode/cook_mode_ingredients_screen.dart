@@ -70,7 +70,7 @@ class _CookModeIngredientsScreenState extends State<CookModeIngredientsScreen> {
               _buildStepLabel(),
               const SizedBox(height: 20),
               Text(
-                'Ingredients for this step',
+                'ingredients_for_step'.tr,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
@@ -133,7 +133,10 @@ class _CookModeIngredientsScreenState extends State<CookModeIngredientsScreen> {
 
   Widget _buildStepLabel() {
     return Text(
-      'STEP ${widget.currentStep} OF ${widget.totalSteps}',
+      'step_of'.trParams({
+        'current': '${widget.currentStep}',
+        'total': '${widget.totalSteps}',
+      }),
       style: GoogleFonts.plusJakartaSans(
         fontSize: 13,
         fontWeight: FontWeight.w800,
@@ -232,7 +235,7 @@ class _CookModeIngredientsScreenState extends State<CookModeIngredientsScreen> {
         const SizedBox(width: 12),
         Expanded(
           child: PrimaryButton(
-            label: 'Next step',
+            label: 'next_step'.tr,
             leadingIcon: const Icon(Icons.arrow_forward, size: 18, color: Colors.white),
             onPressed: widget.onNext,
           ),

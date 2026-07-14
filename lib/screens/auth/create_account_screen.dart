@@ -31,7 +31,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
       Get.offAll(() => const AuthWrapper());
     } catch (e) {
       CustomSnackbar.show(
-        title: 'Google sign-in failed',
+        title: 'google_sign_in_failed'.tr,
         message: AuthErrorMapper.message(e),
         type: SnackbarType.error,
       );
@@ -50,8 +50,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         Get.offAll(() => const AuthWrapper());
       } else {
         CustomSnackbar.show(
-          title: 'Sign in failed',
-          message: result.errorMessage ?? 'Could not sign in with Apple',
+          title: 'sign_in_failed'.tr,
+          message: result.errorMessage ?? 'could_not_sign_in_with_apple'.tr,
           type: SnackbarType.error,
         );
       }
@@ -124,7 +124,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
               // Title
               Text(
-                'Create an account',
+                'create_an_account'.tr,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 27,
@@ -145,9 +145,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                     color: const Color(0xFF8A7E70),
                   ),
                   children: [
-                    const TextSpan(text: 'Already have an account? '),
+                    TextSpan(text: '${'already_have_account'.tr} '),
                     TextSpan(
-                      text: 'Log in',
+                      text: 'login'.tr,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 14.5,
                         fontWeight: FontWeight.w700,
@@ -164,7 +164,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
               // Continue with Google button
               _OutlinedAuthButton(
-                label: 'Continue with Google',
+                label: 'continue_with_google'.tr,
                 onTap: _isLoading ? null : _onGoogleContinue,
                 leading: Container(
                   width: 24,
@@ -189,7 +189,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
               // Continue with Apple button
               _OutlinedAuthButton(
-                label: 'Continue with Apple',
+                label: 'continue_with_apple'.tr,
                 onTap: _isLoading ? null : _onAppleContinue,
                 leading: const Icon(
                   Icons.apple,
@@ -202,7 +202,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
               // Other options button
               _OutlinedAuthButton(
-                label: 'Other options',
+                label: 'other_options'.tr,
                 onTap: _onOtherOptions,
               ),
 
@@ -218,12 +218,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                     height: 1.5,
                   ),
                   children: [
-                    const TextSpan(
-                      text:
-                          'Your data is 100% secure. By continuing you agree to our ',
-                    ),
+                    TextSpan(text: '${'your_data_secure'.tr} '),
                     TextSpan(
-                      text: 'Terms',
+                      text: 'terms'.tr,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -231,9 +228,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                         height: 1.5,
                       ),
                     ),
-                    const TextSpan(text: ' and '),
+                    TextSpan(text: ' ${'and'.tr} '),
                     TextSpan(
-                      text: 'Privacy Policy',
+                      text: 'privacy_policy'.tr,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,

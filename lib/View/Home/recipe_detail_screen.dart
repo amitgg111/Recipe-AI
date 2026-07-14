@@ -21,6 +21,8 @@ import 'package:recipe_ai/Helper/instruction_scaler.dart';
 import 'package:recipe_ai/Helper/premium_gate.dart';
 import 'package:recipe_ai/Controllers/settings_controller.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
+import 'package:recipe_ai/Service/subscription_service.dart';
+import 'package:recipe_ai/widgets/premium_lock_overlay.dart';
 import 'package:recipe_ai/widgets/cannot_publish_dialog.dart';
 import 'package:recipe_ai/widgets/comments_sheet.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
@@ -254,7 +256,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     setState(() => _isPublic = makePublic);
     Get.find<HomeController>().updateRecipeVisibility(recipe.id, makePublic);
     CustomSnackbar.show(
-      title: makePublic ? 'Recipe is now public' : 'Recipe is now private',
+      title: makePublic
+          ? 'recipe_is_now_public'.tr
+          : 'recipe_is_now_private'.tr,
       type: SnackbarType.success,
     );
   }
@@ -480,17 +484,23 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   }
 
   String _sourceLabel(String url) {
-    if (url.contains('instagram')) return 'From instagram.com';
-    if (url.contains('tiktok')) return 'From tiktok.com';
-    if (url.contains('facebook')) return 'From facebook.com';
-    if (url.contains('gemini_image')) return 'From photo import';
-    if (url.contains('recipe_name')) return 'AI generated recipe';
+    if (url.contains('instagram')) {
+      return 'from_source'.trParams({'source': 'instagram.com'});
+    }
+    if (url.contains('tiktok')) {
+      return 'from_source'.trParams({'source': 'tiktok.com'});
+    }
+    if (url.contains('facebook')) {
+      return 'from_source'.trParams({'source': 'facebook.com'});
+    }
+    if (url.contains('gemini_image')) return 'from_photo_import'.tr;
+    if (url.contains('recipe_name')) return 'ai_generated_recipe'.tr;
     if (url.startsWith('http')) {
       try {
-        return 'From ${Uri.parse(url).host}';
+        return 'from_source'.trParams({'source': Uri.parse(url).host});
       } catch (_) {}
     }
-    return 'From Recipe AI';
+    return 'from_recipe_ai'.tr;
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -527,12 +537,12 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 ),
                 const SizedBox(width: 7),
                 Text(
-                  isPublic ? 'Public' : 'Private',
+                  isPublic ? 'public'.tr : 'private'.tr,
                   style: _font(12.5, FontWeight.w800, fg),
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  discovered ? '· locked' : '· tap to change',
+                  discovered ? '· ${'locked'.tr}' : '· ${'tap_to_change'.tr}',
                   style:
                       _font(11, FontWeight.w600, fg.withValues(alpha: 0.75)),
                 ),
@@ -577,7 +587,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     if (time != null) {
       children.add(_metaItem('clock', time));
     }
-    children.add(_metaItem('friend', '$_servings servings'));
+    children.add(
+      _metaItem('friend', 'n_servings'.trParams({'count': '$_servings'})),
+    );
     children.add(Expanded(child: _metaItem('spark', _difficultyLabel())));
 
     final row = <Widget>[];
@@ -662,9 +674,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     } else if (mins >= 45) {
       score += 1;
     }
-    if (score >= 4) return 'Hard';
-    if (score >= 2) return 'Medium';
-    return 'Easy';
+    if (score >= 4) return 'hard'.tr;
+    if (score >= 2) return 'medium'.tr;
+    return 'easy'.tr;
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -674,11 +686,11 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   Widget _buildActionTiles() {
     return Row(
       children: [
-        _actionTile('book', 'Cookbook', _showAddToCookbookSheet),
+        _actionTile('book', 'cookbook'.tr, _showAddToCookbookSheet),
         const SizedBox(width: 8),
-        _actionTile('cal', 'Meal Plan', _showMealPlanPicker),
+        _actionTile('cal', 'meal_plan'.tr, _showMealPlanPicker),
         const SizedBox(width: 8),
-        _actionTile('share', 'Share', _shareRecipe),
+        _actionTile('share', 'share'.tr, _shareRecipe),
       ],
     );
   }
@@ -728,7 +740,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Cookbooks', style: _font(18, FontWeight.w800, _C.textDark)),
+            Text('cookbooks'.tr, style: _font(18, FontWeight.w800, _C.textDark)),
             const SizedBox(height: 12),
             if (containing.isNotEmpty)
               Wrap(
@@ -780,7 +792,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      'Add to cookbook',
+                      'add_to_cookbook'.tr,
                       style: _font(13, FontWeight.w700, _C.primary),
                     ),
                   ],
@@ -825,12 +837,12 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    hasNote ? 'Your note' : 'Add a note',
+                    hasNote ? 'your_note'.tr : 'add_a_note'.tr,
                     style: _font(14, FontWeight.w700, _C.textDark),
                   ),
                   const SizedBox(height: 1),
                   Text(
-                    hasNote ? _note : 'Tweaks, swaps, reminders…',
+                    hasNote ? _note : 'note_placeholder'.tr,
                     style: _font(
                       12.5,
                       FontWeight.w400,
@@ -868,7 +880,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           Row(
             children: [
               Text(
-                'Ingredients',
+                'ingredients'.tr,
                 style: _font(18, FontWeight.w800, _C.textDark),
               ),
               const Spacer(),
@@ -911,7 +923,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                   const OnboardingLineIcon('cart', size: 18, color: _C.primary),
                   const SizedBox(width: 9),
                   Text(
-                    'Add to groceries',
+                    'add_to_groceries'.tr,
                     style: _font(14, FontWeight.w700, _C.primary),
                   ),
                 ],
@@ -925,10 +937,15 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
   // Plus-only unit switcher (visual — matches the HTML locked control)
   Widget _buildUnitsBanner() {
-    // Metric/Imperial is a premium feature, force-unlocked for dev/testing via
-    // PremiumGate. Flip PremiumGate.unitConversionUnlocked to a subscription
-    // check to re-gate it — the conversion logic is unaffected either way.
-    if (!PremiumGate.unitConversionUnlocked) return _buildLockedUnitsBanner();
+    // Metric/Imperial is a Plus feature (PremiumGate → SubscriptionService).
+    // Free users see the blurred, locked banner; tapping opens the upgrade flow.
+    if (!PremiumGate.unitConversionUnlocked) {
+      return GestureDetector(
+        onTap: () => showUpgradeDialog(context, feature: 'unit_converter'.tr),
+        behavior: HitTestBehavior.opaque,
+        child: _buildLockedUnitsBanner(),
+      );
+    }
 
     final isUS = _settings.units.value == 'US';
     return Container(
@@ -944,7 +961,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           const SizedBox(width: 9),
           Expanded(
             child: Text(
-              'Units',
+              'units'.tr,
               style: _font(12.5, FontWeight.w700, const Color(0xFF5B3E8C)),
             ),
           ),
@@ -1005,7 +1022,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           const SizedBox(width: 9),
           Expanded(
             child: Text(
-              'Units',
+              'units'.tr,
               style: _font(12.5, FontWeight.w700, const Color(0xFF5B3E8C)),
             ),
           ),
@@ -1144,7 +1161,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 ),
                 const SizedBox(width: 3),
                 Text(
-                  'serv',
+                  'serv'.tr,
                   style: _font(10, FontWeight.w600, const Color(0xFF9A938A)),
                 ),
               ],
@@ -1269,7 +1286,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Instructions', style: _font(18, FontWeight.w800, _C.textDark)),
+          Text(
+            'instructions'.tr,
+            style: _font(18, FontWeight.w800, _C.textDark),
+          ),
           const SizedBox(height: 6),
           // Steps rebuild reactively on unit change; serving changes rebuild the
           // whole screen via setState. Quantities + timers in the text scale to
@@ -1420,7 +1440,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             const OnboardingLineIcon('play', color: Colors.white, size: 22),
             const SizedBox(width: 9),
             Text(
-              'Cook step-by-step',
+              'cook_step_by_step'.tr,
               style: _font(16, FontWeight.w700, Colors.white),
             ),
           ],
@@ -1434,7 +1454,14 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   // ═══════════════════════════════════════════════════════════════════════════
 
   Widget _buildNutritionCard() {
-    return Container(
+    // Nutrition is a Plus feature. Free users see the blurred teaser; tapping
+    // opens the upgrade flow. (Real nutrition values require a calculation
+    // engine that isn't built yet — this is the paywall entry point.)
+    return GestureDetector(
+      onTap: () =>
+          showUpgradeDialog(context, feature: 'nutrition_calculator'.tr),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
       width: double.infinity,
       padding: const EdgeInsets.all(_C.cardPad),
       decoration: _cardDeco(),
@@ -1442,12 +1469,12 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'NUTRITION',
+            'nutrition'.tr.toUpperCase(),
             style: _font(13, FontWeight.w800, _C.primary, ls: 0.6),
           ),
           const SizedBox(height: 2),
           Text(
-            'Per 1 serving',
+            'per_1_serving'.tr,
             style: _font(12.5, FontWeight.w500, const Color(0xFF9A938A)),
           ),
           const SizedBox(height: 14),
@@ -1472,13 +1499,13 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                         h: 1.45,
                       ),
                       children: [
-                        const TextSpan(text: 'This is a Plus feature. '),
+                        TextSpan(text: 'this_is_plus_feature'.tr),
                         TextSpan(
-                          text: 'Subscribe now',
+                          text: 'subscribe_now'.tr,
                           style: _font(13.5, FontWeight.w800, _C.purple),
                         ),
-                        const TextSpan(
-                          text: " to unlock Recipe AI's nutrition calculator!",
+                        TextSpan(
+                          text: 'unlock_nutrition_calculator'.tr,
                         ),
                       ],
                     ),
@@ -1549,6 +1576,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -1797,7 +1825,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                         Row(
                           children: [
                             Text(
-                              'Add to Groceries',
+                              'add_to_groceries_title'.tr,
                               style: _font(
                                 20,
                                 FontWeight.w800,
@@ -1830,7 +1858,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Select items to purchase',
+                              'select_items_to_purchase'.tr,
                               style: _font(
                                 13.5,
                                 FontWeight.w600,
@@ -1851,7 +1879,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                                 });
                               },
                               child: Text(
-                                allChecked ? 'Deselect All' : 'Select All',
+                                allChecked
+                                    ? 'deselect_all'.tr
+                                    : 'select_all'.tr,
                                 style: _font(13, FontWeight.w700, _C.primary),
                               ),
                             ),
@@ -1907,9 +1937,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                               groceryController.addFromRecipe(recipe.id, toAdd);
 
                               CustomSnackbar.show(
-                                title:
-                                    '$checkedCount ingredients added to groceries',
-                                actionText: 'View',
+                                title: 'n_ingredients_added'.trParams({
+                                  'count': '$checkedCount',
+                                }),
+                                actionText: 'view'.tr,
                                 onAction: () {
                                   Get.offUntil(
                                     MaterialPageRoute(
@@ -1932,10 +1963,12 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                         alignment: Alignment.center,
                         child: Text(
                           checkedCount == 0
-                              ? 'Select items to add'
+                              ? 'select_items_to_add'.tr
                               : checkedCount == 1
-                              ? 'Add 1 item to groceries'
-                              : 'Add $checkedCount items to groceries',
+                              ? 'add_1_item_to_groceries'.tr
+                              : 'add_n_items_to_groceries'.trParams({
+                                  'count': '$checkedCount',
+                                }),
                           style: _font(
                             15,
                             FontWeight.w700,
@@ -2000,7 +2033,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 Row(
                   children: [
                     Text(
-                      'Add a note',
+                      'add_a_note'.tr,
                       style: _font(20, FontWeight.w800, _C.textDark, ls: -0.4),
                     ),
                     const Spacer(),
@@ -2068,8 +2101,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                               ),
                               onChanged: (_) => setSheet(() {}),
                               decoration: InputDecoration(
-                                hintText:
-                                    'Used 1.5 cans of coconut milk for extra sauce…',
+                                hintText: 'note_hint_example'.tr,
                                 hintStyle: _font(
                                   15,
                                   FontWeight.w400,
@@ -2090,7 +2122,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Saved to this recipe',
+                                'saved_to_this_recipe'.tr,
                                 style: _font(
                                   12,
                                   FontWeight.w600,
@@ -2138,7 +2170,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                     ),
                     child: Center(
                       child: Text(
-                        'Save note',
+                        'save_note'.tr,
                         style: _font(17, FontWeight.w600, Colors.white),
                       ),
                     ),
@@ -2222,26 +2254,52 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                         children: [
                           _menuVisibilityRow(),
                           _menuDivider(),
-                          _menuRow('share', 'Share recipe link', () {
+                          _menuRow('share', 'share_recipe_link'.tr, () {
                             Navigator.pop(ctx);
                             _shareRecipe();
                           }),
                           _menuDivider(),
                           _menuRow(
                             'file',
-                            'Export PDF',
-                            () => Navigator.pop(ctx),
+                            'export_pdf'.tr,
+                            () {
+                              Navigator.pop(ctx);
+                              if (!SubscriptionService.instance
+                                  .canExportPDF()) {
+                                showUpgradeDialog(context,
+                                    feature: 'export_pdf'.tr);
+                              } else {
+                                CustomSnackbar.show(
+                                  title: 'export_pdf'.tr,
+                                  message: 'pdf_export_coming_soon'.tr,
+                                  type: SnackbarType.info,
+                                );
+                              }
+                            },
                             plus: true,
                           ),
                           _menuDivider(),
                           _menuRow(
                             'print',
-                            'Print recipe',
-                            () => Navigator.pop(ctx),
+                            'print_recipe'.tr,
+                            () {
+                              Navigator.pop(ctx);
+                              if (!SubscriptionService.instance
+                                  .canPrintRecipe()) {
+                                showUpgradeDialog(context,
+                                    feature: 'print_recipe'.tr);
+                              } else {
+                                CustomSnackbar.show(
+                                  title: 'print_recipe'.tr,
+                                  message: 'printing_coming_soon'.tr,
+                                  type: SnackbarType.info,
+                                );
+                              }
+                            },
                             plus: true,
                           ),
                           _menuDivider(),
-                          _menuRow('trash', 'Delete recipe', () {
+                          _menuRow('trash', 'delete_recipe'.tr, () {
                             Navigator.pop(ctx);
                             _confirmDelete();
                           }, destructive: true),
@@ -2282,7 +2340,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    isPublic ? 'Public recipe' : 'Private recipe',
+                    isPublic ? 'public_recipe'.tr : 'private_recipe'.tr,
                     style: _font(15, FontWeight.w700, _C.textDark),
                   ),
                 ),
@@ -2355,7 +2413,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 ),
               ),
             ),
-            if (plus)
+            if (plus && !SubscriptionService.instance.isPlus)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                 decoration: BoxDecoration(
@@ -2444,12 +2502,12 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  'Delete this recipe?',
+                  'delete_this_recipe'.tr,
                   style: _font(18, FontWeight.w800, _C.textDark),
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'Are you sure you want to delete "${recipe.title}"? This action cannot be undone.',
+                  'delete_recipe_confirm'.trParams({'title': recipe.title}),
                   textAlign: TextAlign.center,
                   style: _font(13.5, FontWeight.w400, _C.textMedium, h: 1.5),
                 ),
@@ -2469,7 +2527,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                           ),
                           child: Center(
                             child: Text(
-                              'Cancel',
+                              'cancel'.tr,
                               style: _font(15, FontWeight.w700, _C.textDark),
                             ),
                           ),
@@ -2500,7 +2558,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                           ),
                           child: Center(
                             child: Text(
-                              'Delete',
+                              'delete'.tr,
                               style: _font(15, FontWeight.w700, Colors.white),
                             ),
                           ),
@@ -2734,8 +2792,10 @@ class _MealPlanPickerSheetState extends State<_MealPlanPickerSheet> {
       widget.mealPlanController.selectDate(_selectedDay);
       if (mounted) Navigator.pop(context);
       CustomSnackbar.show(
-        title: 'Added to $_selectedMealType',
-        message: '${widget.recipe.title} added to meal plan',
+        title: 'added_to_meal'.trParams({'meal': _selectedMealType}),
+        message: 'recipe_added_to_meal_plan'.trParams({
+          'title': widget.recipe.title,
+        }),
         type: SnackbarType.success,
       );
     } catch (_) {
@@ -2784,7 +2844,7 @@ class _MealPlanPickerSheetState extends State<_MealPlanPickerSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Add to Meal Plan',
+                        'add_to_meal_plan'.tr,
                         style: _font(18, FontWeight.w800, _C.textDark),
                       ),
                       const SizedBox(height: 2),
@@ -2812,7 +2872,7 @@ class _MealPlanPickerSheetState extends State<_MealPlanPickerSheet> {
           Padding(
             padding: const EdgeInsets.only(left: 20, bottom: 10),
             child: Text(
-              'SELECT DATE',
+              'select_date'.tr.toUpperCase(),
               style: _font(11, FontWeight.w700, _C.textHint, ls: 0.8),
             ),
           ),
@@ -2821,7 +2881,7 @@ class _MealPlanPickerSheetState extends State<_MealPlanPickerSheet> {
           Padding(
             padding: const EdgeInsets.only(left: 20, bottom: 10),
             child: Text(
-              'MEAL TYPE',
+              'meal_type'.tr.toUpperCase(),
               style: _font(11, FontWeight.w700, _C.textHint, ls: 0.8),
             ),
           ),
@@ -2897,7 +2957,9 @@ class _MealPlanPickerSheetState extends State<_MealPlanPickerSheet> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'Add to $_selectedMealType',
+                              'add_to_meal'.trParams({
+                                'meal': _selectedMealType,
+                              }),
                               style: _font(15, FontWeight.w700, Colors.white),
                             ),
                           ],
@@ -2973,16 +3035,16 @@ class _CookbookPickerSheetState extends State<CookbookPickerSheet> {
     Navigator.pop(context, _selected.length);
     if (toAdd.isNotEmpty) {
       CustomSnackbar.show(
-        title: 'Saved',
+        title: 'saved'.tr,
         message: toAdd.length == 1
-            ? 'Added to 1 cookbook'
-            : 'Added to ${toAdd.length} cookbooks',
+            ? 'added_to_1_cookbook'.tr
+            : 'added_to_n_cookbooks'.trParams({'count': '${toAdd.length}'}),
         type: SnackbarType.success,
       );
     } else if (toRemove.isNotEmpty) {
       CustomSnackbar.show(
-        title: 'Updated',
-        message: 'Cookbook selection updated',
+        title: 'updated'.tr,
+        message: 'cookbook_selection_updated'.tr,
         type: SnackbarType.success,
       );
     }
@@ -3065,7 +3127,7 @@ class _CookbookPickerSheetState extends State<CookbookPickerSheet> {
             child: Row(
               children: [
                 Text(
-                  'Add to cookbook',
+                  'add_to_cookbook'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
@@ -3103,7 +3165,7 @@ class _CookbookPickerSheetState extends State<CookbookPickerSheet> {
                 return Padding(
                   padding: const EdgeInsets.fromLTRB(6, 16, 6, 16),
                   child: Text(
-                    'No cookbooks yet — create one below.',
+                    'no_cookbooks_yet_create'.tr,
                     style: _font(13.5, FontWeight.w500, _C.textMedium),
                   ),
                 );
@@ -3150,7 +3212,11 @@ class _CookbookPickerSheetState extends State<CookbookPickerSheet> {
                                 ),
                                 const SizedBox(height: 1),
                                 Text(
-                                  '$count ${count == 1 ? 'Recipe' : 'Recipes'}',
+                                  count == 1
+                                      ? 'n_recipe'.trParams({'count': '$count'})
+                                      : 'n_recipes'.trParams({
+                                          'count': '$count',
+                                        }),
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
@@ -3223,7 +3289,7 @@ class _CookbookPickerSheetState extends State<CookbookPickerSheet> {
                   ),
                   const SizedBox(width: 13),
                   Text(
-                    'New cookbook',
+                    'new_cookbook'.tr,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
@@ -3264,7 +3330,7 @@ class _CookbookPickerSheetState extends State<CookbookPickerSheet> {
                         ),
                       )
                     : Text(
-                        'Done',
+                        'done'.tr,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 17,
                           fontWeight: FontWeight.w600,
@@ -3351,12 +3417,12 @@ void showDeleteRecipeDialog(RecipeModel recipe, HomeController controller) {
             ),
             const SizedBox(height: 20),
             Text(
-              'Delete this recipe?',
+              'delete_this_recipe'.tr,
               style: _font(18, FontWeight.w800, _C.textDark),
             ),
             const SizedBox(height: 10),
             Text(
-              'Are you sure you want to delete "${recipe.title}"?',
+              'delete_recipe_confirm_short'.trParams({'title': recipe.title}),
               textAlign: TextAlign.center,
               style: _font(13.5, FontWeight.w400, _C.textMedium, h: 1.5),
             ),
@@ -3376,7 +3442,7 @@ void showDeleteRecipeDialog(RecipeModel recipe, HomeController controller) {
                       ),
                       child: Center(
                         child: Text(
-                          'Cancel',
+                          'cancel'.tr,
                           style: _font(15, FontWeight.w700, _C.textDark),
                         ),
                       ),
@@ -3403,7 +3469,7 @@ void showDeleteRecipeDialog(RecipeModel recipe, HomeController controller) {
                       ),
                       child: Center(
                         child: Text(
-                          'Delete',
+                          'delete'.tr,
                           style: _font(15, FontWeight.w700, Colors.white),
                         ),
                       ),
@@ -3436,12 +3502,12 @@ class _VisibilityConfirmDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final accent = makePublic ? _C.green : _C.primary;
     final title = makePublic
-        ? 'Make this recipe public?'
-        : 'Make this recipe private?';
+        ? 'make_recipe_public_q'.tr
+        : 'make_recipe_private_q'.tr;
     final body = makePublic
-        ? 'Everyone will be able to discover and view it.'
-        : 'Only you will be able to access it.';
-    final action = makePublic ? 'Make Public' : 'Make Private';
+        ? 'make_public_desc'.tr
+        : 'make_private_desc'.tr;
+    final action = makePublic ? 'make_public'.tr : 'make_private'.tr;
 
     return Dialog(
       backgroundColor: _C.card,
@@ -3491,7 +3557,7 @@ class _VisibilityConfirmDialog extends StatelessWidget {
                         ),
                       ),
                       child: Text(
-                        'Cancel',
+                        'cancel'.tr,
                         style: _font(15, FontWeight.w700, _C.textDark),
                       ),
                     ),

@@ -52,11 +52,11 @@ class _SettingUpScreenState extends State<SettingUpScreen>
   late final AnimationController _messageController;
   int _messageIndex = 0;
 
-  static const _messages = [
-    'Gathering your favorite recipes…',
-    'Setting up your cookbooks…',
-    'Building your meal planner…',
-    'Almost ready to cook…',
+  List<String> get _messages => [
+    'setup_msg_gathering'.tr,
+    'setup_msg_cookbooks'.tr,
+    'setup_msg_planner'.tr,
+    'setup_msg_almost'.tr,
   ];
 
   @override
@@ -214,7 +214,7 @@ class _SettingUpScreenState extends State<SettingUpScreen>
               // Title
               const SizedBox(height: 24),
               Text(
-                'We’re setting everything\nup for you',
+                'setting_up_title'.tr,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 22,
@@ -472,7 +472,7 @@ class _SettingUpScreenState extends State<SettingUpScreen>
               ),
               // Continue button
               PrimaryButton(
-                label: 'Continue',
+                label: 'continue_'.tr,
                 onPressed: widget.onContinue ??
                     () => Get.to(() => const PlusIntroScreen()),
               ),
@@ -564,11 +564,11 @@ class _SettingUpBodyState extends State<SettingUpBody>
   late final AnimationController _messageController;
   int _messageIndex = 0;
 
-  static const _messages = [
-    'Gathering your favorite recipes…',
-    'Setting up your cookbooks…',
-    'Building your meal planner…',
-    'Almost ready to cook…',
+  List<String> get _messages => [
+    'setup_msg_gathering'.tr,
+    'setup_msg_cookbooks'.tr,
+    'setup_msg_planner'.tr,
+    'setup_msg_almost'.tr,
   ];
 
   @override
@@ -693,7 +693,7 @@ class _SettingUpBodyState extends State<SettingUpBody>
           const SizedBox(height: 8),
           // Title
           Text(
-            'We’re setting everything\nup for you',
+            'setting_up_title'.tr,
             textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 22,
@@ -937,7 +937,7 @@ class _SettingUpBodyState extends State<SettingUpBody>
                             ),
                             const SizedBox(height: 14),
                             Text(
-                              'You’re all set!',
+                              'youre_all_set'.tr,
                               textAlign: TextAlign.center,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 15,

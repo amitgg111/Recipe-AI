@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/widgets/app_logo.dart';
 import 'package:recipe_ai/widgets/app_network_image.dart';
@@ -142,7 +143,7 @@ class _CookbooksHomeScreenState extends State<CookbooksHomeScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
-              children: [_segment('Cookbooks', 0), _segment('Recipes', 1)],
+              children: [_segment('cookbooks'.tr, 0), _segment('recipes'.tr, 1)],
             ),
           ),
         ),
@@ -215,7 +216,7 @@ class _CookbooksHomeScreenState extends State<CookbooksHomeScreen> {
           const _Ico(_pSearch, size: 20, color: '#A89F90'),
           const SizedBox(width: 10),
           Text(
-            'Search cookbooks',
+            'search_cookbooks'.tr,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 14,
               fontWeight: FontWeight.w500,
@@ -372,14 +373,14 @@ class _BottomNav extends StatelessWidget {
         color: Color(0xFFFFFFFF),
         border: Border(top: BorderSide(color: Color(0xFFEFE6D6))),
       ),
-      child: const Row(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _NavItem(icon: _pBook, label: 'Cookbooks', active: true),
-          _NavItem(icon: _pCompass, label: 'Discover'),
-          _NavItem(icon: _pCal, label: 'Meal Plan'),
-          _NavItem(icon: _pCart, label: 'Groceries'),
-          _NavItem(icon: _pDots, label: 'More', filled: true),
+          _NavItem(icon: _pBook, label: 'cookbooks'.tr, active: true),
+          _NavItem(icon: _pCompass, label: 'discover'.tr),
+          _NavItem(icon: _pCal, label: 'meal_plan'.tr),
+          _NavItem(icon: _pCart, label: 'groceries'.tr),
+          _NavItem(icon: _pDots, label: 'more'.tr, filled: true),
         ],
       ),
     );

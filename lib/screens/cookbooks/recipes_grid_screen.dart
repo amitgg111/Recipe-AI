@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
@@ -101,7 +102,7 @@ class _RecipesGridScreenState extends State<RecipesGridScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
               child: SegmentedControl(
-                segments: const ['Cookbooks', 'Recipes'],
+                segments: ['cookbooks'.tr, 'recipes'.tr],
                 selectedIndex: _segmentIndex,
                 onChanged: (index) {
                   setState(() => _segmentIndex = index);
@@ -139,7 +140,7 @@ class _RecipesGridScreenState extends State<RecipesGridScreen> {
                   // Search bar
                   Expanded(
                     child: AppSearchBar(
-                      hintText: 'Search recipes',
+                      hintText: 'search_recipes'.tr,
                       readOnly: true,
                       onTap: () {},
                     ),

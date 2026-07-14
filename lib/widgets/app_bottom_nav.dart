@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../theme/app_dimensions.dart';
@@ -16,12 +17,14 @@ class AppBottomNav extends StatelessWidget {
   });
 
   // Exact HTML `navTab` icon set: book / compass / cal / cart / dots.
+  // Labels are translation KEYS (resolved with `.tr` at render) so the list can
+  // stay const while still switching language live.
   static const _items = [
-    _NavItem(icon: 'book', label: 'Cookbooks'),
-    _NavItem(icon: 'compass', label: 'Discover'),
-    _NavItem(icon: 'cal', label: 'Meal Plan'),
-    _NavItem(icon: 'cart', label: 'Groceries'),
-    _NavItem(icon: 'dots', label: 'More'),
+    _NavItem(icon: 'book', label: 'cookbooks'),
+    _NavItem(icon: 'compass', label: 'discover'),
+    _NavItem(icon: 'cal', label: 'meal_plan'),
+    _NavItem(icon: 'cart', label: 'groceries'),
+    _NavItem(icon: 'dots', label: 'more'),
   ];
 
   @override
@@ -104,7 +107,7 @@ class _NavTab extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            label,
+            label.tr,
             style: isActive
                 ? AppTextStyles.bottomNavActive.copyWith(
                     color: AppColors.primary,

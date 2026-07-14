@@ -92,7 +92,7 @@ class _FollowListScreenState extends State<FollowListScreen> {
           const SizedBox(width: 14),
           Expanded(
             child: Text(
-              widget.title.isNotEmpty ? widget.title : 'Profile',
+              widget.title.isNotEmpty ? widget.title : 'profile'.tr,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.plusJakartaSans(
@@ -111,7 +111,7 @@ class _FollowListScreenState extends State<FollowListScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 18),
       child: SlidingSegmented.tabs(
-        labels: const ['Followers', 'Following'],
+        labels: ['followers'.tr, 'following'.tr],
         selectedIndex: _followers ? 0 : 1,
         onChanged: (i) => setState(() => _followers = i == 0),
         height: 38,
@@ -153,7 +153,7 @@ class _FollowListScreenState extends State<FollowListScreen> {
               size: 40, color: AppColors.iconLight),
           const SizedBox(height: 12),
           Text(
-            _followers ? 'No followers yet' : 'Not following anyone yet',
+            _followers ? 'no_followers_yet'.tr : 'not_following_anyone_yet'.tr,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 15,
               fontWeight: FontWeight.w700,

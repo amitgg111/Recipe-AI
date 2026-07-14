@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_spacing.dart';
@@ -72,7 +73,7 @@ class _EditCookbookSheetState extends State<EditCookbookSheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Rename cookbook', style: AppTextStyles.listTitle),
+                Text('rename_cookbook'.tr, style: AppTextStyles.listTitle),
                 // Close button
                 GestureDetector(
                   onTap: () => Navigator.of(context).pop(),
@@ -129,7 +130,7 @@ class _EditCookbookSheetState extends State<EditCookbookSheet> {
                           horizontal: 18,
                           vertical: 0,
                         ),
-                        hintText: 'Cookbook name',
+                        hintText: 'cookbook_name'.tr,
                         hintStyle: AppTextStyles.inputHint,
                       ),
                     ),
@@ -170,7 +171,7 @@ class _EditCookbookSheetState extends State<EditCookbookSheet> {
             const SizedBox(height: AppSpacing.xl),
             // Save button
             PrimaryButton(
-              label: 'Save changes',
+              label: 'save_changes'.tr,
               onPressed: _controller.text.trim().isEmpty
                   ? null
                   : () {

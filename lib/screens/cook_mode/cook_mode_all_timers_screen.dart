@@ -65,7 +65,7 @@ class CookModeAllTimersScreen extends StatelessWidget {
               _buildProgressBar(),
               const SizedBox(height: 28),
               Text(
-                'Active timers',
+                'active_timers'.tr,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
@@ -206,7 +206,10 @@ class CookModeAllTimersScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${timer.timeRemaining} remaining of ${timer.totalTime}',
+                  'time_remaining_of'.trParams({
+                    'remaining': timer.timeRemaining,
+                    'total': timer.totalTime,
+                  }),
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
@@ -241,7 +244,7 @@ class CookModeAllTimersScreen extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: PrimaryButton(
-            label: 'Next step',
+            label: 'next_step'.tr,
             leadingIcon: const Icon(Icons.arrow_forward, size: 18, color: Colors.white),
             onPressed: onNext,
           ),

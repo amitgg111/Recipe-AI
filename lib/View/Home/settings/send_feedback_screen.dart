@@ -35,10 +35,11 @@ class _SendFeedbackScreenState extends State<SendFeedbackScreen> {
     if (file != null && mounted) setState(() => _shot = file);
   }
 
+  // [emoji, storage value (never localize — written to Firestore), label key]
   static const _types = [
-    ['💡', 'Idea'],
-    ['🐞', 'Bug'],
-    ['❤️', 'Praise'],
+    ['💡', 'Idea', 'feedback_idea'],
+    ['🐞', 'Bug', 'feedback_bug'],
+    ['❤️', 'Praise', 'feedback_praise'],
   ];
 
   @override
@@ -52,8 +53,8 @@ class _SendFeedbackScreenState extends State<SendFeedbackScreen> {
     final text = _controller.text.trim();
     if (text.isEmpty) {
       CustomSnackbar.show(
-        title: 'Empty feedback',
-        message: 'Please write a little something first.',
+        title: 'empty_feedback'.tr,
+        message: 'write_something_first'.tr,
         type: SnackbarType.warning,
       );
       return;
@@ -106,8 +107,8 @@ class _SendFeedbackScreenState extends State<SendFeedbackScreen> {
     } catch (e) {
       debugPrint('SendFeedback: submit failed → $e');
       CustomSnackbar.show(
-        title: 'Error',
-        message: 'Could not send feedback. Please try again.',
+        title: 'error'.tr,
+        message: 'could_not_send_feedback'.tr,
         type: SnackbarType.error,
       );
     } finally {
@@ -152,19 +153,19 @@ class _SendFeedbackScreenState extends State<SendFeedbackScreen> {
                 ),
               ),
               const SizedBox(height: 18),
-              const Text(
-                'Thank you!',
-                style: TextStyle(
+              Text(
+                'thank_you'.tr,
+                style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textDark,
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Your feedback has been sent — it helps us make Recipe AI better.',
+              Text(
+                'feedback_sent_message'.tr,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 13.5,
                   height: 1.5,
                   fontWeight: FontWeight.w500,
@@ -184,9 +185,9 @@ class _SendFeedbackScreenState extends State<SendFeedbackScreen> {
                       borderRadius: BorderRadius.circular(13),
                     ),
                   ),
-                  child: const Text(
-                    'Done',
-                    style: TextStyle(
+                  child: Text(
+                    'done'.tr,
+                    style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -211,16 +212,16 @@ class _SendFeedbackScreenState extends State<SendFeedbackScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SettingsUi.header('Send feedback'),
+              SettingsUi.header('send_feedback'.tr),
               const SizedBox(height: 18),
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        "We'd love to hear your thoughts. What kind of feedback do you have?",
-                        style: TextStyle(
+                      Text(
+                        'feedback_intro'.tr,
+                        style: const TextStyle(
                           fontSize: 14,
                           height: 1.5,
                           fontWeight: FontWeight.w500,
@@ -241,9 +242,9 @@ class _SendFeedbackScreenState extends State<SendFeedbackScreen> {
                       ),
                       const SizedBox(height: 20),
 
-                      const Text(
-                        'YOUR FEEDBACK',
-                        style: TextStyle(
+                      Text(
+                        'your_feedback'.tr,
+                        style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textLight,
@@ -302,11 +303,11 @@ class _SendFeedbackScreenState extends State<SendFeedbackScreen> {
                                 height: 1.5,
                                 color: AppColors.textDark,
                               ),
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 isDense: true,
                                 filled: false,
-                                hintText: 'Tell us what you think…',
-                                hintStyle: TextStyle(
+                                hintText: 'tell_us_what_you_think'.tr,
+                                hintStyle: const TextStyle(
                                   fontSize: 14,
                                   color: AppColors.textHint,
                                 ),
@@ -387,8 +388,8 @@ class _SendFeedbackScreenState extends State<SendFeedbackScreen> {
                             const SizedBox(width: 10),
                             Text(
                               _shot == null
-                                  ? 'Add a screenshot (optional)'
-                                  : 'Screenshot added · tap to change',
+                                  ? 'add_screenshot_optional'.tr
+                                  : 'screenshot_added'.tr,
                               style: const TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
@@ -427,9 +428,9 @@ class _SendFeedbackScreenState extends State<SendFeedbackScreen> {
                             color: Colors.white,
                           ),
                         )
-                      : const Text(
-                          'Submit feedback',
-                          style: TextStyle(
+                      : Text(
+                          'submit_feedback'.tr,
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
@@ -458,7 +459,7 @@ class _SendFeedbackScreenState extends State<SendFeedbackScreen> {
           ),
         ),
         child: Text(
-          '${_types[i][0]} ${_types[i][1]}',
+          '${_types[i][0]} ${(_types[i][2]).tr}',
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w700,

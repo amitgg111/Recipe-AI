@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/Controllers/settings_controller.dart';
+import 'package:recipe_ai/Service/language_service.dart';
 import 'package:recipe_ai/View/Home/settings/settings_common.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
@@ -16,23 +17,13 @@ class _LanguageScreenState extends State<LanguageScreen> {
   final _settings = Get.find<SettingsController>();
   String _query = '';
 
-  static const _languages = [
-    ['English', 'English'],
-    ['हिन्दी', 'Hindi'],
-    ['Español', 'Spanish'],
-    ['Français', 'French'],
-    ['Deutsch', 'German'],
-    ['Italiano', 'Italian'],
-    ['日本語', 'Japanese'],
-    ['中文', 'Chinese'],
-  ];
-
   @override
   Widget build(BuildContext context) {
-    final filtered = _languages.where((l) {
-      if (_query.isEmpty) return true;
-      final q = _query.toLowerCase();
-      return l[0].toLowerCase().contains(q) || l[1].toLowerCase().contains(q);
+    final q = _query.toLowerCase();
+    final filtered = LanguageService.supported.where((l) {
+      if (q.isEmpty) return true;
+      return l.native.toLowerCase().contains(q) ||
+          l.english.toLowerCase().contains(q);
     }).toList();
 
     return Scaffold(
@@ -43,7 +34,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(18, 4, 18, 0),
-              child: SettingsUi.header('Language'),
+              child: SettingsUi.header('language'.tr),
             ),
             const SizedBox(height: 16),
             Padding(
@@ -58,12 +49,9 @@ class _LanguageScreenState extends State<LanguageScreen> {
                   SettingsUi.card(
                     rows: [
                       for (final l in filtered)
-                        Obx(
-                          () => _languageRow(
-                            native: l[0],
-                            english: l[1],
-                            selected: _settings.language.value == l[1],
-                          ),
+                        _languageRow(
+                          lang: l,
+                          selected: LanguageService.currentCode == l.code,
                         ),
                     ],
                   ),
@@ -97,11 +85,11 @@ class _LanguageScreenState extends State<LanguageScreen> {
                 fontWeight: FontWeight.w500,
                 color: AppColors.textDark,
               ),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 isDense: true,
                 filled: false,
-                hintText: 'Search languages',
-                hintStyle: TextStyle(
+                hintText: 'search_languages'.tr,
+                hintStyle: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   color: AppColors.textHint,
@@ -121,15 +109,15 @@ class _LanguageScreenState extends State<LanguageScreen> {
     );
   }
 
-  Widget _languageRow({
-    required String native,
-    required String english,
-    required bool selected,
-  }) {
+  Widget _languageRow({required AppLanguage lang, required bool selected}) {
     return InkWell(
-      onTap: () {
-        _settings.setLanguage(english);
-        Get.back();
+      onTap: () async {
+        // Instant, no-restart switch + persist. Keep the settings row's label in
+        // sync too, then rebuild so the checkmark and (now-translated) labels
+        // update in place.
+        await LanguageService.setLanguage(lang.code);
+        _settings.setLanguage(lang.english);
+        if (mounted) setState(() {});
       },
       child: Padding(
         padding: const EdgeInsets.all(15),
@@ -140,7 +128,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    native,
+                    lang.native,
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
@@ -149,7 +137,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                   ),
                   const SizedBox(height: 1),
                   Text(
-                    english,
+                    lang.english,
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,

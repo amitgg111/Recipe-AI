@@ -211,7 +211,7 @@ class _CookModeTimerScreenState extends State<CookModeTimerScreen>
                     ),
                   ),
                   Text(
-                    'of ${_formatTotal()}',
+                    'of_duration'.trParams({'duration': _formatTotal()}),
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -250,7 +250,7 @@ class _CookModeTimerScreenState extends State<CookModeTimerScreen>
         SizedBox(
           width: 140,
           child: PrimaryButton(
-            label: 'Pause',
+            label: 'pause'.tr,
             leadingIcon: const Icon(Icons.pause, size: 18, color: Colors.white),
             onPressed: _pause,
           ),
@@ -324,7 +324,7 @@ class _CookModeTimerScreenState extends State<CookModeTimerScreen>
         const SizedBox(width: 12),
         Expanded(
           child: PrimaryButton(
-            label: 'Next step',
+            label: 'next_step'.tr,
             leadingIcon: const Icon(Icons.arrow_forward, size: 18, color: Colors.white),
             onPressed: widget.onNext,
           ),

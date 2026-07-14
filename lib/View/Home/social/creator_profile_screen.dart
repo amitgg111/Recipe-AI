@@ -104,7 +104,7 @@ class CreatorProfileScreen extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          Text('Profile', style: _f(17, FontWeight.w700, AppColors.textDark)),
+          Text('profile'.tr, style: _f(17, FontWeight.w700, AppColors.textDark)),
           const Spacer(),
           const SizedBox(width: 40),
         ],
@@ -162,11 +162,11 @@ class CreatorProfileScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _stat('$publicRecipes', 'Recipes', null),
+          _stat('$publicRecipes', 'recipes'.tr, null),
           _divider(),
           _stat(
             _fmt(user.followersCount),
-            'Followers',
+            'followers'.tr,
             () => Get.to(() => FollowListScreen(
                   userId: userId,
                   title: user.displayName,
@@ -176,7 +176,7 @@ class CreatorProfileScreen extends StatelessWidget {
           _divider(),
           _stat(
             _fmt(user.followingCount),
-            'Following',
+            'following'.tr,
             () => Get.to(() => FollowListScreen(
                   userId: userId,
                   title: user.displayName,
@@ -213,7 +213,9 @@ class CreatorProfileScreen extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(4, 22, 4, 11),
-          child: Text('PUBLIC RECIPES · ${recipes.length}',
+          child: Text(
+              'public_recipes_count'
+                  .trParams({'count': '${recipes.length}'}),
               style: _f(12, FontWeight.w800, AppColors.textHint, sp: 0.72)),
         ),
         if (recipes.isEmpty)
@@ -326,7 +328,7 @@ class CreatorProfileScreen extends StatelessWidget {
           const Icon(Icons.public_off_rounded,
               size: 34, color: AppColors.iconLight),
           const SizedBox(height: 10),
-          Text('No public recipes yet',
+          Text('no_public_recipes_yet'.tr,
               style: _f(14, FontWeight.w700, AppColors.textDark)),
         ],
       ),

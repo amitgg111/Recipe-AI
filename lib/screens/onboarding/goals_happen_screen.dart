@@ -55,7 +55,7 @@ class _GoalsHappenScreenState extends State<GoalsHappenScreen> {
               // Title
               const SizedBox(height: 18),
               Text(
-                "Let's make your\ngoals happen!",
+                'goals_happen_title'.tr,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 26,
@@ -69,7 +69,7 @@ class _GoalsHappenScreenState extends State<GoalsHappenScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 child: Text(
-                  "You want to save money and eat healthier — we'll help you get there.",
+                  'goals_happen_subtitle'.tr,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 15,
@@ -111,7 +111,7 @@ class _GoalsHappenScreenState extends State<GoalsHappenScreen> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  'Your progress',
+                                  'your_progress'.tr,
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w800,
@@ -137,7 +137,7 @@ class _GoalsHappenScreenState extends State<GoalsHappenScreen> {
                                       ),
                                       const SizedBox(width: 5),
                                       Text(
-                                        'ON TRACK',
+                                        'on_track'.tr,
                                         style: GoogleFonts.plusJakartaSans(
                                           fontSize: 11,
                                           fontWeight: FontWeight.w800,
@@ -164,7 +164,7 @@ class _GoalsHappenScreenState extends State<GoalsHappenScreen> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  'Wk 1',
+                                  'wk_1'.tr,
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 10.5,
                                     fontWeight: FontWeight.w600,
@@ -172,7 +172,7 @@ class _GoalsHappenScreenState extends State<GoalsHappenScreen> {
                                   ),
                                 ),
                                 Text(
-                                  'Wk 2',
+                                  'wk_2'.tr,
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 10.5,
                                     fontWeight: FontWeight.w600,
@@ -180,7 +180,7 @@ class _GoalsHappenScreenState extends State<GoalsHappenScreen> {
                                   ),
                                 ),
                                 Text(
-                                  'Wk 3',
+                                  'wk_3'.tr,
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 10.5,
                                     fontWeight: FontWeight.w600,
@@ -188,7 +188,7 @@ class _GoalsHappenScreenState extends State<GoalsHappenScreen> {
                                   ),
                                 ),
                                 Text(
-                                  'Wk 4',
+                                  'wk_4'.tr,
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 10.5,
                                     fontWeight: FontWeight.w600,
@@ -235,7 +235,7 @@ class _GoalsHappenScreenState extends State<GoalsHappenScreen> {
                                   ),
                                   const SizedBox(height: 11),
                                   Text(
-                                    'Eat healthier',
+                                    'goal_eat_healthier'.tr,
                                     style: GoogleFonts.plusJakartaSans(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w800,
@@ -244,7 +244,7 @@ class _GoalsHappenScreenState extends State<GoalsHappenScreen> {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    'Balanced, fresh meals',
+                                    'balanced_fresh_meals'.tr,
                                     style: GoogleFonts.plusJakartaSans(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
@@ -285,7 +285,7 @@ class _GoalsHappenScreenState extends State<GoalsHappenScreen> {
                                   ),
                                   const SizedBox(height: 11),
                                   Text(
-                                    'Save money',
+                                    'goal_save_money'.tr,
                                     style: GoogleFonts.plusJakartaSans(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w800,
@@ -294,7 +294,7 @@ class _GoalsHappenScreenState extends State<GoalsHappenScreen> {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    'Cook more, waste less',
+                                    'cook_more_waste_less'.tr,
                                     style: GoogleFonts.plusJakartaSans(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
@@ -313,7 +313,7 @@ class _GoalsHappenScreenState extends State<GoalsHappenScreen> {
               ),
               // Bottom: Continue button
               PrimaryButton(
-                label: 'Continue',
+                label: 'continue_'.tr,
                 onPressed: () {
                   Get.to(
                     () => const WhenToCookScreen(),
@@ -376,7 +376,7 @@ class _GoalsHappenBodyState extends State<GoalsHappenBody>
           const SizedBox(height: 8),
           // Title
           Text(
-            "Let's make your\ngoals happen!",
+            'goals_happen_title'.tr,
             textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 28,
@@ -390,7 +390,7 @@ class _GoalsHappenBodyState extends State<GoalsHappenBody>
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Text(
-              "You want to save money and eat healthier —we'll help you get there.",
+              'goals_happen_subtitle'.tr,
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 11,
@@ -430,7 +430,7 @@ class _GoalsHappenBodyState extends State<GoalsHappenBody>
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Your progress',
+                              'your_progress'.tr,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w800,
@@ -456,7 +456,7 @@ class _GoalsHappenBodyState extends State<GoalsHappenBody>
                                   ),
                                   const SizedBox(width: 5),
                                   Text(
-                                    'ON TRACK',
+                                    'on_track'.tr,
                                     style: GoogleFonts.plusJakartaSans(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w800,
@@ -488,7 +488,7 @@ class _GoalsHappenBodyState extends State<GoalsHappenBody>
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Wk 1',
+                              'wk_1'.tr,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 10.5,
                                 fontWeight: FontWeight.w600,
@@ -496,7 +496,7 @@ class _GoalsHappenBodyState extends State<GoalsHappenBody>
                               ),
                             ),
                             Text(
-                              'Wk 2',
+                              'wk_2'.tr,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 10.5,
                                 fontWeight: FontWeight.w600,
@@ -504,7 +504,7 @@ class _GoalsHappenBodyState extends State<GoalsHappenBody>
                               ),
                             ),
                             Text(
-                              'Wk 3',
+                              'wk_3'.tr,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 10.5,
                                 fontWeight: FontWeight.w600,
@@ -512,7 +512,7 @@ class _GoalsHappenBodyState extends State<GoalsHappenBody>
                               ),
                             ),
                             Text(
-                              'Wk 4',
+                              'wk_4'.tr,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 10.5,
                                 fontWeight: FontWeight.w600,
@@ -557,7 +557,7 @@ class _GoalsHappenBodyState extends State<GoalsHappenBody>
                               ),
                               const SizedBox(height: 11),
                               Text(
-                                'Eat healthier',
+                                'goal_eat_healthier'.tr,
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w800,
@@ -566,7 +566,7 @@ class _GoalsHappenBodyState extends State<GoalsHappenBody>
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'Balanced, fresh meals',
+                                'balanced_fresh_meals'.tr,
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,
@@ -607,7 +607,7 @@ class _GoalsHappenBodyState extends State<GoalsHappenBody>
                               ),
                               const SizedBox(height: 11),
                               Text(
-                                'Save money',
+                                'goal_save_money'.tr,
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w800,
@@ -616,7 +616,7 @@ class _GoalsHappenBodyState extends State<GoalsHappenBody>
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'Cook more, waste less',
+                                'cook_more_waste_less'.tr,
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,

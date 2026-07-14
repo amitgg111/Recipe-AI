@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
@@ -52,7 +53,7 @@ class _AddNoteSheetState extends State<AddNoteSheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Add a note', style: AppTextStyles.listTitle),
+                Text('add_a_note'.tr, style: AppTextStyles.listTitle),
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
                   child: Container(
@@ -98,7 +99,7 @@ class _AddNoteSheetState extends State<AddNoteSheet> {
                   color: AppColors.textDark,
                 ),
                 decoration: InputDecoration(
-                  hintText: 'Write your note here...',
+                  hintText: 'write_your_note_here'.tr,
                   hintStyle: AppTextStyles.inputHint,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 14),
                   filled: false,
@@ -119,7 +120,7 @@ class _AddNoteSheetState extends State<AddNoteSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Saved to this recipe',
+                  'saved_to_this_recipe'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w500,
@@ -138,7 +139,7 @@ class _AddNoteSheetState extends State<AddNoteSheet> {
             ),
             const SizedBox(height: 24),
             PrimaryButton(
-              label: 'Save note',
+              label: 'save_note'.tr,
               onPressed: () => Navigator.pop(context, _controller.text),
             ),
             SizedBox(height: MediaQuery.of(context).padding.bottom + 16),

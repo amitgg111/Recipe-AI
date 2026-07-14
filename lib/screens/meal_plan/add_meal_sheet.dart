@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_dimensions.dart';
@@ -43,10 +44,10 @@ class _AddMealSheetState extends State<AddMealSheet> {
   int _selectedMealType = 2; // Dinner selected
 
   final _mealTypes = [
-    const _MealType('Breakfast', Color(0xFFFCF3DE), Color(0xFF7A5B12)),
-    const _MealType('Lunch', Color(0xFFEAF6F0), Color(0xFF1F5E42)),
-    const _MealType('Dinner', AppColors.blue, Colors.white),
-    const _MealType('Snack', Color(0xFFFCEAE3), Color(0xFF9B3417)),
+    const _MealType('breakfast', Color(0xFFFCF3DE), Color(0xFF7A5B12)),
+    const _MealType('lunch', Color(0xFFEAF6F0), Color(0xFF1F5E42)),
+    const _MealType('dinner', AppColors.blue, Colors.white),
+    const _MealType('snack', Color(0xFFFCEAE3), Color(0xFF9B3417)),
   ];
 
   final _recipes = [
@@ -72,7 +73,7 @@ class _AddMealSheetState extends State<AddMealSheet> {
           child: Row(
             children: [
               Text(
-                'Add to Wed, Dinner',
+                '${'add_to'.tr} Wed, ${'dinner'.tr}',
                 style: AppTextStyles.bodyLarge.copyWith(
                   fontWeight: FontWeight.w800,
                   fontSize: 18,
@@ -99,9 +100,9 @@ class _AddMealSheetState extends State<AddMealSheet> {
         _buildMealTypeChips(),
         const SizedBox(height: 16),
         // Search bar
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20),
-          child: AppSearchBar(hintText: 'Search your recipes'),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: AppSearchBar(hintText: 'search_your_recipes'.tr),
         ),
         const SizedBox(height: 14),
         const Divider(color: AppColors.divider, height: 1),
@@ -129,7 +130,7 @@ class _AddMealSheetState extends State<AddMealSheet> {
           child: SafeArea(
             top: false,
             child: PrimaryButton(
-              label: 'Add to Plan',
+              label: 'add_to_plan'.tr,
               leadingIcon: const Icon(Icons.check, color: Colors.white, size: 20),
               onPressed: _selectedRecipe != null ? () => Navigator.pop(context) : null,
             ),
@@ -174,7 +175,7 @@ class _AddMealSheetState extends State<AddMealSheet> {
                     : Border.all(color: bgColor.withValues(alpha: 0.5)),
               ),
               child: Text(
-                type.label,
+                type.label.tr,
                 style: AppTextStyles.chipLabel.copyWith(
                   color: textColor,
                   fontWeight: FontWeight.w700,

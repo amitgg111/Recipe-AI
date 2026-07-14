@@ -149,15 +149,20 @@ class RecipeSocialService {
     return doc.id;
   }
 
-  /// Deletes the current user's saved copy of [r] (if any).
-  static Future<void> removeSavedCopy(DiscoverRecipe r) async {
+  /// Permanently deletes the current user's saved copy/copies of [r] (if any)
+  /// and returns their recipe ids so the caller can also strip them from any
+  /// cookbooks. Un-saving therefore removes the recipe from the phone entirely.
+  static Future<List<String>> removeSavedCopy(DiscoverRecipe r) async {
     final uid = AuthService.currentUser?.uid;
-    if (uid == null || r.userId == uid) return;
+    if (uid == null || r.userId == uid) return const [];
     final col = _db.collection('users').doc(uid).collection('recipes');
     final existing = await col.where('savedFromRecipeId', isEqualTo: r.id).get();
+    final ids = <String>[];
     for (final d in existing.docs) {
+      ids.add(d.id);
       await d.reference.delete();
     }
+    return ids;
   }
 
   // ── Ratings ──────────────────────────────────────────────────────────────

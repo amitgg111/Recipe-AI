@@ -67,7 +67,7 @@ class _RecipeSourcesScreenState extends State<RecipeSourcesScreen> {
               // Title
               const SizedBox(height: 16),
               Text(
-                'Where do you get your\nrecipes from?',
+                'recipe_sources_title'.tr,
                 textAlign: TextAlign.center,
                 style: AppTextStyles.sectionTitle.copyWith(
                   fontSize: 25,
@@ -77,14 +77,14 @@ class _RecipeSourcesScreenState extends State<RecipeSourcesScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Select all that apply',
+                'select_all_that_apply'.tr,
                 textAlign: TextAlign.center,
                 style: AppTextStyles.bodySmall,
               ),
               const SizedBox(height: 22),
               // Card 1: Social media (pre-selected)
               _SourceCard(
-                title: 'Social media',
+                title: 'social_media'.tr,
                 isSelected: _selected.contains(0),
                 onTap: () => _toggle(0),
                 trailing: const Row(
@@ -119,7 +119,7 @@ class _RecipeSourcesScreenState extends State<RecipeSourcesScreen> {
               const SizedBox(height: 13),
               // Card 2: Recipe websites
               _SourceCard(
-                title: 'Recipe websites',
+                title: 'recipe_websites'.tr,
                 isSelected: _selected.contains(1),
                 onTap: () => _toggle(1),
                 trailing: const Row(
@@ -142,7 +142,7 @@ class _RecipeSourcesScreenState extends State<RecipeSourcesScreen> {
               const SizedBox(height: 13),
               // Card 3: Printed / handwritten
               _SourceCard(
-                title: 'Printed / handwritten',
+                title: 'printed_handwritten'.tr,
                 isSelected: _selected.contains(2),
                 onTap: () => _toggle(2),
                 trailing: const Row(
@@ -165,7 +165,7 @@ class _RecipeSourcesScreenState extends State<RecipeSourcesScreen> {
               const Spacer(),
               // Continue button
               PrimaryButton(
-                label: 'Continue',
+                label: 'continue_'.tr,
                 onPressed: () => Get.to(() => const AwesomeImportScreen()),
               ),
             ],
@@ -223,7 +223,7 @@ class _RecipeSourcesBodyState extends State<RecipeSourcesBody> {
           const SizedBox(height: 8),
           // Title
           Text(
-            'Where do you get your\nrecipes from?',
+            'recipe_sources_title'.tr,
             textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 22,
@@ -235,14 +235,14 @@ class _RecipeSourcesBodyState extends State<RecipeSourcesBody> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Select all that apply',
+            'select_all_that_apply'.tr,
             textAlign: TextAlign.center,
             style: AppTextStyles.bodySmall,
           ),
           const SizedBox(height: 22),
           // Card 1: Social media (pre-selected)
           _SourceCard(
-            title: 'Social media',
+            title: 'social_media'.tr,
             isSelected: _selected.contains(0),
             onTap: () => _toggle(0),
             trailing: const Row(
@@ -277,7 +277,7 @@ class _RecipeSourcesBodyState extends State<RecipeSourcesBody> {
           const SizedBox(height: 13),
           // Card 2: Recipe websites
           _SourceCard(
-            title: 'Recipe websites',
+            title: 'recipe_websites'.tr,
             isSelected: _selected.contains(1),
             onTap: () => _toggle(1),
             trailing: const Row(
@@ -300,7 +300,7 @@ class _RecipeSourcesBodyState extends State<RecipeSourcesBody> {
           const SizedBox(height: 13),
           // Card 3: Printed / handwritten
           _SourceCard(
-            title: 'Printed / handwritten',
+            title: 'printed_handwritten'.tr,
             isSelected: _selected.contains(2),
             onTap: () => _toggle(2),
             trailing: const Row(

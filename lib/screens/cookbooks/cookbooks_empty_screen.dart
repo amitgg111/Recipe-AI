@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/app_bottom_nav.dart';
@@ -195,7 +196,7 @@ class _CookbooksEmptyScreenState extends State<CookbooksEmptyScreen>
           ),
           const SizedBox(height: 18),
           Text(
-            'Cookbooks',
+            'cookbooks'.tr,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 22,
               fontWeight: FontWeight.w800,
@@ -220,7 +221,7 @@ class _CookbooksEmptyScreenState extends State<CookbooksEmptyScreen>
             _buildIllustration(),
             const SizedBox(height: 20),
             Text(
-              "Let's get cooking!",
+              'lets_get_cooking'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -230,7 +231,7 @@ class _CookbooksEmptyScreenState extends State<CookbooksEmptyScreen>
             ),
             const SizedBox(height: 9),
             Text(
-              "Your cookbook is empty for now. Save your first recipe and it'll have a cozy home right here.",
+              'cookbook_empty_subtitle'.tr,
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 14.5,
@@ -263,7 +264,7 @@ class _CookbooksEmptyScreenState extends State<CookbooksEmptyScreen>
                     const Icon(Icons.add, color: Colors.white, size: 20),
                     const SizedBox(width: 8),
                     Text(
-                      'Add your first recipe',
+                      'add_your_first_recipe'.tr,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,

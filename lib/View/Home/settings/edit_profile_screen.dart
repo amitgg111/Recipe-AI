@@ -90,14 +90,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       await _profile.updateName(name);
 
       CustomSnackbar.show(
-        title: 'Success',
-        message: 'Profile updated successfully',
+        title: 'success'.tr,
+        message: 'profile_updated_successfully'.tr,
         type: SnackbarType.success,
       );
       Get.back();
     } catch (e) {
       CustomSnackbar.show(
-        title: 'Error',
+        title: 'error'.tr,
         message: e.toString(),
         type: SnackbarType.error,
       );
@@ -128,11 +128,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     icon: Icons.close_rounded,
                     onTap: () => Get.back(),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Center(
                       child: Text(
-                        'Edit profile',
-                        style: TextStyle(
+                        'edit_profile'.tr,
+                        style: const TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textDark,
@@ -196,9 +196,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   const SizedBox(height: 12),
                   GestureDetector(
                     onTap: _profile.pickImage,
-                    child: const Text(
-                      'Change photo',
-                      style: TextStyle(
+                    child: Text(
+                      'change_photo'.tr,
+                      style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: AppColors.primary,
@@ -210,7 +210,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
             const SizedBox(height: 22),
 
-            _label('NAME'),
+            _label('field_label_name'.tr),
             _field(
               controller: _nameController,
               focused: true,
@@ -219,25 +219,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
             const SizedBox(height: 13),
 
-            _label('EMAIL'),
+            _label('field_label_email'.tr),
             _readOnlyField(user?.email ?? ''),
             const SizedBox(height: 13),
 
-            _label('CONTACT'),
+            _label('field_label_contact'.tr),
             _field(
               controller: _contactController,
               keyboardType: TextInputType.phone,
-              hint: 'Add a phone number',
+              hint: 'add_phone_number'.tr,
               inputFormatters: ValidationHelper.digitsOnly,
               validator: (v) => ValidationHelper.phone(v, required: false),
             ),
             const SizedBox(height: 13),
 
-            _label('BIO'),
+            _label('field_label_bio'.tr),
             _field(
               controller: _bioController,
               maxLines: 3,
-              hint: 'Tell people a little about you',
+              hint: 'bio_hint'.tr,
               keyboardType: TextInputType.multiline,
               validator: (v) => ValidationHelper.notes(v, max: 160, field: 'Bio'),
             ),
@@ -272,9 +272,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   color: Colors.white,
                 ),
               )
-            : const Text(
-                'Save',
-                style: TextStyle(
+            : Text(
+                'save'.tr,
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,

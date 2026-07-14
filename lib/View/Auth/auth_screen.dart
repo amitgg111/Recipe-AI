@@ -60,8 +60,8 @@ class _AuthScreenState extends State<AuthScreen>
 
     if (email.isEmpty || password.isEmpty || (!isLogin && name.isEmpty)) {
       CustomSnackbar.show(
-        title: 'Missing fields',
-        message: 'Please fill in all required fields',
+        title: 'missing_fields'.tr,
+        message: 'please_fill_required_fields'.tr,
         type: SnackbarType.error,
       );
 
@@ -78,13 +78,13 @@ class _AuthScreenState extends State<AuthScreen>
       }
     } on FirebaseAuthException catch (e) {
       CustomSnackbar.show(
-        title: 'Error',
-        message: e.message ?? 'Authentication error',
+        title: 'error'.tr,
+        message: e.message ?? 'authentication_error'.tr,
         type: SnackbarType.error,
       );
     } catch (e) {
       CustomSnackbar.show(
-        title: 'Error',
+        title: 'error'.tr,
         message: e.toString(),
         type: SnackbarType.error,
       );
@@ -99,14 +99,14 @@ class _AuthScreenState extends State<AuthScreen>
       final userCred = await AuthService.signInWithGoogle();
       if (userCred == null) {
         CustomSnackbar.show(
-          title: 'Cancelled',
-          message: 'Google sign-in was cancelled',
+          title: 'cancelled'.tr,
+          message: 'google_sign_in_cancelled'.tr,
           type: SnackbarType.error,
         );
       }
     } catch (e) {
       CustomSnackbar.show(
-        title: 'Error',
+        title: 'error'.tr,
         message: e.toString(),
         type: SnackbarType.error,
       );
@@ -177,7 +177,7 @@ class _AuthScreenState extends State<AuthScreen>
                             children: [
                               // ── Title ──────────────────────────────
                               CustomText(
-                                isLogin ? 'Welcome back' : 'Create account',
+                                isLogin ? 'welcome_back'.tr : 'create_account'.tr,
 
                                 fontSize: 26,
                                 fontWeight: FontWeight.w800,
@@ -189,8 +189,8 @@ class _AuthScreenState extends State<AuthScreen>
                               const SizedBox(height: 4),
                               CustomText(
                                 isLogin
-                                    ? 'Sign in to your recipe collection'
-                                    : 'Start saving your favourite recipes',
+                                    ? 'sign_in_recipe_collection'.tr
+                                    : 'start_saving_favourite_recipes'.tr,
                                 fontSize: 14,
                                 color: Colors.grey.shade500,
                               ),
@@ -201,7 +201,7 @@ class _AuthScreenState extends State<AuthScreen>
                               if (!isLogin) ...[
                                 _AuthField(
                                   controller: nameController,
-                                  hint: 'Full name',
+                                  hint: 'full_name'.tr,
                                   icon: Icons.person_outline_rounded,
                                   isDark: isDark,
                                 ),
@@ -211,7 +211,7 @@ class _AuthScreenState extends State<AuthScreen>
                               // ── Email ──────────────────────────────
                               _AuthField(
                                 controller: emailController,
-                                hint: 'Email address',
+                                hint: 'email_address'.tr,
                                 icon: Icons.mail_outline_rounded,
                                 keyboardType: TextInputType.emailAddress,
                                 isDark: isDark,
@@ -221,7 +221,7 @@ class _AuthScreenState extends State<AuthScreen>
                               // ── Password ───────────────────────────
                               _AuthField(
                                 controller: passwordController,
-                                hint: 'Password',
+                                hint: 'password'.tr,
                                 icon: Icons.lock_outline_rounded,
                                 obscure: _obscurePassword,
                                 isDark: isDark,
@@ -253,7 +253,7 @@ class _AuthScreenState extends State<AuthScreen>
                                       ),
                                     ),
                                     child: CustomText(
-                                      'Forgot password?',
+                                      'forgot_password'.tr,
 
                                       color: primary,
                                       fontSize: 13,
@@ -292,8 +292,8 @@ class _AuthScreenState extends State<AuthScreen>
                                         )
                                       : CustomText(
                                           isLogin
-                                              ? 'Sign in'
-                                              : 'Create account',
+                                              ? 'sign_in'.tr
+                                              : 'create_account'.tr,
 
                                           fontSize: 16,
                                           fontWeight: FontWeight.w700,
@@ -317,7 +317,7 @@ class _AuthScreenState extends State<AuthScreen>
                                       horizontal: 12,
                                     ),
                                     child: CustomText(
-                                      'or',
+                                      'or'.tr,
 
                                       color: Colors.grey.shade400,
                                       fontSize: 13,
@@ -352,14 +352,14 @@ class _AuthScreenState extends State<AuthScreen>
                                         ? Colors.white
                                         : const Color(0xFF1A1A1A),
                                   ),
-                                  child: const Row(
+                                  child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       // Google G icon built from coloured letters
-                                      _GoogleIcon(),
-                                      SizedBox(width: 10),
+                                      const _GoogleIcon(),
+                                      const SizedBox(width: 10),
                                       CustomText(
-                                        'Continue with Google',
+                                        'continue_with_google'.tr,
 
                                         fontSize: 15,
                                         fontWeight: FontWeight.w600,
@@ -378,8 +378,8 @@ class _AuthScreenState extends State<AuthScreen>
                                   children: [
                                     CustomText(
                                       isLogin
-                                          ? "Don't have an account?"
-                                          : 'Already have an account?',
+                                          ? 'dont_have_account'.tr
+                                          : 'already_have_account'.tr,
 
                                       color: Colors.grey.shade500,
                                       fontSize: 14,
@@ -394,7 +394,7 @@ class _AuthScreenState extends State<AuthScreen>
                                             MaterialTapTargetSize.shrinkWrap,
                                       ),
                                       child: CustomText(
-                                        isLogin ? 'Sign up' : 'Sign in',
+                                        isLogin ? 'sign_up'.tr : 'sign_in'.tr,
                                         color: primary,
                                         fontSize: 14,
                                         fontWeight: FontWeight.w700,
@@ -507,7 +507,7 @@ class _HeaderSection extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     CustomText(
-                      'Recipe AI',
+                      'app_name'.tr,
 
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
@@ -515,7 +515,7 @@ class _HeaderSection extends StatelessWidget {
                       letterSpacing: -0.4,
                     ),
                     CustomText(
-                      'Your personal cookbook',
+                      'your_personal_cookbook'.tr,
 
                       fontSize: 13,
                       color: Colors.grey.shade500,

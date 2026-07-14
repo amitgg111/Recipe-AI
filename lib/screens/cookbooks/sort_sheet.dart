@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_spacing.dart';
@@ -55,7 +56,7 @@ class _SortSheetState extends State<SortSheet> {
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Sort by',
+                'sort_by'.tr,
                 style: AppTextStyles.listTitle.copyWith(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
@@ -71,28 +72,28 @@ class _SortSheetState extends State<SortSheet> {
               children: [
                 _SortOption(
                   icon: _buildClockIcon(isSelected: true),
-                  title: 'Newest first',
+                  title: 'newest_first'.tr,
                   isSelected: _selectedIndex == 0,
                   onTap: () => _select(0),
                 ),
                 const SizedBox(height: 10),
                 _SortOption(
                   icon: _buildClockIcon(isSelected: false),
-                  title: 'Oldest first',
+                  title: 'oldest_first'.tr,
                   isSelected: _selectedIndex == 1,
                   onTap: () => _select(1),
                 ),
                 const SizedBox(height: 10),
                 _SortOption(
                   icon: _buildLetterIcon('A', isSelected: _selectedIndex == 2),
-                  title: 'Name A–Z',
+                  title: 'name_a_z'.tr,
                   isSelected: _selectedIndex == 2,
                   onTap: () => _select(2),
                 ),
                 const SizedBox(height: 10),
                 _SortOption(
                   icon: _buildLetterIcon('Z', isSelected: _selectedIndex == 3),
-                  title: 'Name Z–A',
+                  title: 'name_z_a'.tr,
                   isSelected: _selectedIndex == 3,
                   onTap: () => _select(3),
                 ),

@@ -199,13 +199,13 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
   String _ctaLabelFor(int page) {
     switch (page) {
       case 0:
-        return 'Get Started';
+        return 'get_started'.tr;
       case 6:
-        return 'Help me stay on track';
+        return 'help_me_stay_on_track'.tr;
       case 9:
-        return 'Show me how';
+        return 'show_me_how'.tr;
       default:
-        return 'Continue';
+        return 'continue_'.tr;
     }
   }
 
@@ -219,7 +219,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              'Already have an account? ',
+              '${'already_have_account'.tr} ',
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -232,7 +232,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
                 transition: Transition.noTransition,
               ),
               child: Text(
-                'Log in',
+                'login'.tr,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,

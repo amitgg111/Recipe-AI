@@ -139,7 +139,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
               ),
             ),
             Text(
-              isEdit ? 'Edit recipe' : 'New recipe',
+              isEdit ? 'edit_recipe'.tr : 'new_recipe'.tr,
               style: _f(17, FontWeight.w800, _E.textDark),
             ),
             Obx(() {
@@ -170,7 +170,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                           ),
                         )
                       : Text(
-                          'Save',
+                          'save'.tr,
                           style: _f(14, FontWeight.w700, Colors.white),
                         ),
                 ),
@@ -205,7 +205,7 @@ class _PhotoBasicsCard extends StatelessWidget {
             validator: (_) {
               final hasImage = controller.imageFile.value != null ||
                   controller.imagePath.value.isNotEmpty;
-              return hasImage ? null : 'Add a recipe photo';
+              return hasImage ? null : 'add_recipe_photo'.tr;
             },
             builder: (state) => Obx(() {
               final hasImage = controller.imageFile.value != null ||
@@ -233,7 +233,7 @@ class _PhotoBasicsCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Add photo',
+                          'add_photo'.tr,
                           style: _f(13, FontWeight.w600, AppColors.textMedium),
                         ),
                       ],
@@ -292,7 +292,7 @@ class _PhotoBasicsCard extends StatelessWidget {
                                     ),
                                     const SizedBox(width: 6),
                                     Text(
-                                      'Change photo',
+                                      'change_photo'.tr,
                                       style:
                                           _f(13, FontWeight.w700, _E.textDark),
                                     ),
@@ -321,18 +321,18 @@ class _PhotoBasicsCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           // Title
-          _fieldLabel('Title'),
+          _fieldLabel('title'.tr),
           const SizedBox(height: 7),
           _FocusField(
             controller: controller.titleController,
-            hint: 'Recipe name',
+            hint: 'recipe_name'.tr,
             height: 48,
             fontSize: 16,
             fontWeight: FontWeight.w700,
             focused: true,
             keyboardType: TextInputType.text,
             validator: (v) =>
-                ValidationHelper.title(v, field: 'Recipe title', min: 2),
+                ValidationHelper.title(v, field: 'recipe_title'.tr, min: 2),
           ),
           const SizedBox(height: 14),
           // Servings + total time
@@ -343,7 +343,7 @@ class _PhotoBasicsCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _fieldLabel('Servings'),
+                    _fieldLabel('servings'.tr),
                     const SizedBox(height: 7),
                     // Servings can be set only while CREATING a recipe. Editing
                     // an existing one keeps it locked (scaling happens on the
@@ -361,9 +361,9 @@ class _PhotoBasicsCard extends StatelessWidget {
                           ? null
                           : (v) {
                               final t = (v ?? '').trim();
-                              if (t.isEmpty) return 'Required';
+                              if (t.isEmpty) return 'required'.tr;
                               if ((int.tryParse(t) ?? 0) <= 0) {
-                                return 'Enter servings';
+                                return 'enter_servings'.tr;
                               }
                               return null;
                             },
@@ -377,7 +377,7 @@ class _PhotoBasicsCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _fieldLabel('Total time'),
+                    _fieldLabel('total_time'.tr),
                     const SizedBox(height: 7),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -396,9 +396,9 @@ class _PhotoBasicsCard extends StatelessWidget {
                             ],
                             validator: (v) {
                               final t = (v ?? '').trim();
-                              if (t.isEmpty) return 'Required';
+                              if (t.isEmpty) return 'required'.tr;
                               if ((int.tryParse(t) ?? 0) <= 0) {
-                                return 'Enter time';
+                                return 'enter_time'.tr;
                               }
                               return null;
                             },
@@ -559,9 +559,9 @@ class _TimeUnitDropdown extends StatelessWidget {
               color: _E.label,
             ),
             style: _f(14, FontWeight.w700, _E.textDark),
-            items: const [
-              DropdownMenuItem(value: 'minutes', child: Text('minutes')),
-              DropdownMenuItem(value: 'hours', child: Text('hour')),
+            items: [
+              DropdownMenuItem(value: 'minutes', child: Text('minutes'.tr)),
+              DropdownMenuItem(value: 'hours', child: Text('hour'.tr)),
             ],
             onChanged: (v) {
               if (v != null) controller.totalTimeUnit.value = v;
@@ -671,7 +671,7 @@ class _AddGroupButton extends StatelessWidget {
           children: [
             const OnboardingLineIcon('plus', size: 16, color: _E.primary),
             const SizedBox(width: 7),
-            Text('Add group', style: _f(13, FontWeight.w700, _E.textDark)),
+            Text('add_group'.tr, style: _f(13, FontWeight.w700, _E.textDark)),
           ],
         ),
       ),
@@ -744,7 +744,7 @@ class _IngredientsEditor extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Ingredients', style: _f(16, FontWeight.w800, _E.textDark)),
+            Text('ingredients'.tr, style: _f(16, FontWeight.w800, _E.textDark)),
             const SizedBox(height: 10),
             for (int si = 0; si < sections.length; si++)
               _buildSection(context, si, sections[si], sections.length),
@@ -794,7 +794,7 @@ class _IngredientsEditor extends StatelessWidget {
           ),
         if (showAdd)
           _AddItemButton(
-            label: 'Add ingredient',
+            label: 'add_ingredient'.tr,
             onTap: () => _showAddItemSheet(sectionIdx),
           ),
       ],
@@ -885,8 +885,8 @@ class _IngredientsEditor extends StatelessWidget {
   void _showAddItemSheet(int sectionIdx) {
     Get.bottomSheet(
       _IngredientEditorSheet(
-        title: 'Add ingredient',
-        buttonLabel: 'Add',
+        title: 'add_ingredient'.tr,
+        buttonLabel: 'add'.tr,
         initial: '',
         onConfirm: (v) => controller.addIngredientToSection(sectionIdx, v),
       ),
@@ -898,8 +898,8 @@ class _IngredientsEditor extends StatelessWidget {
   void _showEditItemSheet(int sectionIdx, int itemIdx, String current) {
     Get.bottomSheet(
       _IngredientEditorSheet(
-        title: 'Edit ingredient',
-        buttonLabel: 'Save',
+        title: 'edit_ingredient'.tr,
+        buttonLabel: 'save'.tr,
         initial: current,
         onConfirm: (v) =>
             controller.updateIngredientInSection(sectionIdx, itemIdx, v),
@@ -913,10 +913,10 @@ class _IngredientsEditor extends StatelessWidget {
     final tc = TextEditingController();
     Get.bottomSheet(
       _EditorBottomSheet(
-        title: 'Add group',
-        hint: 'e.g. For the sauce',
+        title: 'add_group'.tr,
+        hint: 'eg_for_the_sauce'.tr,
         textController: tc,
-        buttonLabel: 'Add group',
+        buttonLabel: 'add_group'.tr,
         onConfirm: () {
           final name = tc.text.trim();
           if (name.isNotEmpty) controller.addIngredientGroup(name);
@@ -1021,7 +1021,7 @@ class _InstructionsEditor extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Instructions', style: _f(16, FontWeight.w800, _E.textDark)),
+            Text('instructions'.tr, style: _f(16, FontWeight.w800, _E.textDark)),
             const SizedBox(height: 10),
             for (int si = 0; si < sections.length; si++)
               _buildSection(si, sections[si], sections),
@@ -1071,7 +1071,7 @@ class _InstructionsEditor extends StatelessWidget {
           ),
         if (showAdd)
           _AddItemButton(
-            label: 'Add step',
+            label: 'add_step'.tr,
             onTap: () => _showAddStepSheet(sectionIdx),
           ),
       ],
@@ -1158,10 +1158,11 @@ class _InstructionsEditor extends StatelessWidget {
     final tc = TextEditingController();
     Get.bottomSheet(
       _EditorBottomSheet(
-        title: 'Add step',
-        hint: 'Describe this cooking step...',
+        title: 'add_step'.tr,
+        hint: 'describe_cooking_step'.tr,
         textController: tc,
         maxLines: 4,
+        buttonLabel: 'add'.tr,
         onConfirm: () =>
             controller.addInstructionToSection(sectionIdx, tc.text),
       ),
@@ -1174,11 +1175,11 @@ class _InstructionsEditor extends StatelessWidget {
     final tc = TextEditingController(text: current);
     Get.bottomSheet(
       _EditorBottomSheet(
-        title: 'Edit step',
-        hint: 'Describe this cooking step...',
+        title: 'edit_step'.tr,
+        hint: 'describe_cooking_step'.tr,
         textController: tc,
         maxLines: 4,
-        buttonLabel: 'Save',
+        buttonLabel: 'save'.tr,
         onConfirm: () =>
             controller.updateInstructionInSection(sectionIdx, stepIdx, tc.text),
       ),
@@ -1191,10 +1192,10 @@ class _InstructionsEditor extends StatelessWidget {
     final tc = TextEditingController();
     Get.bottomSheet(
       _EditorBottomSheet(
-        title: 'Add group',
-        hint: 'e.g. For the dough',
+        title: 'add_group'.tr,
+        hint: 'eg_for_the_dough'.tr,
         textController: tc,
-        buttonLabel: 'Add group',
+        buttonLabel: 'add_group'.tr,
         onConfirm: () {
           final name = tc.text.trim();
           if (name.isNotEmpty) controller.addInstructionGroup(name);
@@ -1244,12 +1245,13 @@ class _DeleteButton extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  'Delete this recipe?',
+                  'delete_this_recipe'.tr,
                   style: _f(18, FontWeight.w800, _E.textDark),
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'Are you sure you want to delete "${recipe.title}"? This action cannot be undone.',
+                  'delete_recipe_confirm'
+                      .trParams({'title': recipe.title}),
                   textAlign: TextAlign.center,
                   style: _f(
                     13.5,
@@ -1274,7 +1276,7 @@ class _DeleteButton extends StatelessWidget {
                             ),
                           ),
                           child: Text(
-                            'Cancel',
+                            'cancel'.tr,
                             style: _f(15, FontWeight.w700, _E.textDark),
                           ),
                         ),
@@ -1304,7 +1306,7 @@ class _DeleteButton extends StatelessWidget {
                             ),
                           ),
                           child: Text(
-                            'Delete',
+                            'delete'.tr,
                             style: _f(15, FontWeight.w700, Colors.white),
                           ),
                         ),
@@ -1337,7 +1339,7 @@ class _DeleteButton extends StatelessWidget {
           children: [
             const OnboardingLineIcon('trash', size: 19, color: _E.redText),
             const SizedBox(width: 8),
-            Text('Delete recipe', style: _f(15, FontWeight.w700, _E.redText)),
+            Text('delete_recipe'.tr, style: _f(15, FontWeight.w700, _E.redText)),
           ],
         ),
       ),
@@ -1550,7 +1552,7 @@ String _composeIngredient(String qty, String unit, String name) {
 }
 
 String _unitLabel(String token) {
-  if (token.isEmpty) return 'No unit';
+  if (token.isEmpty) return 'no_unit'.tr;
   for (final u in _kIngredientUnits) {
     if (u.$2 == token) return '${u.$1} (${u.$2})';
   }
@@ -1636,7 +1638,7 @@ class _IngredientEditorSheetState extends State<_IngredientEditorSheet> {
               padding: const EdgeInsets.fromLTRB(24, 14, 24, 6),
               child: Row(
                 children: [
-                  Text('Select unit', style: _f(17, FontWeight.w800, _E.textDark)),
+                  Text('select_unit'.tr, style: _f(17, FontWeight.w800, _E.textDark)),
                 ],
               ),
             ),
@@ -1758,7 +1760,7 @@ class _IngredientEditorSheetState extends State<_IngredientEditorSheet> {
                     ),
                     cursorColor: _E.primary,
                     style: _f(15, FontWeight.w600, _E.textDark),
-                    decoration: _fieldDeco('Qty'),
+                    decoration: _fieldDeco('qty'.tr),
                   ),
                 ),
               ),
@@ -1810,7 +1812,7 @@ class _IngredientEditorSheetState extends State<_IngredientEditorSheet> {
               textCapitalization: TextCapitalization.sentences,
               cursorColor: _E.primary,
               style: _f(15, FontWeight.w500, _E.textDark),
-              decoration: _fieldDeco('Ingredient (e.g. organic flour)'),
+              decoration: _fieldDeco('ingredient_hint'.tr),
             ),
           ),
           const SizedBox(height: 16),

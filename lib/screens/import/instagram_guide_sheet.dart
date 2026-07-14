@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_spacing.dart';
@@ -104,7 +105,7 @@ class _InstagramGuideSheetState extends State<InstagramGuideSheet> {
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Text(
-                  'Import from Instagram',
+                  'import_from_instagram'.tr,
                   style: AppTextStyles.listTitle.copyWith(
                     fontSize: 19,
                     fontWeight: FontWeight.w800,
@@ -161,7 +162,7 @@ class _InstagramGuideSheetState extends State<InstagramGuideSheet> {
               MediaQuery.of(context).padding.bottom + AppSpacing.lg,
             ),
             child: PrimaryButton(
-              label: 'Open Instagram to find a recipe',
+              label: 'open_instagram_find_recipe'.tr,
               leadingIcon: const OnboardingLineIcon(
                 'camera',
                 color: Colors.white,
@@ -241,26 +242,26 @@ class _Slide1 extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 // Action icons row
-                const Row(
+                Row(
                   children: [
-                    OnboardingLineIcon('heartO',
+                    const OnboardingLineIcon('heartO',
                         size: 24, color: AppColors.textDark),
-                    SizedBox(width: 14),
-                    OnboardingLineIcon('chat',
+                    const SizedBox(width: 14),
+                    const OnboardingLineIcon('chat',
                         size: 22, color: AppColors.textDark),
-                    SizedBox(width: 14),
+                    const SizedBox(width: 14),
                     // Send icon with arrow
                     Stack(
                       clipBehavior: Clip.none,
                       children: [
-                        OnboardingLineIcon('send',
+                        const OnboardingLineIcon('send',
                             size: 22, color: AppColors.textDark),
                         Positioned(
                           top: -28,
                           left: -8,
                           child: Text(
-                            'tap send',
-                            style: TextStyle(
+                            'tap_send'.tr,
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                               fontStyle: FontStyle.italic,
@@ -270,8 +271,8 @@ class _Slide1 extends StatelessWidget {
                         ),
                       ],
                     ),
-                    Spacer(),
-                    OnboardingLineIcon('bookmark',
+                    const Spacer(),
+                    const OnboardingLineIcon('bookmark',
                         size: 24, color: AppColors.textDark),
                   ],
                 ),
@@ -292,9 +293,9 @@ class _Slide2 extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text(
-            'tap share to',
-            style: TextStyle(
+          Text(
+            'tap_share_to'.tr,
+            style: const TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.w700,
               fontStyle: FontStyle.italic,
@@ -374,9 +375,9 @@ class _Slide3 extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text(
-            'tap Recipe AI',
-            style: TextStyle(
+          Text(
+            'tap_recipe_ai'.tr,
+            style: const TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.w700,
               fontStyle: FontStyle.italic,
@@ -404,8 +405,8 @@ class _Slide3 extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 // Other apps
-                _mockAppIcon(Colors.grey.shade300, 'Messages'),
-                _mockAppIcon(Colors.grey.shade300, 'Notes'),
+                _mockAppIcon(Colors.grey.shade300, 'messages'.tr),
+                _mockAppIcon(Colors.grey.shade300, 'notes'.tr),
                 // Recipe AI highlighted
                 Column(
                   children: [
@@ -435,7 +436,7 @@ class _Slide3 extends StatelessWidget {
                     AppWordmark(fontSize: 11, fontWeight: FontWeight.w700),
                   ],
                 ),
-                _mockAppIcon(Colors.grey.shade300, 'More'),
+                _mockAppIcon(Colors.grey.shade300, 'more'.tr),
               ],
             ),
           ),

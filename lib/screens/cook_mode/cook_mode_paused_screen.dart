@@ -160,7 +160,7 @@ class CookModePausedScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'paused',
+                  'paused'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -198,7 +198,7 @@ class CookModePausedScreen extends StatelessWidget {
         SizedBox(
           width: 140,
           child: PrimaryButton(
-            label: 'Resume',
+            label: 'resume'.tr,
             leadingIcon: const Icon(Icons.play_arrow, size: 18, color: Colors.white),
             onPressed: onResume,
           ),
@@ -272,7 +272,7 @@ class CookModePausedScreen extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: PrimaryButton(
-            label: 'Next step',
+            label: 'next_step'.tr,
             leadingIcon: const Icon(Icons.arrow_forward, size: 18, color: Colors.white),
             onPressed: onNext,
           ),

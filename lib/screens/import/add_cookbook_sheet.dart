@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_spacing.dart';
@@ -31,7 +32,7 @@ class _AddCookbookSheetState extends State<AddCookbookSheet> {
   // Validation message for the current text (null when valid).
   String? get _titleError => ValidationHelper.title(
     _controller.text,
-    field: 'Cookbook name',
+    field: 'cookbook_name'.tr,
     min: 2,
     max: 40,
   );
@@ -78,13 +79,18 @@ class _AddCookbookSheetState extends State<AddCookbookSheet> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'New cookbook',
-                      style: AppTextStyles.cardTitle.copyWith(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
+                    Flexible(
+                      child: Text(
+                        'new_cookbook'.tr,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.cardTitle.copyWith(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
+                    const SizedBox(width: 8),
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
                       child: Container(
@@ -107,7 +113,7 @@ class _AddCookbookSheetState extends State<AddCookbookSheet> {
 
                 // Label
                 Text(
-                  'Title',
+                  'title'.tr,
                   style: AppTextStyles.inputLabel.copyWith(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -146,7 +152,7 @@ class _AddCookbookSheetState extends State<AddCookbookSheet> {
                       cursorHeight: 24,
                       validator: (v) => ValidationHelper.title(
                         v,
-                        field: 'Cookbook name',
+                        field: 'cookbook_name'.tr,
                         min: 2,
                         max: 40,
                       ),
@@ -156,7 +162,7 @@ class _AddCookbookSheetState extends State<AddCookbookSheet> {
                         // this fixed-height box (which clipped the hint and
                         // overlapped the text). The message is shown below.
                         errorStyle: const TextStyle(height: 0, fontSize: 0),
-                        hintText: 'e.g. Weeknight Dinners',
+                        hintText: 'cookbook_name_hint'.tr,
                         hintStyle: AppTextStyles.inputHint,
                         filled: false,
                         isDense: false,
@@ -205,7 +211,7 @@ class _AddCookbookSheetState extends State<AddCookbookSheet> {
 
                 // Create button
                 PrimaryButton(
-                  label: 'Create cookbook',
+                  label: 'create_cookbook'.tr,
                   leadingIcon: const Icon(
                     Icons.add_rounded,
                     color: Colors.white,

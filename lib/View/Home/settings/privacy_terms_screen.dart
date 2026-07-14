@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:recipe_ai/View/Home/settings/settings_common.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
@@ -15,8 +16,8 @@ class PrivacyTermsScreen extends StatelessWidget {
       if (!ok) throw Exception('could not launch');
     } catch (_) {
       CustomSnackbar.show(
-        title: 'Unavailable',
-        message: 'Could not open the link right now.',
+        title: 'unavailable'.tr,
+        message: 'could_not_open_link'.tr,
         type: SnackbarType.error,
       );
     }
@@ -30,7 +31,7 @@ class PrivacyTermsScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(18, 4, 18, 28),
           children: [
-            SettingsUi.header('Privacy & terms'),
+            SettingsUi.header('privacy_and_terms'.tr),
             const SizedBox(height: 6),
 
             // Hero
@@ -49,10 +50,10 @@ class PrivacyTermsScreen extends StatelessWidget {
                         size: 26, color: AppColors.green),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'Your data stays yours. We never sell your information.',
+                  Text(
+                    'privacy_hero'.tr,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 13,
                       height: 1.5,
                       fontWeight: FontWeight.w500,
@@ -68,19 +69,19 @@ class PrivacyTermsScreen extends StatelessWidget {
                 SettingsUi.row(
                   leadingIcon: const OnboardingLineIcon('shield',
                       size: 21, color: SettingsUi.rowIcon),
-                  label: 'Privacy policy',
+                  label: 'privacy_policy'.tr,
                   onTap: () => _open('https://example.com/privacy'),
                 ),
                 SettingsUi.row(
                   leadingIcon: const OnboardingLineIcon('file',
                       size: 21, color: SettingsUi.rowIcon),
-                  label: 'Terms of service',
+                  label: 'terms_of_service'.tr,
                   onTap: () => _open('https://example.com/terms'),
                 ),
                 SettingsUi.row(
                   leadingIcon: const OnboardingLineIcon('sparkF2',
                       size: 21, color: SettingsUi.rowIcon),
-                  label: 'Refund policy',
+                  label: 'refund_policy'.tr,
                   onTap: () => _open('https://example.com/refunds'),
                 ),
               ],

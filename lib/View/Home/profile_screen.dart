@@ -51,8 +51,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       await user.reload();
 
       CustomSnackbar.show(
-        title: "Success",
-        message: "Profile updated successfully",
+        title: "success".tr,
+        message: "profile_updated_successfully".tr,
         type: SnackbarType.success,
       );
 
@@ -60,7 +60,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() {});
     } catch (e) {
       CustomSnackbar.show(
-        title: "Error",
+        title: "error".tr,
         message: e.toString(),
         type: SnackbarType.error,
       );
@@ -79,7 +79,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final profileController = Get.find<ProfileController>();
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text("Profile"), centerTitle: false),
+      appBar: AppBar(title: Text("profile".tr), centerTitle: false),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -135,7 +135,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 15),
 
             CustomText(
-              currentUser.displayName ?? "User",
+              currentUser.displayName ?? "user".tr,
               fontSize: 22,
               fontWeight: FontWeight.bold,
             ),
@@ -149,7 +149,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             TextField(
               controller: nameController,
               decoration: InputDecoration(
-                labelText: "Name",
+                labelText: "name".tr,
                 prefixIcon: const Icon(Icons.person),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
@@ -163,7 +163,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               enabled: false,
               initialValue: currentUser.email ?? "",
               decoration: InputDecoration(
-                labelText: "Email",
+                labelText: "email".tr,
                 prefixIcon: const Icon(Icons.email),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
@@ -180,7 +180,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 onPressed: isLoading ? null : updateProfile,
                 child: isLoading
                     ? const CircularProgressIndicator()
-                    : const Text("Save Changes"),
+                    : Text("save_changes".tr),
               ),
             ),
 
@@ -192,7 +192,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: OutlinedButton.icon(
                 onPressed: logout,
                 icon: const Icon(Icons.logout),
-                label: const Text("Logout"),
+                label: Text("log_out".tr),
               ),
             ),
           ],

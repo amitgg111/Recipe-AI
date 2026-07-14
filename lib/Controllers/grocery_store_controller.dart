@@ -15,13 +15,17 @@ class GroceryItem {
   bool checked;
   bool animating;
 
+  /// Stable position in the list. Persisted so checking an item (which rewrites
+  /// every doc) never reshuffles the list — items stay exactly where they are.
+  int order;
+
   GroceryItem({
     required this.name,
     required this.quantity,
     required this.aisle,
     required this.recipeId,
     this.checked = false,
-
+    this.order = 0,
     this.animating = false,
   });
 
@@ -32,6 +36,7 @@ class GroceryItem {
       'aisle': aisle,
       'recipeId': recipeId,
       'checked': checked,
+      'order': order,
     };
   }
 
@@ -42,6 +47,7 @@ class GroceryItem {
       aisle: map['aisle'] ?? '',
       recipeId: map['recipeId'] ?? '',
       checked: map['checked'] ?? false,
+      order: (map['order'] as num?)?.toInt() ?? 0,
     );
   }
 }
@@ -95,9 +101,13 @@ class GroceryStore extends GetxController {
         .collection('groceries')
         .snapshots()
         .listen((snapshot) {
-          items.value = snapshot.docs
+          final loaded = snapshot.docs
               .map((doc) => GroceryItem.fromMap(doc.data()))
-              .toList();
+              .toList()
+            // Restore the saved order — Firestore returns docs by id, which is
+            // random after a delete-and-re-add, so sort by the persisted index.
+            ..sort((a, b) => a.order.compareTo(b.order));
+          items.value = loaded;
         });
   }
 
@@ -130,9 +140,12 @@ class GroceryStore extends GetxController {
         batch.delete(doc.reference);
       }
 
-      // Add all items
-      for (final item in items) {
-        batch.set(ref.doc(), item.toMap());
+      // Add all items, stamping each with its current position so the order
+      // survives the delete-and-re-add rewrite (Firestore has no inherent
+      // ordering, so without this the list reshuffles on every save).
+      for (var i = 0; i < items.length; i++) {
+        items[i].order = i;
+        batch.set(ref.doc(), items[i].toMap());
       }
 
       await batch.commit();
@@ -928,7 +941,10 @@ class GroceryStore extends GetxController {
     // Parse each into (number, unit).
     final parsed = <({double n, String unit})>[];
     for (final q in list) {
-      final m = RegExp(r'^\s*([\d./½⅓⅔¼¾⅛⅜⅝⅞\s]+?)\s*(.*)$').firstMatch(q);
+      // Greedy (+) so multi-digit amounts are captured whole: "237 ml" →
+      // number "237". A non-greedy (+?) match grabbed only the first digit
+      // ("2") and folded the rest into the unit ("37 ml"), wrecking the sum.
+      final m = RegExp(r'^\s*([\d./½⅓⅔¼¾⅛⅜⅝⅞\s]+)\s*(.*)$').firstMatch(q);
       if (m == null) return list.join(' + ');
       final n = _parseQtyNum(m.group(1)!);
       if (n == null) return list.join(' + ');

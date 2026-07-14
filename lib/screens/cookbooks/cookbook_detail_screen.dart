@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_spacing.dart';
@@ -57,16 +58,16 @@ class CookbookDetailScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '$recipeCount recipes · updated today',
+                            '${'n_recipes_lc'.trParams({'count': '$recipeCount'})} · ${'updated_today'.tr}',
                             style: AppTextStyles.smallLabel,
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-                      child: AppSearchBar(hintText: 'Search recipes'),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                      child: AppSearchBar(hintText: 'search_recipes'.tr),
                     ),
                     const SizedBox(height: AppSpacing.lg),
                     _buildRecipeList(),

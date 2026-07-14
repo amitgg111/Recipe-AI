@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_dimensions.dart';
@@ -60,7 +61,7 @@ class _MealPlanCalendarScreenState extends State<MealPlanCalendarScreen> {
       child: Row(
         children: [
           Text(
-            'Meal Plan',
+            'meal_plan'.tr,
             style: AppTextStyles.cardTitle.copyWith(fontSize: 22),
           ),
           const Spacer(),
@@ -71,7 +72,7 @@ class _MealPlanCalendarScreenState extends State<MealPlanCalendarScreen> {
               border: Border.all(color: AppColors.surfaceBorder),
             ),
             child: Row(
-              children: [_segmentTab('Day', 0), _segmentTab('Month', 1)],
+              children: [_segmentTab('day'.tr, 0), _segmentTab('month'.tr, 1)],
             ),
           ),
           const SizedBox(width: 10),

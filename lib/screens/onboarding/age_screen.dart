@@ -27,8 +27,8 @@ class AgeScreen extends StatefulWidget {
 class _AgeScreenState extends State<AgeScreen> {
   int _selectedIndex = 1; // "25-34" selected by default
 
-  static const _ageRanges = [
-    '24 and under',
+  List<String> get _ageRanges => [
+    'age_24_and_under'.tr,
     '25–34',
     '35–44',
     '45–54',
@@ -69,7 +69,7 @@ class _AgeScreenState extends State<AgeScreen> {
               // Title
               const SizedBox(height: 16),
               Text(
-                'How old are you?',
+                'how_old_are_you'.tr,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 25,
@@ -82,7 +82,7 @@ class _AgeScreenState extends State<AgeScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
-                  'We only use this to personalize your experience.',
+                  'age_personalize_note'.tr,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 14.5,
@@ -159,7 +159,7 @@ class _AgeScreenState extends State<AgeScreen> {
               }),
               const Spacer(),
               PrimaryButton(
-                label: 'Continue',
+                label: 'continue_'.tr,
                 onPressed: widget.onContinue ??
                     () => Get.to(() => const SettingUpScreen()),
               ),
@@ -191,8 +191,8 @@ class _AgeBodyState extends State<AgeBody> {
     _selectedIndex = _c.age.value;
   }
 
-  static const _ageRanges = [
-    '24 and under',
+  List<String> get _ageRanges => [
+    'age_24_and_under'.tr,
     '25–34',
     '35–44',
     '45–54',
@@ -208,7 +208,7 @@ class _AgeBodyState extends State<AgeBody> {
           const SizedBox(height: 8),
           // Title
           Text(
-            'How old are you?',
+            'how_old_are_you'.tr,
             textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 25,
@@ -221,7 +221,7 @@ class _AgeBodyState extends State<AgeBody> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
-              'We only use this to personalize your experience.',
+              'age_personalize_note'.tr,
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 14.5,

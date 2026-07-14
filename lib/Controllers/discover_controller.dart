@@ -58,6 +58,11 @@ class DiscoverController extends GetxController {
   final RxString selectedCategory = ''.obs;
   final RxString searchQuery = ''.obs;
 
+  /// Original Discover recipe ids the current user has saved. Bookmarks observe
+  /// this set so the saved icon flips live — e.g. when the saved copy is deleted
+  /// from My Recipes / a cookbook, that path removes the id and the icon updates.
+  final RxSet<String> savedOriginalIds = <String>{}.obs;
+
   // Discover filter chips (match the design): a "smart" set first — Trending
   // (by engagement), Quick & Easy (short time), Vegan (plant-based) — then the
   // common meal/course categories.
@@ -98,63 +103,81 @@ class DiscoverController extends GetxController {
     super.onClose();
   }
 
-  Future<void> fetchDiscoverRecipes() async {
-    try {
-      isLoading.value = true;
+  // Guards against overlapping fetches (onInit + the auth listener can both
+  // fire on startup) so the feed isn't queried twice at once.
+  bool _fetching = false;
 
+  Future<void> fetchDiscoverRecipes() async {
+    if (_fetching) return;
+    _fetching = true;
+    // Only take over the screen with a spinner on the FIRST load. Later
+    // refreshes update the list in place, so re-entering Discover (or a
+    // pull-to-refresh) never flashes back to a full-screen loader.
+    if (recipes.isEmpty) isLoading.value = true;
+
+    try {
       final usersSnapshot =
           await FirebaseFirestore.instance.collection('users').get();
 
-      final List<DiscoverRecipe> allRecipes = [];
+      // Fan out every user's public-recipe query in PARALLEL instead of
+      // awaiting them one-by-one. This turns N sequential network round-trips
+      // (the slow part) into a single concurrent wave. Each query is guarded
+      // so one user's permission/read error can't blank the whole feed.
+      final perUser = await Future.wait(
+        usersSnapshot.docs.map((userDoc) async {
+          final userData = userDoc.data();
+          final userName = userData['name']?.toString() ?? 'Chef';
+          final userAvatar = userData['photoUrl']?.toString();
 
-      for (final userDoc in usersSnapshot.docs) {
-        final userData = userDoc.data();
-        final userName = userData['name']?.toString() ?? 'Chef';
-        final userAvatar = userData['photoUrl']?.toString();
+          try {
+            // Only a single-field equality filter here — adding an orderBy
+            // would need a composite index; we sort client-side instead.
+            final recipesSnapshot = await FirebaseFirestore.instance
+                .collection('users')
+                .doc(userDoc.id)
+                .collection('recipes')
+                .where('visibility', isEqualTo: 'public')
+                .limit(30)
+                .get();
 
-        // IMPORTANT: only a single-field equality filter here. Adding an
-        // `orderBy('createdAt')` alongside the `where` would require a
-        // composite index — and when that index is absent Firestore throws
-        // FAILED_PRECONDITION, which previously got swallowed and left the
-        // whole feed empty. We sort client-side instead (see below).
-        final recipesSnapshot = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(userDoc.id)
-            .collection('recipes')
-            .where('visibility', isEqualTo: 'public')
-            .limit(30)
-            .get();
+            final out = <DiscoverRecipe>[];
+            for (final recipeDoc in recipesSnapshot.docs) {
+              final data = recipeDoc.data();
+              // Never surface soft-deleted recipes in Discover.
+              if (data['isDeleted'] == true) continue;
 
-        for (final recipeDoc in recipesSnapshot.docs) {
-          final data = recipeDoc.data();
-          // Never surface soft-deleted recipes in Discover.
-          if (data['isDeleted'] == true) continue;
-          final imageUrl = data['imageUrl']?.toString();
+              out.add(DiscoverRecipe(
+                id: recipeDoc.id,
+                title: data['title']?.toString() ?? 'Untitled',
+                description: data['description']?.toString(),
+                imageUrl: data['imageUrl']?.toString(),
+                category: data['category']?.toString(),
+                cuisine: data['cuisine']?.toString(),
+                prepTime: data['prepTime']?.toString(),
+                cookTime: data['cookTime']?.toString(),
+                totalTime: data['totalTime']?.toString(),
+                servings: data['servings']?.toString(),
+                ingredients: List<String>.from(data['ingredients'] ?? []),
+                instructions: List<String>.from(data['instructions'] ?? []),
+                userId: userDoc.id,
+                userName: userName,
+                userAvatar: userAvatar,
+                createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+                likesCount: (data['likesCount'] as num?)?.toInt() ?? 0,
+                commentsCount: (data['commentsCount'] as num?)?.toInt() ?? 0,
+                sharesCount: (data['sharesCount'] as num?)?.toInt() ?? 0,
+                savesCount: (data['savesCount'] as num?)?.toInt() ?? 0,
+              ));
+            }
+            return out;
+          } catch (e) {
+            log('Discover: skipped ${userDoc.id}: $e');
+            return const <DiscoverRecipe>[];
+          }
+        }),
+      );
 
-          allRecipes.add(DiscoverRecipe(
-            id: recipeDoc.id,
-            title: data['title']?.toString() ?? 'Untitled',
-            description: data['description']?.toString(),
-            imageUrl: imageUrl,
-            category: data['category']?.toString(),
-            cuisine: data['cuisine']?.toString(),
-            prepTime: data['prepTime']?.toString(),
-            cookTime: data['cookTime']?.toString(),
-            totalTime: data['totalTime']?.toString(),
-            servings: data['servings']?.toString(),
-            ingredients: List<String>.from(data['ingredients'] ?? []),
-            instructions: List<String>.from(data['instructions'] ?? []),
-            userId: userDoc.id,
-            userName: userName,
-            userAvatar: userAvatar,
-            createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
-            likesCount: (data['likesCount'] as num?)?.toInt() ?? 0,
-            commentsCount: (data['commentsCount'] as num?)?.toInt() ?? 0,
-            sharesCount: (data['sharesCount'] as num?)?.toInt() ?? 0,
-            savesCount: (data['savesCount'] as num?)?.toInt() ?? 0,
-          ));
-        }
-      }
+      final allRecipes = perUser.expand((e) => e).toList();
 
       // Newest first, then shuffle for a varied feed (matches prior behaviour
       // but without needing a Firestore composite index).
@@ -175,6 +198,7 @@ class DiscoverController extends GetxController {
       log(stack.toString());
     } finally {
       isLoading.value = false;
+      _fetching = false;
     }
   }
 

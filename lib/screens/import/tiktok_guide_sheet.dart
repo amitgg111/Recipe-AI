@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_spacing.dart';
@@ -104,7 +105,7 @@ class _TikTokGuideSheetState extends State<TikTokGuideSheet> {
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Text(
-                  'Import from TikTok',
+                  'import_from_tiktok'.tr,
                   style: AppTextStyles.listTitle.copyWith(
                     fontSize: 19,
                     fontWeight: FontWeight.w800,
@@ -161,7 +162,7 @@ class _TikTokGuideSheetState extends State<TikTokGuideSheet> {
               MediaQuery.of(context).padding.bottom + AppSpacing.lg,
             ),
             child: PrimaryButton(
-              label: 'Open TikTok to find a recipe',
+              label: 'open_tiktok_find_recipe'.tr,
               leadingIcon: const OnboardingLineIcon(
                 'music',
                 color: Colors.white,
@@ -302,23 +303,23 @@ class _TikTokSlide1 extends StatelessWidget {
                           ),
                         ),
                         // Blue arrow + text
-                        const Positioned(
+                        Positioned(
                           left: -70,
                           top: 6,
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                'tap send',
-                                style: TextStyle(
+                                'tap_send'.tr,
+                                style: const TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
                                   fontStyle: FontStyle.italic,
                                   color: AppColors.blueArrow,
                                 ),
                               ),
-                              SizedBox(width: 4),
-                              OnboardingLineIcon(
+                              const SizedBox(width: 4),
+                              const OnboardingLineIcon(
                                 'chevR',
                                 size: 16,
                                 color: AppColors.blueArrow,
@@ -348,9 +349,9 @@ class _TikTokSlide2 extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text(
-            'tap share to',
-            style: TextStyle(
+          Text(
+            'tap_share_to'.tr,
+            style: const TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.w700,
               fontStyle: FontStyle.italic,
@@ -405,7 +406,7 @@ class _TikTokSlide2 extends StatelessWidget {
                       const OnboardingLineIcon('search', size: 18, color: AppColors.textLight),
                       const SizedBox(width: 8),
                       Text(
-                        'Search',
+                        'search'.tr,
                         style: AppTextStyles.smallLabel.copyWith(
                           color: AppColors.textHint,
                         ),
@@ -462,7 +463,7 @@ class _TikTokSlide2 extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Share to...',
+                        'share_to'.tr,
                         style: AppTextStyles.bodyLarge.copyWith(
                           color: AppColors.primary,
                           fontWeight: FontWeight.w700,
@@ -489,9 +490,9 @@ class _TikTokSlide3 extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text(
-            'tap Recipe AI',
-            style: TextStyle(
+          Text(
+            'tap_recipe_ai'.tr,
+            style: const TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.w700,
               fontStyle: FontStyle.italic,
@@ -568,7 +569,7 @@ class _TikTokSlide3 extends StatelessWidget {
                 _appIcon(
                   const Color(0xFF2D6FE0),
                   '',
-                  'Chat',
+                  'chat'.tr,
                   false,
                   iconWidget: const OnboardingLineIcon(
                     'chat',
@@ -580,7 +581,7 @@ class _TikTokSlide3 extends StatelessWidget {
                 _appIcon(
                   const Color(0xFF34A853),
                   '',
-                  'Share',
+                  'share'.tr,
                   false,
                   icon: Icons.change_history_rounded,
                 ),

@@ -45,7 +45,7 @@ class _HowDidYouHearScreenState extends State<HowDidYouHearScreen> {
       bgColor: Color(0xFF1F1F24),
     ),
     _SourceOption(
-      label: 'Through a friend',
+      label: 'source_through_a_friend',
       icon: Icons.people_alt_rounded,
       iconColor: Color(0xFF5B63D3),
       bgColor: Color(0xFFE8E9FB),
@@ -70,7 +70,7 @@ class _HowDidYouHearScreenState extends State<HowDidYouHearScreen> {
       isInstagram: true,
     ),
     _SourceOption(
-      label: 'Other',
+      label: 'source_other',
       icon: Icons.more_horiz,
       iconColor: Color(0xFF8A7E70),
       bgColor: Color(0xFFEFEAE0),
@@ -112,7 +112,7 @@ class _HowDidYouHearScreenState extends State<HowDidYouHearScreen> {
               // Title
               const SizedBox(height: 16),
               Text(
-                'How did you hear about us?',
+                'how_did_you_hear_title'.tr,
                 textAlign: TextAlign.center,
                 style: AppTextStyles.sectionTitle.copyWith(
                   fontSize: 25,
@@ -185,7 +185,7 @@ class _HowDidYouHearScreenState extends State<HowDidYouHearScreen> {
                                 const SizedBox(width: 14),
                                 Expanded(
                                   child: Text(
-                                    source.label,
+                                    source.label.tr,
                                     style: AppTextStyles.bodyLarge,
                                   ),
                                 ),
@@ -201,7 +201,7 @@ class _HowDidYouHearScreenState extends State<HowDidYouHearScreen> {
               // Continue button
               const SizedBox(height: 18),
               PrimaryButton(
-                label: 'Continue',
+                label: 'continue_'.tr,
                 onPressed: () {
                   Get.to(() => const RecipeSourcesScreen());
                 },
@@ -297,7 +297,7 @@ class _HowDidYouHearBodyState extends State<HowDidYouHearBody> {
     ),
     _SourceOption(
       key: 'other',
-      label: 'Other',
+      label: 'source_other',
       icon: Icons.more_horiz,
       iconColor: Color(0xFF8A7E70),
       bgColor: Color(0xFFEFEAE0),
@@ -313,7 +313,7 @@ class _HowDidYouHearBodyState extends State<HowDidYouHearBody> {
           const SizedBox(height: 8),
           // Title
           Text(
-            'How did you hear about us?',
+            'how_did_you_hear_title'.tr,
             textAlign: TextAlign.center,
 
             style: GoogleFonts.plusJakartaSans(
@@ -377,7 +377,7 @@ class _HowDidYouHearBodyState extends State<HowDidYouHearBody> {
                             const SizedBox(width: 14),
                             Expanded(
                               child: Text(
-                                source.label,
+                                source.label.tr,
                                 style: AppTextStyles.bodyLarge,
                               ),
                             ),

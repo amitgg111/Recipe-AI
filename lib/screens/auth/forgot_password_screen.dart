@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
@@ -73,15 +74,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       final registered = await AuthService.isEmailRegistered(email);
       if (!registered) {
         if (mounted) {
-          setState(() => _emailError = 'No account found with that email');
+          setState(() => _emailError = 'no_account_found_email'.tr);
         }
         return;
       }
       await AuthService.forgotPassword(email);
       if (!mounted) return;
       CustomSnackbar.show(
-        title: 'Email sent',
-        message: 'Check your inbox for a password reset link.',
+        title: 'email_sent'.tr,
+        message: 'check_inbox_reset_link'.tr,
         type: SnackbarType.success,
       );
     } on FirebaseAuthException catch (e) {
@@ -91,14 +92,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         if (mounted) setState(() => _emailError = AuthErrorMapper.message(e));
       } else {
         CustomSnackbar.show(
-          title: 'Could not send email',
+          title: 'could_not_send_email'.tr,
           message: AuthErrorMapper.message(e),
           type: SnackbarType.error,
         );
       }
     } catch (e) {
       CustomSnackbar.show(
-        title: 'Could not send email',
+        title: 'could_not_send_email'.tr,
         message: AuthErrorMapper.message(e),
         type: SnackbarType.error,
       );
@@ -184,7 +185,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
                     // Title (left-aligned)
                     Text(
-                      'Forgot password?',
+                      'forgot_password'.tr,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
@@ -197,7 +198,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
                     // Subtitle (left-aligned)
                     Text(
-                      "Enter the email linked to your account and we'll send you a link to reset your password.",
+                      'forgot_password_subtitle'.tr,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 14,
                         fontWeight: FontWeight.w400,
@@ -210,7 +211,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
                     // Email label
                     Text(
-                      'Email',
+                      'email'.tr,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -256,7 +257,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           validator: (v) => ValidationHelper.email(v),
                           style: AppTextStyles.inputText,
                           decoration: InputDecoration(
-                            hintText: 'Enter the Email',
+                            hintText: 'enter_the_email'.tr,
                             hintStyle: AppTextStyles.inputHint,
                             prefixIcon: const Padding(
                               padding: EdgeInsets.only(left: 14, right: 10),
@@ -351,7 +352,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                   ),
                                   const SizedBox(width: 9),
                                   Text(
-                                    'Send reset link',
+                                    'send_reset_link'.tr,
                                     style: GoogleFonts.plusJakartaSans(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
@@ -375,9 +376,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             color: const Color(0xFF8A7E70),
                           ),
                           children: [
-                            const TextSpan(text: 'Remembered it? '),
+                            TextSpan(text: '${'remembered_it'.tr} '),
                             TextSpan(
-                              text: 'Back to log in',
+                              text: 'back_to_log_in'.tr,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,

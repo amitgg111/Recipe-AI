@@ -78,13 +78,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               children: [
                 _iconButton('back', () => Get.back()),
                 const SizedBox(width: 4),
-                Text('Notifications',
+                Text('notifications'.tr,
                     style: _f(19, FontWeight.w800, _N.textDark)),
                 const Spacer(),
                 Obx(() => _c.unreadCount.value > 0
                     ? TextButton(
                         onPressed: _c.markAllRead,
-                        child: Text('Mark all read',
+                        child: Text('mark_all_read'.tr,
                             style: _f(13, FontWeight.w700, _N.primary)),
                       )
                     : const SizedBox.shrink()),
@@ -139,10 +139,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           OnboardingLineIcon('bell',
               size: 46, color: _N.textHint.withValues(alpha: 0.5)),
           const SizedBox(height: 14),
-          Text('No notifications yet',
+          Text('no_notifications_yet'.tr,
               style: _f(16, FontWeight.w800, _N.textBody)),
           const SizedBox(height: 4),
-          Text('Likes, comments and new followers show up here.',
+          Text('notifications_empty_subtitle'.tr,
               style: _f(13, FontWeight.w500, _N.textHint)),
         ],
       ),
@@ -243,12 +243,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ? _N.green
         : n.isComment
             ? const Color(0xFF3B82F6)
-            : _N.primary;
+            : n.isSave
+                ? const Color(0xFF8B5CF6)
+                : _N.primary;
     final icon = n.isFollow
         ? 'user'
         : n.isComment
             ? 'comment'
-            : 'heart';
+            : n.isSave
+                ? 'bookmarkF'
+                : 'heart';
     return Container(
       width: 22,
       height: 22,
@@ -312,9 +316,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   // Human-friendly action phrase, kept in sync with the backend copy.
   String _action(AppNotification n) {
-    if (n.isLike) return 'liked your recipe.';
-    if (n.isComment) return 'commented on your recipe.';
-    if (n.isFollow) return 'started following you.';
+    if (n.isLike) return 'notif_liked_your_recipe'.tr;
+    if (n.isComment) return 'notif_commented_your_recipe'.tr;
+    if (n.isSave) return 'notif_saved_your_recipe'.tr;
+    if (n.isFollow) return 'notif_started_following_you'.tr;
     return n.message;
   }
 
@@ -356,8 +361,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ? 'user'
             : n.isComment
                 ? 'comment'
-                : 'heart';
-    final color = (n?.isFollow ?? false) ? _N.green : _N.primary;
+                : n.isSave
+                    ? 'bookmarkF'
+                    : 'heart';
+    final color = (n?.isFollow ?? false)
+        ? _N.green
+        : (n?.isSave ?? false)
+            ? const Color(0xFF8B5CF6)
+            : _N.primary;
     return Container(
       width: 48,
       height: 48,
@@ -409,8 +420,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       final recipe = await _fetchOwnRecipe(n.recipeId);
       if (recipe == null) {
         CustomSnackbar.show(
-          title: 'Unavailable',
-          message: 'This recipe is no longer available.',
+          title: 'unavailable'.tr,
+          message: 'recipe_no_longer_available'.tr,
           type: SnackbarType.info,
         );
         return;
@@ -446,11 +457,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (dt == null) return '';
     final now = DateTime.now();
     final diff = now.difference(dt);
-    if (diff.inMinutes < 1) return 'Just now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    if (diff.inDays == 1) return 'Yesterday';
-    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    if (diff.inMinutes < 1) return 'just_now'.tr;
+    if (diff.inMinutes < 60) {
+      return 'n_minutes_ago'.trParams({'count': '${diff.inMinutes}'});
+    }
+    if (diff.inHours < 24) {
+      return 'n_hours_ago'.trParams({'count': '${diff.inHours}'});
+    }
+    if (diff.inDays == 1) return 'yesterday'.tr;
+    if (diff.inDays < 7) {
+      return 'n_days_ago'.trParams({'count': '${diff.inDays}'});
+    }
     const months = [
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
@@ -487,7 +504,7 @@ class _FollowButton extends StatelessWidget {
               ),
             ),
             child: Text(
-              following ? 'Following' : 'Follow',
+              following ? 'following'.tr : 'follow'.tr,
               style: _f(
                 12.5,
                 FontWeight.w800,

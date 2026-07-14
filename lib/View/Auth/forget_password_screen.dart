@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/utils/auth_error_mapper.dart';
 
@@ -13,14 +14,14 @@ class ForgotPasswordScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const CustomText("Forgot Password")),
+      appBar: AppBar(title: CustomText("forgot_password_title".tr)),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
             TextField(
               controller: emailController,
-              decoration: const InputDecoration(hintText: "Enter Email"),
+              decoration: InputDecoration(hintText: "enter_email".tr),
             ),
 
             const SizedBox(height: 20),
@@ -35,19 +36,19 @@ class ForgotPasswordScreen extends StatelessWidget {
                       emailController.text.trim(),
                     );
                     CustomSnackbar.show(
-                      title: 'Info',
-                      message: 'Reset email sent',
+                      title: 'info'.tr,
+                      message: 'reset_email_sent'.tr,
                       type: SnackbarType.info,
                     );
                   } catch (e) {
                     CustomSnackbar.show(
-                      title: 'Error',
+                      title: 'error'.tr,
                       message: AuthErrorMapper.message(e),
                       type: SnackbarType.error,
                     );
                   }
                 },
-                child: const CustomText("Send Reset Link"),
+                child: CustomText("send_reset_link".tr),
               ),
             ),
           ],
