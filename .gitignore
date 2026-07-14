@@ -45,3 +45,9 @@ app.*.map.json
 /android/app/release
 node_modules/
 functions/node_modules/
+
+# Secrets / local env (never commit — contains API keys)
+functions/.env
+.env
+*.env
+!*.env.example
