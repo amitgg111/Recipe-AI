@@ -1,35 +1,33 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
-/// Single source of truth for the Plus subscription and the free-tier import
-/// quota.
+/// Single source of truth for the Plus subscription and the free-tier credits.
 ///
-/// One boolean decides everything — `isPlus` (Free vs Plus). There are NO
-/// tiers. Free users get [kFreeImportLimit] recipe imports from Image / Text /
-/// Social; Website imports are unlimited and are never counted. State is
-/// reactive (Rx) so any `Obx` reading it rebuilds when the plan or the count
+/// State is reactive (Rx) so any `Obx` reading it rebuilds when the plan or the count
 /// changes, cached in GetStorage for instant/offline paint, and backed by the
-/// `users/{uid}` document (`isPlus`, `recipeImportCount`).
+/// `users/{uid}` document (`isPlus`, `freeCredits`).
 ///
 /// This is the ONE place subscription logic lives — feature code only reads the
 /// `canUse*()` gates (or wraps its UI in `PremiumLockOverlay`).
 class SubscriptionService extends GetxController {
-  /// Total lifetime imports a free user gets (Image + Text + Social).
-  static const int kFreeImportLimit = 5;
+  /// Total lifetime credits a free user gets.
+  static const int kInitialFreeCredits = 5;
 
   /// Convenience accessor — registers the singleton on first use.
   static SubscriptionService get instance =>
       Get.isRegistered<SubscriptionService>()
-          ? Get.find<SubscriptionService>()
-          : Get.put(SubscriptionService(), permanent: true);
+      ? Get.find<SubscriptionService>()
+      : Get.put(SubscriptionService(), permanent: true);
 
   final _box = GetStorage();
   static const _kPlus = 'sub_is_plus';
-  static const _kCount = 'sub_import_count';
+  static const _kCredits = 'sub_free_credits';
 
   final RxBool _isPlus = false.obs;
-  final RxInt _importCount = 0.obs;
+  final RxInt _freeCredits = 0.obs;
 
   String? _uid;
 
@@ -38,44 +36,71 @@ class SubscriptionService extends GetxController {
     super.onInit();
     // Instant paint from cache (works offline / before auth resolves).
     _isPlus.value = _box.read(_kPlus) ?? false;
-    _importCount.value = _box.read(_kCount) ?? 0;
+    _freeCredits.value = _box.read(_kCredits) ?? 0;
   }
 
   DocumentReference<Map<String, dynamic>>? get _ref => _uid == null
       ? null
       : FirebaseFirestore.instance.collection('users').doc(_uid);
 
-  /// Load the signed-in user's plan + import count. Safe to call after login.
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _userSubscription;
+
+  /// Load the signed-in user's plan + credit count. Safe to call after login.
   Future<void> bindUser(String uid) async {
     _uid = uid;
-    try {
-      final snap = await _ref!.get();
-      final data = snap.data() ?? const {};
-      final plus = data['isPlus'] == true;
-      final count = (data['recipeImportCount'] as num?)?.toInt() ?? 0;
-      _isPlus.value = plus;
-      _importCount.value = count;
-      _box.write(_kPlus, plus);
-      _box.write(_kCount, count);
-    } catch (_) {
-      // Offline / permission error — keep cached values.
-    }
-  }
 
-  void onLogout() => _uid = null;
+    await _userSubscription?.cancel();
+
+    _userSubscription = _ref!.snapshots().listen((snap) {
+      final data = snap.data() ?? const {};
+
+      final plus = data['isPlus'] == true;
+
+      final credits =
+          (data['freeCredits'] as num?)?.toInt() ?? kInitialFreeCredits;
+
+      _isPlus.value = plus;
+      _freeCredits.value = credits;
+
+      _box.write(_kPlus, plus);
+      _box.write(_kCredits, credits);
+    });
+  }
+  // Future<void> bindUser(String uid) async {
+  //   _uid = uid;
+  //   try {
+  //     final snap = await _ref!.get();
+  //     final data = snap.data() ?? const {};
+  //     final plus = data['isPlus'] == true;
+  //     // If user doesn't have freeCredits yet (e.g. old user), default to 5
+  //     final credits = (data['freeCredits'] as num?)?.toInt() ?? kInitialFreeCredits;
+  //     _isPlus.value = plus;
+  //     _freeCredits.value = credits;
+  //     _box.write(_kPlus, plus);
+  //     _box.write(_kCredits, credits);
+  //   } catch (_) {
+  //     // Offline / permission error — keep cached values.
+  //   }
+  // }
+
+  void onLogout() {
+    _uid = null;
+    _userSubscription?.cancel();
+    _userSubscription = null;
+  }
 
   // ── Reactive reads ─────────────────────────────────────────────────────────
 
   bool get isPlus => _isPlus.value;
-  int get recipeImportCount => _importCount.value;
+  int get freeCredits => _freeCredits.value;
 
   /// Exposed so widgets can react (e.g. `Obx(() => ... isPlusListenable ...)`).
   RxBool get isPlusListenable => _isPlus;
-  RxInt get importCountListenable => _importCount;
+  RxInt get freeCreditsListenable => _freeCredits;
 
   // ── Capability gates (the public API) ──────────────────────────────────────
 
-  bool canUseRecipeImport() => isPlus || recipeImportCount < kFreeImportLimit;
+  bool canUseRecipeImport() => isPlus || freeCredits > 0;
   bool canUseNutrition() => isPlus;
   bool canUseCookingAssistant() => isPlus;
   bool canUseMealPlanner() => isPlus;
@@ -83,29 +108,52 @@ class SubscriptionService extends GetxController {
   bool canExportPDF() => isPlus;
   bool canPrintRecipe() => isPlus;
 
-  /// Remaining free imports (Image/Text/Social). Effectively unlimited for Plus.
-  int remainingRecipeImports() => isPlus
-      ? 999999
-      : (kFreeImportLimit - recipeImportCount).clamp(0, kFreeImportLimit);
+  /// Remaining free imports. Effectively unlimited for Plus.
+  int remainingRecipeImports() =>
+      isPlus ? 999999 : freeCredits.clamp(0, kInitialFreeCredits);
 
   // ── Mutations ──────────────────────────────────────────────────────────────
 
-  /// Count one Image / Text / Social import (never Website). No-op for Plus.
-  /// Called after a countable import successfully saves.
-  Future<void> incrementImportCount() async {
-    if (isPlus) return;
-    final next = recipeImportCount + 1;
-    _importCount.value = next;
-    _box.write(_kCount, next);
-    await _ref?.set(
-      {'recipeImportCount': next},
-      SetOptions(merge: true),
-    );
+  /// Atomically consume 1 credit if the user is free.
+  /// Uses a Firestore transaction to prevent race conditions and negative credits.
+  /// Called ONLY when the feature usage is successfully authorized.
+  /// Returns true if successful (or if Plus), false if insufficient credits or network error.
+  Future<bool> consumeCredit() async {
+    if (isPlus) return true;
+    if (_ref == null) return false;
+
+    try {
+      final success = await FirebaseFirestore.instance.runTransaction((
+        transaction,
+      ) async {
+        final snap = await transaction.get(_ref!);
+        if (!snap.exists) return false;
+
+        final data = snap.data() ?? {};
+        final currentCredits =
+            (data['freeCredits'] as num?)?.toInt() ?? kInitialFreeCredits;
+
+        if (currentCredits <= 0) {
+          return false;
+        }
+
+        final next = currentCredits - 1;
+        transaction.update(_ref!, {'freeCredits': next});
+        return true;
+      });
+
+      if (success) {
+        _freeCredits.value -= 1;
+        _box.write(_kCredits, _freeCredits.value);
+      }
+      return success;
+    } catch (_) {
+      // e.g. transaction failed due to network
+      return false;
+    }
   }
 
   /// Flip the plan (used by the upgrade flow / dev toggle) and persist it.
-  /// Replace the body's caller with real billing entitlement when integrating a
-  /// store — the rest of the app only reads [isPlus].
   Future<void> setPlus(bool value) async {
     _isPlus.value = value;
     _box.write(_kPlus, value);

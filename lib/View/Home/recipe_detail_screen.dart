@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:recipe_ai/screens/import/add_cookbook_sheet.dart';
 import 'package:recipe_ai/screens/recipe/export_pdf_sheet.dart';
+import 'package:recipe_ai/widgets/app_logo.dart';
 import 'package:recipe_ai/widgets/app_network_image.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'dart:math' as math;
@@ -28,6 +31,8 @@ import 'package:recipe_ai/Controllers/nutrition_controller.dart';
 import 'package:recipe_ai/widgets/nutrition_preview_card.dart';
 import 'package:recipe_ai/widgets/nutrition_locked_card.dart';
 import 'package:recipe_ai/View/Home/nutrition/nutrition_screen.dart';
+import 'package:recipe_ai/Controllers/ai_assistant_controller.dart';
+import 'package:recipe_ai/View/Home/ai_assistant_screen.dart';
 import 'package:recipe_ai/widgets/cannot_publish_dialog.dart';
 import 'package:recipe_ai/widgets/comments_sheet.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
@@ -37,6 +42,11 @@ import 'package:recipe_ai/utils/validation_helper.dart';
 import 'package:recipe_ai/View/Home/cook_mode_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:screenshot/screenshot.dart';
+import 'package:path_provider/path_provider.dart';
+
+import 'package:http/http.dart' as http;
+import 'dart:typed_data';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Design constants (matched to the HTML "Recipe detail" design)
@@ -323,6 +333,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                         _buildMetaRow(),
                         const SizedBox(height: 20),
 
+                        // AI swap / scale applied banner (with Undo)
+                        _aiBanner(),
+
                         // Quick action tiles
                         _buildActionTiles(),
                         const SizedBox(height: 18),
@@ -375,10 +388,187 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               ],
             ),
           ),
+
+          // ── Plus-only "Ask AI" floating button (design 75) ──────────
+          Positioned(
+            right: 18,
+            bottom: 20,
+            child: Obx(() {
+              if (!SubscriptionService.instance.isPlusListenable.value) {
+                return const SizedBox.shrink();
+              }
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  _askAiHintPill(),
+                  const SizedBox(height: 10),
+                  GestureDetector(
+                    onTap: () =>
+                        Get.to(() => AiAssistantScreen(recipe: recipe)),
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      height: 54,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(27),
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFF9466F2), Color(0xFF6D3BD4)],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(
+                              0xFF8B5CF6,
+                            ).withValues(alpha: 0.6),
+                            blurRadius: 26,
+                            offset: const Offset(0, 12),
+                            spreadRadius: -6,
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const OnboardingLineIcon(
+                            'chat',
+                            size: 19,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(width: 9),
+                          Text(
+                            'Ask AI',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            }),
+          ),
         ],
       ),
     );
   }
+
+  // AI swap / scale applied banner + Undo (design 79). Reactive on the
+  // assistant's last change for this recipe.
+  Widget _aiBanner() {
+    return Obx(() {
+      final ctrl = AiAssistantController.to;
+      ctrl.swaps.length; // establish reactive dependency on the swap list
+      final recipeSwaps = ctrl.swapsFor(recipe.id);
+      final scaleChange = ctrl.changeFor(recipe.id); // scale-only now
+
+      // Prefer the scale banner when a scale is active; otherwise the swap
+      // banner (whose Undo reverts every swap at once — mockup 79).
+      final bool isSwap = scaleChange == null && recipeSwaps.isNotEmpty;
+      if (scaleChange == null && recipeSwaps.isEmpty) {
+        return const SizedBox.shrink();
+      }
+
+      final String summary;
+      if (isSwap) {
+        if (recipeSwaps.length == 1) {
+          final e = recipeSwaps.first;
+          summary = '${e.oldName} → ${_shortName(e.newName)}';
+        } else {
+          summary = '${recipeSwaps.length} ingredients';
+        }
+      } else {
+        summary = scaleChange!.summary;
+      }
+
+      return Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF4EEFD),
+          border: Border.all(color: const Color(0xFFE0D2F7)),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF9466F2), Color(0xFF6D3BD4)],
+                ),
+              ),
+              child: Icon(
+                isSwap ? Icons.swap_horiz_rounded : Icons.straighten_rounded,
+                size: 18,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 11),
+            Expanded(
+              child: Text.rich(
+                TextSpan(
+                  style: _font(
+                    12.5,
+                    FontWeight.w600,
+                    const Color(0xFF5A4A78),
+                    h: 1.4,
+                  ),
+                  children: [
+                    TextSpan(text: isSwap ? 'AI swapped ' : 'AI scaled '),
+                    TextSpan(
+                      text: summary,
+                      style: _font(
+                        12.5,
+                        FontWeight.w800,
+                        const Color(0xFF5A4A78),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () async {
+                if (isSwap) {
+                  await ctrl.undoAllSwaps(recipe);
+                } else {
+                  await ctrl.undo();
+                }
+                if (!mounted) return;
+                CustomSnackbar.show(
+                  title: 'Undone',
+                  message: 'The change was reverted.',
+                  type: SnackbarType.info,
+                );
+              },
+              behavior: HitTestBehavior.opaque,
+              child: Text(
+                'Undo',
+                style: _font(12.5, FontWeight.w800, const Color(0xFF7A45E0)),
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  /// First part of a replacement name for the banner ("heavy cream + …" →
+  /// "heavy cream").
+  String _shortName(String n) =>
+      n.split(RegExp(r'\s*\+|\s+and\s+')).first.trim();
 
   // ═══════════════════════════════════════════════════════════════════════════
   // HERO
@@ -427,6 +617,49 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       child: Icon(Icons.restaurant_rounded, size: 60, color: Color(0xFFC7BCAC)),
     ),
   );
+
+  /// Small hint pill above the Ask AI button (design 75) — also opens the chat.
+  Widget _askAiHintPill() {
+    return Container(
+      margin: const EdgeInsets.only(right: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFEFE6D6)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.07),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(
+              text: 'Need a swap or help? ',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF6B6156),
+              ),
+            ),
+            TextSpan(
+              text: 'Ask AI ',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF7A45E0),
+              ),
+            ),
+            const TextSpan(text: '✨', style: TextStyle(fontSize: 12.5)),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _floatingBtn(String icon, VoidCallback onTap, {bool active = false}) {
     return GestureDetector(
@@ -549,8 +782,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 const SizedBox(width: 6),
                 Text(
                   discovered ? '· ${'locked'.tr}' : '· ${'tap_to_change'.tr}',
-                  style:
-                      _font(11, FontWeight.w600, fg.withValues(alpha: 0.75)),
+                  style: _font(11, FontWeight.w600, fg.withValues(alpha: 0.75)),
                 ),
               ],
             ),
@@ -591,10 +823,15 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     ]);
     final children = <Widget>[];
     if (time != null) {
-      children.add(_metaItem('clock', time));
+      children.add(Expanded(child: _metaItem('clock', time)));
     }
     children.add(
-      _metaItem('friend', 'n_servings'.trParams({'count': '$_servings'})),
+      Expanded(
+        child: _metaItem(
+          'friend',
+          'n_servings'.trParams({'count': '$_servings'}),
+        ),
+      ),
     );
     children.add(Expanded(child: _metaItem('spark', _difficultyLabel())));
 
@@ -622,7 +859,13 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       children: [
         OnboardingLineIcon(icon, size: 16, color: _C.primary),
         const SizedBox(width: 6),
-        Text(label, style: _font(11, FontWeight.w700, _C.textBody)),
+        Expanded(
+          child: Text(
+            label,
+            style: _font(11, FontWeight.w700, _C.textBody),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
       ],
     );
   }
@@ -746,7 +989,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('cookbooks'.tr, style: _font(18, FontWeight.w800, _C.textDark)),
+            Text(
+              'cookbooks'.tr,
+              style: _font(18, FontWeight.w800, _C.textDark),
+            ),
             const SizedBox(height: 12),
             if (containing.isNotEmpty)
               Wrap(
@@ -904,6 +1150,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           // quantity + unit recalculates instantly.
           Obx(() {
             final system = _settings.unitSystem;
+            // Depend on the swap list too, so applying/undoing a swap redraws
+            // the inline "SWAPPED" tag on the affected row.
+            AiAssistantController.to.swaps.length;
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1120,7 +1369,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             multiplier,
             system,
           );
-          widgets.add(_ingredientRow(scaled, globalIdx));
+          widgets.add(_ingredientRow(scaled, globalIdx, section.items[i]));
           globalIdx++;
         }
       }
@@ -1133,7 +1382,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         multiplier,
         system,
       );
-      widgets.add(_ingredientRow(scaled, i));
+      widgets.add(_ingredientRow(scaled, i, recipe.ingredients[i]));
     }
     return widgets;
   }
@@ -1196,7 +1445,14 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     );
   }
 
-  Widget _ingredientRow(String text, int index) {
+  Widget _ingredientRow(String text, int index, [String? rawLine]) {
+    // Inline "SWAPPED" tag + per-ingredient Undo when this line came from an AI
+    // swap (mockup 79). Falls back to the normal row otherwise.
+    final swap = rawLine == null
+        ? null
+        : AiAssistantController.to.activeSwapForLine(recipe.id, rawLine);
+    if (swap != null) return _swappedIngredientRow(text, swap);
+
     final checked = _checkedIngredients.contains(index);
     final parts = _parseIngredient(text);
 
@@ -1254,6 +1510,242 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                   ).copyWith(
                     decoration: checked ? TextDecoration.lineThrough : null,
                   ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// A swapped ingredient row: purple-tinted card, swap icon, the new line with
+  /// a "SWAPPED" badge, the struck-through original ("was …"), and inline Undo.
+  // Widget _swappedIngredientRow(String text, SwapEntry swap) {
+  //   final parts = _parseIngredient(text);
+  //   return Container(
+  //     margin: const EdgeInsets.symmetric(vertical: 4),
+  //     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+  //     decoration: BoxDecoration(
+  //       color: const Color(0xFFF6F1FE),
+  //       borderRadius: BorderRadius.circular(12),
+  //       border: Border.all(color: const Color(0xFFE6DAF9)),
+  //     ),
+  //     child: Row(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         Container(
+  //           width: 28,
+  //           height: 28,
+  //           alignment: Alignment.center,
+  //           decoration: BoxDecoration(
+  //             color: const Color(0xFFEDE3FC),
+  //             borderRadius: BorderRadius.circular(9),
+  //           ),
+  //           child: const Icon(
+  //             Icons.swap_horiz_rounded,
+  //             size: 17,
+  //             color: Color(0xFF8B5CF6),
+  //           ),
+  //         ),
+  //         const SizedBox(width: 12),
+  //         Expanded(
+  //           child: Column(
+  //             crossAxisAlignment: CrossAxisAlignment.end,
+  //             children: [
+  //               Row(
+  //                 crossAxisAlignment: CrossAxisAlignment.start,
+  //                 children: [
+  //                   Expanded(
+  //                     child: Text.rich(
+  //                       TextSpan(
+  //                         children: [
+  //                           if (parts.$1 != null)
+  //                             TextSpan(
+  //                               text: '${parts.$1!} ',
+  //                               style: _font(14, FontWeight.w800, _C.textDark),
+  //                             ),
+  //                           TextSpan(
+  //                             text: parts.$2,
+  //                             style: _font(14, FontWeight.w700, _C.textDark),
+  //                           ),
+  //                         ],
+  //                       ),
+  //                       style: const TextStyle(height: 1.3),
+  //                     ),
+  //                   ),
+  //                   const SizedBox(width: 7),
+  //                   GestureDetector(
+  //                     behavior: HitTestBehavior.opaque,
+  //                     onTap: () async {
+  //                       await AiAssistantController.to.undoSwap(recipe, swap);
+  //                       if (!mounted) return;
+  //                       CustomSnackbar.show(
+  //                         title: 'Undone',
+  //                         message: 'Restored ${swap.oldName}.',
+  //                         type: SnackbarType.info,
+  //                       );
+  //                     },
+  //                     child: Padding(
+  //                       padding: const EdgeInsets.only(top: 1),
+  //                       child: Text(
+  //                         'Undo',
+  //                         style: _font(
+  //                           13,
+  //                           FontWeight.w800,
+  //                           const Color(0xFF7A45E0),
+  //                         ),
+  //                       ),
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
+  //               const SizedBox(height: 3),
+  //               Text(
+  //                 'was ${swap.oldLine}',
+  //                 style: _font(
+  //                   12,
+  //                   FontWeight.w500,
+  //                   const Color(0xFF9A8FB0),
+  //                 ).copyWith(decoration: TextDecoration.lineThrough),
+  //               ),
+  //               Padding(
+  //                 padding: const EdgeInsets.only(top: 1),
+  //                 child: Container(
+  //                   padding: const EdgeInsets.symmetric(
+  //                     horizontal: 6,
+  //                     vertical: 2,
+  //                   ),
+  //                   decoration: BoxDecoration(
+  //                     color: const Color(0xFFEDE3FC),
+  //                     borderRadius: BorderRadius.circular(5),
+  //                   ),
+  //                   child: Text(
+  //                     'SWAPPED',
+  //                     style: _font(9, FontWeight.w800, const Color(0xFF7A45E0)),
+  //                   ),
+  //                 ),
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+  Widget _swappedIngredientRow(String text, SwapEntry swap) {
+    final parts = _parseIngredient(text);
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF6F1FE),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE6DAF9)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEDE3FC),
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: const Icon(
+              Icons.swap_horiz_rounded,
+              size: 17,
+              color: Color(0xFF8B5CF6),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Title now gets the FULL remaining width, so it wraps cleanly
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      if (parts.$1 != null)
+                        TextSpan(
+                          text: '${parts.$1!} ',
+                          style: _font(14, FontWeight.w800, _C.textDark),
+                        ),
+                      TextSpan(
+                        text: parts.$2,
+                        style: _font(14, FontWeight.w700, _C.textDark),
+                      ),
+                    ],
+                  ),
+                  style: const TextStyle(height: 1.3),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'was ${swap.oldLine}',
+                  style: _font(
+                    12,
+                    FontWeight.w500,
+                    const Color(0xFF9A8FB0),
+                  ).copyWith(decoration: TextDecoration.lineThrough),
+                ),
+                const SizedBox(height: 5),
+                // Bottom row: badge on left, Undo on right — its own dedicated row
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEDE3FC),
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      child: Text(
+                        'SWAPPED',
+                        style: _font(
+                          9,
+                          FontWeight.w800,
+                          const Color(0xFF7A45E0),
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () async {
+                        await AiAssistantController.to.undoSwap(recipe, swap);
+                        if (!mounted) return;
+                        CustomSnackbar.show(
+                          title: 'Undone',
+                          message: 'Restored ${swap.oldName}.',
+                          type: SnackbarType.info,
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEDE3FC),
+                          borderRadius: BorderRadius.circular(7),
+                          border: Border.all(color: const Color(0xFFE6DAF9)),
+                        ),
+                        child: Text(
+                          'Undo',
+                          style: _font(
+                            12,
+                            FontWeight.w800,
+                            const Color(0xFF7A45E0),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ],
@@ -1468,8 +1960,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     // NutritionEstimator, using the live serving count (_servings) so changing
     // the stepper recalculates without reopening (spec step 7). Reacts live to
     // the plan via Obx, so upgrading swaps in the real card immediately.
-    final n = NutritionController.to
-        .calculateNutrition(recipe, servingsOverride: _servings);
+    final n = NutritionController.to.calculateNutrition(
+      recipe,
+      servingsOverride: _servings,
+    );
     if (n.isEmpty) return const SizedBox.shrink();
     return Obx(() {
       final isPlus = SubscriptionService.instance.isPlusListenable.value;
@@ -1499,28 +1993,267 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   // ACTIONS  (business logic preserved verbatim)
   // ═══════════════════════════════════════════════════════════════════════════
 
-  void _shareRecipe() {
-    final buf = StringBuffer();
-    buf.writeln(recipe.title);
-    buf.writeln();
-    if (recipe.description != null && recipe.description!.isNotEmpty) {
-      buf.writeln(recipe.description);
-      buf.writeln();
+  // void _shareRecipe() {
+  //   final buf = StringBuffer();
+  //   buf.writeln(recipe.title);
+  //   buf.writeln();
+  //   if (recipe.description != null && recipe.description!.isNotEmpty) {
+  //     buf.writeln(recipe.description);
+  //     buf.writeln();
+  //   }
+  //   buf.writeln('INGREDIENTS');
+  //   for (final ing in recipe.ingredients) {
+  //     buf.writeln('• $ing');
+  //   }
+  //   buf.writeln();
+  //   buf.writeln('INSTRUCTIONS');
+  //   for (var i = 0; i < recipe.instructions.length; i++) {
+  //     buf.writeln('${i + 1}. ${recipe.instructions[i]}');
+  //   }
+  //   if (recipe.sourceUrl.isNotEmpty) {
+  //     buf.writeln();
+  //     buf.writeln('Source: ${recipe.sourceUrl}');
+  //   }
+  //   Share.share(buf.toString(), subject: recipe.title);
+  // }
+
+  Future<void> _shareRecipe() async {
+    try {
+      final screenshotController = ScreenshotController();
+
+      Uint8List? imageBytes;
+      final imgUrl = recipe.imageUrl?.trim();
+      if (imgUrl != null && imgUrl.isNotEmpty) {
+        try {
+          final res = await http
+              .get(Uri.parse(imgUrl))
+              .timeout(const Duration(seconds: 8));
+          if (res.statusCode == 200) imageBytes = res.bodyBytes;
+        } catch (e) {
+          debugPrint('Recipe image fetch failed: $e');
+        }
+      }
+
+      // Content height varies with title length (max 2 lines) etc, so give
+      // enough headroom — 2200 covers the tallest realistic case at width 1080.
+      final cardBytes = await screenshotController.captureFromWidget(
+        _buildShareRecipeCard(imageBytes),
+        delay: const Duration(milliseconds: 50),
+        pixelRatio: 3.0,
+        targetSize: const Size(1080, 2200), // <-- overflow fix
+      );
+
+      final directory = await getTemporaryDirectory();
+      final file = File(
+        '${directory.path}/recipe_${DateTime.now().millisecondsSinceEpoch}.png',
+      );
+      await file.writeAsBytes(cardBytes);
+
+      const appLink = 'https://yourapp.page.link/recipe';
+      final shareText =
+          '''
+🍴 ${recipe.title}
+
+View the full recipe, ingredients, instructions and more in the app 👇
+
+$appLink
+''';
+
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text: shareText,
+        subject: recipe.title,
+      );
+    } catch (e) {
+      debugPrint('Share recipe error: $e');
     }
-    buf.writeln('INGREDIENTS');
-    for (final ing in recipe.ingredients) {
-      buf.writeln('• $ing');
-    }
-    buf.writeln();
-    buf.writeln('INSTRUCTIONS');
-    for (var i = 0; i < recipe.instructions.length; i++) {
-      buf.writeln('${i + 1}. ${recipe.instructions[i]}');
-    }
-    if (recipe.sourceUrl.isNotEmpty) {
-      buf.writeln();
-      buf.writeln('Source: ${recipe.sourceUrl}');
-    }
-    Share.share(buf.toString(), subject: recipe.title);
+  }
+
+  Widget _buildShareRecipeCard([Uint8List? imageBytes]) {
+    final time =
+        _firstNonEmpty([recipe.totalTime, recipe.cookTime, recipe.prepTime]) ??
+        '';
+
+    return Material(
+      color: Colors.white,
+      child: SizedBox(
+        width: 1080,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(40),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(40),
+                  topRight: Radius.circular(40),
+                ),
+                child: _buildRecipeImage(imageBytes),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(48),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        AppLogo(size: 42),
+                        SizedBox(width: 16),
+                        Text(
+                          'Recipe-AI',
+                          style: TextStyle(
+                            fontSize: 34,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 36),
+                    Text(
+                      recipe.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 56,
+                        fontWeight: FontWeight.w800,
+                        height: 1.15,
+                      ),
+                    ),
+                    const SizedBox(height: 36),
+                    Row(
+                      children: [
+                        _shareInfoItem(
+                          icon: Icons.people_outline,
+                          title: 'Servings',
+                          value: '${recipe.servings ?? '-'}',
+                        ),
+                        const SizedBox(width: 24),
+                        _shareInfoItem(
+                          icon: Icons.access_time,
+                          title: 'Time',
+                          value: time.isEmpty ? '-' : time,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 42),
+                    const Divider(),
+                    const SizedBox(height: 28),
+                    const Text(
+                      'View the full recipe in RecipeNest',
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Ingredients, instructions and more inside the app.',
+                      style: TextStyle(fontSize: 26, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 32),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 24,
+                        horizontal: 28,
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        color: Colors.black,
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'Download the app to view full recipe',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecipeImage(Uint8List? imageBytes) {
+    if (imageBytes == null) return _shareImagePlaceholder();
+    return SizedBox(
+      width: 1080,
+      height: 600,
+      child: Image.memory(
+        imageBytes,
+        width: 1080,
+        height: 600,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _shareImagePlaceholder(),
+      ),
+    );
+  }
+
+  Widget _shareImagePlaceholder() {
+    return Container(
+      width: 1080,
+      height: 600,
+      color: const Color(0xFFF0E6D6),
+      alignment: Alignment.center,
+      child: const Icon(
+        Icons.restaurant_rounded,
+        size: 100,
+        color: Color(0xFFC7BCAC),
+      ),
+    );
+  }
+
+  // Overflow-safe info item — value 1 line + ellipsis, Expanded so Row ma
+  // space properly divide thay
+  Widget _shareInfoItem({
+    required IconData icon,
+    required String title,
+    required String value,
+  }) {
+    return Expanded(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 42),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(fontSize: 24, color: Colors.grey),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showGrocerySelectionSheet() {
@@ -2138,37 +2871,30 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                             _shareRecipe();
                           }),
                           _menuDivider(),
-                          _menuRow(
-                            'file',
-                            'export_pdf'.tr,
-                            () {
-                              Navigator.pop(ctx);
-                              if (!SubscriptionService.instance
-                                  .canExportPDF()) {
-                                showUpgradeDialog(context,
-                                    feature: 'export_pdf'.tr);
-                              } else {
-                                ExportPdfSheet.open(_recipe, note: _note);
-                              }
-                            },
-                            plus: true,
-                          ),
+                          _menuRow('file', 'export_pdf'.tr, () {
+                            Navigator.pop(ctx);
+                            if (!SubscriptionService.instance.canExportPDF()) {
+                              showUpgradeDialog(
+                                context,
+                                feature: 'export_pdf'.tr,
+                              );
+                            } else {
+                              ExportPdfSheet.open(_recipe, note: _note);
+                            }
+                          }, plus: true),
                           _menuDivider(),
-                          _menuRow(
-                            'print',
-                            'print_recipe'.tr,
-                            () {
-                              Navigator.pop(ctx);
-                              if (!SubscriptionService.instance
-                                  .canPrintRecipe()) {
-                                showUpgradeDialog(context,
-                                    feature: 'print_recipe'.tr);
-                              } else {
-                                ExportPdfSheet.open(_recipe, note: _note);
-                              }
-                            },
-                            plus: true,
-                          ),
+                          _menuRow('print', 'print_recipe'.tr, () {
+                            Navigator.pop(ctx);
+                            if (!SubscriptionService.instance
+                                .canPrintRecipe()) {
+                              showUpgradeDialog(
+                                context,
+                                feature: 'print_recipe'.tr,
+                              );
+                            } else {
+                              ExportPdfSheet.open(_recipe, note: _note);
+                            }
+                          }, plus: true),
                           _menuDivider(),
                           _menuRow('trash', 'delete_recipe'.tr, () {
                             Navigator.pop(ctx);
@@ -2466,8 +3192,7 @@ class _MealPlanPickerSheet extends StatefulWidget {
 
 class _MealPlanPickerSheetState extends State<_MealPlanPickerSheet> {
   DateTime _selectedDay = DateTime.now();
-  late DateTime _visibleMonth =
-      DateTime(_selectedDay.year, _selectedDay.month);
+  late DateTime _visibleMonth = DateTime(_selectedDay.year, _selectedDay.month);
   String _selectedMealType = 'Dinner';
   bool _isAdding = false;
 
@@ -2489,8 +3214,18 @@ class _MealPlanPickerSheetState extends State<_MealPlanPickerSheet> {
       a.day == b.day && a.month == b.month && a.year == b.year;
 
   static const _monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
 
   // ── Month calendar (matches the Meal Plan calendar) ────────────────────────
@@ -2505,7 +3240,8 @@ class _MealPlanPickerSheetState extends State<_MealPlanPickerSheet> {
     final leading = firstOfMonth.weekday - 1; // Monday-first blanks
 
     // Never let the user page back into a month that's entirely in the past.
-    final canGoPrev = month.year > today.year ||
+    final canGoPrev =
+        month.year > today.year ||
         (month.year == today.year && month.month > today.month);
 
     final cells = <Widget>[];
@@ -2514,14 +3250,16 @@ class _MealPlanPickerSheetState extends State<_MealPlanPickerSheet> {
     }
     for (var d = 1; d <= daysInMonth; d++) {
       final date = DateTime(month.year, month.month, d);
-      cells.add(_dayCell(
-        date,
-        d,
-        isPast: date.isBefore(today),
-        isSelected: _sameDay(date, _selectedDay),
-        isToday: _sameDay(date, today),
-        color: color,
-      ));
+      cells.add(
+        _dayCell(
+          date,
+          d,
+          isPast: date.isBefore(today),
+          isSelected: _sameDay(date, _selectedDay),
+          isToday: _sameDay(date, today),
+          color: color,
+        ),
+      );
     }
 
     return Column(
@@ -2534,8 +3272,12 @@ class _MealPlanPickerSheetState extends State<_MealPlanPickerSheet> {
               _navArrow(
                 Icons.chevron_left,
                 canGoPrev
-                    ? () => setState(() => _visibleMonth =
-                        DateTime(month.year, month.month - 1))
+                    ? () => setState(
+                        () => _visibleMonth = DateTime(
+                          month.year,
+                          month.month - 1,
+                        ),
+                      )
                     : null,
               ),
               Expanded(
@@ -2548,8 +3290,9 @@ class _MealPlanPickerSheetState extends State<_MealPlanPickerSheet> {
               ),
               _navArrow(
                 Icons.chevron_right,
-                () => setState(() => _visibleMonth =
-                    DateTime(month.year, month.month + 1)),
+                () => setState(
+                  () => _visibleMonth = DateTime(month.year, month.month + 1),
+                ),
               ),
             ],
           ),
@@ -2560,12 +3303,16 @@ class _MealPlanPickerSheetState extends State<_MealPlanPickerSheet> {
           padding: const EdgeInsets.symmetric(horizontal: 18),
           child: Row(
             children: ['M', 'T', 'W', 'T', 'F', 'S', 'S']
-                .map((w) => Expanded(
-                      child: Center(
-                        child: Text(w,
-                            style: _font(11, FontWeight.w700, _C.textHint)),
+                .map(
+                  (w) => Expanded(
+                    child: Center(
+                      child: Text(
+                        w,
+                        style: _font(11, FontWeight.w700, _C.textHint),
                       ),
-                    ))
+                    ),
+                  ),
+                )
                 .toList(),
           ),
         ),
@@ -2617,8 +3364,8 @@ class _MealPlanPickerSheetState extends State<_MealPlanPickerSheet> {
               isSelected
                   ? Colors.white
                   : isPast
-                      ? _C.textHint.withValues(alpha: 0.4)
-                      : _C.textDark,
+                  ? _C.textHint.withValues(alpha: 0.4)
+                  : _C.textDark,
             ),
           ),
         ),
@@ -2692,155 +3439,160 @@ class _MealPlanPickerSheetState extends State<_MealPlanPickerSheet> {
         ),
         child: SingleChildScrollView(
           child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 4),
-              width: 50,
-              height: 5,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(20),
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 12, bottom: 4),
+                  width: 50,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
               ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 14, 8, 0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'add_to_meal_plan'.tr,
-                        style: _font(18, FontWeight.w800, _C.textDark),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        widget.recipe.title,
-                        style: _font(12, FontWeight.w500, _C.textMedium),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: const OnboardingLineIcon(
-                    'x',
-                    size: 20,
-                    color: _C.textMedium,
-                  ),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.only(left: 20, bottom: 10),
-            child: Text(
-              'select_date'.tr.toUpperCase(),
-              style: _font(11, FontWeight.w700, _C.textHint, ls: 0.8),
-            ),
-          ),
-          _calendar(_C.primary),
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.only(left: 20, bottom: 10),
-            child: Text(
-              'meal_type'.tr.toUpperCase(),
-              style: _font(11, FontWeight.w700, _C.textHint, ls: 0.8),
-            ),
-          ),
-          // Colored pill tabs — each meal type keeps its own colour; the
-          // selected one fills solid, the rest show a light tint. Only these
-          // tabs are coloured (the calendar + button stay the app primary).
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: Row(
-              children: _mealTypes.map((type) {
-                final sel = _selectedMealType == type;
-                final c = _mealColors[type]!;
-                return Expanded(
-                  child: GestureDetector(
-                    onTap: () => setState(() => _selectedMealType = type),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      padding: const EdgeInsets.symmetric(vertical: 11),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: sel ? c : c.withValues(alpha: 0.13),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        type,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: _font(
-                          12.5,
-                          sel ? FontWeight.w800 : FontWeight.w700,
-                          sel ? Colors.white : c,
-                        ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 14, 8, 0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'add_to_meal_plan'.tr,
+                            style: _font(18, FontWeight.w800, _C.textDark),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            widget.recipe.title,
+                            style: _font(12, FontWeight.w500, _C.textMedium),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: GestureDetector(
-              onTap: _isAdding ? null : _confirm,
-              child: Container(
-                width: double.infinity,
-                height: AppDimensions.buttonHeight,
-                decoration: BoxDecoration(
-                  color: _C.primary,
-                  borderRadius: BorderRadius.circular(
-                    AppDimensions.radiusButton,
-                  ),
-                ),
-                child: Center(
-                  child: _isAdding
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              _mealIcons[_selectedMealType] ?? Icons.restaurant,
-                              size: 18,
-                              color: Colors.white,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'add_to_meal'.trParams({
-                                'meal': _selectedMealType,
-                              }),
-                              style: _font(15, FontWeight.w700, Colors.white),
-                            ),
-                          ],
-                        ),
+                    IconButton(
+                      icon: const OnboardingLineIcon(
+                        'x',
+                        size: 20,
+                        color: _C.textMedium,
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
                 ),
               ),
-            ),
+              const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.only(left: 20, bottom: 10),
+                child: Text(
+                  'select_date'.tr.toUpperCase(),
+                  style: _font(11, FontWeight.w700, _C.textHint, ls: 0.8),
+                ),
+              ),
+              _calendar(_C.primary),
+              const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.only(left: 20, bottom: 10),
+                child: Text(
+                  'meal_type'.tr.toUpperCase(),
+                  style: _font(11, FontWeight.w700, _C.textHint, ls: 0.8),
+                ),
+              ),
+              // Colored pill tabs — each meal type keeps its own colour; the
+              // selected one fills solid, the rest show a light tint. Only these
+              // tabs are coloured (the calendar + button stay the app primary).
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: Row(
+                  children: _mealTypes.map((type) {
+                    final sel = _selectedMealType == type;
+                    final c = _mealColors[type]!;
+                    return Expanded(
+                      child: GestureDetector(
+                        onTap: () => setState(() => _selectedMealType = type),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          padding: const EdgeInsets.symmetric(vertical: 11),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: sel ? c : c.withValues(alpha: 0.13),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            type,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: _font(
+                              12.5,
+                              sel ? FontWeight.w800 : FontWeight.w700,
+                              sel ? Colors.white : c,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: GestureDetector(
+                  onTap: _isAdding ? null : _confirm,
+                  child: Container(
+                    width: double.infinity,
+                    height: AppDimensions.buttonHeight,
+                    decoration: BoxDecoration(
+                      color: _C.primary,
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusButton,
+                      ),
+                    ),
+                    child: Center(
+                      child: _isAdding
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  _mealIcons[_selectedMealType] ??
+                                      Icons.restaurant,
+                                  size: 18,
+                                  color: Colors.white,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'add_to_meal'.trParams({
+                                    'meal': _selectedMealType,
+                                  }),
+                                  style: _font(
+                                    15,
+                                    FontWeight.w700,
+                                    Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
         ),
       ),
     );
@@ -3375,9 +4127,7 @@ class _VisibilityConfirmDialog extends StatelessWidget {
     final title = makePublic
         ? 'make_recipe_public_q'.tr
         : 'make_recipe_private_q'.tr;
-    final body = makePublic
-        ? 'make_public_desc'.tr
-        : 'make_private_desc'.tr;
+    final body = makePublic ? 'make_public_desc'.tr : 'make_private_desc'.tr;
     final action = makePublic ? 'make_public'.tr : 'make_private'.tr;
 
     return Dialog(

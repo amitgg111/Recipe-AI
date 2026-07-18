@@ -440,8 +440,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (uid == null || recipeId == null || recipeId.isEmpty) return null;
     try {
       final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
           .collection('recipes')
           .doc(recipeId)
           .get();

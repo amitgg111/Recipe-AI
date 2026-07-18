@@ -67,10 +67,19 @@ class Mp {
     }
   }
 
-  static TextStyle f(double size, FontWeight w, Color c,
-          {double? h, double? ls}) =>
-      GoogleFonts.plusJakartaSans(
-          fontSize: size, fontWeight: w, color: c, height: h, letterSpacing: ls);
+  static TextStyle f(
+    double size,
+    FontWeight w,
+    Color c, {
+    double? h,
+    double? ls,
+  }) => GoogleFonts.plusJakartaSans(
+    fontSize: size,
+    fontWeight: w,
+    color: c,
+    height: h,
+    letterSpacing: ls,
+  );
 }
 
 /// Scale-on-tap wrapper for buttons/cards (1.0 → 0.97 → 1.0).
@@ -78,7 +87,12 @@ class TapScale extends StatefulWidget {
   final Widget child;
   final VoidCallback? onTap;
   final double scale;
-  const TapScale({super.key, required this.child, this.onTap, this.scale = 0.97});
+  const TapScale({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.scale = 0.97,
+  });
 
   @override
   State<TapScale> createState() => _TapScaleState();
@@ -321,8 +335,8 @@ class GoalOptionCard extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 44,
-              height: 44,
+              width: 40,
+              height: 40,
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: accent.withValues(alpha: 0.12),
@@ -337,8 +351,10 @@ class GoalOptionCard extends StatelessWidget {
                 children: [
                   Text(goal.title, style: Mp.f(15, FontWeight.w800, Mp.ink)),
                   const SizedBox(height: 2),
-                  Text(goal.subtitle,
-                      style: Mp.f(12.5, FontWeight.w500, Mp.muted)),
+                  Text(
+                    goal.subtitle,
+                    style: Mp.f(12.5, FontWeight.w500, Mp.muted),
+                  ),
                 ],
               ),
             ),
@@ -351,21 +367,21 @@ class GoalOptionCard extends StatelessWidget {
   }
 
   Widget _radio(bool on) => Container(
-        width: 24,
-        height: 24,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: on ? Mp.purple : Colors.transparent,
-          border: Border.all(
-            color: on ? Mp.purple : const Color(0xFFD8CFC0),
-            width: 1.6,
-          ),
-        ),
-        child: on
-            ? const Icon(Icons.check_rounded, size: 15, color: Colors.white)
-            : null,
-      );
+    width: 24,
+    height: 24,
+    alignment: Alignment.center,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      color: on ? Mp.purple : Colors.transparent,
+      border: Border.all(
+        color: on ? Mp.purple : const Color(0xFFD8CFC0),
+        width: 1.6,
+      ),
+    ),
+    child: on
+        ? const Icon(Icons.check_rounded, size: 15, color: Colors.white)
+        : null,
+  );
 }
 
 /// A single step row on the generating screen.
@@ -382,14 +398,10 @@ class GeneratingStepCard extends StatelessWidget {
       curve: Curves.easeOutCubic,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: active
-            ? const Color(0x33FFFFFF)
-            : const Color(0x14FFFFFF),
+        color: active ? const Color(0x33FFFFFF) : const Color(0x14FFFFFF),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: active
-              ? const Color(0x88B79CF6)
-              : Colors.transparent,
+          color: active ? const Color(0x88B79CF6) : Colors.transparent,
           width: 1.4,
         ),
       ),
@@ -446,7 +458,10 @@ class GeneratingStepCard extends StatelessWidget {
       height: 22,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.white.withValues(alpha: 0.25), width: 2),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.25),
+          width: 2,
+        ),
       ),
     );
   }
@@ -490,8 +505,11 @@ class MealRowTile extends StatelessWidget {
                     ? AppNetworkImage(meal.recipe.imageUrl!, fit: BoxFit.cover)
                     : Container(
                         color: Mp.bg,
-                        child: const Icon(Icons.restaurant_rounded,
-                            size: 18, color: Mp.muted),
+                        child: const Icon(
+                          Icons.restaurant_rounded,
+                          size: 18,
+                          color: Mp.muted,
+                        ),
                       ),
               ),
             ),
@@ -512,8 +530,11 @@ class MealRowTile extends StatelessWidget {
               behavior: HitTestBehavior.opaque,
               child: Padding(
                 padding: const EdgeInsets.all(4),
-                child: Icon(Icons.autorenew_rounded,
-                    size: 18, color: Mp.muted.withValues(alpha: 0.9)),
+                child: Icon(
+                  Icons.autorenew_rounded,
+                  size: 18,
+                  color: Mp.muted.withValues(alpha: 0.9),
+                ),
               ),
             ),
           ],

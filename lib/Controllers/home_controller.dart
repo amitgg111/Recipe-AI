@@ -40,7 +40,8 @@ class RecipeModel {
   /// stored on the recipe doc so it isn't recomputed every session.
   final Map<String, dynamic>? nutritionData;
 
-  /// "private" | "public" — canonical privacy field. [isPublic] mirrors it.
+  /// "private" | "public" — derived locally from the Firestore `isPublic` bool.
+  /// This is NOT stored in Firestore; only `isPublic` is persisted.
   final String visibility;
   final bool isDeleted;
 
@@ -48,7 +49,7 @@ class RecipeModel {
   /// Favorites list.
   final bool isFavorite;
 
-  /// False when the document had no `visibility` field yet (needs migration).
+  /// False when the document had no `isPublic` field yet (needs migration).
   final bool visibilityWasStored;
 
   /// Aggregate social like count (from the recipe's `likesCount` field).
@@ -102,8 +103,49 @@ class RecipeModel {
   bool get canBePublished => RecipePublishPolicy.canPublish(recipeSource);
 
   /// True when this is a private copy saved out of the Discover feed.
-  bool get isDiscoveredCopy =>
-      RecipePublishPolicy.isDiscovered(recipeSource);
+  bool get isDiscoveredCopy => RecipePublishPolicy.isDiscovered(recipeSource);
+
+  RecipeModel copyWith({
+    String? title,
+    String? description,
+    String? imageUrl,
+    String? servings,
+    List<String>? ingredients,
+    List<String>? instructions,
+    List<IngredientSection>? ingredientSections,
+    List<InstructionSection>? instructionSections,
+    String? note,
+    Map<String, dynamic>? nutritionData,
+  }) {
+    return RecipeModel(
+      id: id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      imageUrl: imageUrl ?? this.imageUrl,
+      sourceUrl: sourceUrl,
+      prepTime: prepTime,
+      cookTime: cookTime,
+      totalTime: totalTime,
+      servings: servings ?? this.servings,
+      category: category,
+      cuisine: cuisine,
+      keywords: keywords,
+      ingredients: ingredients ?? this.ingredients,
+      instructions: instructions ?? this.instructions,
+      ingredientSections: ingredientSections ?? this.ingredientSections,
+      instructionSections: instructionSections ?? this.instructionSections,
+      note: note ?? this.note,
+      nutritionData: nutritionData ?? this.nutritionData,
+      visibility: visibility,
+      isDeleted: isDeleted,
+      visibilityWasStored: visibilityWasStored,
+      likesCount: likesCount,
+      recipeSource: recipeSource,
+      originalRecipeId: originalRecipeId,
+      savedFromOwnerId: savedFromOwnerId,
+      isFavorite: isFavorite,
+    );
+  }
 
   factory RecipeModel.fromDocument(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>? ?? {};
@@ -128,18 +170,17 @@ class RecipeModel {
       instructionSections: parsed.instructionSections,
       note: data['note']?.toString(),
       nutritionData: (data['nutrition'] as Map?)?.cast<String, dynamic>(),
-      visibility:
-          (data['visibility'] as String?) ??
-          (data['isPublic'] == true ? 'public' : 'private'),
+      visibility: data['isPublic'] == true ? 'public' : 'private',
       isDeleted: data['isDeleted'] == true,
-      visibilityWasStored: data.containsKey('visibility'),
+      visibilityWasStored: data.containsKey('isPublic'),
       likesCount: (data['likesCount'] as num?)?.toInt() ?? 0,
       // Legacy Discover copies predate `recipeSource` but carry
       // `savedFromRecipeId`; resolveSource() infers 'discovered' for them so
       // they remain unpublishable even without a migration.
       recipeSource: RecipePublishPolicy.resolveSource(
         recipeSource: data['recipeSource'] as String?,
-        savedFromRecipeId: data['savedFromRecipeId'] ?? data['originalRecipeId'],
+        savedFromRecipeId:
+            data['savedFromRecipeId'] ?? data['originalRecipeId'],
       ),
       originalRecipeId:
           (data['originalRecipeId'] ?? data['savedFromRecipeId']) as String?,
@@ -222,13 +263,17 @@ class HomeController extends GetxController {
     _recipesSub?.cancel();
 
     _recipesSub = FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
         .collection('recipes')
-        .orderBy('createdAt', descending: true)
+        .where('ownerId', isEqualTo: uid) // માત્ર પોતાના recipes
+        // .orderBy('createdAt', descending: true)
         .snapshots()
         .listen(
           (snapshot) {
+            log("Docs: ${snapshot.docs.length}");
+
+            for (final doc in snapshot.docs) {
+              log(doc.data().toString());
+            }
             recipes.value = snapshot.docs
                 .map((doc) => RecipeModel.fromDocument(doc))
                 .where((r) => !r.isDeleted)
@@ -277,8 +322,6 @@ class HomeController extends GetxController {
 
       // Firestore document delete
       await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
           .collection('recipes')
           .doc(recipe.id)
           .delete();
@@ -312,9 +355,9 @@ class HomeController extends GetxController {
         );
         // Flip the Discover bookmark live (if the feed is loaded).
         if (Get.isRegistered<DiscoverController>()) {
-          Get.find<DiscoverController>()
-              .savedOriginalIds
-              .remove(recipe.originalRecipeId);
+          Get.find<DiscoverController>().savedOriginalIds.remove(
+            recipe.originalRecipeId,
+          );
         }
       }
 
@@ -342,15 +385,10 @@ class HomeController extends GetxController {
     try {
       final uid = AuthService.currentUser?.uid;
       if (uid == null) return;
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .collection('recipes')
-          .doc(recipeId)
-          .update({
-            'isFavorite': isFavorite,
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
+      FirebaseFirestore.instance.collection('recipes').doc(recipeId).update({
+        'isFavorite': isFavorite,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
     } catch (e) {
       log('toggleFavorite error: $e');
     }
@@ -362,12 +400,7 @@ class HomeController extends GetxController {
     try {
       final uid = AuthService.currentUser?.uid;
       if (uid == null) return;
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .collection('recipes')
-          .doc(recipeId)
-          .set({
+      await FirebaseFirestore.instance.collection('recipes').doc(recipeId).set({
         'note': note,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
@@ -378,18 +411,65 @@ class HomeController extends GetxController {
 
   /// Persist a computed nutrition estimate so it isn't recomputed every session.
   Future<void> setNutrition(
-      String recipeId, Map<String, dynamic> nutrition) async {
+    String recipeId,
+    Map<String, dynamic> nutrition,
+  ) async {
     try {
       final uid = AuthService.currentUser?.uid;
       if (uid == null) return;
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .collection('recipes')
-          .doc(recipeId)
-          .set({'nutrition': nutrition}, SetOptions(merge: true));
+      await FirebaseFirestore.instance.collection('recipes').doc(recipeId).set({
+        'nutrition': nutrition,
+      }, SetOptions(merge: true));
     } catch (e) {
       log('setNutrition error: $e');
+    }
+  }
+
+  /// Update a recipe's ingredients / instructions / servings (used by the AI
+  /// Cooking Assistant's swap & scale apply). Updates the in-memory list first
+  /// so the detail screen reflects it instantly, then persists to Firestore.
+  Future<void> updateRecipeContent(
+    String recipeId, {
+    List<String>? ingredients,
+    List<String>? instructions,
+    List<IngredientSection>? ingredientSections,
+    List<InstructionSection>? instructionSections,
+    String? servings,
+  }) async {
+    final idx = recipes.indexWhere((r) => r.id == recipeId);
+    if (idx != -1) {
+      recipes[idx] = recipes[idx].copyWith(
+        ingredients: ingredients,
+        instructions: instructions,
+        ingredientSections: ingredientSections,
+        instructionSections: instructionSections,
+        servings: servings,
+      );
+      recipes.refresh();
+    }
+    try {
+      final uid = AuthService.currentUser?.uid;
+      if (uid == null) return;
+      final data = <String, dynamic>{'updatedAt': FieldValue.serverTimestamp()};
+      if (ingredients != null) data['ingredients'] = ingredients;
+      if (instructions != null) data['instructions'] = instructions;
+      if (ingredientSections != null) {
+        data['ingredientSections'] = ingredientSections
+            .map((s) => s.toMap())
+            .toList();
+      }
+      if (instructionSections != null) {
+        data['instructionSections'] = instructionSections
+            .map((s) => s.toMap())
+            .toList();
+      }
+      if (servings != null) data['servings'] = servings;
+      await FirebaseFirestore.instance
+          .collection('recipes')
+          .doc(recipeId)
+          .set(data, SetOptions(merge: true));
+    } catch (e) {
+      log('updateRecipeContent error: $e');
     }
   }
 
@@ -416,12 +496,9 @@ class HomeController extends GetxController {
       }
 
       await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
           .collection('recipes')
           .doc(recipeId)
           .update({
-            'visibility': isPublic ? 'public' : 'private',
             'isPublic': isPublic,
             'updatedAt': FieldValue.serverTimestamp(),
           });
@@ -437,12 +514,9 @@ class HomeController extends GetxController {
       final uid = AuthService.currentUser?.uid;
       if (uid == null) return;
       await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
           .collection('recipes')
           .doc(recipeId)
           .update({
-            'visibility': visibility,
             'isPublic': visibility == 'public',
           });
     } catch (_) {

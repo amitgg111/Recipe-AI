@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 
 import 'package:recipe_ai/Service/subscription_service.dart';
+import 'package:recipe_ai/Service/revenuecat_service.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:recipe_ai/widgets/app_logo.dart';
 
@@ -32,6 +34,54 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
   /// the plan the reference mock shows selected).
   bool _monthly = false;
 
+  final _rc = RevenueCatService.instance;
+  bool _busy = false;
+
+  // ── Store-sourced plan data (price + name come from RevenueCat) ──────────────
+  Package? get _monthlyPkg => _rc.monthly;
+  Package? get _yearlyPkg => _rc.yearly;
+
+  String get _monthlyPrice => _monthlyPkg?.storeProduct.priceString ?? '₹199';
+  String get _yearlyPrice => _yearlyPkg?.storeProduct.priceString ?? '₹1,700';
+
+  String get _monthlyName =>
+      _cleanTitle(_monthlyPkg?.storeProduct.title) ?? 'Monthly';
+  String get _yearlyName =>
+      _cleanTitle(_yearlyPkg?.storeProduct.title) ?? 'Yearly';
+
+  /// Store titles often read "Monthly (Recipe AI)" — drop the app-name suffix.
+  String? _cleanTitle(String? t) {
+    if (t == null || t.trim().isEmpty) return null;
+    return t.split('(').first.trim();
+  }
+
+  /// Per-month equivalent for the yearly card, in the store's own currency.
+  String get _yearlyPerMonth {
+    final p = _yearlyPkg?.storeProduct;
+    if (p == null) return '₹142 / month';
+    final perMonth = (p.price / 12).round();
+    final symbol =
+        (RegExp(r'^[^0-9]*').firstMatch(p.priceString)?.group(0) ?? '').trim();
+    return symbol.isNotEmpty ? '$symbol$perMonth / month' : '$perMonth / month';
+  }
+
+  /// Whether the selected plan carries an introductory (e.g. free-trial) offer.
+  bool get _selectedHasTrial =>
+      (_monthly ? _monthlyPkg : _yearlyPkg)?.storeProduct.introductoryPrice !=
+      null;
+
+  bool get _yearlyHasTrial =>
+      _yearlyPkg == null ||
+      _yearlyPkg!.storeProduct.introductoryPrice != null;
+
+  @override
+  void initState() {
+    super.initState();
+    // (existing animation controllers set up below)
+    _rc.fetchOfferings();
+    _initAnimations();
+  }
+
   // ── Palette (straight from the design) ──────────────────────────────────────
   static const _bg = Color(0xFFFBF4EA);
   static const _ink = Color(0xFF2A211B);
@@ -47,9 +97,7 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
   late final AnimationController _floatS1; // floatUp 3.0s
   late final AnimationController _floatS2; // floatUp 3.6s
 
-  @override
-  void initState() {
-    super.initState();
+  void _initAnimations() {
     // repeat(reverse:true) → half the CSS cycle so a full round-trip matches.
     _glow = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 1300))
@@ -89,7 +137,68 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
       );
 
   Future<void> _subscribe() async {
-    await SubscriptionService.instance.setPlus(true);
+    if (_busy) return;
+    final pkg = _monthly ? _monthlyPkg : _yearlyPkg;
+
+    // No package yet → RevenueCat isn't configured (keys not set) or offerings
+    // haven't loaded. Keep the dev unlock so the app is usable before store
+    // setup is finished.
+    if (pkg == null) {
+      await SubscriptionService.instance.setPlus(true);
+      _onPlusActivated();
+      return;
+    }
+
+    setState(() => _busy = true);
+    try {
+      final ok = await _rc.purchase(pkg);
+      if (!mounted) return;
+      if (ok) {
+        _onPlusActivated();
+      }
+      // ok == false → user cancelled; leave the paywall open silently.
+    } catch (_) {
+      if (mounted) {
+        CustomSnackbar.show(
+          title: 'Purchase failed',
+          message: 'Something went wrong. Please try again.',
+          type: SnackbarType.error,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _restore() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final ok = await _rc.restore();
+      if (!mounted) return;
+      if (ok) {
+        _onPlusActivated();
+      } else {
+        CustomSnackbar.show(
+          title: 'Nothing to restore',
+          message: 'No active subscription was found for this account.',
+          type: SnackbarType.info,
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        CustomSnackbar.show(
+          title: 'Restore failed',
+          message: 'Could not restore purchases. Please try again.',
+          type: SnackbarType.error,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  void _onPlusActivated() {
     if (mounted) Navigator.of(context).pop();
     CustomSnackbar.show(
       title: 'welcome_to_plus'.tr,
@@ -211,7 +320,11 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
                     // The cards stretch to a shared height so their bottoms
                     // line up; the SAVE badge is overlaid, centred over the
                     // Yearly (right) card, so it never affects card layout.
-                    Stack(
+                    Obx(() {
+                      // Depend on the offering so prices/names refresh once the
+                      // store data loads. (offering is read via _rc.monthly.)
+                      _rc.offering.value;
+                      return Stack(
                       clipBehavior: Clip.none,
                       children: [
                         // IntrinsicHeight gives the stretch Row a concrete
@@ -225,8 +338,8 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
                               Expanded(
                                 child: PricingCard(
                                   selected: _monthly,
-                                  title: 'Monthly',
-                                  price: '₹199',
+                                  title: _monthlyName,
+                                  price: _monthlyPrice,
                                   note: 'per month',
                                   highlightNoteWhenSelected: false,
                                   onTap: () => setState(() => _monthly = true),
@@ -236,9 +349,9 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
                               Expanded(
                                 child: PricingCard(
                                   selected: !_monthly,
-                                  title: 'Yearly',
-                                  price: '₹1,700',
-                                  note: '₹142 / month',
+                                  title: _yearlyName,
+                                  price: _yearlyPrice,
+                                  note: _yearlyPerMonth,
                                   highlightNoteWhenSelected: true,
                                   onTap: () => setState(() => _monthly = false),
                                 ),
@@ -265,10 +378,11 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
                           ),
                         ),
                       ],
-                    ),
+                    );
+                    }),
 
                     // ── yellow trial banner (only when Monthly is selected) ──
-                    if (_monthly) ...[
+                    if (_monthly && _yearlyHasTrial) ...[
                       const SizedBox(height: 14),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -303,33 +417,48 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
                     const SizedBox(height: 20),
 
                     // ── CTA ──
-                    PrimaryGradientButton(
-                      label: _monthly
-                          ? 'Subscribe · ₹199/month'
-                          : 'Start 7-day free trial',
-                      onTap: _subscribe,
-                    ),
+                    Obx(() {
+                      _rc.offering.value; // rebuild when store prices load
+                      final price = _monthly ? _monthlyPrice : _yearlyPrice;
+                      final period = _monthly ? 'month' : 'year';
+                      final label = _busy
+                          ? 'Please wait…'
+                          : _selectedHasTrial
+                              ? 'Start free trial'
+                              : 'Subscribe · $price/$period';
+                      return PrimaryGradientButton(
+                        label: label,
+                        onTap: _busy ? () {} : _subscribe,
+                      );
+                    }),
                     const SizedBox(height: 12),
 
                     // ── caption ──
-                    Text(
-                      _monthly
-                          ? 'Billed monthly · cancel anytime'
-                          : 'Then ₹1,700/year · cancel anytime',
-                      textAlign: TextAlign.center,
-                      style: _font(
-                        size: 12,
-                        weight: FontWeight.w600,
-                        color: const Color(0xFFA8A092),
-                      ),
-                    ),
+                    Obx(() {
+                      _rc.offering.value;
+                      return Text(
+                        _monthly
+                            ? 'Billed monthly · cancel anytime'
+                            : 'Billed $_yearlyPrice/year · cancel anytime',
+                        textAlign: TextAlign.center,
+                        style: _font(
+                          size: 12,
+                          weight: FontWeight.w600,
+                          color: const Color(0xFFA8A092),
+                        ),
+                      );
+                    }),
                     const SizedBox(height: 14),
 
                     // ── footer links ──
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        _footerLink('Restore'),
+                        GestureDetector(
+                          onTap: _restore,
+                          behavior: HitTestBehavior.opaque,
+                          child: _footerLink('Restore'),
+                        ),
                         _dot(),
                         _footerLink('Terms'),
                         _dot(),

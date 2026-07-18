@@ -10,6 +10,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/Controllers/onboarding_controller.dart';
+import 'package:recipe_ai/Service/subscription_service.dart';
 import 'package:recipe_ai/utils/auth_error_mapper.dart';
 
 /// Outcome of an Apple Sign In attempt.
@@ -103,6 +104,7 @@ class AuthService {
       "email": trimmedEmail,
       "photoUrl": "",
       "provider": "email",
+      "freeCredits": SubscriptionService.kInitialFreeCredits,
       "createdAt": FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
@@ -133,44 +135,6 @@ class AuthService {
   // Google Sign In
   // ====================================================
 
-  // static Future<UserCredential?> signInWithGoogle() async {
-  //   final GoogleSignIn googleSignIn = GoogleSignIn();
-
-  //   await googleSignIn.signOut();
-
-  //   final GoogleSignInAccount? account = await googleSignIn.signIn();
-
-  //   if (account == null) return null;
-
-  //   final GoogleSignInAuthentication auth = await account.authentication;
-
-  //   final credential = GoogleAuthProvider.credential(
-  //     accessToken: auth.accessToken,
-  //     idToken: auth.idToken,
-  //   );
-
-  //   final userCredential = await _auth.signInWithCredential(credential);
-
-  //   final user = userCredential.user!;
-
-  //   final doc = _firestore.collection("users").doc(user.uid);
-
-  //   // ALWAYS sync latest Google data
-  //   await doc.set({
-  //     "uid": user.uid,
-  //     "name": user.displayName ?? "",
-  //     "email": user.email ?? "",
-  //     "photoUrl": user.photoURL ?? "",
-  //     "provider": "google",
-  //     "updatedAt": FieldValue.serverTimestamp(),
-  //   }, SetOptions(merge: true));
-
-  //   // IMPORTANT: force refresh FirebaseAuth user
-  //   await user.reload();
-
-  //   return userCredential;
-  // }
-
   static Future<UserCredential?> signInWithGoogle() async {
     final GoogleSignIn googleSignIn = GoogleSignIn(
       scopes: ['email', 'profile'], // IMPORTANT
@@ -200,15 +164,32 @@ class AuthService {
     final photo = freshUser?.photoURL ?? account.photoUrl ?? "";
 
     final doc = _firestore.collection("users").doc(user.uid);
+    final snapshot = await doc.get();
 
-    await doc.set({
-      "uid": user.uid,
-      "name": user.displayName ?? account.displayName ?? "",
-      "email": user.email ?? account.email,
-      "photoUrl": photo,
-      "provider": "google",
-      "updatedAt": FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    if (!snapshot.exists) {
+      // First-time Google user
+      await doc.set({
+        "uid": user.uid,
+        "name": user.displayName ?? account.displayName ?? "",
+        "email": user.email ?? account.email,
+        "photoUrl": photo,
+        "provider": "google",
+        "freeCredits": SubscriptionService.kInitialFreeCredits,
+        "createdAt": FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      
+      if (Get.isRegistered<OnboardingController>()) {
+        await OnboardingController.to.syncToFirebase(user.uid);
+      }
+    } else {
+      // Returning user -> update fields without clobbering freeCredits
+      await doc.set({
+        "name": user.displayName ?? account.displayName ?? "",
+        "email": user.email ?? account.email,
+        "photoUrl": photo,
+        "updatedAt": FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    }
 
     return userCredential;
   }
@@ -347,6 +328,7 @@ class AuthService {
         'email': appleEmail ?? user.email ?? '',
         'photoUrl': user.photoURL ?? '',
         'provider': 'apple',
+        'freeCredits': SubscriptionService.kInitialFreeCredits,
         'createdAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
       if (Get.isRegistered<OnboardingController>()) {
@@ -428,10 +410,6 @@ class AuthService {
   // Logout
   // ====================================================
 
-  // static Future<void> logout() async {
-  //   await GoogleSignIn().signOut();
-  //   await _auth.signOut();
-  // }
   static Future<void> logout() async {
     // Google disconnect/sign-out throws when the current session isn't a
     // Google one (email / Apple sign-in). Guard it so it can NEVER block the

@@ -1,127 +1,16 @@
 rules_version = '2';
-
+ 
 service cloud.firestore {
+
   match /databases/{database}/documents {
 
-    // ── Users ────────────────────────────────────────────────────────────────
-    // Basic profile info (name, photoUrl) is readable by any signed-in user so
-    // Discover can attribute public recipes to their author. Only the owner may
-    // modify their own user document.
-    match /users/{userId} {
-      allow read: if request.auth != null;
-      allow create, delete:
-          if request.auth != null && request.auth.uid == userId;
-      // The owner may fully update their doc. Any signed-in user may update
-      // ONLY the follow counters (so following someone bumps their count).
-      allow update: if request.auth != null && (
-          request.auth.uid == userId ||
-          request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['followersCount', 'followingCount', 'updatedAt'])
-      );
+    match /{document=**} {
 
-      // ── Followers / Following ──────────────────────────────────────────────
-      // A follower owns their entry in someone else's followers list; the owner
-      // owns their own following list. Both are readable by any signed-in user.
-      match /followers/{followerUid} {
-        allow read: if request.auth != null;
-        allow write: if request.auth != null && request.auth.uid == followerUid;
-      }
-      match /following/{followedUid} {
-        allow read: if request.auth != null;
-        allow write: if request.auth != null && request.auth.uid == userId;
-      }
+      allow read, write;
 
-      // ── Recipes ────────────────────────────────────────────────────────────
-      // Public recipes are world-readable (for Discover). Private recipes are
-      // readable only by their owner. Only the owner may create / delete or
-      // edit content. Any signed-in user may update ONLY the social counters
-      // (like / comment / save / share / view) on a public recipe.
-      match /recipes/{recipeId} {
-        // Backend publish guard: a recipe saved from Discover
-        // (recipeSource == 'discovered') may NEVER be public. This mirrors
-        // RecipePublishPolicy on the client and blocks any attempt to publish
-        // a Discover copy even if the UI is bypassed or the API is called
-        // directly. Uses get(key, default) so pre-existing docs without the
-        // field are handled safely.
-        function isPublishingDiscovered() {
-          return (request.resource.data.get('visibility', '') == 'public' ||
-                  request.resource.data.get('isPublic', false) == true) &&
-                 request.resource.data.get('recipeSource', '') == 'discovered';
-        }
-
-        allow read: if request.auth != null &&
-            (request.auth.uid == userId ||
-             resource.data.visibility == 'public');
-        allow create: if request.auth != null && request.auth.uid == userId &&
-            !isPublishingDiscovered();
-        allow delete: if request.auth != null && request.auth.uid == userId;
-        allow update: if request.auth != null && (
-            (request.auth.uid == userId && !isPublishingDiscovered()) ||
-            request.resource.data.diff(resource.data).affectedKeys()
-              .hasOnly(['likesCount', 'commentsCount', 'savesCount',
-                        'sharesCount', 'viewsCount', 'ratingSum',
-                        'ratingCount', 'updatedAt'])
-        );
-
-        // A user manages only their own like / save doc (docId == their uid).
-        match /likes/{likerUid} {
-          allow read: if request.auth != null;
-          allow write: if request.auth != null && request.auth.uid == likerUid;
-        }
-        match /saves/{saverUid} {
-          allow read: if request.auth != null;
-          allow write: if request.auth != null && request.auth.uid == saverUid;
-        }
-        match /ratings/{raterUid} {
-          allow read: if request.auth != null;
-          allow write: if request.auth != null && request.auth.uid == raterUid;
-        }
-        // Anyone signed-in can read comments; author owns their own comment.
-        match /comments/{commentId} {
-          allow read: if request.auth != null;
-          allow create: if request.auth != null &&
-              request.resource.data.userId == request.auth.uid;
-          allow delete: if request.auth != null &&
-              resource.data.userId == request.auth.uid;
-        }
-      }
-
-      // ── Everything else the user owns (cookbooks, meal plan, groceries…) ─────
-      // Owner-only for all other sub-collections.
-      match /{collection}/{docId} {
-        allow read, write:
-            if request.auth != null && request.auth.uid == userId;
-      }
     }
 
-    // ── Notifications (in-app social feed) ────────────────────────────────────
-    // Top-level collection; each doc targets one receiver. A user may read ONLY
-    // their own notifications and may mark ONLY their own as read (isRead is the
-    // sole field they can change). Notifications are created exclusively by
-    // trusted backend Cloud Functions (admin SDK bypasses these rules), so
-    // clients can never forge one. A user may delete their own (to clear it).
-    match /notifications/{notificationId} {
-      allow read: if request.auth != null &&
-          resource.data.receiverUserId == request.auth.uid;
-      allow create: if false;
-      allow update: if request.auth != null &&
-          resource.data.receiverUserId == request.auth.uid &&
-          request.resource.data.receiverUserId == resource.data.receiverUserId &&
-          request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['isRead']);
-      allow delete: if request.auth != null &&
-          resource.data.receiverUserId == request.auth.uid;
-    }
-
-    // ── Usernames (unique handle reservations) ────────────────────────────────
-    // usernames/{username} → { uid }. A user may claim a free handle and release
-    // one they own. Everyone signed-in can read (to check availability).
-    match /usernames/{username} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null &&
-          request.resource.data.uid == request.auth.uid;
-      allow update, delete: if request.auth != null &&
-          resource.data.uid == request.auth.uid;
-    }
   }
+
 }
+ 

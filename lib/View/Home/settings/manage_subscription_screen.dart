@@ -1,32 +1,75 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:recipe_ai/Service/subscription_service.dart';
+import 'package:recipe_ai/Service/revenuecat_service.dart';
 import 'package:recipe_ai/View/Home/settings/settings_common.dart';
-import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 
-/// "Manage subscription" — the Plus plan detail screen reached from the
-/// membership card's "Manage plan" link. Shows the active plan, billing details
-/// and a cancel action. No billing SDK yet, so the dates/method are the design
-/// placeholders and Cancel just flips the local plan back to Free.
+/// "Manage subscription" — the Plus plan detail screen. Shows the active plan
+/// and billing details fetched from RevenueCat.
 class ManageSubscriptionScreen extends StatelessWidget {
   const ManageSubscriptionScreen({super.key});
-
-  // Design placeholders (shared with the membership card).
-  static const String renewDate = '12 Jul 2026';
-  static const String priceYr = '₹1,700/yr';
-  static const String payment = 'UPI · ···· 8821';
 
   static const _purple = Color(0xFF7C3AED);
   static const _purple2 = Color(0xFF9333EA);
   static const _danger = Color(0xFFE0481F);
 
-  // "Cancel subscription" opens a confirmation sheet first; only "Cancel
-  // anyway" inside it actually flips the plan back to Free.
+  static String get renewDate {
+    final active = RevenueCatService.instance.activeEntitlement;
+    final isoDate = active?.expirationDate;
+    if (isoDate == null) return 'N/A';
+    try {
+      final date = DateTime.parse(isoDate).toLocal();
+      final months = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      ];
+      return '${date.day} ${months[date.month - 1]} ${date.year}';
+    } catch (_) {
+      return 'N/A';
+    }
+  }
+
+  String get _priceString {
+    final activeId = RevenueCatService.instance.activeEntitlement?.productIdentifier;
+    final service = RevenueCatService.instance;
+    if (activeId != null) {
+      if (service.yearly?.storeProduct.identifier == activeId) {
+        return service.yearly?.storeProduct.priceString ?? '₹1,700/yr';
+      }
+      if (service.monthly?.storeProduct.identifier == activeId) {
+        return service.monthly?.storeProduct.priceString ?? '₹200/mo';
+      }
+    }
+    return '₹1,700/yr';
+  }
+
+  String get _planName {
+    final activeId = RevenueCatService.instance.activeEntitlement?.productIdentifier;
+    final service = RevenueCatService.instance;
+    if (activeId != null) {
+      if (service.monthly?.storeProduct.identifier == activeId) {
+        // Fallback to English if translation is missing
+        return 'monthly_plan'.tr == 'monthly_plan' ? 'Monthly Plan' : 'monthly_plan'.tr;
+      }
+    }
+    return 'yearly_plan'.tr;
+  }
+
+  String get _paymentMethod {
+    if (Platform.isIOS) {
+      return 'App Store';
+    } else if (Platform.isAndroid) {
+      return 'Google Play';
+    }
+    return 'Store';
+  }
+
   void _confirmCancel() {
     Get.bottomSheet(
-      const _CancelSheet(),
+      _CancelSheet(renewDate: renewDate),
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
     );
@@ -37,55 +80,59 @@ class ManageSubscriptionScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(18, 4, 18, 28),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SettingsUi.header('manage_subscription'.tr),
-              const SizedBox(height: 18),
-              _planCard(),
-              SettingsUi.label('section_billing'.tr),
-              SettingsUi.card(
-                rows: [
-                  SettingsUi.row(
-                    leadingIcon: const OnboardingLineIcon(
-                      'cal',
-                      color: SettingsUi.rowIcon,
-                      size: 20,
+        child: Obx(() {
+          final renewDateStr = renewDate;
+          
+          return SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(18, 4, 18, 28),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SettingsUi.header('manage_subscription'.tr),
+                const SizedBox(height: 18),
+                _planCard(renewDateStr),
+                SettingsUi.label('section_billing'.tr),
+                SettingsUi.card(
+                  rows: [
+                    SettingsUi.row(
+                      leadingIcon: const OnboardingLineIcon(
+                        'cal',
+                        color: SettingsUi.rowIcon,
+                        size: 20,
+                      ),
+                      label: 'next_billing_date'.tr,
+                      showChevron: false,
+                      trailing: _value(renewDateStr),
                     ),
-                    label: 'next_billing_date'.tr,
-                    showChevron: false,
-                    trailing: _value(renewDate),
-                  ),
-                  SettingsUi.row(
-                    leadingIcon: const OnboardingLineIcon(
-                      'file',
-                      color: SettingsUi.rowIcon,
-                      size: 20,
+                    SettingsUi.row(
+                      leadingIcon: const OnboardingLineIcon(
+                        'file',
+                        color: SettingsUi.rowIcon,
+                        size: 20,
+                      ),
+                      label: 'payment_method'.tr,
+                      showChevron: false,
+                      trailing: _value(_paymentMethod),
                     ),
-                    label: 'payment_method'.tr,
-                    showChevron: false,
-                    trailing: _value(payment),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 22),
-              _cancelButton(),
-              const SizedBox(height: 12),
-              Text(
-                'keep_plus_until'.trParams({'date': renewDate}),
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 12,
-                  height: 1.5,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textMedium,
+                  ],
                 ),
-              ),
-            ],
-          ),
-        ),
+                const SizedBox(height: 22),
+                _cancelButton(),
+                const SizedBox(height: 12),
+                Text(
+                  'keep_plus_until'.trParams({'date': renewDateStr}),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    height: 1.5,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textMedium,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
       ),
     );
   }
@@ -99,7 +146,7 @@ class ManageSubscriptionScreen extends StatelessWidget {
         ),
       );
 
-  Widget _planCard() {
+  Widget _planCard(String renewDateStr) {
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -138,11 +185,11 @@ class ManageSubscriptionScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 13),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      const Text(
                         'Recipe AI Plus',
                         style: TextStyle(
                           fontSize: 16,
@@ -150,8 +197,8 @@ class ManageSubscriptionScreen extends StatelessWidget {
                           color: Colors.white,
                         ),
                       ),
-                      SizedBox(height: 2),
-                      _PlanSub(),
+                      const SizedBox(height: 2),
+                      _PlanSub(planName: _planName),
                     ],
                   ),
                 ),
@@ -172,7 +219,7 @@ class ManageSubscriptionScreen extends StatelessWidget {
             child: Row(
               children: [
                 Text(
-                  'renews_date'.trParams({'date': renewDate}),
+                  'renews_date'.trParams({'date': renewDateStr}),
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -180,9 +227,9 @@ class ManageSubscriptionScreen extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                const Text(
-                  priceYr,
-                  style: TextStyle(
+                Text(
+                  _priceString,
+                  style: const TextStyle(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w800,
                     color: Colors.white,
@@ -239,11 +286,13 @@ class ManageSubscriptionScreen extends StatelessWidget {
 }
 
 class _PlanSub extends StatelessWidget {
-  const _PlanSub();
+  final String planName;
+  const _PlanSub({required this.planName});
+  
   @override
   Widget build(BuildContext context) {
     return Text(
-      'yearly_plan'.tr,
+      planName,
       style: const TextStyle(
         fontSize: 12.5,
         fontWeight: FontWeight.w600,
@@ -254,10 +303,10 @@ class _PlanSub extends StatelessWidget {
 }
 
 /// Confirmation sheet shown before cancelling. "Keep my Plus" dismisses it;
-/// "Cancel anyway" flips the plan back to Free and returns to the previous
-/// screen with a snackbar.
+/// "Cancel anyway" opens the native subscription management page.
 class _CancelSheet extends StatelessWidget {
-  const _CancelSheet();
+  final String renewDate;
+  const _CancelSheet({required this.renewDate});
 
   static const _purple = Color(0xFF7C3AED);
   static const _purple2 = Color(0xFF9333EA);
@@ -265,14 +314,8 @@ class _CancelSheet extends StatelessWidget {
 
   void _cancelAnyway() {
     Get.back(); // close the sheet
-    SubscriptionService.instance.setPlus(false);
-    Get.back(); // leave the manage screen
-    CustomSnackbar.show(
-      title: 'subscription_cancelled'.tr,
-      message: 'keep_plus_until'
-          .trParams({'date': ManageSubscriptionScreen.renewDate}),
-      type: SnackbarType.success,
-    );
+    // Open native subscription management (App Store / Play Store)
+    RevenueCatService.instance.showManageSubscriptions();
   }
 
   @override
@@ -357,18 +400,15 @@ class _CancelSheet extends StatelessWidget {
     );
   }
 
-  // "You'll keep Plus until <date>, then lose these:" with the date in bold.
   Widget _subtitle() {
-    final full = 'keep_until_lose'
-        .trParams({'date': ManageSubscriptionScreen.renewDate});
-    const date = ManageSubscriptionScreen.renewDate;
+    final full = 'keep_until_lose'.trParams({'date': renewDate});
     const base = TextStyle(
       fontSize: 13,
       height: 1.45,
       fontWeight: FontWeight.w500,
       color: AppColors.textMedium,
     );
-    final idx = full.indexOf(date);
+    final idx = full.indexOf(renewDate);
     if (idx < 0) {
       return Text(full, textAlign: TextAlign.center, style: base);
     }
@@ -378,13 +418,13 @@ class _CancelSheet extends StatelessWidget {
         children: [
           TextSpan(text: full.substring(0, idx)),
           TextSpan(
-            text: date,
+            text: renewDate,
             style: const TextStyle(
               fontWeight: FontWeight.w800,
               color: AppColors.textDark,
             ),
           ),
-          TextSpan(text: full.substring(idx + date.length)),
+          TextSpan(text: full.substring(idx + renewDate.length)),
         ],
       ),
       textAlign: TextAlign.center,

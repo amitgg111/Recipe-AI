@@ -230,9 +230,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     return Obx(() {
       final sub = SubscriptionService.instance;
       final plus = sub.isPlusListenable.value;
-      final remaining = (SubscriptionService.kFreeImportLimit -
-              sub.importCountListenable.value)
-          .clamp(0, SubscriptionService.kFreeImportLimit);
+      final remaining = sub.freeCreditsListenable.value;
       return GestureDetector(
         onTap: () => Get.to(() => const UpgradePlusScreen()),
         behavior: HitTestBehavior.opaque,
@@ -254,7 +252,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
               Text(
                 plus
                     ? 'PLUS'
-                    : '$remaining/${SubscriptionService.kFreeImportLimit}',
+                    : '$remaining/${SubscriptionService.kInitialFreeCredits}',
                 style: _f(
                   13,
                   FontWeight.w700,
@@ -476,15 +474,19 @@ class _RecipeCardState extends State<_RecipeCard> {
     }
   }
 
-  // Save → copy the recipe into my collection, then open the multi-select
-  // "add to cookbook" sheet so the user can file it into one or more cookbooks.
+  // Save → open the multi-select "add to cookbook" sheet. The recipe only
+  // counts as saved when the user actually files it into a cookbook via the
+  // sheet's Done button. A copy is created up-front so the picker has something
+  // to file, but if the user dismisses the sheet (or taps Done without picking
+  // a cookbook) the copy is rolled back out — nothing is left in My Recipes.
   Future<void> _openSaveSheet() async {
     if (_busySave) return;
     _busySave = true;
     try {
       final copyId = await RecipeSocialService.saveCopyToMyRecipes(recipe);
       if (copyId == null || !mounted) return;
-      await showModalBottomSheet<int>(
+
+      final result = await showModalBottomSheet<int>(
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
@@ -494,8 +496,24 @@ class _RecipeCardState extends State<_RecipeCard> {
           recipeImageUrl: recipe.imageUrl,
         ),
       );
-      // Copy now lives in My Recipes → mark as saved (shared set drives every
-      // bookmark for this recipe).
+
+      // Saved only if the user tapped Done with at least one cookbook selected
+      // (the sheet pops the selected-cookbook count; a dismiss returns null).
+      final confirmed = result != null && result > 0;
+      if (!confirmed) {
+        // Roll the copy back out so the discover-save "counts" only on Done.
+        final deletedIds = await RecipeSocialService.removeSavedCopy(recipe);
+        if (deletedIds.isNotEmpty && Get.isRegistered<CookbookController>()) {
+          final cookbooks = Get.find<CookbookController>();
+          for (final id in deletedIds) {
+            await cookbooks.removeRecipeFromAllCookbooks(id);
+          }
+        }
+        return;
+      }
+
+      // Filed into a cookbook → mark as saved (shared set drives every bookmark
+      // for this recipe).
       if (mounted && !_saved) {
         _disc.savedOriginalIds.add(recipe.id);
         setState(() => _saves += 1);

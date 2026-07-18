@@ -30,7 +30,11 @@ class CreatorProfileScreen extends StatelessWidget {
 
   TextStyle _f(double s, FontWeight w, Color c, {double? sp}) =>
       GoogleFonts.plusJakartaSans(
-          fontSize: s, fontWeight: w, color: c, letterSpacing: sp);
+        fontSize: s,
+        fontWeight: w,
+        color: c,
+        letterSpacing: sp,
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -40,11 +44,11 @@ class CreatorProfileScreen extends StatelessWidget {
         child: StreamBuilder<UserModel?>(
           stream: UserService.userStream(userId),
           builder: (context, snap) {
-            final user = snap.data ??
+            final user =
+                snap.data ??
                 UserModel(
                   uid: userId,
-                  name: fallbackName ?? '',
-                  username: '',
+
                   bio: '',
                   photoUrl: fallbackAvatar ?? '',
                   email: '',
@@ -70,8 +74,7 @@ class CreatorProfileScreen extends StatelessWidget {
                     const SizedBox(height: 18),
                     _statsCard(context, user, recipes.length),
                     const SizedBox(height: 14),
-                    if (!_isSelf)
-                      FollowButton(targetUid: userId, expand: true),
+                    if (!_isSelf) FollowButton(targetUid: userId, expand: true),
                     if (!_isSelf) const SizedBox(height: 4),
                     _recipesSection(recipes),
                   ],
@@ -99,12 +102,18 @@ class CreatorProfileScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(13),
                 border: Border.all(color: const Color(0xFFEFEDE6)),
               ),
-              child: const OnboardingLineIcon('back',
-                  size: 20, color: AppColors.textDark),
+              child: const OnboardingLineIcon(
+                'back',
+                size: 20,
+                color: AppColors.textDark,
+              ),
             ),
           ),
           const Spacer(),
-          Text('profile'.tr, style: _f(17, FontWeight.w700, AppColors.textDark)),
+          Text(
+            'profile'.tr,
+            style: _f(17, FontWeight.w700, AppColors.textDark),
+          ),
           const Spacer(),
           const SizedBox(width: 40),
         ],
@@ -134,18 +143,21 @@ class CreatorProfileScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        Text(user.displayName,
-            style: _f(21, FontWeight.w800, AppColors.textDark, sp: -0.3)),
-        const SizedBox(height: 3),
-        Text('@${user.handle}',
-            style: _f(13.5, FontWeight.w600, AppColors.textMedium)),
+        Text(
+          user.displayName,
+          style: _f(21, FontWeight.w800, AppColors.textDark, sp: -0.3),
+        ),
+
         if (user.bio.isNotEmpty) ...[
           const SizedBox(height: 8),
           Text(
             user.bio,
             textAlign: TextAlign.center,
-            style: _f(13.5, FontWeight.w500, AppColors.textBodyDark)
-                .copyWith(height: 1.45),
+            style: _f(
+              13.5,
+              FontWeight.w500,
+              AppColors.textBodyDark,
+            ).copyWith(height: 1.45),
           ),
         ],
       ],
@@ -167,21 +179,25 @@ class CreatorProfileScreen extends StatelessWidget {
           _stat(
             _fmt(user.followersCount),
             'followers'.tr,
-            () => Get.to(() => FollowListScreen(
-                  userId: userId,
-                  title: user.displayName,
-                  showFollowers: true,
-                )),
+            () => Get.to(
+              () => FollowListScreen(
+                userId: userId,
+                title: user.displayName,
+                showFollowers: true,
+              ),
+            ),
           ),
           _divider(),
           _stat(
             _fmt(user.followingCount),
             'following'.tr,
-            () => Get.to(() => FollowListScreen(
-                  userId: userId,
-                  title: user.displayName,
-                  showFollowers: false,
-                )),
+            () => Get.to(
+              () => FollowListScreen(
+                userId: userId,
+                title: user.displayName,
+                showFollowers: false,
+              ),
+            ),
           ),
         ],
       ),
@@ -214,9 +230,9 @@ class CreatorProfileScreen extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(4, 22, 4, 11),
           child: Text(
-              'public_recipes_count'
-                  .trParams({'count': '${recipes.length}'}),
-              style: _f(12, FontWeight.w800, AppColors.textHint, sp: 0.72)),
+            'public_recipes_count'.trParams({'count': '${recipes.length}'}),
+            style: _f(12, FontWeight.w800, AppColors.textHint, sp: 0.72),
+          ),
         ),
         if (recipes.isEmpty)
           _empty()
@@ -254,19 +270,29 @@ class CreatorProfileScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(r.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: _f(14, FontWeight.w700, AppColors.textDark)),
+                      Text(
+                        r.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: _f(14, FontWeight.w700, AppColors.textDark),
+                      ),
                       const SizedBox(height: 3),
                       Row(
                         children: [
-                          const OnboardingLineIcon('heart',
-                              size: 13, color: AppColors.textHint),
+                          const OnboardingLineIcon(
+                            'heart',
+                            size: 13,
+                            color: AppColors.textHint,
+                          ),
                           const SizedBox(width: 5),
-                          Text('${r.likesCount}',
-                              style: _f(12, FontWeight.w600,
-                                  AppColors.textMedium)),
+                          Text(
+                            '${r.likesCount}',
+                            style: _f(
+                              12,
+                              FontWeight.w600,
+                              AppColors.textMedium,
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -280,8 +306,11 @@ class CreatorProfileScreen extends StatelessWidget {
                     color: AppColors.greenBgLight,
                     borderRadius: BorderRadius.circular(9),
                   ),
-                  child: const OnboardingLineIcon('globe',
-                      size: 16, color: AppColors.green),
+                  child: const OnboardingLineIcon(
+                    'globe',
+                    size: 16,
+                    color: AppColors.green,
+                  ),
                 ),
               ],
             ),
@@ -325,11 +354,16 @@ class CreatorProfileScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          const Icon(Icons.public_off_rounded,
-              size: 34, color: AppColors.iconLight),
+          const Icon(
+            Icons.public_off_rounded,
+            size: 34,
+            color: AppColors.iconLight,
+          ),
           const SizedBox(height: 10),
-          Text('no_public_recipes_yet'.tr,
-              style: _f(14, FontWeight.w700, AppColors.textDark)),
+          Text(
+            'no_public_recipes_yet'.tr,
+            style: _f(14, FontWeight.w700, AppColors.textDark),
+          ),
         ],
       ),
     );

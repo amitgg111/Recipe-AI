@@ -495,9 +495,9 @@ class SettingsScreen extends StatelessWidget {
     return Obx(() {
       final sub = SubscriptionService.instance;
       final plus = sub.isPlusListenable.value;
-      final used = sub.importCountListenable.value;
-      const max = SubscriptionService.kFreeImportLimit;
-      final remaining = (max - used).clamp(0, max);
+      final remaining = sub.freeCreditsListenable.value;
+      const max = SubscriptionService.kInitialFreeCredits;
+      final used = max - remaining;
       final frac = plus ? 1.0 : (max == 0 ? 0.0 : remaining / max);
       final accent = plus ? AppColors.purpleDark : AppColors.primary;
       return GestureDetector(

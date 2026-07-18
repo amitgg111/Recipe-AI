@@ -284,54 +284,51 @@ class ImportWebController extends GetxController {
       log("Original Image: ${recipe.imageUrl}");
       log("Firebase Image: $firebaseImageUrl");
       final resolvedImageUrl = firebaseImageUrl ?? recipe.imageUrl;
-      final docRef = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .collection('recipes')
-          .add({
-            'title': recipe.title,
-            'description': recipe.description,
+      final docRef = await FirebaseFirestore.instance.collection('recipes').add(
+        {
+          'title': recipe.title,
+          'description': recipe.description,
 
-            // Firebase Storage URL (fall back to the scraped URL only if the
-            // re-upload failed, so a saved recipe always has a usable image).
-            'imageUrl': resolvedImageUrl,
+          // Firebase Storage URL (fall back to the scraped URL only if the
+          // re-upload failed, so a saved recipe always has a usable image).
+          'imageUrl': resolvedImageUrl,
 
-            'sourceUrl': recipe.sourceUrl,
-            'prepTime': recipe.prepTime,
-            'cookTime': recipe.cookTime,
-            'totalTime': recipe.totalTime,
-            'servings': recipe.servings,
-            'category': recipe.category,
-            'cuisine': recipe.cuisine,
-            'keywords': recipe.keywords,
+          'sourceUrl': recipe.sourceUrl,
+          'prepTime': recipe.prepTime,
+          'cookTime': recipe.cookTime,
+          'totalTime': recipe.totalTime,
+          'servings': recipe.servings,
+          'category': recipe.category,
+          'cuisine': recipe.cuisine,
+          'keywords': recipe.keywords,
 
-            'ingredientSections': recipe.ingredientSections
-                .map((s) => s.toMap())
-                .toList(),
+          'ingredientSections': recipe.ingredientSections
+              .map((s) => s.toMap())
+              .toList(),
 
-            'instructionSections': recipe.instructionSections
-                .map((s) => s.toMap())
-                .toList(),
+          'instructionSections': recipe.instructionSections
+              .map((s) => s.toMap())
+              .toList(),
 
-            'ingredients': recipe.ingredients,
-            'instructions': recipe.instructions,
+          'ingredients': recipe.ingredients,
+          'instructions': recipe.instructions,
 
-            // Privacy: imported recipes are private by default.
-            'visibility': 'private',
-            'isPublic': false,
-            // Ownership: imported recipes MAY later be published by the user.
-            'recipeSource': 'imported',
-            'originalRecipeId': null,
-            'ownerId': uid,
-            'isDeleted': false,
-            'likesCount': 0,
-            'commentsCount': 0,
-            'savesCount': 0,
-            'sharesCount': 0,
-            'viewsCount': 0,
-            'createdAt': FieldValue.serverTimestamp(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
+          // Privacy: imported recipes are private by default.
+          'isPublic': false,
+          // Ownership: imported recipes MAY later be published by the user.
+          'recipeSource': 'imported',
+          'originalRecipeId': null,
+          'ownerId': uid,
+          'isDeleted': false,
+          'likesCount': 0,
+          'commentsCount': 0,
+          'savesCount': 0,
+          'sharesCount': 0,
+          'viewsCount': 0,
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+      );
 
       if (freeRecipesLeft.value > 0) {
         freeRecipesLeft.value--;
@@ -367,28 +364,6 @@ class ImportWebController extends GetxController {
     }
   }
 
-  // Future<bool> saveRecipe(ScrapedRecipeData recipe) async {
-  //   try {
-  //     final uid = AuthService.currentUser!.uid;
-
-  //     await FirebaseFirestore.instance
-  //         .collection('users')
-  //         .doc(uid)
-  //         .collection('recipes')
-  //         .add({
-  //           'title': recipe.title,
-  //           'imageUrl': recipe.imageUrl, // direct URL
-  //           'ingredients': recipe.ingredients,
-  //           'instructions': recipe.instructions,
-  //           'createdAt': FieldValue.serverTimestamp(),
-  //         });
-
-  //     return true;
-  //   } catch (e) {
-  //     log(e.toString());
-  //     return false;
-  //   }
-  // }
 
   String? _extractImage(dynamic value) {
     if (value == null) return null;
@@ -1063,7 +1038,8 @@ JSON.stringify((function() {
 
   // ── Landing page HTML ──────────────────────────────────────────────────────
 
-  static const String _landingPageHtml = '''
+  static const String _landingPageHtml =
+      '''
 <!DOCTYPE html>
 <html>
 <head>

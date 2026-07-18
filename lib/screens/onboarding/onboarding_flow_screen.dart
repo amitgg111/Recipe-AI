@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:recipe_ai/screens/onboarding/cuisine_preference.dart';
 import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -45,7 +46,7 @@ class OnboardingFlowScreen extends StatefulWidget {
 class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
   /// Number of steps handled by this unified flow (1–12). The progress track
   /// fills across these steps and completes (100%) on the final step (12).
-  static const int _flowPages = 12;
+  static const int _flowPages = 13;
 
   /// The progress track spans the unified flow, so it is full on step 12.
   static const int _totalSteps = _flowPages;
@@ -54,7 +55,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
   static const int _notificationsPage = 6;
 
   /// Page index of the "preparing" step ("Step 12" in the UI) — the final step.
-  static const int _settingUpPage = 11;
+  static const int _settingUpPage = 12;
 
   /// How long the "preparing" step waits before revealing its Continue button.
   static const Duration _settingUpDelay = Duration(seconds: 3);
@@ -101,7 +102,9 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
         _page++;
       });
       // Each step opens with its default selection, so it starts valid.
-      _canContinue.value = true;
+      // _canContinue.value = true;
+      _canContinue.value = _page != _settingUpPage;
+      _syncSettingUpGate();
       _syncSettingUpGate();
     } else {
       // Step 12 done → continue to the existing Plus intro (steps 13–15).
@@ -117,10 +120,19 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
   /// the user navigates onto (or back to) that step, and resets on every other.
   void _syncSettingUpGate() {
     _settingUpTimer?.cancel();
+
     if (_page == _settingUpPage) {
       _settingUpReady = false;
+      _canContinue.value = false;
+
       _settingUpTimer = Timer(_settingUpDelay, () {
-        if (mounted) setState(() => _settingUpReady = true);
+        if (!mounted) return;
+
+        setState(() {
+          _settingUpReady = true;
+        });
+
+        _canContinue.value = true;
       });
     } else {
       _settingUpReady = false;
@@ -186,10 +198,12 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
       case 8:
         return RecipeSourcesBody(onValidityChanged: _onValidityChanged);
       case 9:
-        return const AwesomeImportBody();
+        return CuisinesBody(onValidityChanged: _onValidityChanged);
       case 10:
-        return const AgeBody();
+        return const AwesomeImportBody();
       case 11:
+        return const AgeBody();
+      case 12:
         return SettingUpBody(ready: _settingUpReady);
       default:
         return const SizedBox.shrink();

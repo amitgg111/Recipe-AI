@@ -952,52 +952,56 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
               children: List.generate(7, (i) {
                 final day = days[i];
                 final isSel = controller.isSameDay(day, selected);
+
                 return GestureDetector(
                   onTap: () => controller.selectDate(day),
                   behavior: HitTestBehavior.opaque,
-                  child: Column(
-                    children: [
-                      Text(
-                        _dayLetters[i],
-                        style: _S.f(
-                          11,
-                          isSel ? FontWeight.w800 : FontWeight.w700,
-                          isSel ? _S.primary : _S.textHint,
+                  child: Opacity(
+                    opacity: 1,
+                    child: Column(
+                      children: [
+                        Text(
+                          _dayLetters[i],
+                          style: _S.f(
+                            11,
+                            isSel ? FontWeight.w800 : FontWeight.w700,
+                            isSel ? _S.primary : _S.textHint,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          color: isSel ? _S.primary : _S.card,
-                          border: isSel
-                              ? null
-                              : Border.all(color: _S.cardBorder),
-                          boxShadow: isSel
-                              ? [
-                                  BoxShadow(
-                                    color: _S.primary.withValues(alpha: 0.7),
-                                    blurRadius: 16,
-                                    offset: const Offset(0, 8),
-                                    spreadRadius: -8,
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: Center(
-                          child: Text(
-                            '${day.day}',
-                            style: _S.f(
-                              13,
-                              FontWeight.w800,
-                              isSel ? Colors.white : _S.textDark,
+                        const SizedBox(height: 4),
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            color: isSel ? _S.primary : _S.card,
+                            border: isSel
+                                ? null
+                                : Border.all(color: _S.cardBorder),
+                            boxShadow: isSel
+                                ? [
+                                    BoxShadow(
+                                      color: _S.primary.withValues(alpha: 0.7),
+                                      blurRadius: 16,
+                                      offset: const Offset(0, 8),
+                                      spreadRadius: -8,
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${day.day}',
+                              style: _S.f(
+                                13,
+                                FontWeight.w800,
+                                isSel ? Colors.white : _S.textDark,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 );
               }),
@@ -1012,7 +1016,14 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
     );
   }
 
-  Widget _weekArrow(Widget icon, VoidCallback onTap) {
+  // Widget _weekArrow(Widget icon, VoidCallback onTap) {
+  //   return GestureDetector(
+  //     onTap: onTap,
+  //     behavior: HitTestBehavior.opaque,
+  //     child: SizedBox(width: 26, height: 52, child: Center(child: icon)),
+  //   );
+  // }
+  Widget _weekArrow(Widget icon, VoidCallback? onTap) {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -1149,10 +1160,10 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
               onTap: () => _showMealOptions(meal),
               behavior: HitTestBehavior.opaque,
               child: const Padding(
-                padding: EdgeInsets.all(6),
+                padding: EdgeInsets.all(14),
                 child: OnboardingLineIcon(
                   'dots',
-                  size: 18,
+                  size: 22,
                   color: Color(0xFFC7BCAC),
                 ),
               ),
@@ -1229,6 +1240,326 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
   // sub-sections below (month-nav, grid, selected-date header, selected meals)
   // are wrapped in their own scoped Obx, so selecting a day or editing a meal
   // rebuilds only the affected section — never the whole scroll view.
+  // Widget _buildMonthView() {
+  //   return SingleChildScrollView(
+  //     padding: const EdgeInsets.fromLTRB(0, 0, 0, 20),
+  //     child: Column(
+  //       children: [
+  //         // ── Calendar card ──
+  //         Container(
+  //           margin: const EdgeInsets.symmetric(horizontal: 16),
+  //           padding: const EdgeInsets.all(14),
+  //           decoration: BoxDecoration(
+  //             color: _S.card,
+  //             borderRadius: BorderRadius.circular(20),
+  //             border: Border.all(color: _S.cardBorder),
+  //             boxShadow: [
+  //               BoxShadow(
+  //                 color: const Color(0xFF2A211B).withValues(alpha: 0.4),
+  //                 blurRadius: 26,
+  //                 offset: const Offset(0, 12),
+  //                 spreadRadius: -22,
+  //               ),
+  //             ],
+  //           ),
+  //           child: Column(
+  //             children: [
+  //               // Month nav: < June 2026 >  (reactive on selectedDate)
+  //               Obx(() {
+  //                 final selDate = controller.selectedDate.value;
+  //                 final viewMonth = DateTime(selDate.year, selDate.month);
+
+  //                 return Row(
+  //                   children: [
+  //                     GestureDetector(
+  //                       onTap: () => controller.selectDate(
+  //                         DateTime(selDate.year, selDate.month - 1, 1),
+  //                       ),
+  //                       child: Container(
+  //                         width: 30,
+  //                         height: 30,
+  //                         decoration: BoxDecoration(
+  //                           borderRadius: BorderRadius.circular(9),
+  //                           border: Border.all(color: _S.cardBorder),
+  //                         ),
+  //                         child: const OnboardingLineIcon(
+  //                           'back',
+  //                           size: 20,
+  //                           color: Color(0xFF5A5147),
+  //                         ),
+  //                       ),
+  //                     ),
+  //                     const Spacer(),
+  //                     Text(
+  //                       '${_monthNames[viewMonth.month - 1]} ${viewMonth.year}',
+  //                       style: _S.f(15, FontWeight.w800, _S.textDark),
+  //                     ),
+  //                     const Spacer(),
+  //                     GestureDetector(
+  //                       onTap: () => controller.selectDate(
+  //                         DateTime(selDate.year, selDate.month + 1, 1),
+  //                       ),
+  //                       child: Container(
+  //                         width: 30,
+  //                         height: 30,
+  //                         decoration: BoxDecoration(
+  //                           borderRadius: BorderRadius.circular(9),
+  //                           border: Border.all(color: _S.cardBorder),
+  //                         ),
+  //                         child: const OnboardingLineIcon(
+  //                           'chevR',
+  //                           size: 20,
+  //                           color: Color(0xFF5A5147),
+  //                         ),
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 );
+  //               }),
+  //               const SizedBox(height: 16),
+
+  //               // Day headers: M T W T F S S  (static)
+  //               Row(
+  //                 children: _dayLetters
+  //                     .map(
+  //                       (d) => Expanded(
+  //                         child: Center(
+  //                           child: Text(
+  //                             d,
+  //                             style: _S.f(11, FontWeight.w800, _S.textHint),
+  //                           ),
+  //                         ),
+  //                       ),
+  //                     )
+  //                     .toList(),
+  //               ),
+  //               const SizedBox(height: 2),
+
+  //               // Calendar grid  (reactive on selectedDate + month meals)
+  //               Obx(() {
+  //                 final selDate = controller.selectedDate.value;
+  //                 final viewMonth = DateTime(selDate.year, selDate.month);
+  //                 final firstDay = DateTime(viewMonth.year, viewMonth.month, 1);
+  //                 final daysInMonth = DateTime(
+  //                   viewMonth.year,
+  //                   viewMonth.month + 1,
+  //                   0,
+  //                 ).day;
+  //                 final startWeekday = firstDay.weekday;
+
+  //                 // Precompute meal-types per date ONCE (O(N)) instead of
+  //                 // scanning the whole list for each of the 42 cells (O(42·N)).
+  //                 final typesByDate = <String, Set<String>>{};
+  //                 for (final m in controller.monthMealPlanItems) {
+  //                   (typesByDate[m.date] ??= <String>{}).add(m.mealType);
+  //                 }
+
+  //                 return _buildCalendarGrid(
+  //                   firstDay,
+  //                   daysInMonth,
+  //                   startWeekday,
+  //                   selDate,
+  //                   typesByDate,
+  //                 );
+  //               }),
+  //             ],
+  //           ),
+  //         ),
+  //         const SizedBox(height: 20),
+
+  //         // ── Selected date header + Add meal button ──  (reactive)
+  //         Obx(() {
+  //           final selDate = controller.selectedDate.value;
+  //           return Padding(
+  //             padding: const EdgeInsets.symmetric(horizontal: 20),
+  //             child: Row(
+  //               children: [
+  //                 Expanded(
+  //                   child: Text(
+  //                     '${_dayNames[selDate.weekday - 1]}, ${selDate.day} ${_monthNames[selDate.month - 1]}',
+  //                     style: _S.f(16, FontWeight.w800, _S.textDark),
+  //                     maxLines: 1,
+  //                     overflow: TextOverflow.ellipsis,
+  //                   ),
+  //                 ),
+  //                 const SizedBox(width: 8),
+  //                 GestureDetector(
+  //                   onTap: () => _showAddMealSheet(selDate, 'Breakfast'),
+  //                   child: Container(
+  //                     padding: const EdgeInsets.symmetric(
+  //                       horizontal: 13,
+  //                       vertical: 8,
+  //                     ),
+  //                     decoration: BoxDecoration(
+  //                       color: _S.primary,
+  //                       borderRadius: BorderRadius.circular(11),
+  //                     ),
+  //                     child: Row(
+  //                       mainAxisSize: MainAxisSize.min,
+  //                       children: [
+  //                         const OnboardingLineIcon(
+  //                           'plus',
+  //                           size: 16,
+  //                           color: Colors.white,
+  //                         ),
+  //                         const SizedBox(width: 5),
+  //                         Text(
+  //                           'add_meal'.tr,
+  //                           style: _S.f(12.5, FontWeight.w700, Colors.white),
+  //                         ),
+  //                       ],
+  //                     ),
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           );
+  //         }),
+  //         const SizedBox(height: 12),
+
+  //         // ── Meal cards for selected date ──  (reactive on selectedDate + meals)
+  //         Obx(() {
+  //           final selDate = controller.selectedDate.value;
+  //           final selectedMeals = controller.getMonthMealsForDate(selDate);
+  //           if (selectedMeals.isEmpty) {
+  //             return Padding(
+  //               padding: const EdgeInsets.symmetric(
+  //                 horizontal: 20,
+  //                 vertical: 30,
+  //               ),
+  //               child: Column(
+  //                 children: [
+  //                   Container(
+  //                     width: 72,
+  //                     height: 72,
+  //                     alignment: Alignment.center,
+  //                     decoration: BoxDecoration(
+  //                       color: _S.card,
+  //                       borderRadius: BorderRadius.circular(22),
+  //                       border: Border.all(color: _S.cardBorder),
+  //                       boxShadow: [
+  //                         BoxShadow(
+  //                           color: const Color(
+  //                             0xFF2A211B,
+  //                           ).withValues(alpha: 0.35),
+  //                           blurRadius: 26,
+  //                           offset: const Offset(0, 12),
+  //                           spreadRadius: -20,
+  //                         ),
+  //                       ],
+  //                     ),
+  //                     child: Transform.scale(
+  //                       scale: 1.5,
+  //                       child: const OnboardingLineIcon(
+  //                         'cal',
+  //                         size: 24,
+  //                         color: Color(0xFFD7BBA0),
+  //                       ),
+  //                     ),
+  //                   ),
+  //                   const SizedBox(height: 14),
+  //                   Text(
+  //                     'no_meals_for_day'.tr,
+  //                     style: _S.f(16, FontWeight.w800, _S.textDark),
+  //                   ),
+  //                   const SizedBox(height: 6),
+  //                   Text(
+  //                     'add_recipe_to_meals'.tr,
+  //                     style: _S.f(13.5, FontWeight.w500, _S.textMed, h: 1.5),
+  //                     textAlign: TextAlign.center,
+  //                   ),
+  //                   const SizedBox(height: 16),
+  //                   GestureDetector(
+  //                     onTap: () => _showAddMealSheet(selDate, 'Breakfast'),
+  //                     child: Container(
+  //                       height: 48,
+  //                       padding: const EdgeInsets.symmetric(horizontal: 22),
+  //                       alignment: Alignment.center,
+  //                       decoration: BoxDecoration(
+  //                         color: _S.primary,
+  //                         borderRadius: BorderRadius.circular(13),
+  //                         boxShadow: [
+  //                           BoxShadow(
+  //                             color: _S.primary.withValues(alpha: 0.6),
+  //                             blurRadius: 24,
+  //                             offset: const Offset(0, 12),
+  //                             spreadRadius: -10,
+  //                           ),
+  //                         ],
+  //                       ),
+  //                       child: Row(
+  //                         mainAxisSize: MainAxisSize.min,
+  //                         children: [
+  //                           const OnboardingLineIcon(
+  //                             'plus',
+  //                             size: 18,
+  //                             color: Colors.white,
+  //                           ),
+  //                           const SizedBox(width: 6),
+  //                           Text(
+  //                             'add_a_meal'.tr,
+  //                             style: _S.f(14, FontWeight.w700, Colors.white),
+  //                           ),
+  //                         ],
+  //                       ),
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
+  //             );
+  //           }
+  //           return Padding(
+  //             padding: const EdgeInsets.symmetric(horizontal: 20),
+  //             child: Column(
+  //               children: [
+  //                 for (final meal in selectedMeals) _buildMonthMealCard(meal),
+  //               ],
+  //             ),
+  //           );
+  //         }),
+
+  //         const SizedBox(height: 16),
+
+  //         // ── Auto-fill my week button ──  (static)
+  //         Padding(
+  //           padding: const EdgeInsets.symmetric(horizontal: 20),
+  //           child: GestureDetector(
+  //             onTap: () => _showAutoFillSheet(),
+  //             child: Container(
+  //               width: double.infinity,
+  //               height: 46,
+  //               decoration: BoxDecoration(
+  //                 color: const Color(0xFFF4EEFD),
+  //                 borderRadius: BorderRadius.circular(13),
+  //                 border: Border.all(color: const Color(0xFFE0D2F7)),
+  //               ),
+  //               child: Row(
+  //                 mainAxisAlignment: MainAxisAlignment.center,
+  //                 children: [
+  //                   const OnboardingLineIcon(
+  //                     'crown',
+  //                     size: 24,
+  //                     color: Color(0xFF7A4FC0),
+  //                   ),
+  //                   const SizedBox(width: 8),
+  //                   Text(
+  //                     'auto_fill_my_week'.tr,
+  //                     style: _S.f(
+  //                       13.5,
+  //                       FontWeight.w700,
+  //                       const Color(0xFF7A4FC0),
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+
   Widget _buildMonthView() {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(0, 0, 0, 20),

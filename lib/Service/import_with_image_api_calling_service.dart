@@ -181,51 +181,49 @@ class RecipeImportService {
       imageUrl = await _resolveDishImage(recipe.title, uid);
     }
 
-    final docRef = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .collection('recipes')
-        .add({
-          'title': recipe.title,
-          'description': recipe.description,
-          'imageUrl': imageUrl,
-          'sourceUrl': sourceUrl,
-          'prepTime': recipe.prepTime,
-          'cookTime': recipe.cookTime,
-          'totalTime': recipe.totalTime,
-          'servings': recipe.servings.toString(),
-          'category': recipe.category,
-          'cuisine': recipe.cuisine,
-          'keywords': recipe.keywords,
-          'ingredientSections': recipe.ingredientSections
-              .map((e) => {'name': e.name, 'items': e.items})
-              .toList(),
-          'instructionSections': recipe.instructionSections
-              .map((e) => {'name': e.name, 'steps': e.steps})
-              .toList(),
-          'ingredients': recipe.ingredients,
-          'instructions': recipe.instructions,
-          // Privacy: AI / photo-imported recipes are private by default.
-          'visibility': 'private',
-          'isPublic': false,
-          // Ownership: imported recipes MAY later be published by the user.
-          'recipeSource': 'imported',
-          'originalRecipeId': null,
-          'ownerId': uid,
-          'isDeleted': false,
-          'likesCount': 0,
-          'commentsCount': 0,
-          'savesCount': 0,
-          'sharesCount': 0,
-          'viewsCount': 0,
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-
     // Count this import against the free-tier quota. Image / Text / Social all
     // route through here; Website imports use a separate path and stay free.
     // No-op for Plus users.
-    await SubscriptionService.instance.incrementImportCount();
+    final hasCredit = await SubscriptionService.instance.consumeCredit();
+    if (!hasCredit) {
+      throw Exception('Not enough credits to save this recipe.');
+    }
+
+    final docRef = await FirebaseFirestore.instance.collection('recipes').add({
+      'title': recipe.title,
+      'description': recipe.description,
+      'imageUrl': imageUrl,
+      'sourceUrl': sourceUrl,
+      'prepTime': recipe.prepTime,
+      'cookTime': recipe.cookTime,
+      'totalTime': recipe.totalTime,
+      'servings': recipe.servings.toString(),
+      'category': recipe.category,
+      'cuisine': recipe.cuisine,
+      'keywords': recipe.keywords,
+      'ingredientSections': recipe.ingredientSections
+          .map((e) => {'name': e.name, 'items': e.items})
+          .toList(),
+      'instructionSections': recipe.instructionSections
+          .map((e) => {'name': e.name, 'steps': e.steps})
+          .toList(),
+      'ingredients': recipe.ingredients,
+      'instructions': recipe.instructions,
+      // Privacy: AI / photo-imported recipes are private by default.
+      'isPublic': false,
+      // Ownership: imported recipes MAY later be published by the user.
+      'recipeSource': 'imported',
+      'originalRecipeId': null,
+      'ownerId': uid,
+      'isDeleted': false,
+      'likesCount': 0,
+      'commentsCount': 0,
+      'savesCount': 0,
+      'sharesCount': 0,
+      'viewsCount': 0,
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
 
     final recipeModel = RecipeModel(
       id: docRef.id,
@@ -295,10 +293,12 @@ class RecipeImportService {
   static Future<String?> _theMealDbImage(String q) async {
     try {
       final r = await http
-          .get(Uri.parse(
-            'https://www.themealdb.com/api/json/v1/1/search.php'
-            '?s=${Uri.encodeQueryComponent(q)}',
-          ))
+          .get(
+            Uri.parse(
+              'https://www.themealdb.com/api/json/v1/1/search.php'
+              '?s=${Uri.encodeQueryComponent(q)}',
+            ),
+          )
           .timeout(const Duration(seconds: 8));
       if (r.statusCode == 200) {
         final meals = (jsonDecode(r.body) as Map)['meals'];
@@ -323,9 +323,12 @@ class RecipeImportService {
         '&gsrlimit=1&prop=pageimages%7Ccategories&piprop=thumbnail'
         '&pithumbsize=800&cllimit=60&redirects=1',
       );
-      final r = await http.get(uri, headers: {
-        'User-Agent': 'RecipeAI/1.0 (recipe image lookup)',
-      }).timeout(const Duration(seconds: 8));
+      final r = await http
+          .get(
+            uri,
+            headers: {'User-Agent': 'RecipeAI/1.0 (recipe image lookup)'},
+          )
+          .timeout(const Duration(seconds: 8));
       if (r.statusCode != 200) return null;
       final query = (jsonDecode(r.body) as Map)['query'] as Map?;
       final pages = query?['pages'] as Map?;
@@ -338,10 +341,32 @@ class RecipeImportService {
           .map((c) => (c as Map)['title']?.toString().toLowerCase() ?? '')
           .join(' ');
       const foodWords = [
-        'cuisine', 'food', 'dish', 'cooking', 'recipe', 'curry', 'dessert',
-        'snack', 'bread', 'rice', 'noodle', 'soup', 'stew', 'sauce',
-        'beverage', 'drink', 'cake', 'meat', 'vegetable', 'seafood',
-        'breakfast', 'street food', 'appetizer', 'salad', 'pasta', 'pizza',
+        'cuisine',
+        'food',
+        'dish',
+        'cooking',
+        'recipe',
+        'curry',
+        'dessert',
+        'snack',
+        'bread',
+        'rice',
+        'noodle',
+        'soup',
+        'stew',
+        'sauce',
+        'beverage',
+        'drink',
+        'cake',
+        'meat',
+        'vegetable',
+        'seafood',
+        'breakfast',
+        'street food',
+        'appetizer',
+        'salad',
+        'pasta',
+        'pizza',
       ];
       final isFood = foodWords.any((w) => catText.contains(w));
       return isFood ? thumb : null;
@@ -420,9 +445,11 @@ class RecipeImportService {
         v is List &&
         v.any((s) => s is Map && s[key] is List && (s[key] as List).isNotEmpty);
 
-    final hasIngredients = nonEmptyList(data['ingredients']) ||
+    final hasIngredients =
+        nonEmptyList(data['ingredients']) ||
         sectionsHaveEntries(data['ingredientSections'], 'items');
-    final hasInstructions = nonEmptyList(data['instructions']) ||
+    final hasInstructions =
+        nonEmptyList(data['instructions']) ||
         sectionsHaveEntries(data['instructionSections'], 'steps');
 
     // A genuine recipe always has a real title. An empty or placeholder title
@@ -567,14 +594,16 @@ class RecipeImportService {
   /// open-graph tags to (a plain bot UA gets a login wall with no image).
   static Future<String?> _fetchSocialThumbnail(String url) async {
     try {
-      final resp = await http.get(
-        Uri.parse(url),
-        headers: const {
-          'User-Agent':
-              'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
-          'Accept': 'text/html,application/xhtml+xml',
-        },
-      ).timeout(const Duration(seconds: 10));
+      final resp = await http
+          .get(
+            Uri.parse(url),
+            headers: const {
+              'User-Agent':
+                  'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
+              'Accept': 'text/html,application/xhtml+xml',
+            },
+          )
+          .timeout(const Duration(seconds: 10));
       if (resp.statusCode != 200) return null;
       final html = resp.body;
 
@@ -588,14 +617,22 @@ class RecipeImportService {
       }
 
       final img = firstOf([
-        RegExp(r'''<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)''',
-            caseSensitive: false),
-        RegExp(r'''<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image''',
-            caseSensitive: false),
-        RegExp(r'''<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)''',
-            caseSensitive: false),
-        RegExp(r'''<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image''',
-            caseSensitive: false),
+        RegExp(
+          r'''<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)''',
+          caseSensitive: false,
+        ),
+        RegExp(
+          r'''<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image''',
+          caseSensitive: false,
+        ),
+        RegExp(
+          r'''<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)''',
+          caseSensitive: false,
+        ),
+        RegExp(
+          r'''<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image''',
+          caseSensitive: false,
+        ),
       ]);
       if (img == null) return null;
 
@@ -688,8 +725,9 @@ class RecipeImportService {
         // Image = the reel/post's own thumbnail. Prefer whatever the AI/cloud
         // returned; otherwise scrape the shared post's og:image directly so the
         // recipe shows the actual social preview instead of a generic photo.
-        var thumb =
-            (recipe.imageUrl?.isNotEmpty == true) ? recipe.imageUrl : null;
+        var thumb = (recipe.imageUrl?.isNotEmpty == true)
+            ? recipe.imageUrl
+            : null;
         if ((thumb == null || thumb.isEmpty) && url != null && url.isNotEmpty) {
           thumb = await _fetchSocialThumbnail(url);
           log('Social thumbnail: $thumb');

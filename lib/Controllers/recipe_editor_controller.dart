@@ -62,14 +62,16 @@ class RecipeEditorController extends GetxController {
   // -----------------------------
 
   final RxList<String> ingredients = <String>[].obs;
-  final RxList<IngredientSection> ingredientSections = <IngredientSection>[].obs;
+  final RxList<IngredientSection> ingredientSections =
+      <IngredientSection>[].obs;
 
   // -----------------------------
   // Instructions (flat + sections)
   // -----------------------------
 
   final RxList<String> instructions = <String>[].obs;
-  final RxList<InstructionSection> instructionSections = <InstructionSection>[].obs;
+  final RxList<InstructionSection> instructionSections =
+      <InstructionSection>[].obs;
 
   // -----------------------------
   // Loading
@@ -140,14 +142,18 @@ class RecipeEditorController extends GetxController {
         recipe!.ingredientSections.any((s) => s.items.isNotEmpty)) {
       ingredientSections.assignAll(recipe!.ingredientSections);
     } else if (recipe!.ingredients.isNotEmpty) {
-      ingredientSections.assignAll([IngredientSection(items: List.from(recipe!.ingredients))]);
+      ingredientSections.assignAll([
+        IngredientSection(items: List.from(recipe!.ingredients)),
+      ]);
     }
 
     if (recipe!.instructionSections.isNotEmpty &&
         recipe!.instructionSections.any((s) => s.steps.isNotEmpty)) {
       instructionSections.assignAll(recipe!.instructionSections);
     } else if (recipe!.instructions.isNotEmpty) {
-      instructionSections.assignAll([InstructionSection(steps: List.from(recipe!.instructions))]);
+      instructionSections.assignAll([
+        InstructionSection(steps: List.from(recipe!.instructions)),
+      ]);
     }
   }
 
@@ -284,7 +290,8 @@ class RecipeEditorController extends GetxController {
     if (ingredients.length <= kMinItems) {
       CustomSnackbar.show(
         title: 'Minimum reached',
-        message: 'A recipe needs at least $kMinItems ingredients — '
+        message:
+            'A recipe needs at least $kMinItems ingredients — '
             'this one can’t be removed.',
         type: SnackbarType.error,
       );
@@ -292,7 +299,10 @@ class RecipeEditorController extends GetxController {
     }
     final s = ingredientSections[sectionIdx];
     final newItems = List<String>.from(s.items)..removeAt(itemIdx);
-    ingredientSections[sectionIdx] = IngredientSection(name: s.name, items: newItems);
+    ingredientSections[sectionIdx] = IngredientSection(
+      name: s.name,
+      items: newItems,
+    );
     _syncFlatFromSections();
   }
 
@@ -300,7 +310,10 @@ class RecipeEditorController extends GetxController {
     final s = ingredientSections[sectionIdx];
     final newItems = List<String>.from(s.items);
     newItems[itemIdx] = value;
-    ingredientSections[sectionIdx] = IngredientSection(name: s.name, items: newItems);
+    ingredientSections[sectionIdx] = IngredientSection(
+      name: s.name,
+      items: newItems,
+    );
     _syncFlatFromSections();
   }
 
@@ -316,7 +329,10 @@ class RecipeEditorController extends GetxController {
     newIndex = newIndex.clamp(0, items.length - 1);
     final item = items.removeAt(oldIndex);
     items.insert(newIndex, item);
-    ingredientSections[sectionIdx] = IngredientSection(name: s.name, items: items);
+    ingredientSections[sectionIdx] = IngredientSection(
+      name: s.name,
+      items: items,
+    );
     _syncFlatFromSections();
   }
 
@@ -339,7 +355,8 @@ class RecipeEditorController extends GetxController {
     if (instructions.length <= kMinItems) {
       CustomSnackbar.show(
         title: 'Minimum reached',
-        message: 'A recipe needs at least $kMinItems steps — '
+        message:
+            'A recipe needs at least $kMinItems steps — '
             'this one can’t be removed.',
         type: SnackbarType.error,
       );
@@ -347,7 +364,10 @@ class RecipeEditorController extends GetxController {
     }
     final s = instructionSections[sectionIdx];
     final newSteps = List<String>.from(s.steps)..removeAt(stepIdx);
-    instructionSections[sectionIdx] = InstructionSection(name: s.name, steps: newSteps);
+    instructionSections[sectionIdx] = InstructionSection(
+      name: s.name,
+      steps: newSteps,
+    );
     _syncFlatFromSections();
   }
 
@@ -355,7 +375,10 @@ class RecipeEditorController extends GetxController {
     final s = instructionSections[sectionIdx];
     final newSteps = List<String>.from(s.steps);
     newSteps[stepIdx] = value;
-    instructionSections[sectionIdx] = InstructionSection(name: s.name, steps: newSteps);
+    instructionSections[sectionIdx] = InstructionSection(
+      name: s.name,
+      steps: newSteps,
+    );
     _syncFlatFromSections();
   }
 
@@ -370,7 +393,10 @@ class RecipeEditorController extends GetxController {
     newIndex = newIndex.clamp(0, steps.length - 1);
     final step = steps.removeAt(oldIndex);
     steps.insert(newIndex, step);
-    instructionSections[sectionIdx] = InstructionSection(name: s.name, steps: steps);
+    instructionSections[sectionIdx] = InstructionSection(
+      name: s.name,
+      steps: steps,
+    );
     _syncFlatFromSections();
   }
 
@@ -521,10 +547,7 @@ class RecipeEditorController extends GetxController {
         "updatedAt": FieldValue.serverTimestamp(),
       };
       log("FINAL IMAGE URL => $imageUrl");
-      final collection = FirebaseFirestore.instance
-          .collection("users")
-          .doc(uid)
-          .collection("recipes");
+      final collection = FirebaseFirestore.instance.collection("recipes");
 
       if (isEdit) {
         await collection.doc(recipe!.id).update(recipeData);
@@ -534,10 +557,17 @@ class RecipeEditorController extends GetxController {
         // written in the editor is the user's own creation, so it is publishable.
         await collection.add({
           ...recipeData,
+
+          "ownerId": uid,
+
           "recipeSource": RecipePublishPolicy.sourceUserCreated,
           "originalRecipeId": null,
+
           "createdAt": FieldValue.serverTimestamp(),
+          "updatedAt": FieldValue.serverTimestamp(),
+
           "isDeleted": false,
+
           "likesCount": 0,
           "commentsCount": 0,
           "savesCount": 0,

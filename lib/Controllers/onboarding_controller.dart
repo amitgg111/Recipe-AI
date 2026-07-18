@@ -25,6 +25,7 @@ class OnboardingController extends GetxController {
 
   // ── Storage keys ───────────────────────────────────────────────────────────
   static const _kGoals = 'onb_goals';
+  static const _kCuisines = 'onb_cuisines';
   static const _kWhenToCook = 'onb_when_to_cook';
   static const _kAttribution = 'onb_attribution';
   static const _kSources = 'onb_sources';
@@ -42,6 +43,7 @@ class OnboardingController extends GetxController {
   final RxSet<String> attributionSources = <String>{}.obs;
   final RxSet<int> recipeSources = <int>{0}.obs; // multi-select
   final RxInt age = 1.obs; // single-select ("25-34")
+  final RxSet<String> cuisines = <String>{}.obs; // ADD THIS — empty by default
 
   // Notifications step: [notificationsOptIn] = the user tapped "Allow" (vs
   // "Don't allow"); [notificationsGranted] = the OS actually authorised it.
@@ -79,6 +81,8 @@ class OnboardingController extends GetxController {
     final a = _box.read<int>(_kAge);
     if (a != null) age.value = a;
     final no = _box.read<bool>(_kNotifOptIn);
+    final cu = _box.read<List>(_kCuisines); // ADD
+    if (cu != null) cuisines.assignAll(cu.map((e) => e as String));
     if (no != null) notificationsOptIn.value = no;
     final ng = _box.read<bool>(_kNotifGranted);
     if (ng != null) notificationsGranted.value = ng;
@@ -122,6 +126,13 @@ class OnboardingController extends GetxController {
     _markPending();
   }
 
+  void setCuisines(Set<String> value) {
+    if (setEquals(cuisines, value)) return;
+    cuisines.assignAll(value);
+    _box.write(_kCuisines, value.toList());
+    _markPending();
+  }
+
   /// Record the notifications-step choice. Persists locally immediately and
   /// (once authenticated) syncs to Firebase. Skips redundant writes so tapping
   /// the same choice twice never triggers a duplicate Firebase update.
@@ -146,19 +157,20 @@ class OnboardingController extends GetxController {
 
   // ── Firebase ────────────────────────────────────────────────────────────────
   Map<String, dynamic> _toMap() => {
-        'goals': goals.toList()..sort(),
-        'whenToCook': whenToCook.value,
-        'attributionSources': attributionSources.toList()..sort(),
-        'recipeSources': recipeSources.toList()..sort(),
-        'age': age.value,
-        // Only written once the notifications step is completed, so we never
-        // clobber a real value with null on early syncs.
-        if (notificationsOptIn.value != null)
-          'notificationsOptIn': notificationsOptIn.value,
-        if (notificationsGranted.value != null)
-          'notificationsGranted': notificationsGranted.value,
-        'updatedAt': FieldValue.serverTimestamp(),
-      };
+    'goals': goals.toList()..sort(),
+    'whenToCook': whenToCook.value,
+    'attributionSources': attributionSources.toList()..sort(),
+    'recipeSources': recipeSources.toList()..sort(),
+    'age': age.value,
+    'cuisines': cuisines.toList()..sort(), // ADD THIS
+    // Only written once the notifications step is completed, so we never
+    // clobber a real value with null on early syncs.
+    if (notificationsOptIn.value != null)
+      'notificationsOptIn': notificationsOptIn.value,
+    if (notificationsGranted.value != null)
+      'notificationsGranted': notificationsGranted.value,
+    'updatedAt': FieldValue.serverTimestamp(),
+  };
 
   void _onAuthChanged(User? user) {
     if (user == null) return;
@@ -177,10 +189,9 @@ class OnboardingController extends GetxController {
   /// failure so the next auth/selection change retries. Returns success.
   Future<bool> syncToFirebase(String uid) async {
     try {
-      await FirebaseFirestore.instance.collection('users').doc(uid).set(
-        {'onboarding': _toMap()},
-        SetOptions(merge: true),
-      );
+      await FirebaseFirestore.instance.collection('users').doc(uid).set({
+        'onboarding': _toMap(),
+      }, SetOptions(merge: true));
       _box.write(_kPending, false);
       return true;
     } catch (_) {
@@ -194,8 +205,10 @@ class OnboardingController extends GetxController {
   /// mirror them into local state (so the UI pre-selects them).
   Future<void> loadFromFirebase(String uid) async {
     try {
-      final snap =
-          await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final snap = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
       final onb = snap.data()?['onboarding'] as Map<String, dynamic>?;
       if (onb == null) return;
 
@@ -209,12 +222,14 @@ class OnboardingController extends GetxController {
       }
       if (onb['attributionSources'] is List) {
         attributionSources.assignAll(
-            (onb['attributionSources'] as List).map((e) => e as String));
+          (onb['attributionSources'] as List).map((e) => e as String),
+        );
         _box.write(_kAttribution, attributionSources.toList());
       }
       if (onb['recipeSources'] is List) {
         recipeSources.assignAll(
-            (onb['recipeSources'] as List).map((e) => e as int));
+          (onb['recipeSources'] as List).map((e) => e as int),
+        );
         _box.write(_kSources, recipeSources.toList());
       }
       if (onb['age'] is int) {
@@ -224,6 +239,13 @@ class OnboardingController extends GetxController {
       if (onb['notificationsOptIn'] is bool) {
         notificationsOptIn.value = onb['notificationsOptIn'] as bool;
         _box.write(_kNotifOptIn, notificationsOptIn.value);
+      }
+      if (onb['cuisines'] is List) {
+        // ADD
+        cuisines.assignAll(
+          (onb['cuisines'] as List).map((e) => e as String),
+        ); // ADD
+        _box.write(_kCuisines, cuisines.toList()); // ADD
       }
       if (onb['notificationsGranted'] is bool) {
         notificationsGranted.value = onb['notificationsGranted'] as bool;

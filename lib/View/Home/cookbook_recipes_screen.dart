@@ -880,8 +880,10 @@ class _RecipeListTile extends StatelessWidget {
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
+
                           color: const Color(0xFF8A7E70),
                         ),
+                        maxLines: 1,
                       ),
                     ],
                   ),

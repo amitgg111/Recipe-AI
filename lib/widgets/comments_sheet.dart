@@ -260,7 +260,7 @@ class _CommentsSheetState extends State<CommentsSheet> {
   }
 
   Widget _commentRow(String id, Map<String, dynamic> d) {
-    final name = (d['userName'] as String?)?.trim();
+    final name = (d['name'] as String?)?.trim();
     final avatar = d['userAvatar'] as String?;
     final text = d['text'] as String? ?? '';
     final ts = d['createdAt'];

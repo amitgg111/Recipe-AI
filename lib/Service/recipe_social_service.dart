@@ -4,8 +4,9 @@ import 'package:recipe_ai/Service/auth_service.dart';
 
 /// Handles social engagement (like / save / comment / share) on public recipes.
 ///
-/// Recipes live at `users/{ownerId}/recipes/{recipeId}`. Per-user engagement is
-/// stored in sub-collections keyed by the acting user's uid:
+/// Recipes live at the top-level `recipes/{recipeId}` collection (with an
+/// `ownerId` field). Per-user engagement is stored in sub-collections keyed by
+/// the acting user's uid:
 ///   • `.../likes/{uid}`    → { uid, createdAt }
 ///   • `.../saves/{uid}`    → { uid, createdAt }
 ///   • `.../comments/{id}`  → { userId, userName, userAvatar, text, createdAt }
@@ -21,23 +22,33 @@ class RecipeSocialService {
 
   static final _db = FirebaseFirestore.instance;
 
+  /// Recipe documents live in the TOP-LEVEL `recipes` collection. The
+  /// [ownerId] parameter is accepted for API compatibility but is NOT used
+  /// in the path — the recipe id alone is sufficient.
   static DocumentReference<Map<String, dynamic>> _recipeRef(
-          String ownerId, String recipeId) =>
-      _db.collection('users').doc(ownerId).collection('recipes').doc(recipeId);
+    String ownerId,
+    String recipeId,
+  ) => _db.collection('recipes').doc(recipeId);
 
   // ── Likes ──────────────────────────────────────────────────────────────────
 
   /// Sets the current user's like to [liked]. Idempotent — only touches the
   /// counter when the state actually changes.
   static Future<void> setLike(
-      String ownerId, String recipeId, bool liked) async {
+    String ownerId,
+    String recipeId,
+    bool liked,
+  ) async {
     final uid = AuthService.currentUser?.uid;
     if (uid == null) return;
     final recipe = _recipeRef(ownerId, recipeId);
     final likeRef = recipe.collection('likes').doc(uid);
     final exists = (await likeRef.get()).exists;
     if (liked && !exists) {
-      await likeRef.set({'uid': uid, 'createdAt': FieldValue.serverTimestamp()});
+      await likeRef.set({
+        'uid': uid,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
       await recipe.update({'likesCount': FieldValue.increment(1)});
     } else if (!liked && exists) {
       await likeRef.delete();
@@ -48,31 +59,38 @@ class RecipeSocialService {
   static Stream<bool> likedStream(String ownerId, String recipeId) {
     final uid = AuthService.currentUser?.uid;
     if (uid == null) return Stream.value(false);
-    return _recipeRef(ownerId, recipeId)
-        .collection('likes')
-        .doc(uid)
-        .snapshots()
-        .map((d) => d.exists);
+    return _recipeRef(
+      ownerId,
+      recipeId,
+    ).collection('likes').doc(uid).snapshots().map((d) => d.exists);
   }
 
   static Future<bool> isLiked(String ownerId, String recipeId) async {
     final uid = AuthService.currentUser?.uid;
     if (uid == null) return false;
-    return (await _recipeRef(ownerId, recipeId).collection('likes').doc(uid).get())
-        .exists;
+    return (await _recipeRef(
+      ownerId,
+      recipeId,
+    ).collection('likes').doc(uid).get()).exists;
   }
 
   // ── Saves (marker + counter on the original recipe) ─────────────────────────
 
   static Future<void> setSave(
-      String ownerId, String recipeId, bool saved) async {
+    String ownerId,
+    String recipeId,
+    bool saved,
+  ) async {
     final uid = AuthService.currentUser?.uid;
     if (uid == null) return;
     final recipe = _recipeRef(ownerId, recipeId);
     final saveRef = recipe.collection('saves').doc(uid);
     final exists = (await saveRef.get()).exists;
     if (saved && !exists) {
-      await saveRef.set({'uid': uid, 'createdAt': FieldValue.serverTimestamp()});
+      await saveRef.set({
+        'uid': uid,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
       await recipe.update({'savesCount': FieldValue.increment(1)});
     } else if (!saved && exists) {
       await saveRef.delete();
@@ -83,14 +101,16 @@ class RecipeSocialService {
   static Future<bool> isSaved(String ownerId, String recipeId) async {
     final uid = AuthService.currentUser?.uid;
     if (uid == null) return false;
-    return (await _recipeRef(ownerId, recipeId).collection('saves').doc(uid).get())
-        .exists;
+    return (await _recipeRef(
+      ownerId,
+      recipeId,
+    ).collection('saves').doc(uid).get()).exists;
   }
 
   // ── Save a copy into the current user's own recipes ─────────────────────────
-  // A public recipe belongs to another user, so its id can't appear in the
-  // current user's cookbooks / My Recipes. Saving therefore copies it (private)
-  // into `users/{me}/recipes` so it shows up like any owned recipe.
+  // A public recipe belongs to another user. Saving copies it (private) into
+  // the top-level `recipes` collection (with the current user's ownerId) so it
+  // shows up in My Recipes just like any user-created recipe.
 
   /// Returns the id of the current user's copy (creating it if needed), or the
   /// original id when the recipe already belongs to the current user.
@@ -99,11 +119,14 @@ class RecipeSocialService {
     if (uid == null) return null;
     if (r.userId == uid) return r.id; // already mine
 
-    final col = _db.collection('users').doc(uid).collection('recipes');
+    final col = _db.collection('recipes');
 
     // De-dupe: reuse an existing copy of the same source recipe.
-    final existing =
-        await col.where('savedFromRecipeId', isEqualTo: r.id).limit(1).get();
+    final existing = await col
+        .where('ownerId', isEqualTo: uid)
+        .where('savedFromRecipeId', isEqualTo: r.id)
+        .limit(1)
+        .get();
     if (existing.docs.isNotEmpty) return existing.docs.first.id;
 
     final doc = await col.add({
@@ -121,15 +144,14 @@ class RecipeSocialService {
       'ingredients': r.ingredients,
       'instructions': r.instructions,
       'ingredientSections': [
-        {'name': null, 'items': r.ingredients}
+        {'name': null, 'items': r.ingredients},
       ],
       'instructionSections': [
-        {'name': null, 'steps': r.instructions}
+        {'name': null, 'steps': r.instructions},
       ],
       // Copies are always private and owned by the current user, and are
       // tagged as 'discovered' so they can never be published back to Discover
       // (which would duplicate the original). See RecipePublishPolicy.
-      'visibility': 'private',
       'isPublic': false,
       'recipeSource': 'discovered',
       'originalRecipeId': r.id,
@@ -155,8 +177,11 @@ class RecipeSocialService {
   static Future<List<String>> removeSavedCopy(DiscoverRecipe r) async {
     final uid = AuthService.currentUser?.uid;
     if (uid == null || r.userId == uid) return const [];
-    final col = _db.collection('users').doc(uid).collection('recipes');
-    final existing = await col.where('savedFromRecipeId', isEqualTo: r.id).get();
+    final col = _db.collection('recipes');
+    final existing = await col
+        .where('ownerId', isEqualTo: uid)
+        .where('savedFromRecipeId', isEqualTo: r.id)
+        .get();
     final ids = <String>[];
     for (final d in existing.docs) {
       ids.add(d.id);
@@ -172,17 +197,20 @@ class RecipeSocialService {
   static Future<int> getMyRating(String ownerId, String recipeId) async {
     final uid = AuthService.currentUser?.uid;
     if (uid == null) return 0;
-    final d = await _recipeRef(ownerId, recipeId)
-        .collection('ratings')
-        .doc(uid)
-        .get();
+    final d = await _recipeRef(
+      ownerId,
+      recipeId,
+    ).collection('ratings').doc(uid).get();
     return (d.data()?['rating'] as num?)?.toInt() ?? 0;
   }
 
   /// Sets (or changes) the current user's rating and keeps the aggregate
   /// (`ratingSum`, `ratingCount`) on the recipe document in sync.
   static Future<void> setRating(
-      String ownerId, String recipeId, int rating) async {
+    String ownerId,
+    String recipeId,
+    int rating,
+  ) async {
     final uid = AuthService.currentUser?.uid;
     if (uid == null || rating < 1 || rating > 5) return;
     final recipe = _recipeRef(ownerId, recipeId);
@@ -220,7 +248,7 @@ class RecipeSocialService {
     final recipe = _recipeRef(ownerId, recipeId);
     await recipe.collection('comments').add({
       'userId': user.uid,
-      'userName': (user.displayName?.trim().isNotEmpty ?? false)
+      'name': (user.displayName?.trim().isNotEmpty ?? false)
           ? user.displayName
           : 'Anonymous',
       'userAvatar': user.photoURL,
@@ -235,9 +263,10 @@ class RecipeSocialService {
     String recipeId, {
     int? limit,
   }) {
-    Query<Map<String, dynamic>> q = _recipeRef(ownerId, recipeId)
-        .collection('comments')
-        .orderBy('createdAt', descending: true);
+    Query<Map<String, dynamic>> q = _recipeRef(
+      ownerId,
+      recipeId,
+    ).collection('comments').orderBy('createdAt', descending: true);
     if (limit != null) q = q.limit(limit);
     return q.snapshots();
   }
@@ -246,8 +275,10 @@ class RecipeSocialService {
 
   static Future<void> registerShare(String ownerId, String recipeId) async {
     try {
-      await _recipeRef(ownerId, recipeId)
-          .update({'sharesCount': FieldValue.increment(1)});
+      await _recipeRef(
+        ownerId,
+        recipeId,
+      ).update({'sharesCount': FieldValue.increment(1)});
     } catch (_) {
       // best-effort; sharing itself must never fail because of this
     }
@@ -256,6 +287,7 @@ class RecipeSocialService {
   // ── Live recipe doc (counts) ──────────────────────────────────────────────
 
   static Stream<DocumentSnapshot<Map<String, dynamic>>> recipeStream(
-          String ownerId, String recipeId) =>
-      _recipeRef(ownerId, recipeId).snapshots();
+    String ownerId,
+    String recipeId,
+  ) => _recipeRef(ownerId, recipeId).snapshots();
 }

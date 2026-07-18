@@ -35,7 +35,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
   @override
   void initState() {
     super.initState();
-    UserService.ensureUsername();
+    // UserService.ensureUsername();
     _loadUserDoc();
     final uid = AuthService.currentUser?.uid;
     if (uid != null) {
@@ -43,7 +43,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
         if (u == null || !mounted) return;
         setState(() {
           _bio = u.bio;
-          _username = u.handle;
+          // _username = u.handle;
           _followers = u.followersCount;
           _following = u.followingCount;
         });
@@ -186,9 +186,8 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
               Padding(
                 padding: const EdgeInsets.only(top: 18),
                 child: GestureDetector(
-                  onTap: () => Get.to(
-                    () => const MyRecipesScreen(favoritesOnly: true),
-                  ),
+                  onTap: () =>
+                      Get.to(() => const MyRecipesScreen(favoritesOnly: true)),
                   behavior: HitTestBehavior.opaque,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -547,7 +546,11 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
       ),
       child: Column(
         children: [
-          const OnboardingLineIcon('book', size: 34, color: AppColors.iconLight),
+          const OnboardingLineIcon(
+            'book',
+            size: 34,
+            color: AppColors.iconLight,
+          ),
           const SizedBox(height: 10),
           Text(
             'no_recipes_yet'.tr,

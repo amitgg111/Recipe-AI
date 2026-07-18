@@ -1306,7 +1306,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
   }
 
   Widget _commentPreview(Map<String, dynamic> d) {
-    final name = (d['userName'] as String?)?.trim();
+    final name = (d['name'] as String?)?.trim();
     final display = (name != null && name.isNotEmpty) ? name : 'anonymous'.tr;
     final avatar = d['userAvatar'] as String?;
     final text = (d['text'] as String?) ?? '';

@@ -828,7 +828,7 @@ async function generateStructuredRecipe(ai, prompt) {
 exports.extractRecipeFromSocialContent = onCall(
     {
       secrets: ["GEMINI_API_KEY"],
-      timeoutSeconds: 120,
+      timeoutSeconds: 300,
       memory: "1GiB",
     },
     async (request) => {
@@ -985,7 +985,7 @@ exports.analyzeRecipeVideo = onCall(
 exports.analyzeRecipeImage = onCall(
     {
       secrets: ["GEMINI_API_KEY"],
-      timeoutSeconds: 120,
+      timeoutSeconds: 300,
       memory: "1GiB",
     },
     async (request) => {
@@ -1109,7 +1109,7 @@ exports.analyzeRecipeImage = onCall(
 exports.generateRecipeFromName = onCall(
     {
       secrets: ["GEMINI_API_KEY"],
-      timeoutSeconds: 180,
+      timeoutSeconds: 300,
       memory: "1GiB",
     },
     async (request) => {

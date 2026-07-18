@@ -99,17 +99,17 @@ class NotificationController extends GetxController {
         .limit(_limit)
         .snapshots()
         .listen(
-      (snap) {
-        items.value = snap.docs.map(AppNotification.fromDoc).toList();
-        // If we got a full page, there may be more behind it.
-        hasMore.value = snap.docs.length >= _limit;
-        isLoading.value = false;
-      },
-      onError: (e) {
-        isLoading.value = false;
-        log('Notif feed stream error: $e');
-      },
-    );
+          (snap) {
+            items.value = snap.docs.map(AppNotification.fromDoc).toList();
+            // If we got a full page, there may be more behind it.
+            hasMore.value = snap.docs.length >= _limit;
+            isLoading.value = false;
+          },
+          onError: (e) {
+            isLoading.value = false;
+            log('Notif feed stream error: $e');
+          },
+        );
   }
 
   /// Load the next page (called when the user scrolls near the bottom).
@@ -162,6 +162,7 @@ class NotificationController extends GetxController {
 
   /// Pull-to-refresh: re-subscribe the live streams. They're already real-time,
   /// so this mainly gives the refresh control something to await.
+  @override
   Future<void> refresh() async {
     if (_uid == null) return;
     _listenUnread();

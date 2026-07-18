@@ -263,50 +263,6 @@ class GroceriesScreen extends StatelessWidget {
     );
   }
 
-  // ── US / Metric unit switch ───────────────────────────────────────────────
-  // Every grocery is displayed in the selected measurement system, so nothing
-  // ever mixes ml + cups (or g + oz). Changing it here persists the choice and
-  // the item list re-converts in real time (the body Obx reads unitSystem).
-  Widget _unitToggle() {
-    Widget seg(String label, bool us) {
-      final on = (settings.units.value == 'US') == us;
-      return GestureDetector(
-        onTap: () => settings.setUnits(us ? 'US' : 'Metric'),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: on ? _G.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            label,
-            style: _G.f(
-              12,
-              on ? FontWeight.w800 : FontWeight.w700,
-              on ? Colors.white : _G.textBody,
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Obx(
-      () => Container(
-        padding: const EdgeInsets.all(3),
-        decoration: BoxDecoration(
-          color: _G.card,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: _G.chipBorder),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [seg('US', true), seg('Metric', false)],
-        ),
-      ),
-    );
-  }
-
   // ── By meal (grouped by recipe) ───────────────────────────────────────────
   List<Widget> _buildByMeal(BuildContext context, List<GroceryItem> items) {
     final multiNames = store.multiMealNames;
@@ -382,8 +338,17 @@ class GroceriesScreen extends StatelessWidget {
     }
     return [
       for (final k in order)
-        _MergedItem(map[k]!.first.name, map[k]!.first.aisle, map[k]!),
+        _MergedItem(map[k]!.first.name, _resolvedAisle(map[k]!.first), map[k]!),
     ];
+  }
+
+  /// The item's stored aisle — but if it's still "Other" (or blank), give it a
+  /// second chance with the current keyword map so items that never matched a
+  /// category land in the right aisle. A real, non-"Other" aisle (e.g. one the
+  /// user picked manually) is always kept as-is.
+  String _resolvedAisle(GroceryItem item) {
+    if (item.aisle.isNotEmpty && item.aisle != 'Other') return item.aisle;
+    return store.detectAisle(item.name);
   }
 
   /// Merged total for a group, guaranteed to equal the sum of the per-part

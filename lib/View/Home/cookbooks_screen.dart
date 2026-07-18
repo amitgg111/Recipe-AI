@@ -121,19 +121,23 @@ class _CookbooksScreenState extends State<CookbooksScreen>
           Obx(() {
             final sub = SubscriptionService.instance;
             final plus = sub.isPlusListenable.value;
-            final remaining = (SubscriptionService.kFreeImportLimit -
-                    sub.importCountListenable.value)
-                .clamp(0, SubscriptionService.kFreeImportLimit);
+            final remaining = sub.freeCreditsListenable.value.clamp(
+              0,
+              SubscriptionService.kInitialFreeCredits,
+            );
             return GestureDetector(
               onTap: () => Get.to(() => const UpgradePlusScreen()),
               behavior: HitTestBehavior.opaque,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 7,
+                ),
                 decoration: BoxDecoration(
                   color: plus ? AppColors.purpleBg : AppColors.goldBg,
-                  borderRadius:
-                      BorderRadius.circular(AppDimensions.radiusRound),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusRound,
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -147,7 +151,7 @@ class _CookbooksScreenState extends State<CookbooksScreen>
                     Text(
                       plus
                           ? 'PLUS'
-                          : '$remaining/${SubscriptionService.kFreeImportLimit}',
+                          : '$remaining/${SubscriptionService.kInitialFreeCredits}',
                       style: AppTextStyles.chipLabel.copyWith(
                         color: plus ? AppColors.purpleDark : AppColors.gold,
                         fontSize: 13,
@@ -923,10 +927,9 @@ class _ImportQuotaBanner extends StatelessWidget {
     return Obx(() {
       final sub = SubscriptionService.instance;
       if (sub.isPlusListenable.value) return const SizedBox.shrink();
-      final used = sub.importCountListenable.value;
-      const max = SubscriptionService.kFreeImportLimit;
-      final remaining = (max - used).clamp(0, max);
+      final remaining = sub.freeCreditsListenable.value;
       final exhausted = remaining <= 0;
+      const max = 5;
       final accent = exhausted ? AppColors.purpleDark : AppColors.primary;
       return GestureDetector(
         onTap: exhausted ? () => showUpgradeDialog(context) : null,
@@ -937,7 +940,9 @@ class _ImportQuotaBanner extends StatelessWidget {
             color: exhausted ? AppColors.purpleBgLight : AppColors.surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: exhausted ? AppColors.purpleBorder : AppColors.surfaceBorder,
+              color: exhausted
+                  ? AppColors.purpleBorder
+                  : AppColors.surfaceBorder,
             ),
           ),
           child: Row(
@@ -951,9 +956,7 @@ class _ImportQuotaBanner extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  exhausted
-                      ? Icons.lock_rounded
-                      : Icons.auto_awesome_rounded,
+                  exhausted ? Icons.lock_rounded : Icons.auto_awesome_rounded,
                   size: 20,
                   color: accent,
                 ),
@@ -982,14 +985,16 @@ class _ImportQuotaBanner extends StatelessWidget {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w600,
-                        color: exhausted ? AppColors.purpleDark : AppColors.textMedium,
+                        color: exhausted
+                            ? AppColors.purpleDark
+                            : AppColors.textMedium,
                       ),
                     ),
                     const SizedBox(height: 8),
                     ClipRRect(
                       borderRadius: BorderRadius.circular(999),
                       child: LinearProgressIndicator(
-                        value: max == 0 ? 0 : used / max,
+                        value: max == 0 ? 0 : remaining / max,
                         minHeight: 6,
                         backgroundColor: accent.withValues(alpha: 0.15),
                         valueColor: AlwaysStoppedAnimation(accent),
@@ -1003,7 +1008,7 @@ class _ImportQuotaBanner extends StatelessWidget {
                 const PlusBadge()
               else
                 Text(
-                  '$used/$max',
+                  '$remaining/$max',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
@@ -1134,8 +1139,9 @@ class _CookbookCard extends StatelessWidget {
                   border: Border.all(color: AppColors.surfaceBorder),
                 ),
                 child: ClipRRect(
-                  borderRadius:
-                      BorderRadius.circular(AppDimensions.radiusLg - 1),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusLg - 1,
+                  ),
                   child: _buildImageGrid(),
                 ),
               ),
@@ -1260,8 +1266,10 @@ class _RecipeCard extends StatelessWidget {
                     top: 8,
                     right: 8,
                     child: GestureDetector(
-                      onTap: () => Get.find<HomeController>()
-                          .toggleFavorite(recipe.id, !recipe.isFavorite),
+                      onTap: () => Get.find<HomeController>().toggleFavorite(
+                        recipe.id,
+                        !recipe.isFavorite,
+                      ),
                       behavior: HitTestBehavior.opaque,
                       child: Container(
                         width: 28,
@@ -1318,6 +1326,8 @@ class _RecipeCard extends StatelessWidget {
                           style: AppTextStyles.smallLabel.copyWith(
                             fontSize: 12,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.clip,
                         ),
                       ),
                     ],
@@ -1467,10 +1477,7 @@ class ImportRecipeBottomSheet extends StatelessWidget {
           const SizedBox(height: 20),
           Text('add_recipe'.tr, style: AppTextStyles.screenTitle),
           const SizedBox(height: 6),
-          Text(
-            'choose_how_add_recipe'.tr,
-            style: AppTextStyles.bodyMedium,
-          ),
+          Text('choose_how_add_recipe'.tr, style: AppTextStyles.bodyMedium),
           const SizedBox(height: 25),
           _ImportOptionTile(
             icon: Icons.video_library_outlined,

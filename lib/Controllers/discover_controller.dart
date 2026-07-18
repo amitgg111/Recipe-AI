@@ -116,71 +116,70 @@ class DiscoverController extends GetxController {
     if (recipes.isEmpty) isLoading.value = true;
 
     try {
-      final usersSnapshot =
-          await FirebaseFirestore.instance.collection('users').get();
+      // Recipes live in the TOP-LEVEL 'recipes' collection with an 'ownerId'
+      // field — NOT inside users/{uid}/recipes subcollections. Query directly.
+      final recipesSnapshot = await FirebaseFirestore.instance
+          .collection('recipes')
+          .where('isPublic', isEqualTo: true)
+          .limit(200)
+          .get();
 
-      // Fan out every user's public-recipe query in PARALLEL instead of
-      // awaiting them one-by-one. This turns N sequential network round-trips
-      // (the slow part) into a single concurrent wave. Each query is guarded
-      // so one user's permission/read error can't blank the whole feed.
-      final perUser = await Future.wait(
-        usersSnapshot.docs.map((userDoc) async {
-          final userData = userDoc.data();
-          final userName = userData['name']?.toString() ?? 'Chef';
-          final userAvatar = userData['photoUrl']?.toString();
+      // Collect unique owner uids so we can batch-fetch their profiles.
+      final ownerIds = <String>{};
+      for (final doc in recipesSnapshot.docs) {
+        final ownerId = doc.data()['ownerId']?.toString();
+        if (ownerId != null) ownerIds.add(ownerId);
+      }
 
-          try {
-            // Only a single-field equality filter here — adding an orderBy
-            // would need a composite index; we sort client-side instead.
-            final recipesSnapshot = await FirebaseFirestore.instance
-                .collection('users')
-                .doc(userDoc.id)
-                .collection('recipes')
-                .where('visibility', isEqualTo: 'public')
-                .limit(30)
-                .get();
-
-            final out = <DiscoverRecipe>[];
-            for (final recipeDoc in recipesSnapshot.docs) {
-              final data = recipeDoc.data();
-              // Never surface soft-deleted recipes in Discover.
-              if (data['isDeleted'] == true) continue;
-
-              out.add(DiscoverRecipe(
-                id: recipeDoc.id,
-                title: data['title']?.toString() ?? 'Untitled',
-                description: data['description']?.toString(),
-                imageUrl: data['imageUrl']?.toString(),
-                category: data['category']?.toString(),
-                cuisine: data['cuisine']?.toString(),
-                prepTime: data['prepTime']?.toString(),
-                cookTime: data['cookTime']?.toString(),
-                totalTime: data['totalTime']?.toString(),
-                servings: data['servings']?.toString(),
-                ingredients: List<String>.from(data['ingredients'] ?? []),
-                instructions: List<String>.from(data['instructions'] ?? []),
-                userId: userDoc.id,
-                userName: userName,
-                userAvatar: userAvatar,
-                createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
-                likesCount: (data['likesCount'] as num?)?.toInt() ?? 0,
-                commentsCount: (data['commentsCount'] as num?)?.toInt() ?? 0,
-                sharesCount: (data['sharesCount'] as num?)?.toInt() ?? 0,
-                savesCount: (data['savesCount'] as num?)?.toInt() ?? 0,
-              ));
-            }
-            return out;
-          } catch (e) {
-            log('Discover: skipped ${userDoc.id}: $e');
-            return const <DiscoverRecipe>[];
+      // Fetch all owner profiles in parallel.
+      final userProfiles = <String, Map<String, dynamic>>{};
+      if (ownerIds.isNotEmpty) {
+        final userFutures = ownerIds.map((uid) =>
+            FirebaseFirestore.instance.collection('users').doc(uid).get());
+        final userDocs = await Future.wait(userFutures);
+        for (final userDoc in userDocs) {
+          if (userDoc.exists) {
+            userProfiles[userDoc.id] = userDoc.data() ?? {};
           }
-        }),
-      );
+        }
+      }
 
-      final allRecipes = perUser.expand((e) => e).toList();
+      final allRecipes = <DiscoverRecipe>[];
+      for (final recipeDoc in recipesSnapshot.docs) {
+        final data = recipeDoc.data();
+        // Never surface soft-deleted recipes in Discover.
+        if (data['isDeleted'] == true) continue;
 
-      // Newest first, then shuffle for a varied feed (matches prior behaviour
-      // but without needing a Firestore composite index).
+        final ownerId = data['ownerId']?.toString() ?? '';
+        final ownerData = userProfiles[ownerId] ?? {};
+        final userName = ownerData['name']?.toString() ?? 'Chef';
+        final userAvatar = ownerData['photoUrl']?.toString();
+
+        allRecipes.add(DiscoverRecipe(
+          id: recipeDoc.id,
+          title: data['title']?.toString() ?? 'Untitled',
+          description: data['description']?.toString(),
+          imageUrl: data['imageUrl']?.toString(),
+          category: data['category']?.toString(),
+          cuisine: data['cuisine']?.toString(),
+          prepTime: data['prepTime']?.toString(),
+          cookTime: data['cookTime']?.toString(),
+          totalTime: data['totalTime']?.toString(),
+          servings: data['servings']?.toString(),
+          ingredients: List<String>.from(data['ingredients'] ?? []),
+          instructions: List<String>.from(data['instructions'] ?? []),
+          userId: ownerId,
+          userName: userName,
+          userAvatar: userAvatar,
+          createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+          likesCount: (data['likesCount'] as num?)?.toInt() ?? 0,
+          commentsCount: (data['commentsCount'] as num?)?.toInt() ?? 0,
+          sharesCount: (data['sharesCount'] as num?)?.toInt() ?? 0,
+          savesCount: (data['savesCount'] as num?)?.toInt() ?? 0,
+        ));
+      }
+
+      // Newest first, then shuffle for a varied feed.
       allRecipes.sort((a, b) {
         final ad = a.createdAt;
         final bd = b.createdAt;

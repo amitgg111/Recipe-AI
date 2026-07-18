@@ -131,57 +131,57 @@ class PlanRecipe {
   String get dedupeKey => title.trim().toLowerCase();
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'title': title,
-        'imageUrl': imageUrl,
-        'cuisine': cuisine,
-        'category': category,
-        'keywords': keywords,
-        'ingredients': ingredients,
-        'instructions': instructions,
-        'prepTime': prepTime,
-        'cookTime': cookTime,
-        'totalTime': totalTime,
-        'servings': servings,
-        'source': source.name,
-      };
+    'id': id,
+    'title': title,
+    'imageUrl': imageUrl,
+    'cuisine': cuisine,
+    'category': category,
+    'keywords': keywords,
+    'ingredients': ingredients,
+    'instructions': instructions,
+    'prepTime': prepTime,
+    'cookTime': cookTime,
+    'totalTime': totalTime,
+    'servings': servings,
+    'source': source.name,
+  };
 
   factory PlanRecipe.fromJson(Map<String, dynamic> m) => PlanRecipe(
-        id: m['id']?.toString() ?? '',
-        title: m['title']?.toString() ?? '',
-        imageUrl: m['imageUrl']?.toString(),
-        cuisine: m['cuisine']?.toString(),
-        category: m['category']?.toString(),
-        keywords:
-            (m['keywords'] as List?)?.map((e) => e.toString()).toList() ?? [],
-        ingredients:
-            (m['ingredients'] as List?)?.map((e) => e.toString()).toList() ?? [],
-        instructions:
-            (m['instructions'] as List?)?.map((e) => e.toString()).toList() ??
-                [],
-        prepTime: m['prepTime']?.toString(),
-        cookTime: m['cookTime']?.toString(),
-        totalTime: m['totalTime']?.toString(),
-        servings: (m['servings'] as num?)?.toDouble() ?? 4,
-        source: PlanSource.values.firstWhere((s) => s.name == m['source'],
-            orElse: () => PlanSource.ai),
-      );
+    id: m['id']?.toString() ?? '',
+    title: m['title']?.toString() ?? '',
+    imageUrl: m['imageUrl']?.toString(),
+    cuisine: m['cuisine']?.toString(),
+    category: m['category']?.toString(),
+    keywords: (m['keywords'] as List?)?.map((e) => e.toString()).toList() ?? [],
+    ingredients:
+        (m['ingredients'] as List?)?.map((e) => e.toString()).toList() ?? [],
+    instructions:
+        (m['instructions'] as List?)?.map((e) => e.toString()).toList() ?? [],
+    prepTime: m['prepTime']?.toString(),
+    cookTime: m['cookTime']?.toString(),
+    totalTime: m['totalTime']?.toString(),
+    servings: (m['servings'] as num?)?.toDouble() ?? 4,
+    source: PlanSource.values.firstWhere(
+      (s) => s.name == m['source'],
+      orElse: () => PlanSource.ai,
+    ),
+  );
 
   factory PlanRecipe.fromRecipeModel(RecipeModel r) => PlanRecipe(
-        id: r.id,
-        title: r.title,
-        imageUrl: r.imageUrl,
-        cuisine: r.cuisine,
-        category: r.category,
-        keywords: r.keywords,
-        ingredients: r.ingredients,
-        instructions: r.instructions,
-        prepTime: r.prepTime,
-        cookTime: r.cookTime,
-        totalTime: r.totalTime,
-        servings: r.servingCount,
-        source: PlanSource.cookbook,
-      );
+    id: r.id,
+    title: r.title,
+    imageUrl: r.imageUrl,
+    cuisine: r.cuisine,
+    category: r.category,
+    keywords: r.keywords,
+    ingredients: r.ingredients,
+    instructions: r.instructions,
+    prepTime: r.prepTime,
+    cookTime: r.cookTime,
+    totalTime: r.totalTime,
+    servings: r.servingCount,
+    source: PlanSource.cookbook,
+  );
 
   /// From a raw Firestore recipe map (community) or parsed AI recipe.
   factory PlanRecipe.fromMap(
@@ -217,34 +217,43 @@ class PlannedMeal {
   PlanRecipe recipe;
   PlannedMeal({required this.day, required this.slot, required this.recipe});
 
-  Map<String, dynamic> toJson() =>
-      {'day': day, 'slot': slot, 'recipe': recipe.toJson()};
+  Map<String, dynamic> toJson() => {
+    'day': day,
+    'slot': slot,
+    'recipe': recipe.toJson(),
+  };
 
   factory PlannedMeal.fromJson(Map<String, dynamic> m) => PlannedMeal(
-        day: (m['day'] as num?)?.toInt() ?? 0,
-        slot: m['slot']?.toString() ?? 'Breakfast',
-        recipe: PlanRecipe.fromJson(
-            Map<String, dynamic>.from(m['recipe'] as Map? ?? {})),
-      );
+    day: (m['day'] as num?)?.toInt() ?? 0,
+    slot: m['slot']?.toString() ?? 'Breakfast',
+    recipe: PlanRecipe.fromJson(
+      Map<String, dynamic>.from(m['recipe'] as Map? ?? {}),
+    ),
+  );
 }
 
 /// Drives the "Auto-fill my week" flow. Generation ALWAYS succeeds; the API is
 /// the last resort — Cookbook first, then Community, then only the missing
 /// recipes from AI. This priority is mandatory and never violated.
+
 class MealPlannerController extends GetxController {
   static MealPlannerController get to =>
       Get.isRegistered<MealPlannerController>()
-          ? Get.find<MealPlannerController>()
-          : Get.put(MealPlannerController(), permanent: true);
+      ? Get.find<MealPlannerController>()
+      : Get.put(MealPlannerController(), permanent: true);
 
   // ── Inputs from the goal sheet ─────────────────────────────────────────────
+  // `goal` kept for backward-compat (first selected goal); `goals` is the
+  // source of truth for multi-select.
   final Rx<MealGoal> goal = MealGoal.healthy.obs;
+  final RxList<MealGoal> goals = <MealGoal>[MealGoal.healthy].obs;
   String customPrompt = '';
   int servings = 4;
 
   static const List<String> slots = ['Breakfast', 'Lunch', 'Dinner'];
   static const int days = 7;
-  int get target => slots.length * days; // 21
+  int get target =>
+      slots.length * _allowedDays.length; // was: slots.length * days
 
   /// Only generate at most this many recipes via AI in one run — the plan is
   /// always completed (repeats fill any remainder) so we never storm the API.
@@ -264,11 +273,35 @@ class MealPlannerController extends GetxController {
   // ═══════════════════════════════════════════════════════════════════════════
   // GENERATE
   // ═══════════════════════════════════════════════════════════════════════════
+  List<int> _allowedDays = List.generate(days, (i) => i);
+
+  DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  List<int> _allowedDayIndices(DateTime weekStart) {
+    final today = _dateOnly(DateTime.now());
+    final indices = <int>[];
+    for (var i = 0; i < days; i++) {
+      final date = _dateOnly(weekStart.add(Duration(days: i)));
+      if (!date.isBefore(today)) indices.add(i);
+    }
+    return indices;
+  }
 
   Future<void> generateWeeklyPlan() async {
     aiUsed.value = false;
     _pool.clear();
     meals.clear();
+    final planCtrl = Get.find<MealPlanController>();
+    final weekStart = planCtrl.selectedWeekStart.value;
+    _allowedDays = _allowedDayIndices(weekStart);
+    if (_allowedDays.isEmpty) {
+      // Entire visible week is already in the past — nothing to generate.
+      meals.value = [];
+      steps.value = [
+        GenStep('Nothing left to plan this week', MpStepState.done),
+      ];
+      return;
+    }
 
     // Steps are revealed progressively; the AI step only appears if used.
     steps.value = [
@@ -305,7 +338,10 @@ class MealPlannerController extends GetxController {
     if (_pool.length < target) {
       aiUsed.value = true;
       // Insert the AI step before "Building…".
-      steps.insert(3, GenStep('Generating missing recipes', MpStepState.active));
+      steps.insert(
+        3,
+        GenStep('Generating missing recipes', MpStepState.active),
+      );
       steps.refresh();
       final missing = target - _pool.length;
       final generated = await generateMissingRecipes(missing);
@@ -343,8 +379,8 @@ class MealPlannerController extends GetxController {
   // SOURCES
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /// Priority 1 — the user's saved recipes, filtered to the goal. In-memory, no
-  /// I/O. Only recipes matching the selected goal are considered.
+  /// Priority 1 — the user's saved recipes, filtered to the goal(s). In-memory,
+  /// no I/O. Only recipes matching AT LEAST ONE selected goal are considered.
   List<PlanRecipe> searchCookbook() {
     final home = Get.isRegistered<HomeController>()
         ? Get.find<HomeController>()
@@ -360,47 +396,46 @@ class MealPlannerController extends GetxController {
   }
 
   /// Priority 2 — public Community recipes from Firebase, same goal filters.
-  /// Bounded per-user fan-out (no collectionGroup / composite index needed).
+  /// Queries the top-level `recipes` collection directly.
   Future<List<PlanRecipe>> searchCommunityRecipes() async {
     final out = <PlanRecipe>[];
     try {
       final db = FirebaseFirestore.instance;
       final uid = AuthService.currentUser?.uid;
-      final users = await db.collection('users').limit(30).get();
-      for (final u in users.docs) {
-        if (out.length >= target * 2) break;
-        try {
-          final snap = await db
-              .collection('users')
-              .doc(u.id)
-              .collection('recipes')
-              .where('visibility', isEqualTo: 'public')
-              .limit(10)
-              .get();
-          for (final d in snap.docs) {
-            final data = d.data();
-            if (data['isDeleted'] == true) continue;
-            if (u.id == uid) continue; // already covered by Cookbook
-            final pr = PlanRecipe.fromMap(d.id, data, PlanSource.community);
-            if (_matchesGoal(pr)) out.add(pr);
-          }
-        } catch (_) {/* skip this user */}
+      final snap = await db
+          .collection('recipes')
+          .where('isPublic', isEqualTo: true)
+          .limit(100)
+          .get();
+      for (final d in snap.docs) {
+        final data = d.data();
+        if (data['isDeleted'] == true) continue;
+        if (data['ownerId'] == uid) continue; // already covered by Cookbook
+        final pr = PlanRecipe.fromMap(d.id, data, PlanSource.community);
+        if (_matchesGoal(pr)) out.add(pr);
       }
-    } catch (_) {/* offline / permission — fall through to AI */}
+    } catch (_) {
+      /* offline / permission — fall through to AI */
+    }
     out.shuffle(_rand);
     return out;
   }
 
   /// Priority 3 — generate only the [count] missing recipes via the API,
-  /// biased to the goal + custom prompt. Never regenerates what we already have.
+  /// biased to the selected goal(s) + custom prompt. Cycles through every
+  /// selected goal's bias so each goal gets fair representation. Never
+  /// regenerates what we already have.
   Future<List<PlanRecipe>> generateMissingRecipes(int count) async {
     final n = math.min(count, _aiCap);
     final out = <PlanRecipe>[];
-    final bias = goal.value.aiBias;
+    final selectedGoals = goals.isNotEmpty ? goals : [goal.value];
     final extra = customPrompt.trim();
     final slotCycle = ['breakfast', 'lunch', 'dinner'];
     for (var i = 0; i < n; i++) {
       final meal = slotCycle[i % slotCycle.length];
+      // Rotate through selected goals so a 3-goal pick doesn't skew all AI
+      // recipes toward only the first goal.
+      final bias = selectedGoals[i % selectedGoals.length].aiBias;
       final name = [
         bias,
         if (extra.isNotEmpty) extra,
@@ -415,7 +450,9 @@ class MealPlannerController extends GetxController {
           PlanSource.ai,
         );
         if (pr.title.trim().isNotEmpty) out.add(pr);
-      } catch (_) {/* skip a failed generation; the plan still completes */}
+      } catch (_) {
+        /* skip a failed generation; the plan still completes */
+      }
     }
     return out;
   }
@@ -458,8 +495,8 @@ class MealPlannerController extends GetxController {
       final biased = slot == 'Breakfast'
           ? light
           : slot == 'Dinner'
-              ? heavy
-              : _pool;
+          ? heavy
+          : _pool;
       for (final relax in [0, 1, 2, 3]) {
         final ordered = [...biased, ..._pool]..shuffle(_rand);
         final seen = <String>{};
@@ -484,7 +521,7 @@ class MealPlannerController extends GetxController {
       return _pool[_rand.nextInt(_pool.length)];
     }
 
-    for (var day = 0; day < days; day++) {
+    for (final day in _allowedDays) {
       final dayCuisines = <String>{};
       for (final slot in slots) {
         final r = pick(day, slot, dayCuisines)!;
@@ -496,6 +533,7 @@ class MealPlannerController extends GetxController {
         result.add(PlannedMeal(day: day, slot: slot, recipe: r));
       }
     }
+
     meals.value = result;
   }
 
@@ -509,6 +547,8 @@ class MealPlannerController extends GetxController {
   /// Swap a single meal for a different recipe from the pool (Cookbook first,
   /// then Community, then AI), avoiding this-day repeats.
   void shuffleMeal(int day, String slot) {
+    if (!_allowedDays.contains(day)) return; // never touch a past day
+
     if (_pool.length < 2) return;
     final current = _mealAt(day, slot);
     final sameDay = meals
@@ -517,9 +557,11 @@ class MealPlannerController extends GetxController {
         .toSet();
     // Prefer other days' usage low, respect source priority order.
     final candidates = [..._pool]
-      ..removeWhere((r) =>
-          r.dedupeKey == current.recipe.dedupeKey ||
-          sameDay.contains(r.dedupeKey))
+      ..removeWhere(
+        (r) =>
+            r.dedupeKey == current.recipe.dedupeKey ||
+            sameDay.contains(r.dedupeKey),
+      )
       ..sort((a, b) => a.source.index.compareTo(b.source.index));
     if (candidates.isEmpty) return;
     // Pick randomly among the top-priority tier for variety.
@@ -531,6 +573,7 @@ class MealPlannerController extends GetxController {
   }
 
   void shuffleDay(int day) {
+    if (!_allowedDays.contains(day)) return;
     for (final slot in slots) {
       shuffleMeal(day, slot);
     }
@@ -551,6 +594,7 @@ class MealPlannerController extends GetxController {
     final plan = Get.find<MealPlanController>();
     final weekStart = plan.selectedWeekStart.value;
     final weekDays = plan.getDaysOfWeek(weekStart);
+    final today = _dateOnly(DateTime.now());
 
     // Silent clear of the target week (avoids clearWeek()'s snackbar) so a
     // re-apply doesn't stack duplicate meals.
@@ -558,6 +602,10 @@ class MealPlannerController extends GetxController {
 
     final idCache = <String, String?>{}; // dedupeKey → resolved recipeId
     for (final m in meals) {
+      final date = weekDays[m.day];
+      if (_dateOnly(date).isBefore(today))
+        continue; // hard guard: skip past dates
+
       final key = m.recipe.dedupeKey;
       String? recipeId;
       if (idCache.containsKey(key)) {
@@ -570,7 +618,7 @@ class MealPlannerController extends GetxController {
       }
       if (recipeId == null) continue;
       await plan.addMealPlanItem(
-        date: weekDays[m.day],
+        date: date,
         mealType: m.slot,
         recipeId: recipeId,
         recipeTitle: m.recipe.title,
@@ -598,12 +646,15 @@ class MealPlannerController extends GetxController {
     try {
       await _draftRef?.set({
         'goal': goal.value.name,
+        'goals': goals.map((g) => g.name).toList(),
         'servings': servings,
         'aiUsed': aiUsed.value,
         'meals': meals.map((m) => m.toJson()).toList(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
-    } catch (_) {/* best effort */}
+    } catch (_) {
+      /* best effort */
+    }
   }
 
   Future<void> _clearDraft() async {
@@ -633,12 +684,42 @@ class MealPlannerController extends GetxController {
       final restored = list
           .map((e) => PlannedMeal.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();
+
+      // Recompute which days are still valid (date may have moved forward
+      // since the draft was saved) and drop any meal that's now in the past.
+      final planCtrl = Get.find<MealPlanController>();
+      _allowedDays = _allowedDayIndices(planCtrl.selectedWeekStart.value);
+      restored.removeWhere((m) => !_allowedDays.contains(m.day));
+
+      if (restored.isEmpty) return false;
+
       meals.value = restored;
       _pool
         ..clear()
-        ..addAll({for (final m in restored) m.recipe.dedupeKey: m.recipe}.values);
-      goal.value = MealGoal.values.firstWhere((g) => g.name == data?['goal'],
-          orElse: () => MealGoal.healthy);
+        ..addAll(
+          {for (final m in restored) m.recipe.dedupeKey: m.recipe}.values,
+        );
+      final goalsRaw = data?['goals'] as List?;
+      if (goalsRaw != null && goalsRaw.isNotEmpty) {
+        final restoredGoals = goalsRaw
+            .map(
+              (name) => MealGoal.values.firstWhere(
+                (g) => g.name == name,
+                orElse: () => MealGoal.healthy,
+              ),
+            )
+            .toSet()
+            .toList();
+        goals.value = restoredGoals;
+        goal.value = restoredGoals.first;
+      } else {
+        final single = MealGoal.values.firstWhere(
+          (g) => g.name == data?['goal'],
+          orElse: () => MealGoal.healthy,
+        );
+        goal.value = single;
+        goals.value = [single];
+      }
       servings = (data?['servings'] as num?)?.toInt() ?? 4;
       aiUsed.value = data?['aiUsed'] == true;
       return true;
@@ -648,7 +729,9 @@ class MealPlannerController extends GetxController {
   }
 
   Future<void> _clearWeekSilently(
-      MealPlanController plan, DateTime weekStart) async {
+    MealPlanController plan,
+    DateTime weekStart,
+  ) async {
     final uid = AuthService.currentUser?.uid;
     if (uid == null) return;
     try {
@@ -667,7 +750,9 @@ class MealPlannerController extends GetxController {
         batch.delete(d.reference);
       }
       await batch.commit();
-    } catch (_) {/* best effort */}
+    } catch (_) {
+      /* best effort */
+    }
   }
 
   /// Save a Community/AI recipe into `users/{uid}/recipes` and return its id.
@@ -676,34 +761,33 @@ class MealPlannerController extends GetxController {
     if (uid == null) return null;
     try {
       final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
           .collection('recipes')
           .add({
-        'title': r.title,
-        'description': null,
-        'imageUrl': r.imageUrl,
-        'sourceUrl': '',
-        'prepTime': r.prepTime,
-        'cookTime': r.cookTime,
-        'totalTime': r.totalTime,
-        'servings': r.servings.round().toString(),
-        'category': r.category,
-        'cuisine': r.cuisine,
-        'keywords': r.keywords,
-        'ingredients': r.ingredients,
-        'instructions': r.instructions,
-        'ingredientSections': const [],
-        'instructionSections': const [],
-        'visibility': 'private',
-        'isPublic': false,
-        'recipeSource':
-            r.source == PlanSource.ai ? 'imported' : 'discovered',
-        'isDeleted': false,
-        'likesCount': 0,
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+            'ownerId': uid,
+            'title': r.title,
+            'description': null,
+            'imageUrl': r.imageUrl,
+            'sourceUrl': '',
+            'prepTime': r.prepTime,
+            'cookTime': r.cookTime,
+            'totalTime': r.totalTime,
+            'servings': r.servings.round().toString(),
+            'category': r.category,
+            'cuisine': r.cuisine,
+            'keywords': r.keywords,
+            'ingredients': r.ingredients,
+            'instructions': r.instructions,
+            'ingredientSections': const [],
+            'instructionSections': const [],
+            'isPublic': false,
+            'recipeSource': r.source == PlanSource.ai
+                ? 'imported'
+                : 'discovered',
+            'isDeleted': false,
+            'likesCount': 0,
+            'createdAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
       return doc.id;
     } catch (_) {
       return null;
@@ -715,18 +799,61 @@ class MealPlannerController extends GetxController {
   // ═══════════════════════════════════════════════════════════════════════════
 
   static const _meat = [
-    'chicken', 'beef', 'pork', 'mutton', 'lamb', 'fish', 'shrimp', 'prawn',
-    'bacon', 'ham', 'turkey', 'sausage', 'salmon', 'tuna', 'meat', 'gelatin',
-    'anchovy', 'crab', 'lobster'
+    'chicken',
+    'beef',
+    'pork',
+    'mutton',
+    'lamb',
+    'fish',
+    'shrimp',
+    'prawn',
+    'bacon',
+    'ham',
+    'turkey',
+    'sausage',
+    'salmon',
+    'tuna',
+    'meat',
+    'gelatin',
+    'anchovy',
+    'crab',
+    'lobster',
   ];
   static const _proteinRich = [
-    'chicken', 'beef', 'egg', 'paneer', 'tofu', 'lentil', 'dal', 'bean',
-    'chickpea', 'yogurt', 'greek', 'protein', 'quinoa', 'tempeh', 'fish',
-    'salmon', 'turkey', 'cottage cheese', 'peanut'
+    'chicken',
+    'beef',
+    'egg',
+    'paneer',
+    'tofu',
+    'lentil',
+    'dal',
+    'bean',
+    'chickpea',
+    'yogurt',
+    'greek',
+    'protein',
+    'quinoa',
+    'tempeh',
+    'fish',
+    'salmon',
+    'turkey',
+    'cottage cheese',
+    'peanut',
   ];
 
+  /// A recipe matches if it satisfies ANY of the currently selected goals
+  /// (OR logic) — e.g. Vegetarian + Quick&Easy shows veg recipes AND quick
+  /// recipes, not only the intersection.
   bool _matchesGoal(PlanRecipe r) {
-    switch (goal.value) {
+    final selected = goals.isNotEmpty ? goals : [goal.value];
+    for (final g in selected) {
+      if (_matchesSingleGoal(r, g)) return true;
+    }
+    return false;
+  }
+
+  bool _matchesSingleGoal(PlanRecipe r, MealGoal g) {
+    switch (g) {
       case MealGoal.vegetarian:
         return _isVegetarian(r);
       case MealGoal.quickEasy:
@@ -737,7 +864,13 @@ class MealPlannerController extends GetxController {
         // Lenient: veg-forward, or reasonable calories, or a healthy keyword.
         if (_isVegetarian(r)) return true;
         if (_hasAny(r, const [
-          'salad', 'bowl', 'grilled', 'baked', 'healthy', 'roasted', 'steamed'
+          'salad',
+          'bowl',
+          'grilled',
+          'baked',
+          'healthy',
+          'roasted',
+          'steamed',
         ])) {
           return true;
         }
@@ -747,9 +880,10 @@ class MealPlannerController extends GetxController {
   }
 
   bool _isVegetarian(PlanRecipe r) {
-    final hay = '${r.title} ${r.ingredients.join(' ')} '
-            '${r.keywords.join(' ')} ${r.category ?? ''}'
-        .toLowerCase();
+    final hay =
+        '${r.title} ${r.ingredients.join(' ')} '
+                '${r.keywords.join(' ')} ${r.category ?? ''}'
+            .toLowerCase();
     for (final m in _meat) {
       if (hay.contains(m)) return false;
     }
@@ -757,9 +891,10 @@ class MealPlannerController extends GetxController {
   }
 
   bool _hasAny(PlanRecipe r, List<String> terms) {
-    final hay = '${r.title} ${r.keywords.join(' ')} '
-            '${r.category ?? ''} ${r.cuisine ?? ''} ${r.ingredients.join(' ')}'
-        .toLowerCase();
+    final hay =
+        '${r.title} ${r.keywords.join(' ')} '
+                '${r.category ?? ''} ${r.cuisine ?? ''} ${r.ingredients.join(' ')}'
+            .toLowerCase();
     return terms.any(hay.contains);
   }
 
@@ -785,8 +920,11 @@ class MealPlannerController extends GetxController {
   /// Minutes parsed from the first non-empty time string. Mirrors the app's
   /// only time parser (DiscoverController._minutes).
   int _minutes(PlanRecipe r) {
-    final t = [r.totalTime, r.cookTime, r.prepTime]
-        .firstWhere((e) => (e ?? '').trim().isNotEmpty, orElse: () => null);
+    final t = [
+      r.totalTime,
+      r.cookTime,
+      r.prepTime,
+    ].firstWhere((e) => (e ?? '').trim().isNotEmpty, orElse: () => null);
     if (t == null) return 0;
     final s = t.toLowerCase();
     final h = RegExp(r'(\d+)\s*h').firstMatch(s);
@@ -800,6 +938,8 @@ class MealPlannerController extends GetxController {
     }
     return total;
   }
+
+  //------------------------------------------------------------------------
 }
 
 class _Nut {

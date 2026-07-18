@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -14,6 +16,7 @@ import 'package:recipe_ai/Controllers/profile_controller.dart';
 import 'package:recipe_ai/Controllers/recipe_editor_controller.dart';
 import 'package:recipe_ai/Controllers/settings_controller.dart';
 import 'package:recipe_ai/Service/subscription_service.dart';
+import 'package:recipe_ai/Service/revenuecat_service.dart';
 import 'package:recipe_ai/Controllers/onboarding_controller.dart';
 import 'package:recipe_ai/Controllers/notification_controller.dart';
 import 'package:recipe_ai/Controllers/share_intent_service_controller.dart';
@@ -106,6 +109,10 @@ void main() async {
   Get.put(CookbookController(), permanent: true);
   Get.put(SettingsController(), permanent: true);
   Get.put(SubscriptionService(), permanent: true);
+  // In-app purchases (RevenueCat). Configures only once real keys are set in
+  // RevenueCatConfig; entitlement changes drive SubscriptionService.isPlus.
+  Get.put(RevenueCatService(), permanent: true);
+  unawaited(RevenueCatService.instance.configure());
   Get.put(OnboardingController(), permanent: true);
   // Real-time in-app notification feed + unread badge (self-binds to auth).
   Get.put(NotificationController(), permanent: true);
@@ -133,9 +140,11 @@ void _bindNotificationsToAuth() {
       await NotificationService.instance.loginUser(user.uid);
       await settings.bindUser(user.uid);
       await subscription.bindUser(user.uid);
+      await RevenueCatService.instance.loginUser(user.uid);
     } else {
       await settings.onLogout();
       subscription.onLogout();
+      await RevenueCatService.instance.logoutUser();
     }
   });
 }

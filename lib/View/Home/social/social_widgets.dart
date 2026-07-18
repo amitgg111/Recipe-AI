@@ -23,7 +23,8 @@ class UserAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasPhoto = photoUrl != null &&
+    final hasPhoto =
+        photoUrl != null &&
         photoUrl!.isNotEmpty &&
         photoUrl!.startsWith('http');
     return ClipOval(
@@ -193,16 +194,6 @@ class UserTile extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 1),
-                  Text(
-                    '@${user.handle}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textMedium,
-                    ),
-                  ),
                 ],
               ),
             ),
