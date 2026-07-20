@@ -68,16 +68,23 @@ class _AutoFillGoalSheetState extends State<AutoFillGoalSheet> {
 
   void _generate() {
     if (_selectedGoals.isEmpty) return;
+
     final c = MealPlannerController.to;
+
     final goalsList = MealGoal.values
         .where((g) => _selectedGoals.contains(g))
         .toList();
-    // Keep single-value `goal` in sync (first selected) for any code that
-    // still reads it, and also push the full multi-select list.
+
     c.goal.value = goalsList.first;
-    c.goals.value = goalsList; // ← "Goal" ne "goals" karyu (lowercase g)
+    c.goals.value = goalsList;
+
     c.customPrompt = _promptCtrl.text.trim();
+
+    // Selected cuisine pass to MealPlannerController
+    c.selectedCuisine = CuisineController.to.selectedCuisine.value.trim();
+
     Navigator.pop(context);
+
     Get.to(
       () => const MealPlanGeneratingScreen(),
       transition: Transition.fadeIn,
@@ -275,7 +282,7 @@ class _AutoFillGoalSheetState extends State<AutoFillGoalSheet> {
                 ),
               ),
 
-              Flexible(
+              Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(18, 6, 18, 6),
                   child: Column(
@@ -351,6 +358,7 @@ class _AutoFillGoalSheetState extends State<AutoFillGoalSheet> {
                         }
 
                         return Column(
+                          mainAxisAlignment: MainAxisAlignment.start,
                           children: GoalController.to.goals.map((goal) {
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 10),
@@ -534,7 +542,7 @@ class GoalOptionCard extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: selected ? Mp.purpleBg : Mp.card,
           borderRadius: BorderRadius.circular(16),
@@ -545,63 +553,84 @@ class GoalOptionCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(
+            // Image / Emoji
+            SizedBox(
               width: 46,
               height: 46,
-              decoration: BoxDecoration(
-                color: selected ? const Color(0xFFF4EEFF) : Colors.white,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: hasImage
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        image!,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, progress) {
-                          if (progress == null) return child;
+              child: Container(
+                decoration: BoxDecoration(
+                  color: selected ? const Color(0xFFF4EEFF) : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: hasImage
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          image!,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, progress) {
+                            if (progress == null) return child;
 
-                          return const Center(
-                            child: SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          return Center(
-                            child: Text(
-                              emoji ?? "🍽️",
-                              style: const TextStyle(fontSize: 24),
-                            ),
-                          );
-                        },
+                            return const Center(
+                              child: SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return Center(
+                              child: Text(
+                                emoji ?? "🍽️",
+                                style: const TextStyle(fontSize: 24),
+                              ),
+                            );
+                          },
+                        ),
+                      )
+                    : Center(
+                        child: Text(
+                          emoji ?? "🍽️",
+                          style: const TextStyle(fontSize: 24),
+                        ),
                       ),
-                    )
-                  : Center(
-                      child: Text(
-                        emoji ?? "🍽️",
-                        style: const TextStyle(fontSize: 24),
-                      ),
-                    ),
+              ),
             ),
 
             const SizedBox(width: 13),
 
+            // Text
             Expanded(
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(title, style: Mp.f(15, FontWeight.w800, Mp.ink)),
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Mp.f(15, FontWeight.w800, Mp.ink),
+                  ),
+
                   const SizedBox(height: 2),
-                  Text(subtitle, style: Mp.f(12.5, FontWeight.w500, Mp.muted)),
+
+                  Text(
+                    subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Mp.f(12.5, FontWeight.w500, Mp.muted),
+                  ),
                 ],
               ),
             ),
 
             const SizedBox(width: 8),
 
+            // Selection Circle
             AnimatedContainer(
               duration: const Duration(milliseconds: 180),
               width: 24,

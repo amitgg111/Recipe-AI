@@ -11,10 +11,12 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:recipe_ai/Controllers/home_controller.dart';
 import 'package:recipe_ai/Model/saved_recipe_from_web_model.dart';
+import 'package:recipe_ai/Service/ai_translation_service.dart';
 
 import 'package:recipe_ai/Service/auth_service.dart';
 
 import 'package:recipe_ai/Model/recipe_section_model.dart';
+import 'package:recipe_ai/Service/language_service.dart';
 import 'package:recipe_ai/View/Home/import_processing_screen.dart';
 import 'package:recipe_ai/View/Home/import_complete_screen.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
@@ -501,6 +503,7 @@ class RecipeImportService {
         }
 
         final recipeData = await getRecipeFromImage(File(image.path));
+
         // Stop here if the image isn't a recipe — no upload, no dish-image
         // fetch, no save (and no further AI calls).
         if (!_isRecipeResult(recipeData)) {
@@ -510,6 +513,7 @@ class RecipeImportService {
           );
         }
         final recipe = SavedRecipe.fromGeminiResponse(recipeData);
+
         final firebaseImageUrl = await _uploadImageFile(File(image.path), uid);
 
         await _saveRecipeAndNavigate(
@@ -543,6 +547,7 @@ class RecipeImportService {
         }
 
         final recipeData = await getRecipeFromImage(imageFile);
+
         if (!_isRecipeResult(recipeData)) {
           throw const _NotARecipeException(
             "This image isn't a recipe. Please go back and share a photo of a "
@@ -550,6 +555,7 @@ class RecipeImportService {
           );
         }
         final recipe = SavedRecipe.fromGeminiResponse(recipeData);
+
         final firebaseImageUrl = await _uploadImageFile(imageFile, uid);
 
         await _saveRecipeAndNavigate(
@@ -766,7 +772,9 @@ class RecipeImportService {
       throw Exception('Recipe generation failed');
     }
 
-    return Map<String, dynamic>.from(data['recipe']);
+    final recipeData = Map<String, dynamic>.from(data['recipe']);
+
+    return recipeData;
   }
 
   static Future<bool> importRecipeFromName(String recipeName) async {

@@ -247,6 +247,7 @@ class MealPlannerController extends GetxController {
   // source of truth for multi-select.
   final Rx<MealGoal> goal = MealGoal.healthy.obs;
   final RxList<MealGoal> goals = <MealGoal>[MealGoal.healthy].obs;
+  String selectedCuisine = '';
   String customPrompt = '';
   int servings = 4;
 
@@ -276,6 +277,19 @@ class MealPlannerController extends GetxController {
   List<int> _allowedDays = List.generate(days, (i) => i);
 
   DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+  bool _matchesCuisine(PlanRecipe r) {
+    // જો કોઈ cuisine select નથી તો બધા cuisine allow
+    if (selectedCuisine.trim().isEmpty) {
+      return true;
+    }
+    // No cuisine selected = allow all cuisines
+    if (selectedCuisine.isEmpty) return true;
+
+    final recipeCuisine = r.cuisine?.trim().toLowerCase() ?? '';
+    final selected = selectedCuisine.trim().toLowerCase();
+
+    return recipeCuisine == selected;
+  }
 
   List<int> _allowedDayIndices(DateTime weekStart) {
     final today = _dateOnly(DateTime.now());
@@ -385,38 +399,50 @@ class MealPlannerController extends GetxController {
     final home = Get.isRegistered<HomeController>()
         ? Get.find<HomeController>()
         : null;
+
     final all = home?.recipes ?? const [];
     final matched = <PlanRecipe>[];
+
     for (final r in all) {
       final pr = PlanRecipe.fromRecipeModel(r);
-      if (_matchesGoal(pr)) matched.add(pr);
+
+      if (_matchesGoal(pr) && _matchesCuisine(pr)) {
+        matched.add(pr);
+      }
     }
+
     matched.shuffle(_rand);
     return matched;
   }
 
   /// Priority 2 — public Community recipes from Firebase, same goal filters.
   /// Queries the top-level `recipes` collection directly.
+
   Future<List<PlanRecipe>> searchCommunityRecipes() async {
     final out = <PlanRecipe>[];
+
     try {
       final db = FirebaseFirestore.instance;
       final uid = AuthService.currentUser?.uid;
-      final snap = await db
-          .collection('recipes')
-          .where('isPublic', isEqualTo: true)
-          .limit(100)
-          .get();
+
+      final snap = await db.collection('recipes').get();
+
       for (final d in snap.docs) {
         final data = d.data();
+
         if (data['isDeleted'] == true) continue;
-        if (data['ownerId'] == uid) continue; // already covered by Cookbook
+        if (data['ownerId'] == uid) continue;
+
         final pr = PlanRecipe.fromMap(d.id, data, PlanSource.community);
-        if (_matchesGoal(pr)) out.add(pr);
+
+        if (_matchesGoal(pr) && _matchesCuisine(pr)) {
+          out.add(pr);
+        }
       }
     } catch (_) {
       /* offline / permission — fall through to AI */
     }
+
     out.shuffle(_rand);
     return out;
   }
@@ -428,32 +454,44 @@ class MealPlannerController extends GetxController {
   Future<List<PlanRecipe>> generateMissingRecipes(int count) async {
     final n = math.min(count, _aiCap);
     final out = <PlanRecipe>[];
+
     final selectedGoals = goals.isNotEmpty ? goals : [goal.value];
     final extra = customPrompt.trim();
+    final cuisine = selectedCuisine.trim();
+
     final slotCycle = ['breakfast', 'lunch', 'dinner'];
+
     for (var i = 0; i < n; i++) {
       final meal = slotCycle[i % slotCycle.length];
-      // Rotate through selected goals so a 3-goal pick doesn't skew all AI
-      // recipes toward only the first goal.
+
+      // Rotate through selected goals
       final bias = selectedGoals[i % selectedGoals.length].aiBias;
+
       final name = [
         bias,
+        if (cuisine.isNotEmpty) cuisine,
         if (extra.isNotEmpty) extra,
         meal,
         'recipe idea ${i + 1}',
       ].join(' ');
+
       try {
         final recipe = await RecipeImportService.getRecipeFromName(name);
+
         final pr = PlanRecipe.fromMap(
           'ai_${DateTime.now().microsecondsSinceEpoch}_$i',
           recipe,
           PlanSource.ai,
         );
-        if (pr.title.trim().isNotEmpty) out.add(pr);
+
+        if (pr.title.trim().isNotEmpty) {
+          out.add(pr);
+        }
       } catch (_) {
-        /* skip a failed generation; the plan still completes */
+        // Skip failed generation; plan continues
       }
     }
+
     return out;
   }
 
@@ -760,34 +798,30 @@ class MealPlannerController extends GetxController {
     final uid = AuthService.currentUser?.uid;
     if (uid == null) return null;
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection('recipes')
-          .add({
-            'ownerId': uid,
-            'title': r.title,
-            'description': null,
-            'imageUrl': r.imageUrl,
-            'sourceUrl': '',
-            'prepTime': r.prepTime,
-            'cookTime': r.cookTime,
-            'totalTime': r.totalTime,
-            'servings': r.servings.round().toString(),
-            'category': r.category,
-            'cuisine': r.cuisine,
-            'keywords': r.keywords,
-            'ingredients': r.ingredients,
-            'instructions': r.instructions,
-            'ingredientSections': const [],
-            'instructionSections': const [],
-            'isPublic': false,
-            'recipeSource': r.source == PlanSource.ai
-                ? 'imported'
-                : 'discovered',
-            'isDeleted': false,
-            'likesCount': 0,
-            'createdAt': FieldValue.serverTimestamp(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
+      final doc = await FirebaseFirestore.instance.collection('recipes').add({
+        'ownerId': uid,
+        'title': r.title,
+        'description': null,
+        'imageUrl': r.imageUrl,
+        'sourceUrl': '',
+        'prepTime': r.prepTime,
+        'cookTime': r.cookTime,
+        'totalTime': r.totalTime,
+        'servings': r.servings.round().toString(),
+        'category': r.category,
+        'cuisine': r.cuisine,
+        'keywords': r.keywords,
+        'ingredients': r.ingredients,
+        'instructions': r.instructions,
+        'ingredientSections': const [],
+        'instructionSections': const [],
+        'isPublic': false,
+        'recipeSource': r.source == PlanSource.ai ? 'imported' : 'discovered',
+        'isDeleted': false,
+        'likesCount': 0,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
       return doc.id;
     } catch (_) {
       return null;
