@@ -507,7 +507,7 @@ class GroceriesScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          m.name,
+                          GroceryStore().trName(m.name),
                           style: _G
                               .f(
                                 14,
@@ -850,7 +850,7 @@ class GroceriesScreen extends StatelessWidget {
                           children: [
                             Flexible(
                               child: Text(
-                                m.name,
+                                GroceryStore().trName(m.name),
                                 style: _G
                                     .f(
                                       14,
@@ -1176,7 +1176,9 @@ class GroceriesScreen extends StatelessWidget {
                       const WidgetSpan(child: SizedBox(width: 12)),
                     ],
 
-                    TextSpan(text: item.name, style: nameStyle),
+                    TextSpan(
+                        text: GroceryStore().trName(item.name),
+                        style: nameStyle),
                   ],
                 ),
               ),
@@ -1687,7 +1689,7 @@ class GroceriesScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          item.name,
+                          GroceryStore().trName(item.name),
                           style: _G.f(15, FontWeight.w800, _G.textDark),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,

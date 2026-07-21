@@ -7,24 +7,53 @@ class AppLanguage {
   final String code; // ISO code used for the Locale and translation maps
   final String native; // shown to the user (e.g. "हिन्दी")
   final String english; // English name (e.g. "Hindi")
-  const AppLanguage(this.code, this.native, this.english);
+  final bool isRtl; // right-to-left script (Arabic, Hebrew, Urdu, Persian)
+  const AppLanguage(
+    this.code,
+    this.native,
+    this.english, {
+    this.isRtl = false,
+  });
 }
 
-/// Owns the app's language: the six supported locales, loading the saved choice
-/// on startup, switching instantly via [Get.updateLocale], and persisting it
-/// with SharedPreferences so it survives a restart. Defaults to English.
+/// Owns the app's language: the supported locales, loading the saved choice on
+/// startup, switching instantly via [Get.updateLocale], and persisting it with
+/// SharedPreferences so it survives a restart. Defaults to English.
 class LanguageService {
   LanguageService._();
 
   static const String _prefKey = 'app_language_code';
 
+  /// The full set of selectable languages. The `code` here is the same key used
+  /// in the translation maps AND the [Locale] language code, so the three stay
+  /// in lock-step. Right-to-left languages carry `isRtl: true`.
   static const List<AppLanguage> supported = [
     AppLanguage('en', 'English', 'English'),
-    AppLanguage('hi', 'हिन्दी', 'Hindi'),
     AppLanguage('es', 'Español', 'Spanish'),
-    AppLanguage('de', 'Deutsch', 'German'),
+    AppLanguage('hi', 'हिन्दी', 'Hindi'),
+    AppLanguage('pt', 'Português (Brasil)', 'Portuguese (Brazil)'),
+    AppLanguage('ar', 'العربية', 'Arabic', isRtl: true),
     AppLanguage('fr', 'Français', 'French'),
-    AppLanguage('pt', 'Português', 'Portuguese'),
+    AppLanguage('id', 'Bahasa Indonesia', 'Indonesian'),
+    AppLanguage('ru', 'Русский', 'Russian'),
+    AppLanguage('de', 'Deutsch', 'German'),
+    AppLanguage('ja', '日本語', 'Japanese'),
+    AppLanguage('zh', '简体中文', 'Chinese (Simplified)'),
+    AppLanguage('ko', '한국어', 'Korean'),
+    AppLanguage('he', 'עברית', 'Hebrew', isRtl: true),
+    AppLanguage('tr', 'Türkçe', 'Turkish'),
+    AppLanguage('it', 'Italiano', 'Italian'),
+    AppLanguage('vi', 'Tiếng Việt', 'Vietnamese'),
+    AppLanguage('th', 'ไทย', 'Thai'),
+    AppLanguage('fil', 'Filipino', 'Filipino'),
+    AppLanguage('bn', 'বাংলা', 'Bengali'),
+    AppLanguage('ur', 'اردو', 'Urdu', isRtl: true),
+    AppLanguage('fa', 'فارسی', 'Persian (Farsi)', isRtl: true),
+    AppLanguage('pl', 'Polski', 'Polish'),
+    AppLanguage('nl', 'Nederlands', 'Dutch'),
+    AppLanguage('ta', 'தமிழ்', 'Tamil'),
+    AppLanguage('ms', 'Bahasa Melayu', 'Malay'),
+    AppLanguage('sw', 'Kiswahili', 'Swahili'),
   ];
 
   static const Locale fallbackLocale = Locale('en');
@@ -39,6 +68,17 @@ class LanguageService {
 
   static bool _isSupported(String code) =>
       supported.any((l) => l.code == code);
+
+  /// Whether [code] is a right-to-left language (Arabic, Hebrew, Urdu, Persian).
+  static bool isRtlCode(String code) {
+    for (final l in supported) {
+      if (l.code == code) return l.isRtl;
+    }
+    return false;
+  }
+
+  /// Whether the currently-selected language is right-to-left.
+  static bool get isCurrentRtl => isRtlCode(_current);
 
   /// Load the saved language BEFORE runApp so the very first frame is already
   /// in the user's language. Falls back to English when nothing is saved.

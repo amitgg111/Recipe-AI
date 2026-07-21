@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
+import 'package:recipe_ai/Service/ai_translation_service.dart';
 
 class DiscoverRecipe {
   final String id;
@@ -28,6 +29,18 @@ class DiscoverRecipe {
   final int sharesCount;
   final int savesCount;
 
+  // English originals, kept when [title]/[category]/[cuisine] hold a translated
+  // value for display. The chip filters (Trending/Vegan/Desserts…) and category
+  // matching are defined in English, so they read these — null falls back to the
+  // main field, which for an untranslated recipe already IS English.
+  final String? enTitle;
+  final String? enCategory;
+  final String? enCuisine;
+
+  String get filterTitle => enTitle ?? title;
+  String get filterCategory => enCategory ?? category ?? '';
+  String get filterCuisine => enCuisine ?? cuisine ?? '';
+
   DiscoverRecipe({
     required this.id,
     required this.title,
@@ -49,12 +62,101 @@ class DiscoverRecipe {
     this.commentsCount = 0,
     this.sharesCount = 0,
     this.savesCount = 0,
+    this.enTitle,
+    this.enCategory,
+    this.enCuisine,
   });
+
+  DiscoverRecipe copyWith({
+    String? title,
+    String? description,
+    String? category,
+    String? cuisine,
+    List<String>? ingredients,
+    List<String>? instructions,
+    String? enTitle,
+    String? enCategory,
+    String? enCuisine,
+  }) {
+    return DiscoverRecipe(
+      id: id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      imageUrl: imageUrl,
+      category: category ?? this.category,
+      cuisine: cuisine ?? this.cuisine,
+      prepTime: prepTime,
+      cookTime: cookTime,
+      totalTime: totalTime,
+      servings: servings,
+      ingredients: ingredients ?? this.ingredients,
+      instructions: instructions ?? this.instructions,
+      userId: userId,
+      userName: userName,
+      userAvatar: userAvatar,
+      createdAt: createdAt,
+      likesCount: likesCount,
+      commentsCount: commentsCount,
+      sharesCount: sharesCount,
+      savesCount: savesCount,
+      enTitle: enTitle ?? this.enTitle,
+      enCategory: enCategory ?? this.enCategory,
+      enCuisine: enCuisine ?? this.enCuisine,
+    );
+  }
 }
 
 class DiscoverController extends GetxController {
   final RxList<DiscoverRecipe> recipes = <DiscoverRecipe>[].obs;
   final RxBool isLoading = true.obs;
+
+  // English originals of the feed (Firestore is English). [recipes] holds the
+  // translated-for-display copies; re-translation always starts from here.
+  List<DiscoverRecipe> _english = [];
+
+  /// Translate the CARD fields (title/description/category/cuisine) of every
+  /// feed recipe into the current language, keeping the English originals for
+  /// chip filtering. Ingredients/instructions are left English here and
+  /// translated lazily by [translateForDetail] when a recipe is opened — so the
+  /// feed stays fast even with a couple hundred recipes. No-op for English.
+  Future<List<DiscoverRecipe>> _translateForFeed(
+      List<DiscoverRecipe> list) async {
+    if (list.isEmpty || !AiTranslationService.isTranslating) return list;
+    await AiTranslationService.ensureReady();
+    return Future.wait(list.map((r) async {
+      return r.copyWith(
+        title: await AiTranslationService.translate(r.title),
+        description: r.description == null
+            ? null
+            : await AiTranslationService.translate(r.description),
+        category: r.category == null
+            ? null
+            : await AiTranslationService.translate(r.category),
+        cuisine: r.cuisine == null
+            ? null
+            : await AiTranslationService.translate(r.cuisine),
+        enTitle: r.title,
+        enCategory: r.category,
+        enCuisine: r.cuisine,
+      );
+    }));
+  }
+
+  /// Translate a single recipe's ingredients + steps for the detail screen.
+  /// Called on card tap so the (potentially long) lists are only translated for
+  /// the one recipe actually opened.
+  Future<DiscoverRecipe> translateForDetail(DiscoverRecipe r) async {
+    if (!AiTranslationService.isTranslating) return r;
+    return r.copyWith(
+      ingredients: await AiTranslationService.translateList(r.ingredients),
+      instructions: await AiTranslationService.translateList(r.instructions),
+    );
+  }
+
+  /// Re-translate the loaded feed after the app language changes.
+  Future<void> refreshLanguage() async {
+    recipes.assignAll(await _translateForFeed(_english));
+  }
   final RxString selectedCategory = ''.obs;
   final RxString searchQuery = ''.obs;
 
@@ -189,7 +291,8 @@ class DiscoverController extends GetxController {
         return bd.compareTo(ad);
       });
       allRecipes.shuffle();
-      recipes.assignAll(allRecipes);
+      _english = allRecipes;
+      recipes.assignAll(await _translateForFeed(allRecipes));
     } catch (e, stack) {
       // Surface the reason instead of hiding it — a missing index or a rules
       // denial here is exactly what leaves Discover blank.
@@ -234,14 +337,15 @@ class DiscoverController extends GetxController {
             .toList();
         break;
       default:
-        // Meal / course categories — match the recipe's category or cuisine.
+        // Meal / course categories — the chip labels are English, so match the
+        // recipe's ENGLISH category / cuisine / title (filter* fields).
         if (sel.isNotEmpty) {
           final q = sel.toLowerCase();
           list = list
               .where((r) =>
-                  (r.category ?? '').toLowerCase().contains(q) ||
-                  (r.cuisine ?? '').toLowerCase().contains(q) ||
-                  r.title.toLowerCase().contains(q))
+                  r.filterCategory.toLowerCase().contains(q) ||
+                  r.filterCuisine.toLowerCase().contains(q) ||
+                  r.filterTitle.toLowerCase().contains(q))
               .toList();
         }
     }
@@ -249,14 +353,18 @@ class DiscoverController extends GetxController {
     if (searchQuery.value.isNotEmpty) {
       // Recipe search — match on the recipe name / category / cuisine only.
       // The poster's name is intentionally NOT searched: a query should surface
-      // posts by recipe, not by the user who shared them.
+      // posts by recipe, not by the user who shared them. Match both the
+      // displayed (translated) text AND the English original so a query typed in
+      // either the app language or English still finds the recipe.
       final q = searchQuery.value.toLowerCase();
-      list = list
-          .where((r) =>
-              r.title.toLowerCase().contains(q) ||
-              (r.category ?? '').toLowerCase().contains(q) ||
-              (r.cuisine ?? '').toLowerCase().contains(q))
-          .toList();
+      bool hit(DiscoverRecipe r) {
+        final hay = '${r.title} ${r.category ?? ''} ${r.cuisine ?? ''} '
+                '${r.filterTitle} ${r.filterCategory} ${r.filterCuisine}'
+            .toLowerCase();
+        return hay.contains(q);
+      }
+
+      list = list.where(hit).toList();
     }
 
     return list;
@@ -268,8 +376,9 @@ class DiscoverController extends GetxController {
 
   /// True when any [keywords] appear in the recipe's title / category / cuisine.
   bool _matchesAny(DiscoverRecipe r, List<String> keywords) {
+    // Keywords are English, so match against the English originals (filter*).
     final hay =
-        '${r.title} ${r.category ?? ''} ${r.cuisine ?? ''}'.toLowerCase();
+        '${r.filterTitle} ${r.filterCategory} ${r.filterCuisine}'.toLowerCase();
     return keywords.any(hay.contains);
   }
 

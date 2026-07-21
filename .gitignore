@@ -51,3 +51,6 @@ functions/.env
 .env
 *.env
 !*.env.example
+
+# Gradle OOM heap dumps
+*.hprof

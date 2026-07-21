@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/Model/meal_plan_model.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
+import 'package:recipe_ai/Service/ai_translation_service.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'dart:async';
 import 'dart:developer';
@@ -9,6 +10,25 @@ import 'dart:developer';
 class MealPlanController extends GetxController {
   final RxList<MealPlanItem> mealPlanItems = <MealPlanItem>[].obs;
   final RxList<MealPlanItem> monthMealPlanItems = <MealPlanItem>[].obs;
+
+  // English originals (Firestore stores English) so re-translating on a language
+  // switch always starts from the source, never from an already-translated title.
+  List<MealPlanItem> _enWeek = [];
+  List<MealPlanItem> _enMonth = [];
+
+  /// Translate each item's display title into the current language (id/date/
+  /// mealType are untouched — all logic keys off recipeId). No-op for English.
+  Future<List<MealPlanItem>> _translateItems(List<MealPlanItem> items) async {
+    if (items.isEmpty || !AiTranslationService.isTranslating) return items;
+    return Future.wait(items.map((m) async =>
+        m.copyWith(recipeTitle: await AiTranslationService.translate(m.recipeTitle))));
+  }
+
+  /// Re-translate already-loaded meals after the app language changes.
+  Future<void> refreshLanguage() async {
+    mealPlanItems.value = await _translateItems(_enWeek);
+    monthMealPlanItems.value = await _translateItems(_enMonth);
+  }
   final RxBool isLoading = false.obs;
   final Rx<DateTime> selectedWeekStart = DateTime.now().obs;
   final Rx<DateTime> selectedDate = DateTime.now().obs;
@@ -148,9 +168,11 @@ class MealPlanController extends GetxController {
         .where('date', isLessThanOrEqualTo: endStr)
         .snapshots()
         .listen(
-      (snapshot) {
-        mealPlanItems.value =
+      (snapshot) async {
+        final en =
             snapshot.docs.map((doc) => MealPlanItem.fromDocument(doc)).toList();
+        _enWeek = en;
+        mealPlanItems.value = await _translateItems(en);
         isLoading.value = false;
       },
       onError: (error) {
@@ -182,9 +204,11 @@ class MealPlanController extends GetxController {
         .where('date', isLessThanOrEqualTo: endStr)
         .snapshots()
         .listen(
-      (snapshot) {
-        monthMealPlanItems.value =
+      (snapshot) async {
+        final en =
             snapshot.docs.map((doc) => MealPlanItem.fromDocument(doc)).toList();
+        _enMonth = en;
+        monthMealPlanItems.value = await _translateItems(en);
       },
       onError: (error) {
         log("Error fetching month meal plans: $error");

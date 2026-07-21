@@ -38,4 +38,18 @@ class   MealPlanItem {
       recipeImageUrl: data['recipeImageUrl'],
     );
   }
+
+  /// Copy with an overridden [recipeTitle] — used to render the title in the
+  /// app's current language while the id/date/mealType stay untouched (all
+  /// logic keys off recipeId, never the display title).
+  MealPlanItem copyWith({String? recipeTitle}) {
+    return MealPlanItem(
+      id: id,
+      date: date,
+      mealType: mealType,
+      recipeId: recipeId,
+      recipeTitle: recipeTitle ?? this.recipeTitle,
+      recipeImageUrl: recipeImageUrl,
+    );
+  }
 }

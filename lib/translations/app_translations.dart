@@ -1,5 +1,7 @@
 import 'package:get/get.dart';
 
+import 'langs/_generated.dart';
+
 /// App-wide GetX translations.
 ///
 /// Every entry is `key -> [en, hi, es, de, fr, pt]`, so a key can never exist in
@@ -14,11 +16,19 @@ class AppTranslations extends Translations {
   Map<String, Map<String, String>> get keys {
     final out = <String, Map<String, String>>{
       for (final code in langCodes) code: <String, String>{},
+      // Added languages (Arabic, Japanese, …). Each starts empty and is filled
+      // below, falling back to English for any key not yet translated — so the
+      // language is always selectable and never shows a raw key.
+      for (final code in generatedLanguageMaps.keys) code: <String, String>{},
     };
     _data.forEach((key, values) {
       for (var i = 0; i < langCodes.length; i++) {
         out[langCodes[i]]![key] = values[i];
       }
+      final english = values[0];
+      generatedLanguageMaps.forEach((code, map) {
+        out[code]![key] = map[key] ?? english;
+      });
     });
     return out;
   }

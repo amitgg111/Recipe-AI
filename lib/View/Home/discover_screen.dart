@@ -438,7 +438,12 @@ class _RecipeCardState extends State<_RecipeCard> {
     return 'just now';
   }
 
-  void _open() => Get.to(() => PublicRecipeViewScreen(recipe: recipe));
+  Future<void> _open() async {
+    // Translate this recipe's ingredients + steps for the current language just
+    // before opening it (the feed only translates card fields, for speed).
+    final full = await _disc.translateForDetail(recipe);
+    Get.to(() => PublicRecipeViewScreen(recipe: full));
+  }
 
   void _openAuthor() {
     if (recipe.userId.isEmpty) return;

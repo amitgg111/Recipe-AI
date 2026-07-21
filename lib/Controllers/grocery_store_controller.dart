@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
+import 'package:recipe_ai/Service/ai_translation_service.dart';
 import 'package:recipe_ai/Helper/unit_converter.dart';
 
 class GroceryItem {
@@ -108,7 +109,45 @@ class GroceryStore extends GetxController {
             // random after a delete-and-re-add, so sort by the persisted index.
             ..sort((a, b) => a.order.compareTo(b.order));
           items.value = loaded;
+          _translateNames();
         });
+  }
+
+  // ── Ingredient-name translation (DISPLAY ONLY) ─────────────────────────────
+  // Grocery data stays English: merging, emoji, aisle detection and edits all
+  // key off the English [GroceryItem.name]. This only provides translated text
+  // for RENDERING via [trName], so none of that logic can break.
+
+  /// English name -> translated name for the current language.
+  final Map<String, String> _nameTr = {};
+
+  /// The display name for an English ingredient name (falls back to English).
+  String trName(String englishName) => _nameTr[englishName] ?? englishName;
+
+  /// Build [_nameTr] for the loaded items in the current language, then refresh
+  /// the list so the UI re-renders with the translations. No-op for English.
+  Future<void> _translateNames() async {
+    if (!AiTranslationService.isTranslating) {
+      if (_nameTr.isNotEmpty) {
+        _nameTr.clear();
+        items.refresh();
+      }
+      return;
+    }
+    final names = items.map((i) => i.name).toSet();
+    var changed = false;
+    for (final n in names) {
+      if (_nameTr.containsKey(n)) continue;
+      _nameTr[n] = await AiTranslationService.translate(n);
+      changed = true;
+    }
+    if (changed) items.refresh();
+  }
+
+  /// Re-translate ingredient names after the app language changes.
+  Future<void> refreshLanguage() async {
+    _nameTr.clear();
+    await _translateNames();
   }
 
   bool _saving = false;
