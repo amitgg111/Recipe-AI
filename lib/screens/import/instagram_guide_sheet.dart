@@ -88,8 +88,9 @@ class _InstagramGuideSheetState extends State<InstagramGuideSheet> {
                 GestureDetector(
                   onTap: () => Get.back(),
                   child: Container(
-                    width: 38,
-                    height: 38,
+                    width: 28,
+                    height: 28,
+                    padding: const EdgeInsets.all(5),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF4F1EA),
                       borderRadius: BorderRadius.circular(
@@ -98,7 +99,7 @@ class _InstagramGuideSheetState extends State<InstagramGuideSheet> {
                     ),
                     child: const OnboardingLineIcon(
                       'back',
-                      size: 16,
+                      size: 10,
                       color: AppColors.textDark,
                     ),
                   ),
@@ -153,7 +154,7 @@ class _InstagramGuideSheetState extends State<InstagramGuideSheet> {
           Padding(
             padding: EdgeInsets.fromLTRB(
               AppSpacing.xxl,
-              0,
+              12,
               AppSpacing.xxl,
               MediaQuery.of(context).padding.bottom + AppSpacing.lg,
             ),

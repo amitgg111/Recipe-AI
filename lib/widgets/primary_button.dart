@@ -95,6 +95,7 @@ class _PrimaryButtonState extends State<PrimaryButton>
     Widget button = Container(
       width: widget.width ?? double.infinity,
       height: widget.height ?? AppDimensions.buttonHeight,
+
       decoration: BoxDecoration(
         color: _baseColor,
         borderRadius: BorderRadius.circular(AppDimensions.radiusButton),

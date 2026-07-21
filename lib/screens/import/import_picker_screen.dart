@@ -105,7 +105,7 @@ class ImportPickerScreen extends StatelessWidget {
                             title: 'import_from_photo'.tr,
                             subtitle: 'snap_or_upload_pic'.tr,
                             onTap: () {
-                              Get.back();
+                              // Get.back();
                               // RecipeImportService.importRecipeFromGallery(
                               //   context,
                               // );
@@ -122,7 +122,7 @@ class ImportPickerScreen extends StatelessWidget {
                             title: 'import_from_text'.tr,
                             subtitle: 'paste_or_type'.tr,
                             onTap: () {
-                              Get.back();
+                              // Get.back();
                               Get.to(() => const GenerateRecipeScreen());
                             },
                           ),
@@ -140,7 +140,7 @@ class ImportPickerScreen extends StatelessWidget {
                             title: 'import_from_web'.tr,
                             subtitle: 'paste_recipe_url'.tr,
                             onTap: () {
-                              Get.back();
+                              // Get.back();
                               Get.to(() => const ImportFromWebScreen());
                             },
                           ),
@@ -154,7 +154,7 @@ class ImportPickerScreen extends StatelessWidget {
                             title: 'write_from_scratch'.tr,
                             subtitle: 'create_your_own'.tr,
                             onTap: () {
-                              Get.back();
+                              // Get.back();
                               Get.to(() => const RecipeEditorScreen());
                             },
                           ),
