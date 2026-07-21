@@ -109,6 +109,9 @@ class RecipeImportService {
 
     final callable = FirebaseFunctions.instance.httpsCallable(
       'analyzeRecipeImage',
+      // Backend allows 300s; the default 70s can abort a slow-but-successful
+      // extraction and force a full retry.
+      options: HttpsCallableOptions(timeout: const Duration(seconds: 120)),
     );
 
     final result = await callable.call({'image': base64Encode(bytes)});
@@ -521,8 +524,8 @@ class RecipeImportService {
     final XFile? image = await picker.pickImage(
       source: ImageSource.gallery,
       imageQuality: 85,
-      maxWidth: 2000,
-      maxHeight: 2000,
+      maxWidth: 1280,
+      maxHeight: 1280,
     );
 
     if (image == null) return;
@@ -844,11 +847,9 @@ class RecipeImportService {
 
         final recipe = SavedRecipe.fromGeminiResponse(recipeData);
 
-        String? firebaseImageUrl;
-
-        if (recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty) {
-          firebaseImageUrl = await uploadNetworkImage(recipe.imageUrl!, uid);
-        }
+        // Backend already stored this in Firebase Storage — use it directly
+        // instead of re-downloading + re-uploading the same bytes.
+        final String? firebaseImageUrl = recipe.imageUrl;
 
         await _saveRecipeAndNavigate(
           recipe: recipe,

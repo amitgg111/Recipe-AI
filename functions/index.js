@@ -15,10 +15,11 @@ setGlobalOptions({
   maxInstances: 10,
 });
 
+// Reuse one client across warm invocations instead of rebuilding per request.
+let _ai;
 const getAI = () => {
-  return new GoogleGenAI({
-    apiKey: process.env.GEMINI_API_KEY,
-  });
+  _ai ||= new GoogleGenAI({apiKey: process.env.GEMINI_API_KEY});
+  return _ai;
 };
 
 const RECIPE_RESPONSE_SCHEMA = {
@@ -50,8 +51,8 @@ const RECIPE_RESPONSE_SCHEMA = {
         "natural lighting, 45-degree close-up hero shot.",
     },
     keywords: {type: "ARRAY", items: {type: "STRING"}},
-    ingredients: {type: "ARRAY", items: {type: "STRING"}},
-    instructions: {type: "ARRAY", items: {type: "STRING"}},
+    // Flat ingredients/instructions are DERIVED from sections in
+    // normalizeRecipe — don't make the model emit them twice (output tokens).
     ingredientSections: {
       type: "ARRAY",
       items: {
@@ -98,8 +99,6 @@ const RECIPE_RESPONSE_SCHEMA = {
     "cuisine",
     "imagePrompt",
     "keywords",
-    "ingredients",
-    "instructions",
     "ingredientSections",
     "instructionSections",
     "nutrition",
@@ -383,7 +382,7 @@ async function generateAndStoreRecipeImage(ai, recipe) {
       "text, watermark or any non-food subject.";
 
     const response = await ai.models.generateImages({
-      model: "imagen-4.0-generate-001",
+      model: "imagen-4.0-fast-generate-001",
       prompt,
       config: {
         numberOfImages: 1,
@@ -524,8 +523,12 @@ exports.askGemini = onCall(
         const ai = getAI();
 
         const response = await ai.models.generateContent({
-          model: "gemini-2.5-flash",
+          // Assistant Q&A / swaps: cheaper + faster lite model, no thinking.
+          model: "gemini-2.5-flash-lite",
           contents: prompt,
+          config: {
+            thinkingConfig: {thinkingBudget: 0},
+          },
         });
 
         return {
@@ -780,7 +783,7 @@ async function fetchUrlContext(url) {
         "Accept": "text/html,application/xhtml+xml",
       },
       redirect: "follow",
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(6000),
     });
 
     if (!response.ok) {
@@ -813,6 +816,9 @@ async function generateStructuredRecipe(ai, prompt) {
     config: {
       responseMimeType: "application/json",
       responseSchema: RECIPE_RESPONSE_SCHEMA,
+      // Thinking off + a generous output cap — output tokens dominate cost.
+      thinkingConfig: {thinkingBudget: 0},
+      maxOutputTokens: 4096,
     },
   });
 
@@ -950,6 +956,8 @@ exports.analyzeRecipeVideo = onCall(
           config: {
             responseMimeType: "application/json",
             responseSchema: RECIPE_RESPONSE_SCHEMA,
+            thinkingConfig: {thinkingBudget: 0},
+            maxOutputTokens: 4096,
           },
         });
 
@@ -1012,6 +1020,8 @@ exports.analyzeRecipeImage = onCall(
           config: {
             responseMimeType: "application/json",
             responseSchema: RECIPE_RESPONSE_SCHEMA,
+            thinkingConfig: {thinkingBudget: 0},
+            maxOutputTokens: 4096,
           },
         });
 
