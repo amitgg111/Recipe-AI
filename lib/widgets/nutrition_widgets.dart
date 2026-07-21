@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/widgets/nutrition_animations.dart';
+import 'package:recipe_ai/widgets/tr_text.dart';
 
 /// Shared palette for the Nutrition flow — pulled straight from the design.
 class NutritionPalette {
@@ -525,7 +526,7 @@ class IngredientNutritionTile extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: Text(name,
+                child: TrText(name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: NutritionPalette.font(

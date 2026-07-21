@@ -255,7 +255,12 @@ class AiAssistantController extends GetxController {
   }
 
   Future<void> applyScale(RecipeModel recipe, ScalePreview p) async {
-    _saveUndo(recipe, isSwap: false, summary: '${p.fromServings} → ${p.toServings} servings');
+    _saveUndo(
+      recipe,
+      isSwap: false,
+      summary: 'ai_scale_banner_summary'.trParams(
+          {'from': '${p.fromServings}', 'to': '${p.toServings}'}),
+    );
     await _home.updateRecipeContent(
       recipe.id,
       ingredients: p.newIngredients,

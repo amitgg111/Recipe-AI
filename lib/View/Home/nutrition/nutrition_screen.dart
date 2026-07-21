@@ -49,16 +49,18 @@ class _NutritionScreenState extends State<NutritionScreen> {
   double _grams(double perServe) => _scaled(perServe);
 
   // Fact formatters (spec step 8): grams → 1 decimal; mg → grouped integer.
-  static String _fmtG(double v) => '${v.toStringAsFixed(1)} g';
-  static String _fmtMg(double v) => '${_grouped(v)} mg';
+  static String _fmtG(double v) =>
+      'nutrition_unit_grams'.trParams({'value': v.toStringAsFixed(1)});
+  static String _fmtMg(double v) =>
+      'nutrition_unit_milligrams'.trParams({'value': _grouped(v)});
 
   /// Full-facts rows: (label, per-serving value, formatter).
   List<(String, double, String Function(double))> get _facts => [
-        ('Fiber', n.fiber, _fmtG),
-        ('Sugar', n.sugar, _fmtG),
-        ('Saturated fat', n.saturatedFat, _fmtG),
-        ('Sodium', n.sodium, _fmtMg),
-        ('Cholesterol', n.cholesterol, _fmtMg),
+        ('nutrition_fact_fiber'.tr, n.fiber, _fmtG),
+        ('nutrition_fact_sugar'.tr, n.sugar, _fmtG),
+        ('nutrition_fact_saturated_fat'.tr, n.saturatedFat, _fmtG),
+        ('nutrition_fact_sodium'.tr, n.sodium, _fmtMg),
+        ('nutrition_fact_cholesterol'.tr, n.cholesterol, _fmtMg),
       ];
 
   double get _kcal =>
@@ -103,7 +105,7 @@ class _NutritionScreenState extends State<NutritionScreen> {
                             delay: const Duration(milliseconds: 200),
                             child: MacroCard(
                               grams: _grams(n.protein),
-                              label: 'Protein',
+                              label: 'nutrition_macro_protein'.tr,
                               track: NutritionPalette.proteinTrack,
                               fill: NutritionPalette.protein,
                               fraction: frac[0],
@@ -116,7 +118,7 @@ class _NutritionScreenState extends State<NutritionScreen> {
                             delay: const Duration(milliseconds: 260),
                             child: MacroCard(
                               grams: _grams(n.carbs),
-                              label: 'Carbs',
+                              label: 'nutrition_macro_carbs'.tr,
                               track: NutritionPalette.carbsTrack,
                               fill: NutritionPalette.carbs,
                               fraction: frac[1],
@@ -129,7 +131,7 @@ class _NutritionScreenState extends State<NutritionScreen> {
                             delay: const Duration(milliseconds: 320),
                             child: MacroCard(
                               grams: _grams(n.fat),
-                              label: 'Fats',
+                              label: 'nutrition_macro_fats'.tr,
                               track: NutritionPalette.fatTrack,
                               fill: NutritionPalette.fat,
                               fraction: frac[2],
@@ -166,7 +168,7 @@ class _NutritionScreenState extends State<NutritionScreen> {
                                       const SizedBox(width: 9),
                                       Expanded(
                                         child: Text(
-                                          'Totals for the full recipe — divide by servings for per-plate.',
+                                          'nutrition_whole_recipe_hint'.tr,
                                           style: NutritionPalette.font(
                                               size: 12.5,
                                               weight: FontWeight.w600,
@@ -185,7 +187,9 @@ class _NutritionScreenState extends State<NutritionScreen> {
                     Padding(
                       padding: const EdgeInsets.fromLTRB(2, 4, 2, 9),
                       child: Text(
-                        _perServing ? 'FULL FACTS' : 'FULL FACTS · WHOLE RECIPE',
+                        _perServing
+                            ? 'nutrition_full_facts'.tr
+                            : 'nutrition_full_facts_whole_recipe'.tr,
                         style: NutritionPalette.font(
                             size: 12,
                             weight: FontWeight.w800,
@@ -229,7 +233,7 @@ class _NutritionScreenState extends State<NutritionScreen> {
                     ),
                     const SizedBox(height: 14),
                     NutritionButton(
-                      label: 'See per-ingredient breakdown',
+                      label: 'nutrition_see_ingredient_breakdown'.tr,
                       onTap: () => Get.to(
                         () => IngredientNutritionScreen(
                           recipeName: widget.recipeName,
@@ -241,9 +245,8 @@ class _NutritionScreenState extends State<NutritionScreen> {
                       ),
                     ),
                     const SizedBox(height: 14),
-                    const NutritionDisclaimer(
-                      text:
-                          'Estimated by AI from ingredients · not medical advice',
+                    NutritionDisclaimer(
+                      text: 'nutrition_disclaimer'.tr,
                     ),
                   ],
                 ),
@@ -290,7 +293,7 @@ class _NutritionScreenState extends State<NutritionScreen> {
                             Icons.arrow_back_rounded, () => Get.back<void>()),
                         const SizedBox(width: 14),
                         Expanded(
-                          child: Text('Nutrition',
+                          child: Text('nutrition'.tr,
                               style: NutritionPalette.font(
                                   size: 17,
                                   weight: FontWeight.w800,
@@ -314,7 +317,10 @@ class _NutritionScreenState extends State<NutritionScreen> {
                             color: Colors.white.withValues(alpha: 0.85))),
                     const SizedBox(height: 12),
                     SegmentControl(
-                      options: const ['Per serving', 'Whole recipe'],
+                      options: [
+                        'nutrition_segment_per_serving'.tr,
+                        'nutrition_segment_whole_recipe'.tr
+                      ],
                       selectedIndex: _perServing ? 0 : 1,
                       onChanged: (i) => setState(() => _perServing = i == 0),
                     ),
@@ -326,8 +332,9 @@ class _NutritionScreenState extends State<NutritionScreen> {
                       child: NutritionRing(
                         kcal: _kcal,
                         label: _perServing
-                            ? 'KCAL / SERVING'
-                            : 'KCAL · SERVES ${n.servings}',
+                            ? 'nutrition_kcal_per_serving'.tr
+                            : 'nutrition_kcal_serves'
+                                .trParams({'servings': '${n.servings}'}),
                         valueFontSize: _perServing ? 42 : 38,
                       ),
                     ),

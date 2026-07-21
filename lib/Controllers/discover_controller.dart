@@ -488,6 +488,17 @@ class DiscoverController extends GetxController {
   // translated-for-display copies; re-translation always starts from here.
   List<DiscoverRecipe> _english = [];
 
+  /// The pre-translation (English) copy of a feed recipe, for logic that must
+  /// key off English — e.g. ingredient→emoji matching, which uses an English
+  /// keyword dictionary and would miss on a translated name. Null when the
+  /// recipe isn't in the loaded feed; callers then fall back to the visible text.
+  DiscoverRecipe? englishById(String id) {
+    for (final r in _english) {
+      if (r.id == id) return r;
+    }
+    return null;
+  }
+
   /// Translate the CARD fields (title/description/category/cuisine) of every
   /// feed recipe into the current language, keeping the English originals for
   /// chip filtering. Ingredients/instructions are left English here and

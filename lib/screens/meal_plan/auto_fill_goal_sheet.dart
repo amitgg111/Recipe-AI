@@ -9,6 +9,7 @@ import 'package:recipe_ai/screens/meal_plan/week_review_screen.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/cuisine_picker_sheet.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
+import 'package:recipe_ai/widgets/tr_text.dart';
 
 /// Screen 1 — "Plan my week" goal bottom sheet.
 ///
@@ -147,12 +148,12 @@ class _AutoFillGoalSheetState extends State<AutoFillGoalSheet> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Plan my week',
+                            'plan_my_week'.tr,
                             style: Mp.f(17, FontWeight.w800, Mp.ink),
                           ),
                           const SizedBox(height: 1),
                           Text(
-                            'Pick one or more goals — AI does the rest',
+                            'plan_week_subtitle'.tr,
                             style: Mp.f(12.5, FontWeight.w600, Mp.purpleDark),
                           ),
                         ],
@@ -185,7 +186,7 @@ class _AutoFillGoalSheetState extends State<AutoFillGoalSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "CUISINE",
+                      'cuisine_section_label'.tr,
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -240,26 +241,33 @@ class _AutoFillGoalSheetState extends State<AutoFillGoalSheet> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    CuisineController
-                                            .to
-                                            .selectedCuisine
-                                            .value
-                                            .isEmpty
-                                        ? "Select Cuisine"
-                                        : CuisineController
+                                  CuisineController
+                                          .to
+                                          .selectedCuisine
+                                          .value
+                                          .isEmpty
+                                      ? Text(
+                                          'select_cuisine'.tr,
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.black87,
+                                          ),
+                                        )
+                                      : TrText(
+                                          CuisineController
                                               .to
                                               .selectedCuisine
                                               .value,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    "Tap to change cuisine",
+                                    'tap_to_change_cuisine'.tr,
                                     style: TextStyle(
                                       fontSize: 13,
                                       color: Colors.grey.shade600,
@@ -289,7 +297,7 @@ class _AutoFillGoalSheetState extends State<AutoFillGoalSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "Goal",
+                        'goal_section_label'.tr,
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
@@ -322,7 +330,7 @@ class _AutoFillGoalSheetState extends State<AutoFillGoalSheet> {
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
-                                    'Resume your last generated week',
+                                    'resume_last_generated_week'.tr,
                                     style: Mp.f(
                                       13,
                                       FontWeight.w700,
@@ -481,7 +489,7 @@ class _AutoFillGoalSheetState extends State<AutoFillGoalSheet> {
                                     vertical: 14,
                                   ),
                                   hintText:
-                                      'Or describe it… "kid-friendly, no nuts"',
+                                      'goal_prompt_hint'.tr,
                                   hintStyle: Mp.f(
                                     13.5,
                                     FontWeight.w500,
@@ -501,8 +509,10 @@ class _AutoFillGoalSheetState extends State<AutoFillGoalSheet> {
                 padding: const EdgeInsets.fromLTRB(18, 8, 18, 14),
                 child: GradientButton(
                   label: _selectedGoals.length > 1
-                      ? 'Generate my week (${_selectedGoals.length} goals)'
-                      : 'Generate my week',
+                      ? 'generate_my_week_count'.trParams(
+                          {'count': '${_selectedGoals.length}'},
+                        )
+                      : 'generate_my_week'.tr,
                   icon: Icons.auto_awesome,
                   onTap: _generate,
                 ),
@@ -609,7 +619,7 @@ class GoalOptionCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
+                  TrText(
                     title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -618,7 +628,7 @@ class GoalOptionCard extends StatelessWidget {
 
                   const SizedBox(height: 2),
 
-                  Text(
+                  TrText(
                     subtitle,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,

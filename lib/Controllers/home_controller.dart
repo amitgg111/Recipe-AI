@@ -209,6 +209,18 @@ class HomeController extends GetxController {
   // translated into the current language; re-translation starts from here.
   List<RecipeModel> _englishRecipes = [];
 
+  /// The pre-translation (English) copy of a recipe, for logic that must key off
+  /// English — e.g. ingredient→emoji / aisle matching, which uses an English
+  /// keyword dictionary and would miss on a translated name. Returns null when
+  /// there is no stored English original (English mode, or a recipe not loaded
+  /// from this controller); callers then fall back to the visible text.
+  RecipeModel? englishRecipe(String id) {
+    for (final r in _englishRecipes) {
+      if (r.id == id) return r;
+    }
+    return null;
+  }
+
   StreamSubscription? _authSub;
   StreamSubscription? _recipesSub;
   StreamSubscription? _cookbooksSub;

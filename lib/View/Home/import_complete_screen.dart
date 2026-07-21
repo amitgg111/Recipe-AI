@@ -22,6 +22,7 @@ import 'package:recipe_ai/View/Home/nutrition/nutrition_screen.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/app_logo.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
+import 'package:recipe_ai/widgets/tr_text.dart';
 
 /// Import complete (review) screen — matches the HTML design: photo hero with
 /// "Imported" badge, an AI-review banner, a source pill, orange meta row, and
@@ -62,7 +63,7 @@ class ImportCompleteScreen extends StatelessWidget {
                         children: [
                           _reviewBanner(),
                           const SizedBox(height: 16),
-                          Text(
+                          TrText(
                             recipe.title,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 25,
@@ -512,8 +513,8 @@ class ImportCompleteScreen extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _unitChip('US', isUS, settings),
-                _unitChip('Metric', !isUS, settings),
+                _unitChip('unit_us'.tr, 'US', isUS, settings),
+                _unitChip('metric'.tr, 'Metric', !isUS, settings),
               ],
             ),
           ),
@@ -522,9 +523,14 @@ class ImportCompleteScreen extends StatelessWidget {
     );
   }
 
-  Widget _unitChip(String label, bool selected, SettingsController settings) {
+  Widget _unitChip(
+    String label,
+    String value,
+    bool selected,
+    SettingsController settings,
+  ) {
     return GestureDetector(
-      onTap: () => settings.setUnits(label),
+      onTap: () => settings.setUnits(value),
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
@@ -591,7 +597,7 @@ class ImportCompleteScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(7),
                       ),
                       child: Text(
-                        'US',
+                        'unit_us'.tr,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
@@ -602,7 +608,7 @@ class ImportCompleteScreen extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 11),
                       child: Text(
-                        'Metric',
+                        'metric'.tr,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
@@ -635,7 +641,7 @@ class ImportCompleteScreen extends StatelessWidget {
           const OnboardingLineIcon('crown', size: 10, color: Colors.white),
           const SizedBox(width: 3),
           Text(
-            'PLUS',
+            'plus'.tr,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 9,
               fontWeight: FontWeight.w800,
@@ -768,7 +774,7 @@ class ImportCompleteScreen extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Flexible(
-            child: Text(
+            child: TrText(
               name,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 14,
@@ -901,13 +907,15 @@ class ImportCompleteScreen extends StatelessWidget {
     final raw = recipe.sourceUrl;
     final s = raw.toLowerCase();
     final handle = _handleFrom(raw);
-    final suffix = handle != null ? ' · @$handle' : ' · @recipe.app';
+    final suffix = handle != null
+        ? 'source_handle_suffix'.trParams({'handle': handle})
+        : 'source_handle_suffix'.trParams({'handle': 'recipe.app'});
 
     // Social platforms → "From <Platform> · @handle"
     if (s.contains('instagram')) {
       return _SourceInfo(
-        'Instagram',
-        'From Instagram$suffix',
+        'source_instagram'.tr,
+        'source_pill_from_instagram'.trParams({'suffix': suffix}),
         AppColors.instagramBg,
         AppColors.instagram,
         Icons.camera_alt_rounded,
@@ -915,8 +923,8 @@ class ImportCompleteScreen extends StatelessWidget {
     }
     if (s.contains('facebook')) {
       return _SourceInfo(
-        'Facebook',
-        'From Facebook$suffix',
+        'source_facebook'.tr,
+        'source_pill_from_facebook'.trParams({'suffix': suffix}),
         AppColors.blueBg,
         AppColors.facebook,
         Icons.facebook_rounded,
@@ -924,8 +932,8 @@ class ImportCompleteScreen extends StatelessWidget {
     }
     if (s.contains('tiktok')) {
       return _SourceInfo(
-        'TikTok',
-        'From TikTok$suffix',
+        'source_tiktok'.tr,
+        'source_pill_from_tiktok'.trParams({'suffix': suffix}),
         AppColors.tiktokBg,
         AppColors.tiktok,
         Icons.music_note_rounded,
@@ -939,8 +947,8 @@ class ImportCompleteScreen extends StatelessWidget {
             s.contains('text') ||
             s.isEmpty)) {
       return _SourceInfo(
-        'a recipe name',
-        'From text to generate',
+        'source_a_recipe_name'.tr,
+        'source_pill_from_text'.tr,
         AppColors.purpleBg,
         AppColors.purple,
         Icons.auto_awesome_rounded,
@@ -956,8 +964,8 @@ class ImportCompleteScreen extends StatelessWidget {
             s.contains('social') ||
             s.contains('media'))) {
       return _SourceInfo(
-        'a photo or video',
-        'From image/video to generate',
+        'source_a_photo_or_video'.tr,
+        'source_pill_from_image_video'.tr,
         AppColors.redBg,
         AppColors.primary,
         Icons.movie_creation_rounded,
@@ -965,18 +973,20 @@ class ImportCompleteScreen extends StatelessWidget {
     }
     // A real website link.
     if (s.startsWith('http')) {
-      final webSuffix = handle != null ? ' · @$handle' : '';
+      final webSuffix = handle != null
+          ? 'source_handle_suffix'.trParams({'handle': handle})
+          : '';
       return _SourceInfo(
-        'the web',
-        'From the web$webSuffix',
+        'source_the_web'.tr,
+        'source_pill_from_the_web'.trParams({'suffix': webSuffix}),
         AppColors.greenBgLight,
         AppColors.green,
         Icons.language_rounded,
       );
     }
     return _SourceInfo(
-      'an import',
-      'From image/video to generate',
+      'source_an_import'.tr,
+      'source_pill_from_image_video'.tr,
       AppColors.redBg,
       AppColors.primary,
       Icons.movie_creation_rounded,
@@ -1118,7 +1128,7 @@ class _IngredientRow extends StatelessWidget {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.only(top: 1),
-              child: Text(
+              child: TrText(
                 name,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 14,
@@ -1183,7 +1193,7 @@ class _InstructionRow extends StatelessWidget {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.only(top: 2),
-              child: Text(
+              child: TrText(
                 text,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 14,

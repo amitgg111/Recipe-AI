@@ -736,6 +736,22 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
     );
   }
 
+  /// Emoji for the ingredient at flat [index], matched on its ENGLISH original.
+  /// [emojiForIngredient] is an English-keyword dictionary, so a translated name
+  /// misses and falls back to a generic category emoji. Public-recipe
+  /// ingredients are translated for display, so we pull the English source kept
+  /// by DiscoverController and match on that. Falls back to [displayName] when
+  /// no English original is loaded (e.g. opened outside the feed).
+  String _ingredientEmoji(int index, String displayName) {
+    if (Get.isRegistered<DiscoverController>()) {
+      final en = Get.find<DiscoverController>().englishById(recipe.id);
+      if (en != null && index >= 0 && index < en.ingredients.length) {
+        return _grocery.emojiForIngredient(en.ingredients[index]);
+      }
+    }
+    return _grocery.emojiForIngredient(displayName);
+  }
+
   Widget _ingredientRow(String text, int index) {
     final checked = _checked.contains(index);
     final parts = _parseIngredient(text);
@@ -757,7 +773,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
               borderRadius: BorderRadius.circular(9),
             ),
             child: Text(
-              _grocery.emojiForIngredient(parts.$2),
+              _ingredientEmoji(index, parts.$2),
               style: const TextStyle(fontSize: 15),
             ),
           ),
@@ -1535,7 +1551,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                           borderRadius: BorderRadius.circular(9),
                         ),
                         child: Text(
-                          _grocery.emojiForIngredient(parts.$2),
+                          _ingredientEmoji(globalIdx, parts.$2),
                           style: const TextStyle(fontSize: 15),
                         ),
                       ),

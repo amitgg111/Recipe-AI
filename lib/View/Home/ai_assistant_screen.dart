@@ -4,7 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'package:recipe_ai/Controllers/ai_assistant_controller.dart';
 import 'package:recipe_ai/Controllers/home_controller.dart';
+import 'package:recipe_ai/Service/ai_translation_service.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
+import 'package:recipe_ai/widgets/tr_text.dart';
 
 /// AI Cooking Assistant chat, scoped to one recipe (designs 76 · start,
 /// 77 · swap, 78 · scale). Real chat: AI-powered ingredient swaps + deterministic
@@ -102,7 +104,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     final name = _ctrl.nameOf(line);
     setState(() {
       _messages.add(
-        _Msg(user: true, text: "I'm out of $name — what can I use?"),
+        _Msg(user: true, text: 'ai_out_of_ingredient_msg'.trParams({'name': name})),
       );
       _busy = true;
     });
@@ -113,14 +115,15 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
       _busy = false;
       if (options.isEmpty) {
         _messages.add(
-          _Msg(text: "Sorry, I couldn't find a good swap for that right now."),
+          _Msg(text: 'ai_swap_none_found'.tr),
         );
       } else {
         _messages.add(
           _Msg(
-            text:
-                'No problem! Here are ${options.length} good swaps for '
-                '$name:',
+            text: 'ai_swaps_intro_msg'.trParams({
+              'count': '${options.length}',
+              'name': name,
+            }),
           ),
         );
         _messages.add(_Msg(swap: _SwapData(line, options)));
@@ -134,9 +137,14 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     if (target == null) return;
     final preview = _ctrl.buildScalePreview(recipe, target);
     setState(() {
-      _messages.add(_Msg(user: true, text: 'Scale this to $target servings'));
       _messages.add(
-        _Msg(text: "Done! Here's everything scaled for $target servings:"),
+        _Msg(
+          user: true,
+          text: 'ai_scale_request_msg'.trParams({'target': '$target'}),
+        ),
+      );
+      _messages.add(
+        _Msg(text: 'ai_scale_done_msg'.trParams({'target': '$target'})),
       );
       _messages.add(_Msg(scale: preview));
     });
@@ -174,12 +182,12 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                 ),
               ),
               Text(
-                'Scale to how many servings?',
+                'ai_scale_sheet_title'.tr,
                 style: _f(17, FontWeight.w800, _ink),
               ),
               const SizedBox(height: 4),
               Text(
-                'Currently $current ${current == 1 ? 'serving' : 'servings'}',
+                'ai_currently_servings'.trParams({'count': '$current'}),
                 style: _f(13, FontWeight.w500, _muted),
               ),
               const SizedBox(height: 22),
@@ -200,7 +208,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                         children: [
                           Text('$value', style: _f(38, FontWeight.w800, _ink)),
                           Text(
-                            value == 1 ? 'serving' : 'servings',
+                            'ai_serving_plural'.trParams({'count': '$value'}),
                             style: _f(12, FontWeight.w600, _muted),
                           ),
                         ],
@@ -252,7 +260,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                     borderRadius: BorderRadius.circular(15),
                   ),
                   child: Text(
-                    'Scale recipe',
+                    'ai_scale_recipe_btn'.tr,
                     style: _f(15, FontWeight.w800, Colors.white),
                   ),
                 ),
@@ -300,7 +308,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
       setState(() {
         _messages.add(_Msg(user: true, text: q));
         _messages.add(
-          _Msg(text: "Done! Here's everything scaled for $target servings:"),
+          _Msg(text: 'ai_scale_done_msg'.trParams({'target': '$target'})),
         );
         _messages.add(_Msg(scale: preview));
       });
@@ -313,10 +321,13 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     });
     _scrollDown();
     final reply = await _ctrl.ask(recipe, q);
+    // The assistant answers in English (app logic is English); show it in the
+    // user's language via on-device ML Kit — no extra AI call.
+    final shown = await AiTranslationService.translate(reply.trim());
     if (!mounted) return;
     setState(() {
       _busy = false;
-      _messages.add(_Msg(text: reply.trim()));
+      _messages.add(_Msg(text: shown));
     });
     _scrollDown();
   }
@@ -364,7 +375,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
               ),
             ),
             Text(
-              'Which ingredient are you out of?',
+              'ai_pick_ingredient_title'.tr,
               style: _f(17, FontWeight.w800, _ink),
             ),
             const SizedBox(height: 12),
@@ -466,7 +477,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'AI Cooking Assistant',
+                  'plus_feature_ai_assistant'.tr,
                   style: _f(15, FontWeight.w800, _ink),
                 ),
                 const SizedBox(height: 1),
@@ -489,7 +500,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
               color: _iconBg,
               borderRadius: BorderRadius.circular(9),
             ),
-            child: Text('PLUS', style: _f(10, FontWeight.w800, _purpleDeep)),
+            child: Text('plus'.tr, style: _f(10, FontWeight.w800, _purpleDeep)),
           ),
         ],
       ),
@@ -529,17 +540,17 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
         ),
         const SizedBox(height: 16),
         Text(
-          'Hi! How can I help with\nthis recipe?',
+          'ai_intro_heading'.tr,
           style: _f(21, FontWeight.w800, _ink, h: 1.15),
         ),
         const SizedBox(height: 8),
         Text(
-          'I know the ingredients & steps — ask me anything.',
+          'ai_intro_subtitle'.tr,
           style: _f(14, FontWeight.w500, _muted, h: 1.5),
         ),
         const SizedBox(height: 24),
         Text(
-          'TRY ASKING',
+          'ai_try_asking_label'.tr,
           style: _f(
             12,
             FontWeight.w800,
@@ -547,9 +558,9 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
           ).copyWith(letterSpacing: 0.7),
         ),
         const SizedBox(height: 12),
-        _tryTile('swap', "Swap an ingredient I don't have", _startSwap),
+        _tryTile('swap', 'ai_try_swap_label'.tr, _startSwap),
         const SizedBox(height: 10),
-        _tryTile('ruler', 'Scale this recipe', _startScale),
+        _tryTile('ruler', 'ai_try_scale_label'.tr, _startScale),
       ],
     );
   }
@@ -704,13 +715,13 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
+                                  TrText(
                                     d.options[i].replacement,
                                     style: _f(13.5, FontWeight.w800, _ink),
                                   ),
                                   if (d.options[i].note.isNotEmpty) ...[
                                     const SizedBox(height: 1),
-                                    Text(
+                                    TrText(
                                       d.options[i].note,
                                       style: _f(11.5, FontWeight.w600, _muted),
                                     ),
@@ -735,11 +746,11 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
           if (!m.applied)
             _applyPill(
               Icons.swap_horiz_rounded,
-              'Apply this swap',
+              'ai_apply_swap_btn'.tr,
               () => _applySwap(d, m),
             )
           else
-            _appliedPill('Swap applied'),
+            _appliedPill('ai_swap_applied_pill'.tr),
           const SizedBox(height: 12),
         ],
       ),
@@ -774,7 +785,10 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                     ),
                     const SizedBox(width: 7),
                     Text(
-                      'SCALED · ${p.fromServings} → ${p.toServings} SERVINGS',
+                      'ai_scaled_badge'.trParams({
+                        'from': '${p.fromServings}',
+                        'to': '${p.toServings}',
+                      }),
                       style: _f(12, FontWeight.w800, _purpleDeep),
                     ),
                   ],
@@ -820,7 +834,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                   ),
                 if (p.rows.isEmpty)
                   Text(
-                    'Nothing to scale here.',
+                    'ai_nothing_to_scale'.tr,
                     style: _f(13, FontWeight.w500, _muted),
                   ),
               ],
@@ -829,11 +843,11 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
           if (!m.applied)
             _applyPill(
               Icons.check_rounded,
-              'Update recipe',
+              'ai_update_recipe_btn'.tr,
               () => _applyScale(p, m),
             )
           else
-            _appliedPill('Recipe updated'),
+            _appliedPill('ai_recipe_updated_pill'.tr),
           const SizedBox(height: 12),
         ],
       ),
@@ -925,7 +939,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                 decoration: InputDecoration(
                   isDense: true,
                   border: InputBorder.none,
-                  hintText: 'Ask anything…',
+                  hintText: 'ai_input_hint'.tr,
 
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,

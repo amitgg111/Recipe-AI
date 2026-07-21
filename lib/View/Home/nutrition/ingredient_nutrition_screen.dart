@@ -79,7 +79,7 @@ class IngredientNutritionScreen extends StatelessWidget {
                             Padding(
                               padding: const EdgeInsets.all(20),
                               child: Text(
-                                'No ingredient data available.',
+                                'nutrition_no_ingredient_data'.tr,
                                 style: NutritionPalette.font(
                                     size: 13,
                                     color: NutritionPalette.noteGrey),
@@ -90,9 +90,8 @@ class IngredientNutritionScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 14),
-                  const NutritionDisclaimer(
-                    text:
-                        'AI estimates — actual values vary by brand & portion',
+                  NutritionDisclaimer(
+                    text: 'nutrition_ai_estimates_disclaimer'.tr,
                   ),
                 ],
               ),
@@ -161,7 +160,7 @@ class IngredientNutritionScreen extends StatelessWidget {
                       ),
                       const SizedBox(width: 14),
                       Expanded(
-                        child: Text('Per ingredient',
+                        child: Text('nutrition_per_ingredient_title'.tr,
                             style: NutritionPalette.font(
                                 size: 17,
                                 weight: FontWeight.w800,
@@ -191,7 +190,7 @@ class IngredientNutritionScreen extends StatelessWidget {
                                 color: Colors.white,
                                 letterSpacing: -0.5)),
                         const SizedBox(width: 8),
-                        Text('kcal / serving',
+                        Text('nutrition_kcal_per_serving_unit'.tr,
                             style: NutritionPalette.font(
                                 size: 13,
                                 weight: FontWeight.w700,
@@ -202,7 +201,7 @@ class IngredientNutritionScreen extends StatelessWidget {
                   const SizedBox(height: 3),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Text("Here's what makes it up",
+                    child: Text('nutrition_heres_what_makes_it_up'.tr,
                         style: NutritionPalette.font(
                             size: 12.5,
                             weight: FontWeight.w600,

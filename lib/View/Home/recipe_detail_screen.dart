@@ -1445,6 +1445,26 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     );
   }
 
+  /// Emoji for the ingredient at flat [index], matched on its ENGLISH original.
+  /// [emojiForIngredient] is an English-keyword dictionary, so a translated name
+  /// misses and falls back to a generic category emoji. Translation preserves
+  /// ingredient order/structure, so we look the English line up by index and
+  /// match on that. Falls back to [displayName] when no English original exists
+  /// (English mode, or a recipe not loaded via HomeController).
+  String _ingredientEmoji(int index, String displayName) {
+    final en = _home.englishRecipe(recipe.id);
+    if (en != null) {
+      final hasSections = en.ingredientSections.any((s) => s.items.isNotEmpty);
+      final flat = hasSections
+          ? [for (final s in en.ingredientSections) ...s.items]
+          : en.ingredients;
+      if (index >= 0 && index < flat.length) {
+        return _grocery.emojiForIngredient(flat[index]);
+      }
+    }
+    return _grocery.emojiForIngredient(displayName);
+  }
+
   Widget _ingredientRow(String text, int index, [String? rawLine]) {
     // Inline "SWAPPED" tag + per-ingredient Undo when this line came from an AI
     // swap (mockup 79). Falls back to the normal row otherwise.
@@ -1475,7 +1495,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               borderRadius: BorderRadius.circular(9),
             ),
             child: Text(
-              _grocery.emojiForIngredient(parts.$2),
+              _ingredientEmoji(index, parts.$2),
               style: const TextStyle(fontSize: 15),
             ),
           ),
@@ -1960,8 +1980,11 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     // NutritionEstimator, using the live serving count (_servings) so changing
     // the stepper recalculates without reopening (spec step 7). Reacts live to
     // the plan via Obx, so upgrading swaps in the real card immediately.
+    // Estimate from the ENGLISH original: the food database is English-keyed, so
+    // a translated ingredient line would miss and drop from the breakdown.
+    // Display of the (English) ingredient names is translated separately.
     final n = NutritionController.to.calculateNutrition(
-      recipe,
+      _home.englishRecipe(recipe.id) ?? recipe,
       servingsOverride: _servings,
     );
     if (n.isEmpty) return const SizedBox.shrink();
@@ -2329,7 +2352,7 @@ $appLink
                           borderRadius: BorderRadius.circular(9),
                         ),
                         child: Text(
-                          _grocery.emojiForIngredient(parts.$2),
+                          _ingredientEmoji(globalIdx, parts.$2),
                           style: const TextStyle(fontSize: 15),
                         ),
                       ),

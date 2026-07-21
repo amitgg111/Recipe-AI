@@ -45,9 +45,9 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
   String get _yearlyPrice => _yearlyPkg?.storeProduct.priceString ?? '₹1,700';
 
   String get _monthlyName =>
-      _cleanTitle(_monthlyPkg?.storeProduct.title) ?? 'Monthly';
+      _cleanTitle(_monthlyPkg?.storeProduct.title) ?? 'plan_monthly'.tr;
   String get _yearlyName =>
-      _cleanTitle(_yearlyPkg?.storeProduct.title) ?? 'Yearly';
+      _cleanTitle(_yearlyPkg?.storeProduct.title) ?? 'plan_yearly'.tr;
 
   /// Store titles often read "Monthly (Recipe AI)" — drop the app-name suffix.
   String? _cleanTitle(String? t) {
@@ -62,7 +62,9 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
     final perMonth = (p.price / 12).round();
     final symbol =
         (RegExp(r'^[^0-9]*').firstMatch(p.priceString)?.group(0) ?? '').trim();
-    return symbol.isNotEmpty ? '$symbol$perMonth / month' : '$perMonth / month';
+    return symbol.isNotEmpty
+        ? 'price_per_month'.trParams({'price': '$symbol$perMonth'})
+        : 'price_per_month'.trParams({'price': '$perMonth'});
   }
 
   /// Whether the selected plan carries an introductory (e.g. free-trial) offer.
@@ -160,8 +162,8 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
     } catch (_) {
       if (mounted) {
         CustomSnackbar.show(
-          title: 'Purchase failed',
-          message: 'Something went wrong. Please try again.',
+          title: 'purchase_failed'.tr,
+          message: 'pdf_failed_msg'.tr,
           type: SnackbarType.error,
         );
       }
@@ -180,16 +182,16 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
         _onPlusActivated();
       } else {
         CustomSnackbar.show(
-          title: 'Nothing to restore',
-          message: 'No active subscription was found for this account.',
+          title: 'nothing_to_restore'.tr,
+          message: 'no_active_subscription_found'.tr,
           type: SnackbarType.info,
         );
       }
     } catch (_) {
       if (mounted) {
         CustomSnackbar.show(
-          title: 'Restore failed',
-          message: 'Could not restore purchases. Please try again.',
+          title: 'restore_failed'.tr,
+          message: 'could_not_restore_purchases'.tr,
           type: SnackbarType.error,
         );
       }
@@ -267,7 +269,7 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          'RECIPE AI PLUS',
+                          'recipe_ai_plus'.tr,
                           style: _font(
                             size: 11,
                             weight: FontWeight.w800,
@@ -281,7 +283,7 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
 
                     // ── title ──
                     Text(
-                      'Unlock the full\nkitchen experience',
+                      'upgrade_plus_title'.tr,
                       textAlign: TextAlign.center,
                       style: _font(
                         size: 27,
@@ -297,7 +299,7 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: Text(
-                        'Everything you need to cook, plan and shop — without limits.',
+                        'plus_paywall_sub'.tr,
                         textAlign: TextAlign.center,
                         style: _font(
                           size: 14,
@@ -340,7 +342,7 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
                                   selected: _monthly,
                                   title: _monthlyName,
                                   price: _monthlyPrice,
-                                  note: 'per month',
+                                  note: 'per_month'.tr,
                                   highlightNoteWhenSelected: false,
                                   onTap: () => setState(() => _monthly = true),
                                 ),
@@ -401,7 +403,7 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'Free trial is available on the yearly plan only.',
+                                'trial_yearly_only'.tr,
                                 style: _font(
                                   size: 12,
                                   weight: FontWeight.w600,
@@ -420,12 +422,13 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
                     Obx(() {
                       _rc.offering.value; // rebuild when store prices load
                       final price = _monthly ? _monthlyPrice : _yearlyPrice;
-                      final period = _monthly ? 'month' : 'year';
+                      final period = _monthly ? 'month'.tr : 'period_year'.tr;
                       final label = _busy
-                          ? 'Please wait…'
+                          ? 'please_wait'.tr
                           : _selectedHasTrial
-                              ? 'Start free trial'
-                              : 'Subscribe · $price/$period';
+                              ? 'start_free_trial'.tr
+                              : 'subscribe_price_period'.trParams(
+                                  {'price': price, 'period': period});
                       return PrimaryGradientButton(
                         label: label,
                         onTap: _busy ? () {} : _subscribe,
@@ -438,8 +441,9 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
                       _rc.offering.value;
                       return Text(
                         _monthly
-                            ? 'Billed monthly · cancel anytime'
-                            : 'Billed $_yearlyPrice/year · cancel anytime',
+                            ? 'billed_monthly_note'.tr
+                            : 'billed_yearly_cancel_anytime'
+                                .trParams({'price': _yearlyPrice}),
                         textAlign: TextAlign.center,
                         style: _font(
                           size: 12,
@@ -457,12 +461,12 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
                         GestureDetector(
                           onTap: _restore,
                           behavior: HitTestBehavior.opaque,
-                          child: _footerLink('Restore'),
+                          child: _footerLink('restore'.tr),
                         ),
                         _dot(),
-                        _footerLink('Terms'),
+                        _footerLink('terms'.tr),
                         _dot(),
-                        _footerLink('Privacy'),
+                        _footerLink('privacy_short'.tr),
                       ],
                     ),
                   ],
@@ -574,7 +578,7 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
           borderRadius: BorderRadius.circular(9),
         ),
         child: Text(
-          'SAVE 30%',
+          'save_30'.tr,
           style: _font(
             size: 9,
             weight: FontWeight.w800,
@@ -616,17 +620,17 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
   // ── Feature data ────────────────────────────────────────────────────────────
   static const List<_Feature> _features = [
     _Feature(Icons.auto_awesome_rounded, Color(0xFF8B5CF6), Color(0xFFF4EEFD),
-        'Unlimited imports', 'Save recipes from anywhere'),
+        'bnf_imports', 'bnf_imports_sub'),
     _Feature(Icons.chat_bubble_rounded, Color(0xFF2D6FE0), Color(0xFFE4ECFB),
-        'AI cooking assistant', 'Swaps, scaling & help live'),
+        'plus_feature_ai_assistant', 'bnf_assistant_sub'),
     _Feature(Icons.rice_bowl_rounded, Color(0xFF1F8A5B), Color(0xFFEAF6F0),
-        'Nutrition calculator', 'Calories & macros per serving'),
+        'nutrition_calculator', 'bnf_nutrition_sub'),
     _Feature(Icons.calendar_month_rounded, Color(0xFFE0481F), Color(0xFFFCEAE3),
-        'AI meal-plan auto-fill', 'A balanced week in one tap'),
+        'ai_meal_plan_autofill', 'bnf_mealplan_sub'),
     _Feature(Icons.straighten_rounded, Color(0xFFC0860F), Color(0xFFFCF3DE),
-        'Measurement converter', 'Metric → imperial & scaling'),
+        'feature_measurement_converter', 'feature_converter_subtitle'),
     _Feature(Icons.picture_as_pdf_rounded, Color(0xFF8B5CF6), Color(0xFFF4EEFD),
-        'Export & print PDFs', 'Clean printable recipe cards'),
+        'bnf_pdf', 'bnf_pdf_sub'),
   ];
 }
 
@@ -686,7 +690,7 @@ class PremiumFeatureCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  feature.title,
+                  feature.title.tr,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.plusJakartaSans(
@@ -697,7 +701,7 @@ class PremiumFeatureCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 1),
                 Text(
-                  feature.subtitle,
+                  feature.subtitle.tr,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.plusJakartaSans(

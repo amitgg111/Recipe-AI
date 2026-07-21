@@ -10,6 +10,7 @@ import 'package:recipe_ai/Model/user_model.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/Service/user_service.dart';
 import 'package:recipe_ai/View/Home/recipe_detail_screen.dart';
+import 'package:recipe_ai/widgets/tr_text.dart';
 import 'package:recipe_ai/View/Home/settings/edit_profile_screen.dart';
 import 'package:recipe_ai/View/Home/settings/my_recipes_screen.dart';
 import 'package:recipe_ai/View/Home/settings/settings_common.dart';
@@ -459,7 +460,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      TrText(
                         recipe.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,

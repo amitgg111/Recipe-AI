@@ -115,6 +115,19 @@ class AiTranslationService {
     }
   }
 
+  /// Synchronous best-effort lookup for the FIRST frame: the already-cached
+  /// translation if we have one, otherwise the English input unchanged. Widgets
+  /// (see [TrText]) render this instantly, then call [translate] to fill in and
+  /// rebuild — so repeat strings never flicker and new ones degrade to English
+  /// for a moment instead of showing a blank.
+  static String cachedOrSelf(String? text) {
+    final input = text ?? '';
+    if (input.trim().isEmpty) return input;
+    final target = _mlKitFor(LanguageService.currentCode);
+    if (target == null) return input;
+    return _cacheFor(target.bcpCode)[input] ?? input;
+  }
+
   /// Translate a single string. Returns the input unchanged for English, empty
   /// input, a cache hit's stored value, or any failure (so the UI never breaks).
   static Future<String> translate(String? text) async {
