@@ -313,10 +313,22 @@ class _CookbooksScreenState extends State<CookbooksScreen>
   List<CookbookModel> _sortCookbooks(List<CookbookModel> cookbooks) {
     final sorted = List<CookbookModel>.from(cookbooks);
     switch (_sortIndex) {
-      case 0: // Newest first (already from Firestore in desc order)
+      case 0: // Newest first
+        sorted.sort((a, b) {
+          if (a.createdAt == null && b.createdAt == null) return 0;
+          if (a.createdAt == null) return 1; // no date -> push to bottom
+          if (b.createdAt == null) return -1;
+          return b.createdAt!.compareTo(a.createdAt!); // descending
+        });
         return sorted;
       case 1: // Oldest first
-        return sorted.reversed.toList();
+        sorted.sort((a, b) {
+          if (a.createdAt == null && b.createdAt == null) return 0;
+          if (a.createdAt == null) return 1;
+          if (b.createdAt == null) return -1;
+          return a.createdAt!.compareTo(b.createdAt!); // ascending
+        });
+        return sorted;
       case 2: // Name A-Z
         sorted.sort(
           (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
@@ -682,16 +694,16 @@ class _CookbooksScreenState extends State<CookbooksScreen>
   }
 
   // ── New Cookbook bottom sheet ───────────────────────────────────────────────
-  void showNewCookbookSheet(BuildContext context) async {
-    // Design-accurate "New cookbook" sheet (screen 27). It returns the typed
-    // title; we create the cookbook here.
-    final name = await AddCookbookSheet.show(context);
-    if (name != null && name.trim().isNotEmpty) {
-      Get.find<CookbookController>().createCookbook(name.trim());
-    }
-  }
 }
 
+void showNewCookbookSheet(BuildContext context) async {
+  // Design-accurate "New cookbook" sheet (screen 27). It returns the typed
+  // title; we create the cookbook here.
+  final name = await AddCookbookSheet.show(context);
+  if (name != null && name.trim().isNotEmpty) {
+    Get.find<CookbookController>().createCookbook(name.trim());
+  }
+}
 // ─────────────────────────────────────────────────────────────────────────────
 // Sort option row widget
 // ─────────────────────────────────────────────────────────────────────────────

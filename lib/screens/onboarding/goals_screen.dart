@@ -145,9 +145,9 @@ class _GoalsScreenState extends State<GoalsScreen> {
               // Goal tiles - flex:1, column, gap 11
               Expanded(
                 child: ListView.separated(
-                  physics: const NeverScrollableScrollPhysics(),
+                  physics: const AlwaysScrollableScrollPhysics(),
                   shrinkWrap: true,
-                  scrollDirection: Axis.vertical,
+                  // scrollDirection: Axis.vertical,
                   itemCount: _goals.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 11),
                   itemBuilder: (context, index) {
@@ -176,7 +176,10 @@ class _GoalsScreenState extends State<GoalsScreen> {
                                 borderRadius: BorderRadius.circular(13),
                               ),
                               child: Center(
-                                child: OnboardingLineIcon(goal.iconKey, color: goal.fgColor),
+                                child: OnboardingLineIcon(
+                                  goal.iconKey,
+                                  color: goal.fgColor,
+                                ),
                               ),
                             ),
                             const SizedBox(width: 14),
@@ -355,7 +358,6 @@ class _GoalsBodyState extends State<GoalsBody> {
           // Goal tiles - flex:1, column, gap 11
           Expanded(
             child: ListView.separated(
-              physics: const NeverScrollableScrollPhysics(),
               shrinkWrap: true,
               itemCount: _goals.length,
               separatorBuilder: (_, __) => const SizedBox(height: 11),
@@ -385,7 +387,10 @@ class _GoalsBodyState extends State<GoalsBody> {
                             borderRadius: BorderRadius.circular(13),
                           ),
                           child: Center(
-                            child: OnboardingLineIcon(goal.iconKey, color: goal.fgColor),
+                            child: OnboardingLineIcon(
+                              goal.iconKey,
+                              color: goal.fgColor,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 14),

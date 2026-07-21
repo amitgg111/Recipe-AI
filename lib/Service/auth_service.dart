@@ -1,15 +1,23 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
-
+import 'dart:math' hide log;
+import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:get_storage/get_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:get/get.dart';
+import 'package:recipe_ai/Controllers/profile_controller.dart';
 import 'package:recipe_ai/Controllers/onboarding_controller.dart';
+import 'package:recipe_ai/Controllers/settings_controller.dart';
+import 'package:recipe_ai/Service/local_notification_service.dart';
+import 'package:recipe_ai/Service/notification_service.dart';
+import 'package:recipe_ai/Service/revenuecat_service.dart';
 import 'package:recipe_ai/Service/subscription_service.dart';
 import 'package:recipe_ai/utils/auth_error_mapper.dart';
 
@@ -104,6 +112,7 @@ class AuthService {
       "email": trimmedEmail,
       "photoUrl": "",
       "provider": "email",
+      "trialChooserCompleted": false,
       "freeCredits": SubscriptionService.kInitialFreeCredits,
       "createdAt": FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
@@ -174,10 +183,11 @@ class AuthService {
         "email": user.email ?? account.email,
         "photoUrl": photo,
         "provider": "google",
+        "trialChooserCompleted": false,
         "freeCredits": SubscriptionService.kInitialFreeCredits,
         "createdAt": FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
-      
+
       if (Get.isRegistered<OnboardingController>()) {
         await OnboardingController.to.syncToFirebase(user.uid);
       }
@@ -233,24 +243,25 @@ class AuthService {
       //    this Apple ID, so we capture them here to seed the Firestore doc.
       final AuthorizationCredentialAppleID appleCredential =
           await SignInWithApple.getAppleIDCredential(
-        scopes: const [
-          AppleIDAuthorizationScopes.email,
-          AppleIDAuthorizationScopes.fullName,
-        ],
-        nonce: hashedNonce,
-      );
+            scopes: const [
+              AppleIDAuthorizationScopes.email,
+              AppleIDAuthorizationScopes.fullName,
+            ],
+            nonce: hashedNonce,
+          );
 
       // 3. Build the Firebase OAuth credential with the RAW nonce.
-      final OAuthCredential oauthCredential =
-          OAuthProvider('apple.com').credential(
-        idToken: appleCredential.identityToken,
-        rawNonce: rawNonce,
-        accessToken: appleCredential.authorizationCode,
-      );
+      final OAuthCredential oauthCredential = OAuthProvider('apple.com')
+          .credential(
+            idToken: appleCredential.identityToken,
+            rawNonce: rawNonce,
+            accessToken: appleCredential.authorizationCode,
+          );
 
       // Sign in / link to Firebase.
-      final UserCredential userCredential =
-          await _auth.signInWithCredential(oauthCredential);
+      final UserCredential userCredential = await _auth.signInWithCredential(
+        oauthCredential,
+      );
       final User user = userCredential.user!;
       final bool isNewUser =
           userCredential.additionalUserInfo?.isNewUser ?? false;
@@ -315,8 +326,9 @@ class AuthService {
     required String appleFullName,
     String? appleEmail,
   }) async {
-    final DocumentReference<Map<String, dynamic>> ref =
-        _firestore.collection('users').doc(user.uid);
+    final DocumentReference<Map<String, dynamic>> ref = _firestore
+        .collection('users')
+        .doc(user.uid);
     final DocumentSnapshot<Map<String, dynamic>> snapshot = await ref.get();
 
     if (!snapshot.exists) {
@@ -324,10 +336,13 @@ class AuthService {
       // never clobbers the `onboarding` map written on the same auth event.
       await ref.set({
         'uid': user.uid,
-        'name': appleFullName.isNotEmpty ? appleFullName : (user.displayName ?? ''),
+        'name': appleFullName.isNotEmpty
+            ? appleFullName
+            : (user.displayName ?? ''),
         'email': appleEmail ?? user.email ?? '',
         'photoUrl': user.photoURL ?? '',
         'provider': 'apple',
+        'trialChooserCompleted': false,
         'freeCredits': SubscriptionService.kInitialFreeCredits,
         'createdAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
@@ -342,7 +357,8 @@ class AuthService {
     final Map<String, dynamic> updates = {};
 
     final String? existingName = data['name'] as String?;
-    if ((existingName == null || existingName.isEmpty) && appleFullName.isNotEmpty) {
+    if ((existingName == null || existingName.isEmpty) &&
+        appleFullName.isNotEmpty) {
       updates['name'] = appleFullName;
     }
 
@@ -393,8 +409,9 @@ class AuthService {
   /// unavailable / not deployed.
   static Future<bool> isEmailRegistered(String email) async {
     try {
-      final callable =
-          FirebaseFunctions.instance.httpsCallable('checkEmailRegistered');
+      final callable = FirebaseFunctions.instance.httpsCallable(
+        'checkEmailRegistered',
+      );
       final res = await callable.call({'email': email.trim()});
       final data = res.data;
       if (data is Map && data['registered'] is bool) {
@@ -422,5 +439,161 @@ class AuthService {
       await google.signOut();
     } catch (_) {}
     await _auth.signOut();
+  }
+
+  /// Permanently deletes the current account and clears local app state.
+  static Future<void> deleteAccountEverywhere() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    final uid = user.uid;
+    await _deleteFirestoreData(uid);
+
+    await _deleteStorageData(uid);
+    await _deleteAuthUser(user);
+    await _clearLocalAppData();
+    await logout();
+  }
+
+  static Future<void> _deleteFirestoreData(String uid) async {
+    await _deleteDocuments(
+      _firestore.collection('users').doc(uid).collection('followers'),
+    );
+    log('followers delete');
+    await _deleteDocuments(
+      _firestore.collection('users').doc(uid).collection('following'),
+    );
+    log('following delete');
+    await _deleteDocuments(
+      _firestore.collection('users').doc(uid).collection('groceries'),
+    );
+    log('groceries delete');
+    await _deleteDocuments(
+      _firestore.collection('users').doc(uid).collection('meal_plans'),
+    );
+    log('meal_plans delete');
+    final draftRef = _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('meal_planner_draft')
+        .doc('current');
+    await draftRef.delete().catchError((_) {});
+
+    final ownedRecipes = await _firestore
+        .collection('recipes')
+        .where('ownerId', isEqualTo: uid)
+        .get();
+    for (final recipe in ownedRecipes.docs) {
+      await _deleteDocuments(recipe.reference.collection('likes'));
+      await _deleteDocuments(recipe.reference.collection('saves'));
+      await _deleteDocuments(recipe.reference.collection('comments'));
+      await _deleteDocuments(recipe.reference.collection('ratings'));
+      await recipe.reference.delete();
+    }
+    log('likes saves comments ratings delete');
+    final notifications = await _firestore
+        .collection('notifications')
+        .where('senderUserId', isEqualTo: uid)
+        .get();
+
+    final received = await _firestore
+        .collection('notifications')
+        .where('receiverUserId', isEqualTo: uid)
+        .get();
+    log('notifications');
+    final notifIds = <String>{};
+    for (final d in [...notifications.docs, ...received.docs]) {
+      notifIds.add(d.id);
+    }
+    if (notifIds.isNotEmpty) {
+      final batch = _firestore.batch();
+      for (final id in notifIds) {
+        batch.delete(_firestore.collection('notifications').doc(id));
+      }
+      await batch.commit();
+    }
+
+    await _firestore.collection('users').doc(uid).delete();
+  }
+
+  static Future<void> _deleteDocuments(
+    CollectionReference<Map<String, dynamic>> col,
+  ) async {
+    while (true) {
+      final snap = await col.limit(500).get();
+      if (snap.docs.isEmpty) return;
+      final batch = _firestore.batch();
+      for (final doc in snap.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+    }
+  }
+
+  static Future<void> _deleteStorageData(String uid) async {
+    await _deleteStoragePrefix(FirebaseStorage.instance.ref('users/$uid'));
+  }
+
+  static Future<void> _deleteStoragePrefix(Reference ref) async {
+    try {
+      final list = await ref.listAll();
+      for (final item in list.items) {
+        await item.delete();
+      }
+      for (final prefix in list.prefixes) {
+        await _deleteStoragePrefix(prefix);
+      }
+    } catch (_) {}
+  }
+
+  static Future<void> _deleteAuthUser(User user) async {
+    try {
+      await user.delete();
+      log('user');
+    } on FirebaseAuthException catch (e) {
+      if (e.code != 'requires-recent-login') rethrow;
+    }
+  }
+
+  static Future<void> _clearLocalAppData() async {
+    try {
+      if (Get.isRegistered<ProfileController>()) {
+        Get.find<ProfileController>().clearLocalData();
+      }
+    } catch (_) {}
+
+    try {
+      if (Get.isRegistered<SettingsController>()) {
+        await Get.find<SettingsController>().onLogout();
+      }
+    } catch (_) {}
+
+    try {
+      SubscriptionService.instance.onLogout();
+    } catch (_) {}
+
+    try {
+      await NotificationService.instance.logoutUser();
+    } catch (_) {}
+
+    try {
+      await LocalNotificationService.instance.cancelMealPlanReminder();
+      await LocalNotificationService.instance.cancelWeeklyGroceryReminder();
+      await LocalNotificationService.instance.cancelAllCookTimerAlerts();
+      await LocalNotificationService.instance.cancelTrialEndReminder();
+    } catch (_) {}
+
+    try {
+      await RevenueCatService.instance.logoutUser();
+    } catch (_) {}
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+    } catch (_) {}
+
+    try {
+      GetStorage().erase();
+    } catch (_) {}
   }
 }

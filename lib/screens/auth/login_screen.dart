@@ -3,10 +3,12 @@ import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/utils/validators.dart';
 import 'package:recipe_ai/utils/auth_error_mapper.dart';
-import 'package:recipe_ai/View/Auth/auth_wrapper.dart';
+import 'package:recipe_ai/View/Home/home_screen.dart';
+import 'package:recipe_ai/screens/onboarding/trial_chooser_screen.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/app_logo.dart';
@@ -177,7 +179,7 @@ class _LoginScreenState extends State<LoginScreen> {
         email: _loginEmailController.text,
         password: _loginPasswordController.text,
       );
-      Get.offAll(() => const AuthWrapper());
+      await _routeAfterAuth();
     } catch (e) {
       CustomSnackbar.show(
         title: 'login_failed'.tr,
@@ -217,7 +219,7 @@ class _LoginScreenState extends State<LoginScreen> {
         message: 'account_created_message'.tr,
         type: SnackbarType.success,
       );
-      Get.offAll(() => const AuthWrapper());
+      await _routeAfterAuth();
     } catch (e) {
       CustomSnackbar.show(
         title: 'sign_up_failed'.tr,
@@ -236,7 +238,7 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final userCred = await AuthService.signInWithGoogle();
       if (userCred == null) return; // user cancelled the picker — stay silent
-      Get.offAll(() => const AuthWrapper());
+      await _routeAfterAuth();
     } catch (e) {
       CustomSnackbar.show(
         title: 'google_sign_in_failed'.tr,
@@ -256,7 +258,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final result = await AuthService.signInWithApple();
       if (result.cancelled) return; // user backed out — stay silent
       if (result.success) {
-        Get.offAll(() => const AuthWrapper());
+        await _routeAfterAuth();
       } else {
         CustomSnackbar.show(
           title: 'apple_sign_in_failed'.tr,
@@ -266,6 +268,32 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _routeAfterAuth() async {
+    final user = AuthService.currentUser;
+    if (user == null) return;
+
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      final needsTrialChooser =
+          snap.data()?['trialChooserCompleted'] == false;
+
+      Get.offAll(
+        () => needsTrialChooser
+            ? const TrialChooserScreen()
+            : const HomeScreen(),
+        transition: Transition.noTransition,
+      );
+    } catch (_) {
+      Get.offAll(
+        () => const HomeScreen(),
+        transition: Transition.noTransition,
+      );
     }
   }
 

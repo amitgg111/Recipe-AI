@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:recipe_ai/screens/auth/create_account_screen.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/app_logo.dart';
 import 'package:get/get.dart';
@@ -232,7 +233,7 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                                 onTap:
                                     widget.onClose ??
                                     () => Get.to(
-                                      () => const TrialChooserScreen(),
+                                      () => const CreateAccountScreen(),
                                       transition: Transition.noTransition,
                                     ),
                                 child: Container(
@@ -331,9 +332,7 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                                     letterSpacing: -0.52,
                                   ),
                                 ),
-                                TextSpan(
-                                  text: 'comparison_title_2'.tr,
-                                ),
+                                TextSpan(text: 'comparison_title_2'.tr),
                               ],
                             ),
                           ),
@@ -369,7 +368,7 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
                     onPressed:
                         widget.onContinue ??
                         () => Get.to(
-                          () => const TrialChooserScreen(),
+                          () => const CreateAccountScreen(),
                           transition: Transition.noTransition,
                         ),
                     enableBob: true,

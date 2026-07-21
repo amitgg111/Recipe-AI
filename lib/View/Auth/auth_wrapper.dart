@@ -31,9 +31,10 @@ class AuthWrapper extends StatelessWidget {
             !snapshot.hasData) {
           return const _AuthLoading();
         }
-        return snapshot.hasData
-            ? const HomeScreen()
-            : const CreateAccountScreen();
+        if (!snapshot.hasData) {
+          return const CreateAccountScreen();
+        }
+        return const HomeScreen();
       },
     );
   }

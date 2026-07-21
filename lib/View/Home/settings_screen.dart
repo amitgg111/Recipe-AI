@@ -2,11 +2,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:recipe_ai/Controllers/notification_controller.dart';
 import 'package:recipe_ai/Controllers/profile_controller.dart';
 import 'package:recipe_ai/Controllers/settings_controller.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/Service/subscription_service.dart';
 import 'package:recipe_ai/View/Auth/auth_wrapper.dart';
+import 'package:recipe_ai/screens/auth/create_account_screen.dart';
 import 'package:recipe_ai/View/Home/settings/help_center_screen.dart';
 import 'package:recipe_ai/View/Home/settings/language_screen.dart';
 import 'package:recipe_ai/View/Home/settings/manage_subscription_screen.dart';
@@ -77,38 +79,38 @@ class SettingsScreen extends StatelessWidget {
                 final plus =
                     SubscriptionService.instance.isPlusListenable.value;
                 return SettingsUi.card(
-                rows: [
-                  SettingsUi.row(
-                    leadingIcon: const OnboardingLineIcon(
-                      'bellSm',
-                      color: SettingsUi.rowIcon,
-                      size: 20,
+                  rows: [
+                    SettingsUi.row(
+                      leadingIcon: const OnboardingLineIcon(
+                        'bellSm',
+                        color: SettingsUi.rowIcon,
+                        size: 20,
+                      ),
+                      label: 'notifications'.tr,
+                      onTap: () =>
+                          Get.to(() => const NotificationSettingsScreen()),
                     ),
-                    label: 'notifications'.tr,
-                    onTap: () =>
-                        Get.to(() => const NotificationSettingsScreen()),
-                  ),
-                  if (plus) _unitsRow(settings),
-                  SettingsUi.row(
-                    leadingIcon: const OnboardingLineIcon(
-                      'globe',
-                      color: SettingsUi.rowIcon,
-                      size: 20,
-                    ),
-                    label: 'language'.tr,
-                    trailing: Obx(
-                      () => Text(
-                        settings.language.value,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textLight,
+                    if (plus) _unitsRow(settings),
+                    SettingsUi.row(
+                      leadingIcon: const OnboardingLineIcon(
+                        'globe',
+                        color: SettingsUi.rowIcon,
+                        size: 20,
+                      ),
+                      label: 'language'.tr,
+                      trailing: Obx(
+                        () => Text(
+                          settings.language.value,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textLight,
+                          ),
                         ),
                       ),
+                      onTap: () => Get.to(() => const LanguageScreen()),
                     ),
-                    onTap: () => Get.to(() => const LanguageScreen()),
-                  ),
-                ],
+                  ],
                 );
               }),
 
@@ -382,9 +384,9 @@ class SettingsScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'plus_active_renews'.trParams(
-                          {'date': ManageSubscriptionScreen.renewDate},
-                        ),
+                        'plus_active_renews'.trParams({
+                          'date': ManageSubscriptionScreen.renewDate,
+                        }),
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -396,8 +398,10 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.22),
                     borderRadius: BorderRadius.circular(20),
@@ -437,8 +441,7 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 const Spacer(),
                 GestureDetector(
-                  onTap: () =>
-                      Get.to(() => const ManageSubscriptionScreen()),
+                  onTap: () => Get.to(() => const ManageSubscriptionScreen()),
                   behavior: HitTestBehavior.opaque,
                   child: Text(
                     'manage_plan'.tr,
@@ -470,12 +473,36 @@ class SettingsScreen extends StatelessWidget {
           SettingsUi.label('recipe_ai_plus'.tr),
           SettingsUi.card(
             rows: [
-              _premiumFeatureTile('sparkF2', const Color(0xFF8B5CF6), 'bnf_imports'.tr),
-              _premiumFeatureTile('chat', const Color(0xFF2D6FE0), 'bnf_assistant'.tr),
-              _premiumFeatureTile('bowl', const Color(0xFF1F8A5B), 'bnf_nutrition'.tr),
-              _premiumFeatureTile('cal', const Color(0xFFE0481F), 'bnf_mealplan'.tr),
-              _premiumFeatureTile('ruler', const Color(0xFFC0860F), 'bnf_converter'.tr),
-              _premiumFeatureTile('file', const Color(0xFF8B5CF6), 'bnf_pdf'.tr),
+              _premiumFeatureTile(
+                'sparkF2',
+                const Color(0xFF8B5CF6),
+                'bnf_imports'.tr,
+              ),
+              _premiumFeatureTile(
+                'chat',
+                const Color(0xFF2D6FE0),
+                'bnf_assistant'.tr,
+              ),
+              _premiumFeatureTile(
+                'bowl',
+                const Color(0xFF1F8A5B),
+                'bnf_nutrition'.tr,
+              ),
+              _premiumFeatureTile(
+                'cal',
+                const Color(0xFFE0481F),
+                'bnf_mealplan'.tr,
+              ),
+              _premiumFeatureTile(
+                'ruler',
+                const Color(0xFFC0860F),
+                'bnf_converter'.tr,
+              ),
+              _premiumFeatureTile(
+                'file',
+                const Color(0xFF8B5CF6),
+                'bnf_pdf'.tr,
+              ),
             ],
           ),
         ],
@@ -497,7 +524,6 @@ class SettingsScreen extends StatelessWidget {
       final plus = sub.isPlusListenable.value;
       final remaining = sub.freeCreditsListenable.value;
       const max = SubscriptionService.kInitialFreeCredits;
-      final used = max - remaining;
       final frac = plus ? 1.0 : (max == 0 ? 0.0 : remaining / max);
       final accent = plus ? AppColors.purpleDark : AppColors.primary;
       return GestureDetector(
@@ -505,94 +531,95 @@ class SettingsScreen extends StatelessWidget {
         // integration yet). Remove once a real purchase flow is wired.
         onLongPress: () => sub.setPlus(!plus),
         child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.surfaceBorder),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              padding: const EdgeInsets.only(top: 5),
-              decoration: BoxDecoration(
-                color: plus ? AppColors.purpleBg : AppColors.goldBg,
-                borderRadius: BorderRadius.circular(11),
-              ),
-              child: Center(
-                child: OnboardingLineIcon(
-                  plus ? 'crown' : 'sparkF',
-                  color: plus ? AppColors.purpleDark : AppColors.gold,
-                  size: 25,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    plus ? 'recipe_imports'.tr : 'import_credits'.tr,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textDark,
-                    ),
-                  ),
-                  const SizedBox(height: 1),
-                  Text(
-                    plus
-                        ? 'unlimited_with_plus'.tr
-                        : 'credits_left_week'.trParams(
-                            {'count': '$remaining', 'max': '$max'},
-                          ),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textMedium,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Plus → an infinity chip; Free → the weekly-credits progress bar.
-            if (plus)
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.surfaceBorder),
+          ),
+          child: Row(
+            children: [
               Container(
-                width: 34,
-                height: 34,
-                alignment: Alignment.center,
-                decoration: const BoxDecoration(
-                  color: AppColors.purpleBg,
-                  shape: BoxShape.circle,
+                width: 40,
+                height: 40,
+                padding: const EdgeInsets.only(top: 5),
+                decoration: BoxDecoration(
+                  color: plus ? AppColors.purpleBg : AppColors.goldBg,
+                  borderRadius: BorderRadius.circular(11),
                 ),
-                child: const Icon(
-                  Icons.all_inclusive_rounded,
-                  size: 18,
-                  color: AppColors.purpleDark,
-                ),
-              )
-            else
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: SizedBox(
-                  width: 64,
-                  height: 7,
-                  child: Stack(
-                    children: [
-                      Container(color: const Color(0xFFF0EADD)),
-                      FractionallySizedBox(
-                        widthFactor: frac,
-                        child: Container(color: accent),
-                      ),
-                    ],
+                child: Center(
+                  child: OnboardingLineIcon(
+                    plus ? 'crown' : 'sparkF',
+                    color: plus ? AppColors.purpleDark : AppColors.gold,
+                    size: 25,
                   ),
                 ),
               ),
-          ],
-        ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      plus ? 'recipe_imports'.tr : 'import_credits'.tr,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textDark,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      plus
+                          ? 'unlimited_with_plus'.tr
+                          : 'credits_left_week'.trParams({
+                              'count': '$remaining',
+                              'max': '$max',
+                            }),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textMedium,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Plus → an infinity chip; Free → the weekly-credits progress bar.
+              if (plus)
+                Container(
+                  width: 34,
+                  height: 34,
+                  alignment: Alignment.center,
+                  decoration: const BoxDecoration(
+                    color: AppColors.purpleBg,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.all_inclusive_rounded,
+                    size: 18,
+                    color: AppColors.purpleDark,
+                  ),
+                )
+              else
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: SizedBox(
+                    width: 64,
+                    height: 7,
+                    child: Stack(
+                      children: [
+                        Container(color: const Color(0xFFF0EADD)),
+                        FractionallySizedBox(
+                          widthFactor: frac,
+                          child: Container(color: accent),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       );
     });
@@ -716,6 +743,18 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
+  // void _confirmDeleteAccount() {
+  //   Get.dialog(
+  //     _ConfirmDialog(
+  //       title: 'Delete account?',
+  //       message:
+  //           'This permanently deletes your account and cannot be undone. You may need to sign in again to confirm.',
+  //       confirmLabel: 'Delete',
+  //       confirmColor: const Color(0xFFB0453A),
+  //       onConfirm: _deleteAccount,
+  //     ),
+  //   );
+  // }
   void _confirmDeleteAccount() {
     Get.dialog(
       _ConfirmDialog(
@@ -725,30 +764,61 @@ class SettingsScreen extends StatelessWidget {
         confirmLabel: 'Delete',
         confirmColor: const Color(0xFFB0453A),
         onConfirm: () async {
-          Get.back();
+          Get.back(); // confirm dialog band karo
+          _showFullScreenLoader(); // full screen spinner batavo
           await _deleteAccount();
         },
       ),
     );
   }
 
+  void _showFullScreenLoader() {
+    Get.dialog(
+      PopScope(
+        canPop: false, // back button thi band na thay
+        child: Container(
+          color: Colors.black.withValues(alpha: 0.55),
+          alignment: Alignment.center,
+          child: const CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation(Colors.white),
+          ),
+        ),
+      ),
+      barrierDismissible: false,
+      barrierColor: Colors.transparent,
+    );
+  }
+
+  // Future<void> _deleteAccount() async {
+  //   try {
+  //     await AuthService.deleteAccountEverywhere();
+  //     if (Get.isRegistered<NotificationController>()) {
+  //       Get.find<NotificationController>().clear();
+  //     }
+  //     await Get.offAll(
+  //       () => const CreateAccountScreen(),
+  //       transition: Transition.noTransition,
+  //     );
+  //   } catch (_) {}
+  // }
   Future<void> _deleteAccount() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
     try {
-      Get.find<ProfileController>().clearLocalData();
-      await user.delete();
-      // AuthWrapper reacts to authStateChanges and redirects automatically.
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'requires-recent-login') {
-        // Fall back to logout so the user can re-authenticate then retry.
-        await AuthService.logout();
+      await AuthService.deleteAccountEverywhere();
+      if (Get.isRegistered<NotificationController>()) {
+        Get.find<NotificationController>().clear();
       }
-    } catch (_) {}
+      Get.back(); // loader band karo
+      await Get.offAll(
+        () => const CreateAccountScreen(),
+        transition: Transition.noTransition,
+      );
+    } catch (_) {
+      Get.back(); // error avya to pan loader band karvu jaruri
+    }
   }
 }
 
-class _ConfirmDialog extends StatelessWidget {
+class _ConfirmDialog extends StatefulWidget {
   final String title;
   final String message;
   final String confirmLabel;
@@ -764,6 +834,13 @@ class _ConfirmDialog extends StatelessWidget {
   });
 
   @override
+  State<_ConfirmDialog> createState() => _ConfirmDialogState();
+}
+
+class _ConfirmDialogState extends State<_ConfirmDialog> {
+  bool _loading = false;
+
+  @override
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: AppColors.background,
@@ -775,7 +852,7 @@ class _ConfirmDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              title,
+              widget.title,
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
@@ -784,7 +861,7 @@ class _ConfirmDialog extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              message,
+              widget.message,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 13.5,
@@ -800,7 +877,7 @@ class _ConfirmDialog extends StatelessWidget {
                   child: SizedBox(
                     height: 48,
                     child: OutlinedButton(
-                      onPressed: () => Get.back(),
+                      onPressed: _loading ? null : () => Get.back(),
                       style: OutlinedButton.styleFrom(
                         backgroundColor: AppColors.surface,
                         side: const BorderSide(color: AppColors.surfaceBorder),
@@ -824,22 +901,44 @@ class _ConfirmDialog extends StatelessWidget {
                   child: SizedBox(
                     height: 48,
                     child: ElevatedButton(
-                      onPressed: onConfirm,
+                      onPressed: _loading
+                          ? null
+                          : () async {
+                              setState(() => _loading = true);
+                              try {
+                                await widget.onConfirm();
+                              } finally {
+                                if (mounted) {
+                                  setState(() => _loading = false);
+                                }
+                              }
+                            },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: confirmColor,
+                        backgroundColor: widget.confirmColor,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(13),
                         ),
                       ),
-                      child: Text(
-                        confirmLabel,
-                        style: const TextStyle(
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
+                      child: _loading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.2,
+                                valueColor: AlwaysStoppedAnimation(
+                                  Colors.white,
+                                ),
+                              ),
+                            )
+                          : Text(
+                              widget.confirmLabel,
+                              style: const TextStyle(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
                   ),
                 ),

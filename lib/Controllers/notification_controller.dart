@@ -75,6 +75,8 @@ class NotificationController extends GetxController {
     isLoading.value = false;
   }
 
+  void clear() => _unbind();
+
   void _listenUnread() {
     final uid = _uid;
     if (uid == null) return;

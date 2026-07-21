@@ -58,6 +58,52 @@ class RecipeImportService {
     throw Exception(result.data['error']);
   }
 
+  static Future<void> importRecipeFromImage(
+    BuildContext context,
+    File imageFile,
+  ) async {
+    await _runImport(
+      loadingSteps: const [
+        'Reading your image…',
+        'Identifying ingredients…',
+        'Building instructions…',
+        'Saving your recipe…',
+      ],
+      errorMessage: 'Could not read recipe from image. Please try again.',
+      import: () async {
+        final uid = AuthService.currentUser?.uid;
+
+        if (uid == null) {
+          throw Exception('You must be logged in to save recipes.');
+        }
+
+        // Analyze image using Gemini
+        final recipeData = await getRecipeFromImage(imageFile);
+
+        // Check whether image actually contains a recipe
+        if (!_isRecipeResult(recipeData)) {
+          throw const _NotARecipeException(
+            "This image isn't a recipe. Please add a photo of a "
+            "dish or a recipe card.",
+          );
+        }
+
+        // Convert Gemini response into SavedRecipe
+        final recipe = SavedRecipe.fromGeminiResponse(recipeData);
+
+        // Upload original image to Firebase Storage
+        final firebaseImageUrl = await _uploadImageFile(imageFile, uid);
+
+        // Save recipe and navigate to complete screen
+        await _saveRecipeAndNavigate(
+          recipe: recipe,
+          sourceUrl: 'gemini_image_import',
+          firebaseImageUrl: firebaseImageUrl,
+        );
+      },
+    );
+  }
+
   static Future<Map<String, dynamic>> getRecipeFromImage(File image) async {
     final bytes = await image.readAsBytes();
 
@@ -936,7 +982,7 @@ class _RecipeCameraScreenState extends State<RecipeCameraScreen> {
 
   Future<void> _processRecipeImage(File image) async {
     try {
-      // await RecipeImportService.importRecipeFromImage(context, image);
+      await RecipeImportService.importRecipeFromImage(context, image);
 
       if (mounted) {
         setState(() {

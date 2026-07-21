@@ -20,11 +20,13 @@ class EditProfileScreen extends StatefulWidget {
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final _profile = Get.find<ProfileController>();
-  final _formKey = GlobalKey<FormState>();
+
   late final TextEditingController _nameController;
   late final TextEditingController _contactController;
   late final TextEditingController _bioController;
-
+  String? _nameError;
+  String? _contactError;
+  String? _bioError;
   bool _saving = false;
 
   @override
@@ -35,6 +37,31 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _contactController = TextEditingController();
     _bioController = TextEditingController();
     _loadUserDoc();
+  }
+
+  Future<void> _save() async {
+    setState(() {
+      _nameError = ValidationHelper.name(_nameController.text);
+
+      _contactError = ValidationHelper.phone(
+        _contactController.text,
+        required: false,
+      );
+
+      _bioError = ValidationHelper.notes(
+        _bioController.text,
+        max: 160,
+        field: 'Bio',
+      );
+    });
+
+    if (_nameError != null || _contactError != null || _bioError != null) {
+      return;
+    }
+
+    setState(() => _saving = true);
+
+    // તમારો existing save code...
   }
 
   Future<void> _loadUserDoc() async {
@@ -62,53 +89,53 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
-  Future<void> _save() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+  // Future<void> _save() async {
+  //   if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    setState(() => _saving = true);
-    final name = _nameController.text.trim();
+  //   setState(() => _saving = true);
+  //   final name = _nameController.text.trim();
 
-    try {
-      // Source of truth = the users/{uid} document. This resolves against the
-      // local cache immediately (even offline), so it never blocks the UI.
-      final uid = AuthService.currentUser?.uid;
-      if (uid != null) {
-        await FirebaseFirestore.instance.collection('users').doc(uid).set({
-          'name': name,
-          'contact': _contactController.text.trim(),
-          'bio': _bioController.text.trim(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
-      }
-      // Keep the local profile cache in sync.
-      await _profile.updateName(name);
+  //   try {
+  //     // Source of truth = the users/{uid} document. This resolves against the
+  //     // local cache immediately (even offline), so it never blocks the UI.
+  //     final uid = AuthService.currentUser?.uid;
+  //     if (uid != null) {
+  //       await FirebaseFirestore.instance.collection('users').doc(uid).set({
+  //         'name': name,
+  //         'contact': _contactController.text.trim(),
+  //         'bio': _bioController.text.trim(),
+  //         'updatedAt': FieldValue.serverTimestamp(),
+  //       }, SetOptions(merge: true));
+  //     }
+  //     // Keep the local profile cache in sync.
+  //     await _profile.updateName(name);
 
-      // The FirebaseAuth display name + reload are network-only calls that can
-      // hang/throw offline — run them best-effort WITHOUT blocking, so Save
-      // always closes the screen and shows feedback.
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null && name.isNotEmpty && name != user.displayName) {
-        user.updateDisplayName(name).then((_) => user.reload()).ignore();
-      }
-    } catch (e) {
-      if (mounted) setState(() => _saving = false);
-      CustomSnackbar.show(
-        title: 'error'.tr,
-        message: e.toString(),
-        type: SnackbarType.error,
-      );
-      return;
-    }
+  //     // The FirebaseAuth display name + reload are network-only calls that can
+  //     // hang/throw offline — run them best-effort WITHOUT blocking, so Save
+  //     // always closes the screen and shows feedback.
+  //     final user = FirebaseAuth.instance.currentUser;
+  //     if (user != null && name.isNotEmpty && name != user.displayName) {
+  //       user.updateDisplayName(name).then((_) => user.reload()).ignore();
+  //     }
+  //   } catch (e) {
+  //     if (mounted) setState(() => _saving = false);
+  //     CustomSnackbar.show(
+  //       title: 'error'.tr,
+  //       message: e.toString(),
+  //       type: SnackbarType.error,
+  //     );
+  //     return;
+  //   }
 
-    if (!mounted) return;
-    setState(() => _saving = false);
-    Get.back();
-    CustomSnackbar.show(
-      title: 'success'.tr,
-      message: 'profile_updated_successfully'.tr,
-      type: SnackbarType.success,
-    );
-  }
+  //   if (!mounted) return;
+  //   setState(() => _saving = false);
+  //   Get.back();
+  //   CustomSnackbar.show(
+  //     title: 'success'.tr,
+  //     message: 'profile_updated_successfully'.tr,
+  //     type: SnackbarType.success,
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -118,7 +145,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Form(
-          key: _formKey,
           autovalidateMode: AutovalidateMode.onUserInteraction,
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
@@ -221,7 +247,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 controller: _nameController,
                 focused: true,
                 keyboardType: TextInputType.name,
-                validator: (v) => ValidationHelper.name(v),
+
+                errorText: _nameError,
               ),
               const SizedBox(height: 13),
 
@@ -233,13 +260,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               _field(
                 controller: _contactController,
                 keyboardType: TextInputType.phone,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(10),
-                ],
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 hint: 'add_phone_number'.tr,
-
-                validator: (v) => ValidationHelper.phone(v, required: false),
+                errorText: _contactError,
               ),
               const SizedBox(height: 13),
 
@@ -249,8 +272,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 maxLines: 3,
                 hint: 'bio_hint'.tr,
                 keyboardType: TextInputType.multiline,
-                validator: (v) =>
-                    ValidationHelper.notes(v, max: 160, field: 'Bio'),
+                errorText: _bioError,
               ),
             ],
           ),
@@ -310,74 +332,150 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
+  // Widget _field({
+  //   required TextEditingController controller,
+  //   bool focused = false,
+  //   int maxLines = 1,
+  //   String? hint,
+  //   String? prefixText,
+  //   TextInputType? keyboardType,
+  //   String? Function(String?)? validator,
+  //   List<TextInputFormatter>? inputFormatters,
+  // }) {
+  //   return Container(
+  //     width: double.infinity,
+  //     decoration: BoxDecoration(
+  //       color: AppColors.surfaceLight,
+  //       borderRadius: BorderRadius.circular(12),
+  //       border: Border.all(
+  //         color: focused ? AppColors.primary : AppColors.unselectedBorder,
+  //         width: focused ? 1.5 : 1,
+  //       ),
+  //       boxShadow: focused
+  //           ? [
+  //               BoxShadow(
+  //                 color: AppColors.primary.withValues(alpha: 0.1),
+  //                 blurRadius: 0,
+  //                 spreadRadius: 3,
+  //               ),
+  //             ]
+  //           : null,
+  //     ),
+  //     padding: EdgeInsets.symmetric(
+  //       horizontal: 14,
+  //       vertical: maxLines > 1 ? 12 : 0,
+  //     ),
+  //     child: TextFormField(
+  //       controller: controller,
+  //       maxLines: maxLines,
+  //       keyboardType: keyboardType,
+  //       validator: validator,
+  //       inputFormatters: inputFormatters,
+  //       style: const TextStyle(
+  //         fontSize: 16,
+  //         fontWeight: FontWeight.w600,
+  //         color: AppColors.textDark,
+  //       ),
+  //       decoration: InputDecoration(
+  //         isDense: true,
+  //         filled: false,
+  //         prefixText: prefixText,
+  //         prefixStyle: const TextStyle(
+  //           fontSize: 16,
+  //           fontWeight: FontWeight.w700,
+  //           color: AppColors.textMedium,
+  //         ),
+  //         hintText: hint,
+  //         hintStyle: const TextStyle(
+  //           fontSize: 15,
+  //           fontWeight: FontWeight.w500,
+  //           color: AppColors.textHint,
+  //         ),
+  //         border: InputBorder.none,
+  //         enabledBorder: InputBorder.none,
+  //         focusedBorder: InputBorder.none,
+  //         errorBorder: InputBorder.none,
+  //         disabledBorder: InputBorder.none,
+  //         focusedErrorBorder: InputBorder.none,
+  //         contentPadding: EdgeInsets.symmetric(vertical: maxLines > 1 ? 0 : 15),
+  //       ),
+  //     ),
+  //   );
+  // }
+
   Widget _field({
     required TextEditingController controller,
     bool focused = false,
     int maxLines = 1,
     String? hint,
-    String? prefixText,
+
     TextInputType? keyboardType,
-    String? Function(String?)? validator,
+
     List<TextInputFormatter>? inputFormatters,
+    String? errorText,
   }) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: focused ? AppColors.primary : AppColors.unselectedBorder,
-          width: focused ? 1.5 : 1,
-        ),
-        boxShadow: focused
-            ? [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  blurRadius: 0,
-                  spreadRadius: 3,
-                ),
-              ]
-            : null,
-      ),
-      padding: EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: maxLines > 1 ? 12 : 0,
-      ),
-      child: TextFormField(
-        controller: controller,
-        maxLines: maxLines,
-        keyboardType: keyboardType,
-        validator: validator,
-        inputFormatters: inputFormatters,
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-          color: AppColors.textDark,
-        ),
-        decoration: InputDecoration(
-          isDense: true,
-          filled: false,
-          prefixText: prefixText,
-          prefixStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textMedium,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: AppColors.surfaceLight,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: errorText != null
+                  ? Colors.red
+                  : focused
+                  ? AppColors.primary
+                  : AppColors.unselectedBorder,
+              width: errorText != null || focused ? 1.5 : 1,
+            ),
           ),
-          hintText: hint,
-          hintStyle: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textHint,
+          padding: EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: maxLines > 1 ? 12 : 0,
           ),
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-          errorBorder: InputBorder.none,
-          disabledBorder: InputBorder.none,
-          focusedErrorBorder: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(vertical: maxLines > 1 ? 0 : 15),
+          child: TextFormField(
+            controller: controller,
+            maxLines: maxLines,
+            keyboardType: keyboardType,
+            inputFormatters: inputFormatters,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textDark,
+            ),
+            decoration: InputDecoration(
+              isDense: true,
+              border: InputBorder.none,
+              hintText: hint,
+              hintStyle: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textHint,
+              ),
+              contentPadding: EdgeInsets.symmetric(
+                vertical: maxLines > 1 ? 0 : 15,
+              ),
+            ),
+          ),
         ),
-      ),
+
+        if (errorText != null) ...[
+          const SizedBox(height: 5),
+          Padding(
+            padding: const EdgeInsets.only(left: 4),
+            child: Text(
+              errorText,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.red,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 

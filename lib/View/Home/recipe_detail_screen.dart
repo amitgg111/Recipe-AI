@@ -3908,7 +3908,8 @@ class _CookbookPickerSheetState extends State<CookbookPickerSheet> {
           // New cookbook
           GestureDetector(
             onTap: () {
-              AddCookbookSheet.show(context);
+              showNewCookbookSheet(context);
+              // AddCookbookSheet.show(context);
             },
             behavior: HitTestBehavior.opaque,
             child: Padding(

@@ -12,6 +12,7 @@ class CookbookModel {
   final String? imageUrl;
   final int recipeCount;
   final List<String> recipeIds;
+  final DateTime? createdAt;
 
   CookbookModel({
     required this.id,
@@ -19,6 +20,7 @@ class CookbookModel {
     this.imageUrl,
     required this.recipeCount,
     required this.recipeIds,
+    this.createdAt,
   });
 
   factory CookbookModel.fromDocument(DocumentSnapshot doc) {
