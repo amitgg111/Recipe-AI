@@ -577,7 +577,7 @@ class _CookbooksScreenState extends State<CookbooksScreen>
                       isSelected: _sortIndex == i,
                       onTap: () {
                         setState(() => _sortIndex = i);
-                        Navigator.pop(context);
+                        Get.back();
                       },
                     ),
                 ],
@@ -722,7 +722,7 @@ class ImportSourcePickerScreen extends StatelessWidget {
               Row(
                 children: [
                   GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () => Get.back(),
                     child: const OnboardingLineIcon(
                       'back',
                       size: 20,
@@ -835,7 +835,7 @@ class ImportSourcePickerScreen extends StatelessWidget {
                           showUpgradeDialog(context, feature: 'Photo import');
                           return;
                         }
-                        Navigator.pop(context);
+                        Get.back();
                         RecipeImportService.importRecipeFromGallery(context);
                       },
                     ),
@@ -854,7 +854,7 @@ class ImportSourcePickerScreen extends StatelessWidget {
                           showUpgradeDialog(context, feature: 'Text import');
                           return;
                         }
-                        Navigator.pop(context);
+                        Get.back();
                         Get.to(() => const GenerateRecipeScreen());
                       },
                     ),
@@ -872,7 +872,7 @@ class ImportSourcePickerScreen extends StatelessWidget {
                       title: 'import_from_web'.tr,
                       subtitle: 'paste_a_link'.tr,
                       onTap: () {
-                        Navigator.pop(context);
+                        Get.back();
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -891,7 +891,7 @@ class ImportSourcePickerScreen extends StatelessWidget {
                       title: 'write_from_scratch'.tr,
                       subtitle: 'create_manually'.tr,
                       onTap: () {
-                        Navigator.pop(context);
+                        Get.back();
                         Get.to(() => const RecipeEditorScreen());
                       },
                     ),
@@ -1484,7 +1484,7 @@ class ImportRecipeBottomSheet extends StatelessWidget {
             title: 'import_from_social_media'.tr,
             subtitle: 'Instagram, Facebook, TikTok',
             onTap: () {
-              Navigator.pop(context);
+              Get.back();
               Navigator.push(
                 context,
                 MaterialPageRoute(

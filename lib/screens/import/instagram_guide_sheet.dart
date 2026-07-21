@@ -86,7 +86,7 @@ class _InstagramGuideSheetState extends State<InstagramGuideSheet> {
             child: Row(
               children: [
                 GestureDetector(
-                  onTap: () => Navigator.pop(context),
+                  onTap: () => Get.back(),
                   child: Container(
                     width: 38,
                     height: 38,
@@ -122,11 +122,7 @@ class _InstagramGuideSheetState extends State<InstagramGuideSheet> {
               onPageChanged: (index) {
                 setState(() => _currentPage = index);
               },
-              children: [
-                _Slide1(),
-                _Slide2(),
-                _Slide3(),
-              ],
+              children: [_Slide1(), _Slide2(), _Slide3()],
             ),
           ),
 
@@ -244,18 +240,27 @@ class _Slide1 extends StatelessWidget {
                 // Action icons row
                 Row(
                   children: [
-                    const OnboardingLineIcon('heartO',
-                        size: 24, color: AppColors.textDark),
+                    const OnboardingLineIcon(
+                      'heartO',
+                      size: 24,
+                      color: AppColors.textDark,
+                    ),
                     const SizedBox(width: 14),
-                    const OnboardingLineIcon('chat',
-                        size: 22, color: AppColors.textDark),
+                    const OnboardingLineIcon(
+                      'chat',
+                      size: 22,
+                      color: AppColors.textDark,
+                    ),
                     const SizedBox(width: 14),
                     // Send icon with arrow
                     Stack(
                       clipBehavior: Clip.none,
                       children: [
-                        const OnboardingLineIcon('send',
-                            size: 22, color: AppColors.textDark),
+                        const OnboardingLineIcon(
+                          'send',
+                          size: 22,
+                          color: AppColors.textDark,
+                        ),
                         Positioned(
                           top: -28,
                           left: -8,
@@ -272,8 +277,11 @@ class _Slide1 extends StatelessWidget {
                       ],
                     ),
                     const Spacer(),
-                    const OnboardingLineIcon('bookmark',
-                        size: 24, color: AppColors.textDark),
+                    const OnboardingLineIcon(
+                      'bookmark',
+                      size: 24,
+                      color: AppColors.textDark,
+                    ),
                   ],
                 ),
               ],

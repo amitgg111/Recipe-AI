@@ -56,6 +56,74 @@ class RecipeSocialService {
     }
   }
 
+  // ── Batch Social State ───────────────────────────────────────────────────────
+
+  /// Returns recipe IDs that the current user has liked.
+  ///
+  /// Firestore structure:
+  /// recipes/{recipeId}/likes/{uid}
+  static Future<Set<String>> getLikedIds(
+    String currentUserId,
+    Iterable<String> recipeIds,
+  ) async {
+    final result = <String>{};
+
+    if (currentUserId.isEmpty || recipeIds.isEmpty) {
+      return result;
+    }
+
+    final futures = recipeIds.map((recipeId) async {
+      final doc = await _db
+          .collection('recipes')
+          .doc(recipeId)
+          .collection('likes')
+          .doc(currentUserId)
+          .get();
+
+      if (doc.exists) {
+        result.add(recipeId);
+      }
+    });
+
+    await Future.wait(futures);
+
+    return result;
+  }
+
+  /// Returns recipe IDs that the current user has saved.
+  ///
+  /// Firestore structure:
+  /// recipes/{recipeId}/saves/{uid}
+  static Future<Set<String>> getSavedIds(
+    String currentUserId,
+    Iterable<String> recipeIds,
+  ) async {
+    final result = <String>{};
+
+    if (currentUserId.isEmpty || recipeIds.isEmpty) {
+      return result;
+    }
+
+    final futures = recipeIds.map((recipeId) async {
+      final doc = await _db
+          .collection('recipes')
+          .doc(recipeId)
+          .collection('saves')
+          .doc(currentUserId)
+          .get();
+
+      if (doc.exists) {
+        result.add(recipeId);
+      }
+    });
+
+    await Future.wait(futures);
+
+    return result;
+  }
+
+  // getSavedIds pan ej pattern
+
   static Stream<bool> likedStream(String ownerId, String recipeId) {
     final uid = AuthService.currentUser?.uid;
     if (uid == null) return Stream.value(false);

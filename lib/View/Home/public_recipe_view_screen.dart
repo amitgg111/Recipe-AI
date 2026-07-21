@@ -289,7 +289,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                     size: 20,
                     color: _P.textDark,
                   ),
-                  () => Navigator.pop(context),
+                  () => Get.back(),
                 ),
                 _floatingBtn(
                   const OnboardingLineIcon(
@@ -411,22 +411,28 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
     final items = <Widget>[];
     if (time.isNotEmpty) {
       items.add(
-        _metaItem(
-          const OnboardingLineIcon('clock', size: 16, color: _P.primary),
-          time,
+        Expanded(
+          child: _metaItem(
+            const OnboardingLineIcon('clock', size: 16, color: _P.primary),
+            time,
+          ),
         ),
       );
     }
     items.add(
-      _metaItem(
-        const OnboardingLineIcon('friend', size: 16, color: _P.primary),
-        'n_servings'.trParams({'count': '$_servings'}),
+      Expanded(
+        child: _metaItem(
+          const OnboardingLineIcon('friend', size: 16, color: _P.primary),
+          'n_servings'.trParams({'count': '$_servings'}),
+        ),
       ),
     );
     items.add(
-      _metaItem(
-        const OnboardingLineIcon('sparkF', size: 16, color: _P.primary),
-        'easy'.tr,
+      Expanded(
+        child: _metaItem(
+          const OnboardingLineIcon('sparkF', size: 16, color: _P.primary),
+          'easy'.tr,
+        ),
       ),
     );
     final row = <Widget>[];
@@ -453,7 +459,13 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
       children: [
         icon,
         const SizedBox(width: 6),
-        Text(label, style: _f(13.5, FontWeight.w700, _P.textBody)),
+        Expanded(
+          child: Text(
+            label,
+            style: _f(13.5, FontWeight.w700, _P.textBody),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
       ],
     );
   }
@@ -601,7 +613,10 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
         children: [
           Row(
             children: [
-              Text('ingredients'.tr, style: _f(18, FontWeight.w800, _P.textDark)),
+              Text(
+                'ingredients'.tr,
+                style: _f(18, FontWeight.w800, _P.textDark),
+              ),
               const Spacer(),
               _buildStepper(),
             ],
@@ -951,9 +966,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                           text: 'subscribe_now'.tr,
                           style: _f(13.5, FontWeight.w800, _P.purple),
                         ),
-                        TextSpan(
-                          text: 'unlock_nutrition_calculator'.tr,
-                        ),
+                        TextSpan(text: 'unlock_nutrition_calculator'.tr),
                       ],
                     ),
                   ),

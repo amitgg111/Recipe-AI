@@ -132,7 +132,7 @@ class _CuisinePickerSheetState extends State<CuisinePickerSheet> {
                   )
                 else
                   GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () => Get.back(),
                     behavior: HitTestBehavior.opaque,
                     child: Container(
                       width: 32,

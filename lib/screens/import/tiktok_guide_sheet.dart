@@ -86,7 +86,7 @@ class _TikTokGuideSheetState extends State<TikTokGuideSheet> {
             child: Row(
               children: [
                 GestureDetector(
-                  onTap: () => Navigator.pop(context),
+                  onTap: () => Get.back(),
                   child: Container(
                     width: 38,
                     height: 38,
@@ -122,11 +122,7 @@ class _TikTokGuideSheetState extends State<TikTokGuideSheet> {
               onPageChanged: (index) {
                 setState(() => _currentPage = index);
               },
-              children: [
-                _TikTokSlide1(),
-                _TikTokSlide2(),
-                _TikTokSlide3(),
-              ],
+              children: [_TikTokSlide1(), _TikTokSlide2(), _TikTokSlide3()],
             ),
           ),
 
@@ -403,7 +399,11 @@ class _TikTokSlide2 extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      const OnboardingLineIcon('search', size: 18, color: AppColors.textLight),
+                      const OnboardingLineIcon(
+                        'search',
+                        size: 18,
+                        color: AppColors.textLight,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'search'.tr,
@@ -526,12 +526,7 @@ class _TikTokSlide3 extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 // Gmail - red M
-                _appIcon(
-                  const Color(0xFFEA4335),
-                  'M',
-                  'Gmail',
-                  false,
-                ),
+                _appIcon(const Color(0xFFEA4335), 'M', 'Gmail', false),
                 // Recipe AI - highlighted
                 Column(
                   children: [

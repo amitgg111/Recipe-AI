@@ -52,7 +52,7 @@ class CookbookRecipesScreen extends StatelessWidget {
               // ── Top bar ──────────────────────────────────────────────
               _TopBar(
                 title: latestCookbook.name,
-                onBack: () => Navigator.pop(context),
+                onBack: () => Get.back(),
                 onMenuTap: () =>
                     _showMenu(context, latestCookbook, cookbookController),
               ),
@@ -368,7 +368,7 @@ class CookbookRecipesScreen extends StatelessWidget {
                         onTap: () {
                           Navigator.pop(ctx);
                           ctrl.deleteCookbook(cb.id);
-                          Navigator.pop(context);
+                          Get.back();
                         },
                         child: Container(
                           height: 48,
@@ -969,7 +969,7 @@ class _RenameCookbookSheetState extends State<_RenameCookbookSheet> {
     final name = _nameController.text.trim();
     if (name.isEmpty) return;
     widget.ctrl.updateCookbook(widget.cb.id, name);
-    Navigator.pop(context);
+    Get.back();
   }
 
   @override
@@ -1014,7 +1014,7 @@ class _RenameCookbookSheetState extends State<_RenameCookbookSheet> {
                 ),
                 const Spacer(),
                 GestureDetector(
-                  onTap: () => Navigator.pop(context),
+                  onTap: () => Get.back(),
                   child: Container(
                     width: 34,
                     height: 34,

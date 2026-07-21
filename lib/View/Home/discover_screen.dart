@@ -1,3 +1,880 @@
+// import 'package:flutter/material.dart';
+// import 'package:get/get.dart';
+// import 'package:google_fonts/google_fonts.dart';
+// import 'package:cached_network_image/cached_network_image.dart';
+// import 'package:recipe_ai/Controllers/discover_controller.dart';
+// import 'package:recipe_ai/Controllers/cookbook_controller.dart';
+// import 'package:recipe_ai/Widget/custom_snackbar.dart';
+// import 'package:recipe_ai/Service/recipe_social_service.dart';
+// import 'package:recipe_ai/theme/app_colors.dart';
+// import 'package:recipe_ai/Service/subscription_service.dart';
+// import 'package:recipe_ai/View/Home/settings/upgrade_plus_screen.dart';
+// import 'package:recipe_ai/widgets/app_logo.dart';
+// import 'package:recipe_ai/widgets/notification_bell.dart';
+// import 'package:recipe_ai/View/Home/public_recipe_view_screen.dart';
+// import 'package:recipe_ai/View/Home/social/creator_profile_screen.dart';
+// import 'package:recipe_ai/View/Home/recipe_detail_screen.dart'
+//     show CookbookPickerSheet;
+// import 'package:recipe_ai/widgets/comments_sheet.dart';
+// import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
+// import 'package:share_plus/share_plus.dart';
+
+// // ─────────────────────────────────────────────────────────────────────────────
+// // Design constants (matched to the HTML "Discover (feed)" design)
+// // ─────────────────────────────────────────────────────────────────────────────
+// class _D {
+//   static const bg = Color(0xFFFBF4EA);
+//   static const card = Colors.white;
+//   static const border = Color(0xFFF0E7D6);
+//   static const chipBorder = Color(0xFFEDE3D2);
+//   static const primary = Color(0xFFF2623E);
+//   static const textDark = Color(0xFF2A211B);
+//   static const textBody = Color(0xFF5A5147);
+//   static const textHint = Color(0xFFA89F90);
+//   static const textLight = Color(0xFF9A938A);
+// }
+
+// TextStyle _f(double s, FontWeight w, Color c, {double? h, double? ls}) =>
+//     GoogleFonts.plusJakartaSans(
+//       fontSize: s,
+//       fontWeight: w,
+//       color: c,
+//       height: h,
+//       letterSpacing: ls,
+//     );
+
+// class DiscoverScreen extends StatefulWidget {
+//   const DiscoverScreen({super.key});
+
+//   @override
+//   State<DiscoverScreen> createState() => _DiscoverScreenState();
+// }
+
+// class _DiscoverScreenState extends State<DiscoverScreen> {
+//   late final DiscoverController controller;
+
+//   @override
+//   void initState() {
+//     super.initState();
+//     controller = Get.put(DiscoverController(), permanent: true);
+//   }
+
+//   // Translates the displayed chip label only — the underlying category value
+//   // (used for filtering in DiscoverController) is left untouched.
+//   String _catLabel(String cat) {
+//     switch (cat) {
+//       case 'Trending':
+//         return 'trending'.tr;
+//       case 'Quick & Easy':
+//         return 'quick_easy'.tr;
+//       case 'Vegan':
+//         return 'vegan'.tr;
+//       case 'Desserts':
+//         return 'desserts'.tr;
+//       case 'Breakfast':
+//         return 'breakfast'.tr;
+//       case 'Lunch':
+//         return 'lunch'.tr;
+//       case 'Dinner':
+//         return 'dinner'.tr;
+//       case 'Drinks':
+//         return 'drinks'.tr;
+//       default:
+//         return cat;
+//     }
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     final top = MediaQuery.of(context).padding.top;
+
+//     return Scaffold(
+//       backgroundColor: _D.bg,
+//       body: Column(
+//         children: [
+//           // ── Header: logo + credits ──
+//           Container(
+//             color: _D.bg,
+//             padding: EdgeInsets.only(top: top),
+//             child: Column(
+//               crossAxisAlignment: CrossAxisAlignment.start,
+//               children: [
+//                 Padding(
+//                   padding: const EdgeInsets.fromLTRB(16, 2, 16, 12),
+//                   child: Row(
+//                     children: [
+//                       const AppLogo(size: 28),
+//                       const SizedBox(width: 8),
+//                       Text.rich(
+//                         TextSpan(
+//                           text: 'Recipe',
+//                           style: _f(18, FontWeight.w800, _D.textDark, ls: -0.3),
+//                           children: [
+//                             TextSpan(
+//                               text: ' AI',
+//                               style: _f(
+//                                 18,
+//                                 FontWeight.w800,
+//                                 _D.primary,
+//                                 ls: -0.3,
+//                               ),
+//                             ),
+//                           ],
+//                         ),
+//                       ),
+//                       const Spacer(),
+//                       const NotificationBell(),
+//                       const SizedBox(width: 10),
+//                       _creditsBadge(),
+//                     ],
+//                   ),
+//                 ),
+
+//                 // Search bar (opens search focus on the community feed)
+//                 Padding(
+//                   padding: const EdgeInsets.symmetric(horizontal: 16),
+//                   child: _SearchField(controller: controller),
+//                 ),
+//                 const SizedBox(height: 12),
+
+//                 // Category chips
+//                 Obx(() {
+//                   final selected = controller.selectedCategory.value;
+//                   return SizedBox(
+//                     height: 40,
+//                     child: ListView.separated(
+//                       scrollDirection: Axis.horizontal,
+//                       padding: const EdgeInsets.symmetric(horizontal: 16),
+//                       itemCount: controller.categories.length,
+//                       separatorBuilder: (_, __) => const SizedBox(width: 8),
+//                       itemBuilder: (_, i) {
+//                         final cat = controller.categories[i];
+//                         final on = selected == cat;
+//                         return GestureDetector(
+//                           onTap: () => controller.selectCategory(cat),
+//                           child: Container(
+//                             alignment: Alignment.center,
+//                             padding: const EdgeInsets.symmetric(
+//                               horizontal: 15,
+//                               vertical: 8,
+//                             ),
+//                             decoration: BoxDecoration(
+//                               color: on ? _D.primary : _D.card,
+//                               borderRadius: BorderRadius.circular(20),
+//                               border: on
+//                                   ? null
+//                                   : Border.all(color: _D.chipBorder),
+//                               boxShadow: on
+//                                   ? [
+//                                       BoxShadow(
+//                                         color: _D.primary.withValues(
+//                                           alpha: 0.7,
+//                                         ),
+//                                         blurRadius: 16,
+//                                         offset: const Offset(0, 8),
+//                                         spreadRadius: -10,
+//                                       ),
+//                                     ]
+//                                   : null,
+//                             ),
+//                             child: Text(
+//                               textAlign: TextAlign.center,
+//                               _catLabel(cat),
+//                               style: _f(
+//                                 13,
+//                                 on ? FontWeight.w700 : FontWeight.w600,
+//                                 on ? Colors.white : _D.textBody,
+//                               ),
+//                             ),
+//                           ),
+//                         );
+//                       },
+//                     ),
+//                   );
+//                 }),
+//                 const SizedBox(height: 4),
+//               ],
+//             ),
+//           ),
+
+//           // ── Feed ──
+//           Expanded(
+//             child: Obx(() {
+//               if (controller.isLoading.value) {
+//                 return const Center(
+//                   child: CircularProgressIndicator(color: _D.primary),
+//                 );
+//               }
+//               final items = controller.filteredRecipes;
+//               if (items.isEmpty) {
+//                 return _emptyState();
+//               }
+//               return RefreshIndicator(
+//                 color: _D.primary,
+//                 onRefresh: () => controller.fetchDiscoverRecipes(),
+//                 child: ListView.separated(
+//                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+//                   itemCount: items.length,
+//                   separatorBuilder: (_, __) => const SizedBox(height: 16),
+//                   itemBuilder: (_, i) => _RecipeCard(recipe: items[i]),
+//                 ),
+//               );
+//             }),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+
+//   Widget _creditsBadge() {
+//     return Obx(() {
+//       final sub = SubscriptionService.instance;
+//       final plus = sub.isPlusListenable.value;
+//       final remaining = sub.freeCreditsListenable.value;
+//       return GestureDetector(
+//         onTap: () => Get.to(() => const UpgradePlusScreen()),
+//         behavior: HitTestBehavior.opaque,
+//         child: Container(
+//           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+//           decoration: BoxDecoration(
+//             color: plus ? AppColors.purpleBg : const Color(0xFFFCEFD0),
+//             borderRadius: BorderRadius.circular(20),
+//           ),
+//           child: Row(
+//             mainAxisSize: MainAxisSize.min,
+//             children: [
+//               OnboardingLineIcon(
+//                 plus ? 'crown' : 'sparkF',
+//                 size: 13,
+//                 color: plus ? AppColors.purpleDark : _D.primary,
+//               ),
+//               const SizedBox(width: 5),
+//               Text(
+//                 plus
+//                     ? 'PLUS'
+//                     : '$remaining/${SubscriptionService.kInitialFreeCredits}',
+//                 style: _f(
+//                   13,
+//                   FontWeight.w700,
+//                   plus ? AppColors.purpleDark : const Color(0xFFC0860F),
+//                 ),
+//               ),
+//             ],
+//           ),
+//         ),
+//       );
+//     });
+//   }
+
+//   Widget _emptyState() {
+//     return Center(
+//       child: Column(
+//         mainAxisSize: MainAxisSize.min,
+//         children: [
+//           OnboardingLineIcon(
+//             'compass',
+//             size: 56,
+//             color: _D.textHint.withValues(alpha: 0.4),
+//           ),
+//           const SizedBox(height: 12),
+//           Text(
+//             'no_recipes_found'.tr,
+//             style: _f(16, FontWeight.w600, AppColors.textMedium),
+//           ),
+//           const SizedBox(height: 4),
+//           Text(
+//             'try_different_category_or_search'.tr,
+//             style: _f(13, FontWeight.w400, _D.textHint),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
+
+// // ═══════════════════════════════════════════════════════════════════════════════
+// // Search field (readonly-styled, drives controller.searchQuery)
+// // ═══════════════════════════════════════════════════════════════════════════════
+
+// class _SearchField extends StatelessWidget {
+//   final DiscoverController controller;
+//   const _SearchField({required this.controller});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container(
+//       height: 44,
+//       padding: const EdgeInsets.symmetric(horizontal: 14),
+//       decoration: BoxDecoration(
+//         color: _D.card,
+//         borderRadius: BorderRadius.circular(14),
+//         border: Border.all(color: _D.chipBorder),
+//       ),
+//       child: Row(
+//         children: [
+//           const OnboardingLineIcon('search', size: 20, color: _D.textHint),
+//           const SizedBox(width: 10),
+//           Expanded(
+//             child: TextField(
+//               onChanged: (v) => controller.searchQuery.value = v.trim(),
+//               cursorColor: _D.primary,
+//               style: _f(14, FontWeight.w500, _D.textDark),
+//               decoration: InputDecoration(
+//                 hintText: 'search_community_recipes'.tr,
+//                 hintStyle: _f(14, FontWeight.w500, _D.textHint),
+//                 filled: false,
+//                 isDense: true,
+//                 border: InputBorder.none,
+//                 enabledBorder: InputBorder.none,
+//                 focusedBorder: InputBorder.none,
+//                 disabledBorder: InputBorder.none,
+//                 errorBorder: InputBorder.none,
+//                 focusedErrorBorder: InputBorder.none,
+//                 contentPadding: EdgeInsets.zero,
+//               ),
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
+
+// // ═══════════════════════════════════════════════════════════════════════════════
+// // Recipe post card
+// // ═══════════════════════════════════════════════════════════════════════════════
+
+// class _RecipeCard extends StatefulWidget {
+//   final DiscoverRecipe recipe;
+//   const _RecipeCard({required this.recipe});
+
+//   @override
+//   State<_RecipeCard> createState() => _RecipeCardState();
+// }
+
+// class _RecipeCardState extends State<_RecipeCard> {
+//   DiscoverRecipe get recipe => widget.recipe;
+
+//   late int _likes = recipe.likesCount;
+//   late int _shares = recipe.sharesCount;
+//   late int _saves = recipe.savesCount;
+//   late int _comments = recipe.commentsCount;
+//   bool _liked = false;
+//   bool _busyLike = false;
+//   bool _busySave = false;
+
+//   DiscoverController get _disc => Get.find<DiscoverController>();
+//   bool get _saved => _disc.savedOriginalIds.contains(recipe.id);
+
+//   @override
+//   void initState() {
+//     super.initState();
+//     _loadStates();
+//   }
+
+//   Future<void> _loadStates() async {
+//     try {
+//       final liked = await RecipeSocialService.isLiked(recipe.userId, recipe.id);
+//       final saved = await RecipeSocialService.isSaved(recipe.userId, recipe.id);
+//       if (mounted) {
+//         setState(() => _liked = liked);
+//         // Seed the shared saved-set so every bookmark for this recipe (and the
+//         // live delete path) stays in sync.
+//         if (saved) {
+//           _disc.savedOriginalIds.add(recipe.id);
+//         } else {
+//           _disc.savedOriginalIds.remove(recipe.id);
+//         }
+//       }
+//     } catch (_) {}
+//   }
+
+//   String get _time =>
+//       recipe.totalTime ?? recipe.cookTime ?? recipe.prepTime ?? '';
+
+//   /// Normalises whatever time string the recipe stored ("20m", "90m", "50 mins",
+//   /// "1h 30m"…) into the clean "30 min" / "1 hr 30 min" form used in the design.
+//   String _prettyTime(String raw) {
+//     final s = raw.toLowerCase().trim();
+//     if (s.isEmpty) return '';
+//     int? hours;
+//     int? mins;
+//     final hM = RegExp(r'(\d+)\s*(?:h|hr|hour)').firstMatch(s);
+//     final mM = RegExp(r'(\d+)\s*(?:m|min)').firstMatch(s);
+//     if (hM != null) hours = int.tryParse(hM.group(1)!);
+//     if (mM != null) mins = int.tryParse(mM.group(1)!);
+//     if (hours == null && mins == null) {
+//       final n = RegExp(r'(\d+)').firstMatch(s);
+//       if (n == null) return raw; // no number → show as stored
+//       mins = int.tryParse(n.group(1)!);
+//     }
+//     final total = (hours ?? 0) * 60 + (mins ?? 0);
+//     if (total <= 0) return raw;
+//     if (total < 60) return '$total min';
+//     final h = total ~/ 60;
+//     final m = total % 60;
+//     return m == 0 ? '$h hr' : '$h hr $m min';
+//   }
+
+//   /// "1204" → "1,204" so big counts read like the design.
+//   String _fmtNum(int n) {
+//     final s = n.toString();
+//     final b = StringBuffer();
+//     for (var i = 0; i < s.length; i++) {
+//       if (i > 0 && (s.length - i) % 3 == 0) b.write(',');
+//       b.write(s[i]);
+//     }
+//     return b.toString();
+//   }
+
+//   String _ago() {
+//     final dt = recipe.createdAt;
+//     if (dt == null) return '';
+//     final d = DateTime.now().difference(dt);
+//     if (d.inDays >= 7) return '${(d.inDays / 7).floor()}w ago';
+//     if (d.inDays >= 1) return '${d.inDays}d ago';
+//     if (d.inHours >= 1) return '${d.inHours}h ago';
+//     if (d.inMinutes >= 1) return '${d.inMinutes}m ago';
+//     return 'just now';
+//   }
+
+//   void _open() => Get.to(() => PublicRecipeViewScreen(recipe: recipe));
+
+//   void _openAuthor() {
+//     if (recipe.userId.isEmpty) return;
+//     Get.to(
+//       () => CreatorProfileScreen(
+//         userId: recipe.userId,
+//         fallbackName: recipe.userName,
+//         fallbackAvatar: recipe.userAvatar,
+//       ),
+//     );
+//   }
+
+//   Future<void> _toggleLike() async {
+//     if (_busyLike) return;
+//     _busyLike = true;
+//     final target = !_liked;
+//     // Optimistic: update the UI instantly, then persist in the background.
+//     setState(() {
+//       _liked = target;
+//       _likes += target ? 1 : -1;
+//     });
+//     try {
+//       await RecipeSocialService.setLike(recipe.userId, recipe.id, target);
+//     } catch (_) {
+//       if (mounted) {
+//         setState(() {
+//           _liked = !target;
+//           _likes += target ? -1 : 1;
+//         });
+//       }
+//     } finally {
+//       _busyLike = false;
+//     }
+//   }
+
+//   // Save → open the multi-select "add to cookbook" sheet. The recipe only
+//   // counts as saved when the user actually files it into a cookbook via the
+//   // sheet's Done button. A copy is created up-front so the picker has something
+//   // to file, but if the user dismisses the sheet (or taps Done without picking
+//   // a cookbook) the copy is rolled back out — nothing is left in My Recipes.
+//   Future<void> _openSaveSheet() async {
+//     if (_busySave) return;
+//     _busySave = true;
+//     try {
+//       final copyId = await RecipeSocialService.saveCopyToMyRecipes(recipe);
+//       if (copyId == null || !mounted) return;
+
+//       final result = await showModalBottomSheet<int>(
+//         context: context,
+//         isScrollControlled: true,
+//         backgroundColor: Colors.transparent,
+//         builder: (_) => CookbookPickerSheet(
+//           cookbookController: Get.find<CookbookController>(),
+//           recipeId: copyId,
+//           recipeImageUrl: recipe.imageUrl,
+//         ),
+//       );
+
+//       // Saved only if the user tapped Done with at least one cookbook selected
+//       // (the sheet pops the selected-cookbook count; a dismiss returns null).
+//       final confirmed = result != null && result > 0;
+//       if (!confirmed) {
+//         // Roll the copy back out so the discover-save "counts" only on Done.
+//         final deletedIds = await RecipeSocialService.removeSavedCopy(recipe);
+//         if (deletedIds.isNotEmpty && Get.isRegistered<CookbookController>()) {
+//           final cookbooks = Get.find<CookbookController>();
+//           for (final id in deletedIds) {
+//             await cookbooks.removeRecipeFromAllCookbooks(id);
+//           }
+//         }
+//         return;
+//       }
+
+//       // Filed into a cookbook → mark as saved (shared set drives every bookmark
+//       // for this recipe).
+//       if (mounted && !_saved) {
+//         _disc.savedOriginalIds.add(recipe.id);
+//         setState(() => _saves += 1);
+//       }
+//       RecipeSocialService.setSave(recipe.userId, recipe.id, true);
+//     } finally {
+//       _busySave = false;
+//     }
+//   }
+
+//   // Tapping the bookmark toggles: save (copy in) when unsaved, or permanently
+//   // remove the saved copy when already saved.
+//   Future<void> _toggleSave() async {
+//     if (_saved) {
+//       await _unsave();
+//     } else {
+//       await _openSaveSheet();
+//     }
+//   }
+
+//   // Un-save → permanently delete the saved copy from the user's recipes (and
+//   // any cookbooks it was filed into), then flip the bookmark back to empty.
+//   Future<void> _unsave() async {
+//     if (_busySave) return;
+//     _busySave = true;
+//     try {
+//       final deletedIds = await RecipeSocialService.removeSavedCopy(recipe);
+//       if (deletedIds.isNotEmpty && Get.isRegistered<CookbookController>()) {
+//         final cookbooks = Get.find<CookbookController>();
+//         for (final id in deletedIds) {
+//           await cookbooks.removeRecipeFromAllCookbooks(id);
+//         }
+//       }
+//       RecipeSocialService.setSave(recipe.userId, recipe.id, false);
+//       _disc.savedOriginalIds.remove(recipe.id);
+//       if (mounted) {
+//         setState(() {
+//           if (_saves > 0) _saves -= 1;
+//         });
+//       }
+//       CustomSnackbar.show(
+//         title: 'removed'.tr,
+//         message: 'recipe_removed_from_saved'.tr,
+//         type: SnackbarType.info,
+//       );
+//     } finally {
+//       _busySave = false;
+//     }
+//   }
+
+//   void _share() {
+//     final buf = StringBuffer()
+//       ..writeln(recipe.title)
+//       ..writeln();
+//     if (recipe.ingredients.isNotEmpty) {
+//       buf.writeln('INGREDIENTS');
+//       for (final i in recipe.ingredients) {
+//         buf.writeln('• $i');
+//       }
+//     }
+//     Share.share(buf.toString(), subject: recipe.title);
+//     RecipeSocialService.registerShare(recipe.userId, recipe.id);
+//     if (mounted) setState(() => _shares += 1);
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     final ago = _ago();
+//     return Container(
+//       decoration: BoxDecoration(
+//         color: _D.card,
+//         borderRadius: BorderRadius.circular(22),
+//         border: Border.all(color: _D.border),
+//         boxShadow: [
+//           BoxShadow(
+//             color: const Color(0xFF2A211B).withValues(alpha: 0.5),
+//             blurRadius: 40,
+//             offset: const Offset(0, 18),
+//             spreadRadius: -26,
+//           ),
+//         ],
+//       ),
+//       clipBehavior: Clip.antiAlias,
+//       child: Column(
+//         crossAxisAlignment: CrossAxisAlignment.start,
+//         children: [
+//           // Header
+//           Padding(
+//             padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+//             child: Row(
+//               children: [
+//                 GestureDetector(
+//                   onTap: _openAuthor,
+//                   child: CircleAvatar(
+//                     radius: 19,
+//                     backgroundColor: const Color(0xFFEDE5D7),
+//                     backgroundImage:
+//                         (recipe.userAvatar != null &&
+//                             recipe.userAvatar!.isNotEmpty)
+//                         ? CachedNetworkImageProvider(recipe.userAvatar!)
+//                         : null,
+//                     child:
+//                         (recipe.userAvatar == null ||
+//                             recipe.userAvatar!.isEmpty)
+//                         ? Text(
+//                             recipe.userName.isNotEmpty
+//                                 ? recipe.userName[0].toUpperCase()
+//                                 : 'C',
+//                             style: _f(14, FontWeight.w800, _D.textDark),
+//                           )
+//                         : null,
+//                   ),
+//                 ),
+//                 const SizedBox(width: 10),
+//                 Expanded(
+//                   child: GestureDetector(
+//                     onTap: _openAuthor,
+//                     behavior: HitTestBehavior.opaque,
+//                     child: Column(
+//                       crossAxisAlignment: CrossAxisAlignment.start,
+//                       children: [
+//                         Text(
+//                           recipe.userName.isNotEmpty
+//                               ? recipe.userName
+//                               : 'recipe_creator'.tr,
+//                           style: _f(13.5, FontWeight.w800, _D.textDark),
+//                           maxLines: 1,
+//                           overflow: TextOverflow.ellipsis,
+//                         ),
+//                         if (ago.isNotEmpty) ...[
+//                           const SizedBox(height: 1),
+//                           Text(
+//                             ago,
+//                             style: _f(11.5, FontWeight.w600, _D.textLight),
+//                           ),
+//                         ],
+//                       ],
+//                     ),
+//                   ),
+//                 ),
+//                 GestureDetector(
+//                   onTap: _open,
+//                   behavior: HitTestBehavior.opaque,
+//                   child: Row(
+//                     mainAxisSize: MainAxisSize.min,
+//                     children: [
+//                       Text(
+//                         'view_recipe'.tr,
+//                         style: _f(12.5, FontWeight.w700, _D.primary),
+//                       ),
+//                       const OnboardingLineIcon(
+//                         'chevR',
+//                         size: 16,
+//                         color: _D.primary,
+//                       ),
+//                     ],
+//                   ),
+//                 ),
+//               ],
+//             ),
+//           ),
+
+//           // Photo with title + time overlay
+//           GestureDetector(
+//             onTap: _open,
+//             child: Padding(
+//               padding: const EdgeInsets.symmetric(horizontal: 14),
+//               child: ClipRRect(
+//                 borderRadius: BorderRadius.circular(18),
+//                 child: SizedBox(
+//                   height: 280,
+//                   width: double.infinity,
+//                   child: Stack(
+//                     fit: StackFit.expand,
+//                     children: [
+//                       (recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty)
+//                           ? CachedNetworkImage(
+//                               imageUrl: recipe.imageUrl!,
+//                               fit: BoxFit.cover,
+//                               memCacheWidth: 900,
+//                               placeholder: (_, __) => _imgPh(),
+//                               errorWidget: (_, __, ___) => _imgPh(),
+//                             )
+//                           : _imgPh(),
+//                       // Subtle bottom-only gradient — keeps the photo bright
+//                       // (like the design) while still making the title legible.
+//                       const DecoratedBox(
+//                         decoration: BoxDecoration(
+//                           gradient: LinearGradient(
+//                             begin: Alignment.topCenter,
+//                             end: Alignment.bottomCenter,
+//                             colors: [
+//                               Color(0x00140F0A),
+//                               Color(0x00140F0A),
+//                               Color(0x8A140F0A),
+//                             ],
+//                             stops: [0.0, 0.55, 1.0],
+//                           ),
+//                         ),
+//                       ),
+//                       if (_time.isNotEmpty)
+//                         Positioned(
+//                           top: 12,
+//                           right: 12,
+//                           child: Container(
+//                             padding: const EdgeInsets.symmetric(
+//                               horizontal: 11,
+//                               vertical: 6,
+//                             ),
+//                             decoration: BoxDecoration(
+//                               color: Colors.white.withValues(alpha: 0.92),
+//                               borderRadius: BorderRadius.circular(12),
+//                             ),
+//                             child: Row(
+//                               mainAxisSize: MainAxisSize.min,
+//                               children: [
+//                                 const OnboardingLineIcon(
+//                                   'clock',
+//                                   size: 13,
+//                                   color: _D.textDark,
+//                                 ),
+//                                 const SizedBox(width: 5),
+//                                 Text(
+//                                   _prettyTime(_time),
+//                                   style: _f(12, FontWeight.w800, _D.textDark),
+//                                 ),
+//                               ],
+//                             ),
+//                           ),
+//                         ),
+//                       Positioned(
+//                         left: 14,
+//                         right: 14,
+//                         bottom: 13,
+//                         child: Text(
+//                           recipe.title,
+//                           style:
+//                               _f(
+//                                 19,
+//                                 FontWeight.w800,
+//                                 Colors.white,
+//                                 h: 1.15,
+//                                 ls: -0.38,
+//                               ).copyWith(
+//                                 shadows: const [
+//                                   Shadow(
+//                                     color: Color(0xB3000000),
+//                                     blurRadius: 10,
+//                                     offset: Offset(0, 1),
+//                                   ),
+//                                 ],
+//                               ),
+//                           maxLines: 2,
+//                           overflow: TextOverflow.ellipsis,
+//                         ),
+//                       ),
+//                     ],
+//                   ),
+//                 ),
+//               ),
+//             ),
+//           ),
+
+//           // Action bar with counters
+//           Padding(
+//             padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+//             child: Row(
+//               children: [
+//                 _action(
+//                   iconWidget: OnboardingLineIcon(
+//                     _liked ? 'heart' : 'heartO',
+//                     size: 22,
+//                     color: _liked ? _D.primary : _D.textDark,
+//                   ),
+//                   count: _likes,
+//                   onTap: _toggleLike,
+//                 ),
+//                 const SizedBox(width: 20),
+//                 _action(
+//                   iconWidget: const OnboardingLineIcon(
+//                     'comment',
+//                     size: 22,
+//                     color: _D.textDark,
+//                   ),
+//                   count: _comments,
+//                   onTap: () => CommentsSheet.show(
+//                     context,
+//                     ownerId: recipe.userId,
+//                     recipeId: recipe.id,
+//                     onCommentAdded: () {
+//                       if (mounted) setState(() => _comments += 1);
+//                     },
+//                   ),
+//                 ),
+//                 const SizedBox(width: 20),
+//                 _action(
+//                   iconWidget: const OnboardingLineIcon(
+//                     'send',
+//                     size: 22,
+//                     color: _D.textDark,
+//                   ),
+//                   count: _shares,
+//                   showCount: false,
+//                   onTap: _share,
+//                 ),
+//                 const Spacer(),
+//                 // Bookmark observes the shared saved-set so it flips live when
+//                 // the saved copy is deleted from My Recipes / a cookbook.
+//                 Obx(() {
+//                   final saved = _disc.savedOriginalIds.contains(recipe.id);
+//                   return _action(
+//                     iconWidget: OnboardingLineIcon(
+//                       saved ? 'bookmarkF' : 'bookmark',
+//                       size: 22,
+//                       color: saved ? _D.primary : _D.textDark,
+//                     ),
+//                     count: _saves,
+//                     showCount: false,
+//                     onTap: _toggleSave,
+//                   );
+//                 }),
+//               ],
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+
+//   Widget _action({
+//     required Widget iconWidget,
+//     required int count,
+//     required VoidCallback onTap,
+//     bool showCount = true,
+//   }) {
+//     return GestureDetector(
+//       onTap: onTap,
+//       behavior: HitTestBehavior.opaque,
+//       child: Row(
+//         mainAxisSize: MainAxisSize.min,
+//         children: [
+//           iconWidget,
+//           if (showCount && count > 0) ...[
+//             const SizedBox(width: 7),
+//             Text(_fmtNum(count), style: _f(13, FontWeight.w700, _D.textBody)),
+//           ],
+//         ],
+//       ),
+//     );
+//   }
+
+//   Widget _imgPh() => Container(
+//     color: const Color(0xFFEDE5D7),
+//     child: const Center(
+//       child: Icon(Icons.restaurant_rounded, size: 40, color: Color(0xFFC7BCAC)),
+//     ),
+//   );
+// }
+
+
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -359,35 +1236,16 @@ class _RecipeCardState extends State<_RecipeCard> {
   late int _shares = recipe.sharesCount;
   late int _saves = recipe.savesCount;
   late int _comments = recipe.commentsCount;
-  bool _liked = false;
   bool _busyLike = false;
   bool _busySave = false;
 
   DiscoverController get _disc => Get.find<DiscoverController>();
   bool get _saved => _disc.savedOriginalIds.contains(recipe.id);
-
-  @override
-  void initState() {
-    super.initState();
-    _loadStates();
-  }
-
-  Future<void> _loadStates() async {
-    try {
-      final liked = await RecipeSocialService.isLiked(recipe.userId, recipe.id);
-      final saved = await RecipeSocialService.isSaved(recipe.userId, recipe.id);
-      if (mounted) {
-        setState(() => _liked = liked);
-        // Seed the shared saved-set so every bookmark for this recipe (and the
-        // live delete path) stays in sync.
-        if (saved) {
-          _disc.savedOriginalIds.add(recipe.id);
-        } else {
-          _disc.savedOriginalIds.remove(recipe.id);
-        }
-      }
-    } catch (_) {}
-  }
+  bool get _liked => _disc.likedOriginalIds.contains(recipe.id);
+  // NOTE: liked/saved status is no longer fetched per-card here.
+  // DiscoverController batch-loads likedOriginalIds/savedOriginalIds ONCE for
+  // the whole feed (in fetchDiscoverRecipes), so opening Discover no longer
+  // fires 2 Firestore reads per visible card — that was the load/lag source.
 
   String get _time =>
       recipe.totalTime ?? recipe.cookTime ?? recipe.prepTime ?? '';
@@ -460,9 +1318,14 @@ class _RecipeCardState extends State<_RecipeCard> {
     if (_busyLike) return;
     _busyLike = true;
     final target = !_liked;
-    // Optimistic: update the UI instantly, then persist in the background.
+    // Optimistic: update the UI instantly (shared set + local count), then
+    // persist in the background.
     setState(() {
-      _liked = target;
+      if (target) {
+        _disc.likedOriginalIds.add(recipe.id);
+      } else {
+        _disc.likedOriginalIds.remove(recipe.id);
+      }
       _likes += target ? 1 : -1;
     });
     try {
@@ -470,7 +1333,11 @@ class _RecipeCardState extends State<_RecipeCard> {
     } catch (_) {
       if (mounted) {
         setState(() {
-          _liked = !target;
+          if (target) {
+            _disc.likedOriginalIds.remove(recipe.id);
+          } else {
+            _disc.likedOriginalIds.add(recipe.id);
+          }
           _likes += target ? -1 : 1;
         });
       }
@@ -587,249 +1454,251 @@ class _RecipeCardState extends State<_RecipeCard> {
   @override
   Widget build(BuildContext context) {
     final ago = _ago();
-    return Container(
-      decoration: BoxDecoration(
-        color: _D.card,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: _D.border),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF2A211B).withValues(alpha: 0.5),
-            blurRadius: 40,
-            offset: const Offset(0, 18),
-            spreadRadius: -26,
-          ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-            child: Row(
-              children: [
-                GestureDetector(
-                  onTap: _openAuthor,
-                  child: CircleAvatar(
-                    radius: 19,
-                    backgroundColor: const Color(0xFFEDE5D7),
-                    backgroundImage:
-                        (recipe.userAvatar != null &&
-                            recipe.userAvatar!.isNotEmpty)
-                        ? CachedNetworkImageProvider(recipe.userAvatar!)
-                        : null,
-                    child:
-                        (recipe.userAvatar == null ||
-                            recipe.userAvatar!.isEmpty)
-                        ? Text(
-                            recipe.userName.isNotEmpty
-                                ? recipe.userName[0].toUpperCase()
-                                : 'C',
-                            style: _f(14, FontWeight.w800, _D.textDark),
-                          )
-                        : null,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: GestureDetector(
+    return Obx(() {
+      // Wrapped in Obx so this card rebuilds when the shared liked/saved sets
+      // change (batch load completing, or another card/screen mutating them)
+      // without each card doing its own network fetch.
+      final liked = _liked;
+      final saved = _saved;
+      return Container(
+        decoration: BoxDecoration(
+          color: _D.card,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: _D.border),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF2A211B).withValues(alpha: 0.5),
+              blurRadius: 40,
+              offset: const Offset(0, 18),
+              spreadRadius: -26,
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+              child: Row(
+                children: [
+                  GestureDetector(
                     onTap: _openAuthor,
+                    child: CircleAvatar(
+                      radius: 19,
+                      backgroundColor: const Color(0xFFEDE5D7),
+                      backgroundImage:
+                          (recipe.userAvatar != null &&
+                              recipe.userAvatar!.isNotEmpty)
+                          ? CachedNetworkImageProvider(recipe.userAvatar!)
+                          : null,
+                      child:
+                          (recipe.userAvatar == null ||
+                              recipe.userAvatar!.isEmpty)
+                          ? Text(
+                              recipe.userName.isNotEmpty
+                                  ? recipe.userName[0].toUpperCase()
+                                  : 'C',
+                              style: _f(14, FontWeight.w800, _D.textDark),
+                            )
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: _openAuthor,
+                      behavior: HitTestBehavior.opaque,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            recipe.userName.isNotEmpty
+                                ? recipe.userName
+                                : 'recipe_creator'.tr,
+                            style: _f(13.5, FontWeight.w800, _D.textDark),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (ago.isNotEmpty) ...[
+                            const SizedBox(height: 1),
+                            Text(
+                              ago,
+                              style: _f(11.5, FontWeight.w600, _D.textLight),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: _open,
                     behavior: HitTestBehavior.opaque,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          recipe.userName.isNotEmpty
-                              ? recipe.userName
-                              : 'recipe_creator'.tr,
-                          style: _f(13.5, FontWeight.w800, _D.textDark),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          'view_recipe'.tr,
+                          style: _f(12.5, FontWeight.w700, _D.primary),
                         ),
-                        if (ago.isNotEmpty) ...[
-                          const SizedBox(height: 1),
-                          Text(
-                            ago,
-                            style: _f(11.5, FontWeight.w600, _D.textLight),
+                        const OnboardingLineIcon(
+                          'chevR',
+                          size: 16,
+                          color: _D.primary,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Photo with title + time overlay
+            GestureDetector(
+              onTap: _open,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: SizedBox(
+                    height: 280,
+                    width: double.infinity,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        (recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty)
+                            ? CachedNetworkImage(
+                                imageUrl: recipe.imageUrl!,
+                                fit: BoxFit.cover,
+                                memCacheWidth: 900,
+                                placeholder: (_, __) => _imgPh(),
+                                errorWidget: (_, __, ___) => _imgPh(),
+                              )
+                            : _imgPh(),
+                        // Subtle bottom-only gradient — keeps the photo bright
+                        // (like the design) while still making the title legible.
+                        const DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Color(0x00140F0A),
+                                Color(0x00140F0A),
+                                Color(0x8A140F0A),
+                              ],
+                              stops: [0.0, 0.55, 1.0],
+                            ),
                           ),
-                        ],
+                        ),
+                        if (_time.isNotEmpty)
+                          Positioned(
+                            top: 12,
+                            right: 12,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 11,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.92),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const OnboardingLineIcon(
+                                    'clock',
+                                    size: 13,
+                                    color: _D.textDark,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    _prettyTime(_time),
+                                    style: _f(12, FontWeight.w800, _D.textDark),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        Positioned(
+                          left: 14,
+                          right: 14,
+                          bottom: 13,
+                          child: Text(
+                            recipe.title,
+                            style:
+                                _f(
+                                  19,
+                                  FontWeight.w800,
+                                  Colors.white,
+                                  h: 1.15,
+                                  ls: -0.38,
+                                ).copyWith(
+                                  shadows: const [
+                                    Shadow(
+                                      color: Color(0xB3000000),
+                                      blurRadius: 10,
+                                      offset: Offset(0, 1),
+                                    ),
+                                  ],
+                                ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 ),
-                GestureDetector(
-                  onTap: _open,
-                  behavior: HitTestBehavior.opaque,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'view_recipe'.tr,
-                        style: _f(12.5, FontWeight.w700, _D.primary),
-                      ),
-                      const OnboardingLineIcon(
-                        'chevR',
-                        size: 16,
-                        color: _D.primary,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Photo with title + time overlay
-          GestureDetector(
-            onTap: _open,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(18),
-                child: SizedBox(
-                  height: 280,
-                  width: double.infinity,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      (recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty)
-                          ? CachedNetworkImage(
-                              imageUrl: recipe.imageUrl!,
-                              fit: BoxFit.cover,
-                              memCacheWidth: 900,
-                              placeholder: (_, __) => _imgPh(),
-                              errorWidget: (_, __, ___) => _imgPh(),
-                            )
-                          : _imgPh(),
-                      // Subtle bottom-only gradient — keeps the photo bright
-                      // (like the design) while still making the title legible.
-                      const DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Color(0x00140F0A),
-                              Color(0x00140F0A),
-                              Color(0x8A140F0A),
-                            ],
-                            stops: [0.0, 0.55, 1.0],
-                          ),
-                        ),
-                      ),
-                      if (_time.isNotEmpty)
-                        Positioned(
-                          top: 12,
-                          right: 12,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 11,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.92),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const OnboardingLineIcon(
-                                  'clock',
-                                  size: 13,
-                                  color: _D.textDark,
-                                ),
-                                const SizedBox(width: 5),
-                                Text(
-                                  _prettyTime(_time),
-                                  style: _f(12, FontWeight.w800, _D.textDark),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      Positioned(
-                        left: 14,
-                        right: 14,
-                        bottom: 13,
-                        child: Text(
-                          recipe.title,
-                          style:
-                              _f(
-                                19,
-                                FontWeight.w800,
-                                Colors.white,
-                                h: 1.15,
-                                ls: -0.38,
-                              ).copyWith(
-                                shadows: const [
-                                  Shadow(
-                                    color: Color(0xB3000000),
-                                    blurRadius: 10,
-                                    offset: Offset(0, 1),
-                                  ),
-                                ],
-                              ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ),
             ),
-          ),
 
-          // Action bar with counters
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
-            child: Row(
-              children: [
-                _action(
-                  iconWidget: OnboardingLineIcon(
-                    _liked ? 'heart' : 'heartO',
-                    size: 22,
-                    color: _liked ? _D.primary : _D.textDark,
+            // Action bar with counters
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+              child: Row(
+                children: [
+                  _action(
+                    iconWidget: OnboardingLineIcon(
+                      liked ? 'heart' : 'heartO',
+                      size: 22,
+                      color: liked ? _D.primary : _D.textDark,
+                    ),
+                    count: _likes,
+                    onTap: _toggleLike,
                   ),
-                  count: _likes,
-                  onTap: _toggleLike,
-                ),
-                const SizedBox(width: 20),
-                _action(
-                  iconWidget: const OnboardingLineIcon(
-                    'comment',
-                    size: 22,
-                    color: _D.textDark,
+                  const SizedBox(width: 20),
+                  _action(
+                    iconWidget: const OnboardingLineIcon(
+                      'comment',
+                      size: 22,
+                      color: _D.textDark,
+                    ),
+                    count: _comments,
+                    onTap: () => CommentsSheet.show(
+                      context,
+                      ownerId: recipe.userId,
+                      recipeId: recipe.id,
+                      onCommentAdded: () {
+                        if (mounted) setState(() => _comments += 1);
+                      },
+                    ),
                   ),
-                  count: _comments,
-                  onTap: () => CommentsSheet.show(
-                    context,
-                    ownerId: recipe.userId,
-                    recipeId: recipe.id,
-                    onCommentAdded: () {
-                      if (mounted) setState(() => _comments += 1);
-                    },
+                  const SizedBox(width: 20),
+                  _action(
+                    iconWidget: const OnboardingLineIcon(
+                      'send',
+                      size: 22,
+                      color: _D.textDark,
+                    ),
+                    count: _shares,
+                    showCount: false,
+                    onTap: _share,
                   ),
-                ),
-                const SizedBox(width: 20),
-                _action(
-                  iconWidget: const OnboardingLineIcon(
-                    'send',
-                    size: 22,
-                    color: _D.textDark,
-                  ),
-                  count: _shares,
-                  showCount: false,
-                  onTap: _share,
-                ),
-                const Spacer(),
-                // Bookmark observes the shared saved-set so it flips live when
-                // the saved copy is deleted from My Recipes / a cookbook.
-                Obx(() {
-                  final saved = _disc.savedOriginalIds.contains(recipe.id);
-                  return _action(
+                  const Spacer(),
+                  _action(
                     iconWidget: OnboardingLineIcon(
                       saved ? 'bookmarkF' : 'bookmark',
                       size: 22,
@@ -838,14 +1707,14 @@ class _RecipeCardState extends State<_RecipeCard> {
                     count: _saves,
                     showCount: false,
                     onTap: _toggleSave,
-                  );
-                }),
-              ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
-    );
+          ],
+        ),
+      );
+    });
   }
 
   Widget _action({

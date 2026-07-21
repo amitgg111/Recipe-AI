@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
@@ -25,7 +26,12 @@ class ImportCompleteScreen extends StatelessWidget {
                       children: [
                         _buildWarningBanner(),
                         const SizedBox(height: 16),
-                        Text('Coconut Chickpea Curry', style: AppTextStyles.sectionTitle.copyWith(height: 1.14)),
+                        Text(
+                          'Coconut Chickpea Curry',
+                          style: AppTextStyles.sectionTitle.copyWith(
+                            height: 1.14,
+                          ),
+                        ),
                         const SizedBox(height: 10),
                         _buildSourceBadge(),
                         const SizedBox(height: 14),
@@ -91,7 +97,7 @@ class ImportCompleteScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 GestureDetector(
-                  onTap: () => Navigator.pop(context),
+                  onTap: () => Get.back(),
                   child: Container(
                     width: 42,
                     height: 42,
@@ -99,11 +105,18 @@ class ImportCompleteScreen extends StatelessWidget {
                       color: Colors.white.withValues(alpha: 0.92),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Icon(Icons.close, size: 20, color: AppColors.textDark),
+                    child: const Icon(
+                      Icons.close,
+                      size: 20,
+                      color: AppColors.textDark,
+                    ),
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 13,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xF21F7A5E),
                     borderRadius: BorderRadius.circular(13),
@@ -113,7 +126,14 @@ class ImportCompleteScreen extends StatelessWidget {
                     children: [
                       Icon(Icons.check, color: Colors.white, size: 16),
                       SizedBox(width: 6),
-                      Text('Imported', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.white)),
+                      Text(
+                        'Imported',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -140,7 +160,12 @@ class ImportCompleteScreen extends StatelessWidget {
           Expanded(
             child: Text(
               'AI pulled this from Instagram. Check the details, then save.',
-              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppColors.warningText, height: 1.4),
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: AppColors.warningText,
+                height: 1.4,
+              ),
             ),
           ),
         ],
@@ -160,8 +185,14 @@ class ImportCompleteScreen extends StatelessWidget {
         children: [
           Icon(Icons.camera_alt, color: AppColors.instagram, size: 16),
           SizedBox(width: 6),
-          Text('From Instagram · @recipe.app',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.instagram)),
+          Text(
+            'From Instagram · @recipe.app',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: AppColors.instagram,
+            ),
+          ),
         ],
       ),
     );
@@ -181,7 +212,14 @@ class ImportCompleteScreen extends StatelessWidget {
 
   Widget _dot() => const Padding(
     padding: EdgeInsets.symmetric(horizontal: 9),
-    child: Text('·', style: TextStyle(color: Color(0xFFD8CFC0), fontSize: 16, fontWeight: FontWeight.w700)),
+    child: Text(
+      '·',
+      style: TextStyle(
+        color: Color(0xFFD8CFC0),
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+      ),
+    ),
   );
 
   Widget _infoChip(IconData icon, String label) {
@@ -190,7 +228,14 @@ class ImportCompleteScreen extends StatelessWidget {
       children: [
         Icon(icon, color: AppColors.primary, size: 18),
         const SizedBox(width: 5),
-        Text(label, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.textBodyDark)),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 13.5,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textBodyDark,
+          ),
+        ),
       ],
     );
   }
@@ -220,7 +265,14 @@ class ImportCompleteScreen extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0xFFEFE6D6)),
-        boxShadow: const [BoxShadow(color: Color(0x0F2A211B), blurRadius: 26, offset: Offset(0, 12), spreadRadius: -22)],
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F2A211B),
+            blurRadius: 26,
+            offset: Offset(0, 12),
+            spreadRadius: -22,
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -231,43 +283,98 @@ class ImportCompleteScreen extends StatelessWidget {
               Text('Ingredients', style: AppTextStyles.listTitle),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                decoration: BoxDecoration(color: AppColors.greenBgLight, borderRadius: BorderRadius.circular(10)),
-                child: const Text('9 found', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.green)),
+                decoration: BoxDecoration(
+                  color: AppColors.greenBgLight,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Text(
+                  '9 found',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.green,
+                  ),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          ...groups.expand((group) => [
-            Padding(
-              padding: const EdgeInsets.only(top: 12, bottom: 8),
-              child: Row(
-                children: [
-                  Container(width: 7, height: 7, decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle)),
-                  const SizedBox(width: 8),
-                  Text(group.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textDark)),
-                ],
+          ...groups.expand(
+            (group) => [
+              Padding(
+                padding: const EdgeInsets.only(top: 12, bottom: 8),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: const BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      group.name,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textDark,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            ...group.items.map((ing) => Container(
-              padding: const EdgeInsets.symmetric(vertical: 9),
-              decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.divider))),
-              child: Row(
-                children: [
-                  Container(
-                    width: 28, height: 28,
-                    decoration: BoxDecoration(color: const Color(0xFFFBF1E4), borderRadius: BorderRadius.circular(9)),
-                    child: const Icon(Icons.shopping_basket_outlined, color: AppColors.goldDark, size: 16),
+              ...group.items.map(
+                (ing) => Container(
+                  padding: const EdgeInsets.symmetric(vertical: 9),
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: AppColors.divider),
+                    ),
                   ),
-                  const SizedBox(width: 12),
-                  SizedBox(
-                    width: 54,
-                    child: Text(ing.amount, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textDark)),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFBF1E4),
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                        child: const Icon(
+                          Icons.shopping_basket_outlined,
+                          color: AppColors.goldDark,
+                          size: 16,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      SizedBox(
+                        width: 54,
+                        child: Text(
+                          ing.amount,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textDark,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          ing.name,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textBodyDark,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  Expanded(child: Text(ing.name, style: const TextStyle(fontSize: 14, color: AppColors.textBodyDark))),
-                ],
+                ),
               ),
-            )),
-          ]),
+            ],
+          ),
         ],
       ),
     );
@@ -288,7 +395,14 @@ class ImportCompleteScreen extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0xFFEFE6D6)),
-        boxShadow: const [BoxShadow(color: Color(0x0F2A211B), blurRadius: 26, offset: Offset(0, 12), spreadRadius: -22)],
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F2A211B),
+            blurRadius: 26,
+            offset: Offset(0, 12),
+            spreadRadius: -22,
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -299,34 +413,66 @@ class ImportCompleteScreen extends StatelessWidget {
               Text('Instructions', style: AppTextStyles.listTitle),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                decoration: BoxDecoration(color: AppColors.greenBgLight, borderRadius: BorderRadius.circular(10)),
-                child: const Text('5 steps', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.green)),
+                decoration: BoxDecoration(
+                  color: AppColors.greenBgLight,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Text(
+                  '5 steps',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.green,
+                  ),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 10),
-          ...steps.asMap().entries.map((e) => Container(
-            padding: const EdgeInsets.fromLTRB(15, 9, 0, 9),
-            decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.divider))),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 25, height: 25,
-                  decoration: BoxDecoration(color: AppColors.redBg, borderRadius: BorderRadius.circular(8)),
-                  alignment: Alignment.center,
-                  child: Text('${e.key + 1}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.primary)),
-                ),
-                const SizedBox(width: 13),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Text(e.value, style: const TextStyle(fontSize: 14, height: 1.45, color: AppColors.textBodyMedium)),
+          ...steps.asMap().entries.map(
+            (e) => Container(
+              padding: const EdgeInsets.fromLTRB(15, 9, 0, 9),
+              decoration: const BoxDecoration(
+                border: Border(bottom: BorderSide(color: AppColors.divider)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 25,
+                    height: 25,
+                    decoration: BoxDecoration(
+                      color: AppColors.redBg,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      '${e.key + 1}',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primary,
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 13),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        e.value,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          height: 1.45,
+                          color: AppColors.textBodyMedium,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          )),
+          ),
         ],
       ),
     );
@@ -341,7 +487,7 @@ class ImportCompleteScreen extends StatelessWidget {
       ),
       child: PrimaryButton(
         label: 'Save to cookbook',
-        onPressed: () => Navigator.pop(context),
+        onPressed: () => Get.back(),
       ),
     );
   }

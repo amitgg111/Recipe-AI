@@ -364,7 +364,6 @@ class ImportWebController extends GetxController {
     }
   }
 
-
   String? _extractImage(dynamic value) {
     if (value == null) return null;
 

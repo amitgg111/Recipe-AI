@@ -81,7 +81,7 @@ class _AddMealSheetState extends State<AddMealSheet> {
               ),
               const Spacer(),
               GestureDetector(
-                onTap: () => Navigator.pop(context),
+                onTap: () => Get.back(),
                 child: Container(
                   width: 32,
                   height: 32,
@@ -89,7 +89,11 @@ class _AddMealSheetState extends State<AddMealSheet> {
                     color: AppColors.surfaceBorder,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.close, size: 18, color: AppColors.textMedium),
+                  child: const Icon(
+                    Icons.close,
+                    size: 18,
+                    color: AppColors.textMedium,
+                  ),
                 ),
               ),
             ],
@@ -123,16 +127,18 @@ class _AddMealSheetState extends State<AddMealSheet> {
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
           decoration: const BoxDecoration(
             color: AppColors.surface,
-            border: Border(
-              top: BorderSide(color: AppColors.divider),
-            ),
+            border: Border(top: BorderSide(color: AppColors.divider)),
           ),
           child: SafeArea(
             top: false,
             child: PrimaryButton(
               label: 'add_to_plan'.tr,
-              leadingIcon: const Icon(Icons.check, color: Colors.white, size: 20),
-              onPressed: _selectedRecipe != null ? () => Navigator.pop(context) : null,
+              leadingIcon: const Icon(
+                Icons.check,
+                color: Colors.white,
+                size: 20,
+              ),
+              onPressed: _selectedRecipe != null ? () => Get.back() : null,
             ),
           ),
         ),

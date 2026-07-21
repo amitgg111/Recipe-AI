@@ -5,10 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 
 class RecipeMenuPopup {
-  static void show(
-    BuildContext context, {
-    required RelativeRect position,
-  }) {
+  static void show(BuildContext context, {required RelativeRect position}) {
     showGeneralDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.4),
@@ -47,7 +44,7 @@ class _RecipeMenuContentState extends State<_RecipeMenuContent> {
         // Dismiss on tap
         Positioned.fill(
           child: GestureDetector(
-            onTap: () => Navigator.pop(context),
+            onTap: () => Get.back(),
             behavior: HitTestBehavior.opaque,
             child: const SizedBox.expand(),
           ),
@@ -114,23 +111,23 @@ class _RecipeMenuContentState extends State<_RecipeMenuContent> {
                         _buildMenuItem(
                           icon: Icons.share_outlined,
                           label: 'share_recipe_link'.tr,
-                          onTap: () => Navigator.pop(context),
+                          onTap: () => Get.back(),
                         ),
                         _buildMenuItem(
                           icon: Icons.description_outlined,
                           label: 'export_pdf'.tr,
-                          onTap: () => Navigator.pop(context),
+                          onTap: () => Get.back(),
                         ),
                         _buildMenuItem(
                           icon: Icons.print_outlined,
                           label: 'print_recipe'.tr,
-                          onTap: () => Navigator.pop(context),
+                          onTap: () => Get.back(),
                         ),
                         _buildMenuItem(
                           icon: Icons.delete_outline,
                           label: 'delete_recipe'.tr,
                           isDestructive: true,
-                          onTap: () => Navigator.pop(context),
+                          onTap: () => Get.back(),
                         ),
                       ],
                     ),
@@ -153,7 +150,11 @@ class _RecipeMenuContentState extends State<_RecipeMenuContent> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          const OnboardingLineIcon('globe', size: 20, color: AppColors.textDark),
+          const OnboardingLineIcon(
+            'globe',
+            size: 20,
+            color: AppColors.textDark,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
