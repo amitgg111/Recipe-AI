@@ -55,7 +55,7 @@ class _AutoFillGoalSheetState extends State<AutoFillGoalSheet> {
   Future<void> _resume() async {
     final ok = await MealPlannerController.to.loadDraft();
     if (!mounted) return;
-    Navigator.pop(context);
+    Get.back();
     if (ok) {
       Get.to(
         () => const WeekReviewScreen(),
@@ -83,7 +83,7 @@ class _AutoFillGoalSheetState extends State<AutoFillGoalSheet> {
     // Selected cuisine pass to MealPlannerController
     c.selectedCuisine = CuisineController.to.selectedCuisine.value.trim();
 
-    Navigator.pop(context);
+    Get.back();
 
     Get.to(
       () => const MealPlanGeneratingScreen(),
@@ -159,7 +159,7 @@ class _AutoFillGoalSheetState extends State<AutoFillGoalSheet> {
                       ),
                     ),
                     GestureDetector(
-                      onTap: () => Navigator.pop(context),
+                      onTap: () => Get.back(),
                       behavior: HitTestBehavior.opaque,
                       child: Container(
                         width: 32,

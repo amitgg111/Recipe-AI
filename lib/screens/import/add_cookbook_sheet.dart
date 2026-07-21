@@ -92,7 +92,7 @@ class _AddCookbookSheetState extends State<AddCookbookSheet> {
                     ),
                     const SizedBox(width: 8),
                     GestureDetector(
-                      onTap: () => Navigator.pop(context),
+                      onTap: () => Get.back(),
                       child: Container(
                         width: 34,
                         height: 34,

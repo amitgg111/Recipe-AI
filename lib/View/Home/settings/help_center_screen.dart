@@ -38,9 +38,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
         .where(
           (e) =>
               _query.isEmpty ||
-              (e.value[0]).tr.toLowerCase().contains(
-                _query.toLowerCase(),
-              ),
+              (e.value[0]).tr.toLowerCase().contains(_query.toLowerCase()),
         )
         .toList();
 
@@ -65,7 +63,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
               physics: const NeverScrollableScrollPhysics(),
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
-              childAspectRatio: 1.35,
+              childAspectRatio: 1.25,
               children: [
                 for (final t in _topics)
                   _topicCard(
@@ -163,7 +161,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             Container(
               width: 40,

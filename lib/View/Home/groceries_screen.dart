@@ -1601,7 +1601,7 @@ class GroceriesScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () => Get.back(),
                     child: Container(
                       height: 48,
                       alignment: Alignment.center,
@@ -1620,7 +1620,7 @@ class GroceriesScreen extends StatelessWidget {
                 Expanded(
                   child: GestureDetector(
                     onTap: () {
-                      Navigator.pop(context);
+                      Get.back();
                       store.clearAll();
                     },
                     child: Container(
@@ -1710,7 +1710,7 @@ class GroceriesScreen extends StatelessWidget {
               Icons.edit_outlined,
               'edit_item'.tr,
               () {
-                Navigator.pop(context);
+                Get.back();
                 _showEditItemSheet(context, item);
               },
               iconWidget: const OnboardingLineIcon(
@@ -1723,12 +1723,12 @@ class GroceriesScreen extends StatelessWidget {
               item.checked ? Icons.remove_done_rounded : Icons.check_rounded,
               item.checked ? 'mark_as_not_bought'.tr : 'mark_as_bought'.tr,
               () {
-                Navigator.pop(context);
+                Get.back();
                 store.toggleItem(item);
               },
             ),
             _optionRow(Icons.category_outlined, 'change_category'.tr, () {
-              Navigator.pop(context);
+              Get.back();
               _showCategoryPicker(context, item.aisle, (cat) {
                 _replaceItem(item, item.name, item.quantity, cat);
               });
@@ -1737,7 +1737,7 @@ class GroceriesScreen extends StatelessWidget {
               Icons.delete_outline_rounded,
               'delete_item'.tr,
               () {
-                Navigator.pop(context);
+                Get.back();
                 store.removeItem(item);
                 CustomSnackbar.show(
                   title: 'removed'.tr,
@@ -2179,7 +2179,7 @@ class _ItemFormSheetState extends State<_ItemFormSheet> {
                   ),
                   const Spacer(),
                   GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () => Get.back(),
                     child: Container(
                       width: 32,
                       height: 32,

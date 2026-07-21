@@ -86,7 +86,7 @@ class _FacebookGuideSheetState extends State<FacebookGuideSheet> {
             child: Row(
               children: [
                 GestureDetector(
-                  onTap: () => Navigator.pop(context),
+                  onTap: () => Get.back(),
                   child: Container(
                     width: 38,
                     height: 38,
@@ -237,7 +237,9 @@ class _FacebookSlide1 extends StatelessWidget {
                           width: 60,
                           height: 8,
                           decoration: BoxDecoration(
-                            color: AppColors.surfaceBorder.withValues(alpha: 0.6),
+                            color: AppColors.surfaceBorder.withValues(
+                              alpha: 0.6,
+                            ),
                             borderRadius: BorderRadius.circular(4),
                           ),
                         ),
@@ -269,8 +271,11 @@ class _FacebookSlide1 extends StatelessWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.thumb_up_outlined,
-                              size: 20, color: AppColors.textMedium),
+                          const Icon(
+                            Icons.thumb_up_outlined,
+                            size: 20,
+                            color: AppColors.textMedium,
+                          ),
                           const SizedBox(width: 6),
                           Text(
                             'like'.tr,
@@ -287,8 +292,11 @@ class _FacebookSlide1 extends StatelessWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const OnboardingLineIcon('chat',
-                              size: 20, color: AppColors.textMedium),
+                          const OnboardingLineIcon(
+                            'chat',
+                            size: 20,
+                            color: AppColors.textMedium,
+                          ),
                           const SizedBox(width: 6),
                           Text(
                             'comment'.tr,
@@ -318,8 +326,11 @@ class _FacebookSlide1 extends StatelessWidget {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const OnboardingLineIcon('share',
-                                size: 20, color: AppColors.primary),
+                            const OnboardingLineIcon(
+                              'share',
+                              size: 20,
+                              color: AppColors.primary,
+                            ),
                             const SizedBox(width: 6),
                             Text(
                               'share'.tr,
@@ -427,7 +438,11 @@ class _FacebookSlide2 extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      const OnboardingLineIcon('search', size: 18, color: AppColors.textLight),
+                      const OnboardingLineIcon(
+                        'search',
+                        size: 18,
+                        color: AppColors.textLight,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'search'.tr,
@@ -550,12 +565,7 @@ class _FacebookSlide3 extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 // Gmail - red M
-                _appIcon(
-                  const Color(0xFFEA4335),
-                  'M',
-                  'Gmail',
-                  icon: null,
-                ),
+                _appIcon(const Color(0xFFEA4335), 'M', 'Gmail', icon: null),
                 // Recipe AI - highlighted
                 Column(
                   children: [
@@ -594,8 +604,11 @@ class _FacebookSlide3 extends StatelessWidget {
                   const Color(0xFF2D6FE0),
                   '',
                   'chat'.tr,
-                  iconWidget: const OnboardingLineIcon('chat',
-                      size: 22, color: Color(0xFF2D6FE0)),
+                  iconWidget: const OnboardingLineIcon(
+                    'chat',
+                    size: 22,
+                    color: Color(0xFF2D6FE0),
+                  ),
                 ),
                 // Triangle - green
                 _appIcon(
@@ -629,17 +642,18 @@ class _FacebookSlide3 extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           child: Center(
-            child: iconWidget ??
+            child:
+                iconWidget ??
                 (icon != null
-                ? Icon(icon, size: 22, color: color)
-                : Text(
-                    letter,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: color,
-                    ),
-                  )),
+                    ? Icon(icon, size: 22, color: color)
+                    : Text(
+                        letter,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: color,
+                        ),
+                      )),
           ),
         ),
         const SizedBox(height: 6),

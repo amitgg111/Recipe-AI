@@ -1,5 +1,3 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:recipe_ai/widgets/app_network_image.dart';
@@ -46,128 +44,129 @@ class ImportCompleteScreen extends StatelessWidget {
         if (!didPop) Get.offAll(() => const AuthWrapper());
       },
       child: Scaffold(
-      backgroundColor: AppColors.background,
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            padding: EdgeInsets.zero,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _hero(),
-                Transform.translate(
-                  offset: const Offset(0, -10),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(22, 6, 22, 34),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+        backgroundColor: AppColors.background,
+        body: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: EdgeInsets.zero,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _hero(),
+                  Transform.translate(
+                    offset: const Offset(0, -10),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(22, 6, 22, 34),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _reviewBanner(),
+                          const SizedBox(height: 16),
+                          Text(
+                            recipe.title,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 25,
+                              fontWeight: FontWeight.w800,
+                              height: 1.14,
+                              letterSpacing: -0.5,
+                              color: AppColors.textDark,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          _sourcePill(),
+                          const SizedBox(height: 14),
+                          _metaRow(),
+                          const SizedBox(height: 20),
+                          _ingredientsCard(),
+                          const SizedBox(height: 16),
+                          _instructionsCard(),
+                          const SizedBox(height: 16),
+                          _nutritionCard(context),
+                          const SizedBox(height: 20),
+                          _saveButton(context),
+                          const SizedBox(height: 10),
+                          _editButton(context),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Top overlay bar (close + Imported badge)
+            Positioned(
+              top: topPad + 14,
+              left: 18,
+              right: 18,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      // Pop back if a screen exists beneath. This screen is
+                      // reached via Get.off (replacing the import/processing
+                      // screen); if it ended up as the ONLY route, a bare pop
+                      // would leave an empty, black navigator — so fall back to
+                      // the app home instead.
+                      final nav = Navigator.of(context);
+                      if (nav.canPop()) {
+                        nav.pop();
+                      } else {
+                        Get.offAll(() => const AuthWrapper());
+                      }
+                    },
+                    child: Container(
+                      width: 42,
+                      height: 42,
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.92),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const OnboardingLineIcon(
+                        'x',
+                        size: 20,
+                        color: AppColors.textDark,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 13,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.green.withValues(alpha: 0.95),
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        _reviewBanner(),
-                        const SizedBox(height: 16),
+                        const OnboardingLineIcon(
+                          'check',
+                          size: 15,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(width: 6),
                         Text(
-                          recipe.title,
+                          'imported'.tr,
                           style: GoogleFonts.plusJakartaSans(
-                            fontSize: 25,
+                            fontSize: 12,
                             fontWeight: FontWeight.w800,
-                            height: 1.14,
-                            letterSpacing: -0.5,
-                            color: AppColors.textDark,
+                            color: Colors.white,
                           ),
                         ),
-                        const SizedBox(height: 10),
-                        _sourcePill(),
-                        const SizedBox(height: 14),
-                        _metaRow(),
-                        const SizedBox(height: 20),
-                        _ingredientsCard(),
-                        const SizedBox(height: 16),
-                        _instructionsCard(),
-                        const SizedBox(height: 16),
-                        _nutritionCard(context),
-                        const SizedBox(height: 20),
-                        _saveButton(context),
-                        const SizedBox(height: 10),
-                        _editButton(context),
                       ],
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-
-          // Top overlay bar (close + Imported badge)
-          Positioned(
-            top: topPad + 14,
-            left: 18,
-            right: 18,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    // Pop back if a screen exists beneath. This screen is
-                    // reached via Get.off (replacing the import/processing
-                    // screen); if it ended up as the ONLY route, a bare pop
-                    // would leave an empty, black navigator — so fall back to
-                    // the app home instead.
-                    final nav = Navigator.of(context);
-                    if (nav.canPop()) {
-                      nav.pop();
-                    } else {
-                      Get.offAll(() => const AuthWrapper());
-                    }
-                  },
-                  child: Container(
-                    width: 42,
-                    height: 42,
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.92),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const OnboardingLineIcon(
-                      'x',
-                      size: 20,
-                      color: AppColors.textDark,
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 13,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.green.withValues(alpha: 0.95),
-                    borderRadius: BorderRadius.circular(13),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const OnboardingLineIcon(
-                        'check',
-                        size: 15,
-                        color: Colors.white,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'imported'.tr,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ));
+    );
   }
 
   // ─── Hero ────────────────────────────────────────────────────────────────
@@ -226,20 +225,16 @@ class ImportCompleteScreen extends StatelessWidget {
 
   /// Animated shimmer skeleton shown while the hero image downloads.
   Widget _heroLoading() => Shimmer.fromColors(
-        baseColor: AppColors.shimmerBase,
-        highlightColor: AppColors.shimmerHighlight,
-        period: const Duration(milliseconds: 1100),
-        child: Container(
-          color: AppColors.shimmerBase,
-          child: const Center(
-            child: Icon(
-              Icons.image_rounded,
-              size: 54,
-              color: Color(0xFFD8CBB4),
-            ),
-          ),
-        ),
-      );
+    baseColor: AppColors.shimmerBase,
+    highlightColor: AppColors.shimmerHighlight,
+    period: const Duration(milliseconds: 1100),
+    child: Container(
+      color: AppColors.shimmerBase,
+      child: const Center(
+        child: Icon(Icons.image_rounded, size: 54, color: Color(0xFFD8CBB4)),
+      ),
+    ),
+  );
 
   // ─── Review banner ─────────────────────────────────────────────────────────
 
@@ -853,7 +848,7 @@ class ImportCompleteScreen extends StatelessWidget {
   Widget _editButton(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        Navigator.pop(context);
+        Get.back();
         Get.to(() => RecipeEditorScreen(recipe: recipe));
       },
       child: Container(

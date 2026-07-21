@@ -48,7 +48,7 @@ class ImportFromSocialScreen extends StatelessWidget {
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () => Get.back(),
                     child: const OnboardingLineIcon(
                       'back',
                       size: 20,
@@ -243,7 +243,7 @@ class _SocialGuideScreenState extends State<SocialGuideScreen> {
               Row(
                 children: [
                   GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () => Get.back(),
                     behavior: HitTestBehavior.opaque,
                     child: const SizedBox(
                       width: 40,
@@ -257,7 +257,9 @@ class _SocialGuideScreenState extends State<SocialGuideScreen> {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    'import_from_platform'.trParams({'platform': _platformName}),
+                    'import_from_platform'.trParams({
+                      'platform': _platformName,
+                    }),
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 19,
                       fontWeight: FontWeight.w800,

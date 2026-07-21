@@ -55,7 +55,7 @@ class _AddNoteSheetState extends State<AddNoteSheet> {
               children: [
                 Text('add_a_note'.tr, style: AppTextStyles.listTitle),
                 GestureDetector(
-                  onTap: () => Navigator.pop(context),
+                  onTap: () => Get.back(),
                   child: Container(
                     width: 34,
                     height: 34,

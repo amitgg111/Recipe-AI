@@ -58,7 +58,7 @@ class ImportPickerScreen extends StatelessWidget {
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () => Get.back(),
                     child: Container(
                       width: 42,
                       height: 42,
@@ -105,10 +105,11 @@ class ImportPickerScreen extends StatelessWidget {
                             title: 'import_from_photo'.tr,
                             subtitle: 'snap_or_upload_pic'.tr,
                             onTap: () {
-                              Navigator.pop(context);
-                              RecipeImportService.importRecipeFromGallery(
-                                context,
-                              );
+                              Get.back();
+                              // RecipeImportService.importRecipeFromGallery(
+                              //   context,
+                              // );
+                              Get.to(() => const RecipeCameraScreen());
                             },
                           ),
                         ),
@@ -121,7 +122,7 @@ class ImportPickerScreen extends StatelessWidget {
                             title: 'import_from_text'.tr,
                             subtitle: 'paste_or_type'.tr,
                             onTap: () {
-                              Navigator.pop(context);
+                              Get.back();
                               Get.to(() => const GenerateRecipeScreen());
                             },
                           ),
@@ -139,7 +140,7 @@ class ImportPickerScreen extends StatelessWidget {
                             title: 'import_from_web'.tr,
                             subtitle: 'paste_recipe_url'.tr,
                             onTap: () {
-                              Navigator.pop(context);
+                              Get.back();
                               Get.to(() => const ImportFromWebScreen());
                             },
                           ),
@@ -153,7 +154,7 @@ class ImportPickerScreen extends StatelessWidget {
                             title: 'write_from_scratch'.tr,
                             subtitle: 'create_your_own'.tr,
                             onTap: () {
-                              Navigator.pop(context);
+                              Get.back();
                               Get.to(() => const RecipeEditorScreen());
                             },
                           ),
@@ -246,7 +247,7 @@ class ImportPickerScreen extends StatelessWidget {
     );
   }
 }
-  
+
 class _SocialIconButton extends StatelessWidget {
   final String glyph;
   final String colorHex;

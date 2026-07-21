@@ -129,7 +129,7 @@ class _ImportFromWebScreenState extends State<ImportFromWebScreen> {
                           // next Get.find<ImportWebController>() throw
                           // "ImportWebController not found" on re-entry.
                           controller.loadLandingPage();
-                          Navigator.pop(context);
+                          Get.back();
                         },
                         child: Container(
                           width: 40,

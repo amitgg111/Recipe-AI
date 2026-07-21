@@ -121,7 +121,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             GestureDetector(
-              onTap: () => Navigator.pop(context),
+              onTap: () => Get.back(),
               child: Container(
                 width: 40,
                 height: 40,
@@ -203,17 +203,21 @@ class _PhotoBasicsCard extends StatelessWidget {
           // Image + change photo (a photo is required to save).
           FormField<String>(
             validator: (_) {
-              final hasImage = controller.imageFile.value != null ||
+              final hasImage =
+                  controller.imageFile.value != null ||
                   controller.imagePath.value.isNotEmpty;
               return hasImage ? null : 'add_recipe_photo'.tr;
             },
             builder: (state) => Obx(() {
-              final hasImage = controller.imageFile.value != null ||
+              final hasImage =
+                  controller.imageFile.value != null ||
                   controller.imagePath.value.isNotEmpty;
               Widget img;
               if (controller.imageFile.value != null) {
-                img =
-                    Image.file(controller.imageFile.value!, fit: BoxFit.cover);
+                img = Image.file(
+                  controller.imageFile.value!,
+                  fit: BoxFit.cover,
+                );
               } else if (controller.imagePath.value.isNotEmpty) {
                 final p = controller.imagePath.value;
                 img = p.startsWith('http')
@@ -261,7 +265,10 @@ class _PhotoBasicsCard extends StatelessWidget {
                               child: DecoratedBox(
                                 decoration: BoxDecoration(
                                   border: showError
-                                      ? Border.all(color: _E.redText, width: 1.5)
+                                      ? Border.all(
+                                          color: _E.redText,
+                                          width: 1.5,
+                                        )
                                       : null,
                                   borderRadius: BorderRadius.circular(14),
                                 ),
@@ -293,8 +300,11 @@ class _PhotoBasicsCard extends StatelessWidget {
                                     const SizedBox(width: 6),
                                     Text(
                                       'change_photo'.tr,
-                                      style:
-                                          _f(13, FontWeight.w700, _E.textDark),
+                                      style: _f(
+                                        13,
+                                        FontWeight.w700,
+                                        _E.textDark,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -354,9 +364,7 @@ class _PhotoBasicsCard extends StatelessWidget {
                       height: 46,
                       enabled: !controller.isEdit,
                       keyboardType: const TextInputType.numberWithOptions(),
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                      ],
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       validator: controller.isEdit
                           ? null
                           : (v) {
@@ -764,8 +772,7 @@ class _IngredientsEditor extends StatelessWidget {
     // Hide the "Add ingredient" button for the empty, unnamed default section
     // once real groups exist — otherwise it shows twice (above + below a group).
     final isUnnamed = section.name == null || (section.name as String).isEmpty;
-    final showAdd =
-        !(isUnnamed && section.items.isEmpty && totalSections > 1);
+    final showAdd = !(isUnnamed && section.items.isEmpty && totalSections > 1);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -781,10 +788,8 @@ class _IngredientsEditor extends StatelessWidget {
             itemCount: section.items.length,
             onReorder: (oldIndex, newIndex) => controller
                 .reorderIngredientInSection(sectionIdx, oldIndex, newIndex),
-            proxyDecorator: (child, index, animation) => Material(
-              color: Colors.transparent,
-              child: child,
-            ),
+            proxyDecorator: (child, index, animation) =>
+                Material(color: Colors.transparent, child: child),
             itemBuilder: (_, i) => _ingredientRow(
               sectionIdx,
               i,
@@ -835,8 +840,10 @@ class _IngredientsEditor extends StatelessWidget {
               // ingredient name, wrapping over up to 3 lines so nothing is cut.
               Expanded(
                 child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 9,
+                  ),
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: Text.rich(
@@ -931,13 +938,60 @@ class _IngredientsEditor extends StatelessWidget {
   // convertible units from UnitConverter) so the full unit is captured — and
   // therefore shown bold — rather than leaking into the ingredient name.
   static const Set<String> _countUnits = {
-    'clove', 'cloves', 'piece', 'pieces', 'pc', 'pcs', 'can', 'cans', 'tin',
-    'tins', 'jar', 'jars', 'bottle', 'bottles', 'pack', 'packs', 'packet',
-    'packets', 'box', 'boxes', 'bag', 'bags', 'bunch', 'bunches', 'head',
-    'heads', 'stalk', 'stalks', 'stick', 'sticks', 'sprig', 'sprigs', 'slice',
-    'slices', 'sheet', 'sheets', 'leaf', 'leaves', 'pinch', 'pinches', 'dash',
-    'dashes', 'handful', 'handfuls', 'drop', 'drops', 'scoop', 'scoops',
-    'inch', 'inches', 'small', 'medium', 'large', 'whole',
+    'clove',
+    'cloves',
+    'piece',
+    'pieces',
+    'pc',
+    'pcs',
+    'can',
+    'cans',
+    'tin',
+    'tins',
+    'jar',
+    'jars',
+    'bottle',
+    'bottles',
+    'pack',
+    'packs',
+    'packet',
+    'packets',
+    'box',
+    'boxes',
+    'bag',
+    'bags',
+    'bunch',
+    'bunches',
+    'head',
+    'heads',
+    'stalk',
+    'stalks',
+    'stick',
+    'sticks',
+    'sprig',
+    'sprigs',
+    'slice',
+    'slices',
+    'sheet',
+    'sheets',
+    'leaf',
+    'leaves',
+    'pinch',
+    'pinches',
+    'dash',
+    'dashes',
+    'handful',
+    'handfuls',
+    'drop',
+    'drops',
+    'scoop',
+    'scoops',
+    'inch',
+    'inches',
+    'small',
+    'medium',
+    'large',
+    'whole',
   };
 
   static bool _isUnitToken(String token) {
@@ -1021,7 +1075,10 @@ class _InstructionsEditor extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('instructions'.tr, style: _f(16, FontWeight.w800, _E.textDark)),
+            Text(
+              'instructions'.tr,
+              style: _f(16, FontWeight.w800, _E.textDark),
+            ),
             const SizedBox(height: 10),
             for (int si = 0; si < sections.length; si++)
               _buildSection(si, sections[si], sections),
@@ -1057,10 +1114,8 @@ class _InstructionsEditor extends StatelessWidget {
             itemCount: section.steps.length,
             onReorder: (oldIndex, newIndex) => controller
                 .reorderInstructionInSection(sectionIdx, oldIndex, newIndex),
-            proxyDecorator: (child, index, animation) => Material(
-              color: Colors.transparent,
-              child: child,
-            ),
+            proxyDecorator: (child, index, animation) =>
+                Material(color: Colors.transparent, child: child),
             itemBuilder: (_, i) => _stepRow(
               sectionIdx,
               i,
@@ -1250,8 +1305,7 @@ class _DeleteButton extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'delete_recipe_confirm'
-                      .trParams({'title': recipe.title}),
+                  'delete_recipe_confirm'.trParams({'title': recipe.title}),
                   textAlign: TextAlign.center,
                   style: _f(
                     13.5,
@@ -1339,7 +1393,10 @@ class _DeleteButton extends StatelessWidget {
           children: [
             const OnboardingLineIcon('trash', size: 19, color: _E.redText),
             const SizedBox(width: 8),
-            Text('delete_recipe'.tr, style: _f(15, FontWeight.w700, _E.redText)),
+            Text(
+              'delete_recipe'.tr,
+              style: _f(15, FontWeight.w700, _E.redText),
+            ),
           ],
         ),
       ),
@@ -1390,7 +1447,7 @@ class _EditorBottomSheet extends StatelessWidget {
               Text(title, style: _f(18, FontWeight.w800, _E.textDark)),
               const Spacer(),
               GestureDetector(
-                onTap: () => Navigator.pop(context),
+                onTap: () => Get.back(),
                 child: Container(
                   width: 30,
                   height: 30,
@@ -1438,7 +1495,7 @@ class _EditorBottomSheet extends StatelessWidget {
           GestureDetector(
             onTap: () {
               onConfirm();
-              Navigator.pop(context);
+              Get.back();
             },
             child: Container(
               width: double.infinity,
@@ -1485,24 +1542,62 @@ const List<(String, String)> _kIngredientUnits = [
 
 // Every spelling/abbreviation the parser recognises → the canonical token above.
 const Map<String, String> _kUnitAliases = {
-  'ml': 'ml', 'milliliter': 'ml', 'milliliters': 'ml', 'millilitre': 'ml',
+  'ml': 'ml',
+  'milliliter': 'ml',
+  'milliliters': 'ml',
+  'millilitre': 'ml',
   'millilitres': 'ml',
-  'cl': 'cl', 'centiliter': 'cl', 'centiliters': 'cl', 'centilitre': 'cl',
+  'cl': 'cl',
+  'centiliter': 'cl',
+  'centiliters': 'cl',
+  'centilitre': 'cl',
   'centilitres': 'cl',
-  'dl': 'dl', 'deciliter': 'dl', 'deciliters': 'dl', 'decilitre': 'dl',
+  'dl': 'dl',
+  'deciliter': 'dl',
+  'deciliters': 'dl',
+  'decilitre': 'dl',
   'decilitres': 'dl',
-  'l': 'l', 'liter': 'l', 'liters': 'l', 'litre': 'l', 'litres': 'l',
-  'tsp': 'tsp', 'tsps': 'tsp', 'teaspoon': 'tsp', 'teaspoons': 'tsp',
-  'tbsp': 'tbsp', 'tbsps': 'tbsp', 'tbs': 'tbsp', 'tablespoon': 'tbsp',
+  'l': 'l',
+  'liter': 'l',
+  'liters': 'l',
+  'litre': 'l',
+  'litres': 'l',
+  'tsp': 'tsp',
+  'tsps': 'tsp',
+  'teaspoon': 'tsp',
+  'teaspoons': 'tsp',
+  'tbsp': 'tbsp',
+  'tbsps': 'tbsp',
+  'tbs': 'tbsp',
+  'tablespoon': 'tbsp',
   'tablespoons': 'tbsp',
-  'cup': 'cup', 'cups': 'cup',
-  'pint': 'pint', 'pints': 'pint', 'pt': 'pint',
-  'quart': 'quart', 'quarts': 'quart', 'qt': 'quart',
-  'gallon': 'gallon', 'gallons': 'gallon', 'gal': 'gallon',
-  'g': 'g', 'gram': 'g', 'grams': 'g', 'gm': 'g', 'gms': 'g',
-  'kg': 'kg', 'kilogram': 'kg', 'kilograms': 'kg', 'kgs': 'kg',
-  'oz': 'oz', 'ounce': 'oz', 'ounces': 'oz',
-  'lb': 'lb', 'lbs': 'lb', 'pound': 'lb', 'pounds': 'lb',
+  'cup': 'cup',
+  'cups': 'cup',
+  'pint': 'pint',
+  'pints': 'pint',
+  'pt': 'pint',
+  'quart': 'quart',
+  'quarts': 'quart',
+  'qt': 'quart',
+  'gallon': 'gallon',
+  'gallons': 'gallon',
+  'gal': 'gallon',
+  'g': 'g',
+  'gram': 'g',
+  'grams': 'g',
+  'gm': 'g',
+  'gms': 'g',
+  'kg': 'kg',
+  'kilogram': 'kg',
+  'kilograms': 'kg',
+  'kgs': 'kg',
+  'oz': 'oz',
+  'ounce': 'oz',
+  'ounces': 'oz',
+  'lb': 'lb',
+  'lbs': 'lb',
+  'pound': 'lb',
+  'pounds': 'lb',
 };
 
 /// Splits a free-form ingredient line ("2½ cups organic flour") into its
@@ -1515,16 +1610,17 @@ const Map<String, String> _kUnitAliases = {
 
   String qty = '';
   String rest = t;
-  final qtyM = RegExp(
-    r'^([0-9¼½¾⅓⅔⅛⅜⅝⅞][0-9¼½¾⅓⅔⅛⅜⅝⅞.,/\s-]*)',
-  ).firstMatch(t);
+  final qtyM = RegExp(r'^([0-9¼½¾⅓⅔⅛⅜⅝⅞][0-9¼½¾⅓⅔⅛⅜⅝⅞.,/\s-]*)').firstMatch(t);
   if (qtyM != null) {
     qty = qtyM.group(1)!.trim();
     rest = t.substring(qtyM.end).trim();
   }
 
   String unit = '';
-  final flozM = RegExp(r'^fl\.?\s*oz\.?', caseSensitive: false).firstMatch(rest);
+  final flozM = RegExp(
+    r'^fl\.?\s*oz\.?',
+    caseSensitive: false,
+  ).firstMatch(rest);
   if (flozM != null) {
     unit = 'fl oz';
     rest = rest.substring(flozM.end).trim();
@@ -1605,7 +1701,7 @@ class _IngredientEditorSheetState extends State<_IngredientEditorSheet> {
     final composed = _composeIngredient(_qty.text, _unit, _name.text);
     if (composed.isEmpty) return;
     widget.onConfirm(composed);
-    Navigator.pop(context);
+    Get.back();
   }
 
   void _openUnitPicker() {
@@ -1638,7 +1734,10 @@ class _IngredientEditorSheetState extends State<_IngredientEditorSheet> {
               padding: const EdgeInsets.fromLTRB(24, 14, 24, 6),
               child: Row(
                 children: [
-                  Text('select_unit'.tr, style: _f(17, FontWeight.w800, _E.textDark)),
+                  Text(
+                    'select_unit'.tr,
+                    style: _f(17, FontWeight.w800, _E.textDark),
+                  ),
                 ],
               ),
             ),
@@ -1653,7 +1752,7 @@ class _IngredientEditorSheetState extends State<_IngredientEditorSheet> {
                     behavior: HitTestBehavior.opaque,
                     onTap: () {
                       setState(() => _unit = u.$2);
-                      Navigator.pop(context);
+                      Get.back();
                     },
                     child: Container(
                       margin: const EdgeInsets.symmetric(
@@ -1727,7 +1826,7 @@ class _IngredientEditorSheetState extends State<_IngredientEditorSheet> {
               Text(widget.title, style: _f(18, FontWeight.w800, _E.textDark)),
               const Spacer(),
               GestureDetector(
-                onTap: () => Navigator.pop(context),
+                onTap: () => Get.back(),
                 child: Container(
                   width: 30,
                   height: 30,
@@ -1826,7 +1925,10 @@ class _IngredientEditorSheetState extends State<_IngredientEditorSheet> {
                 borderRadius: BorderRadius.circular(AppDimensions.radiusButton),
               ),
               child: Center(
-                child: Text(widget.buttonLabel, style: AppTextStyles.buttonLabel),
+                child: Text(
+                  widget.buttonLabel,
+                  style: AppTextStyles.buttonLabel,
+                ),
               ),
             ),
           ),

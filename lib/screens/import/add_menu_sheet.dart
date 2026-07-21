@@ -27,10 +27,8 @@ class AddMenuSheet extends StatelessWidget {
     return showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (_) => AddMenuSheet(
-        onAddRecipe: onAddRecipe,
-        onAddCookbook: onAddCookbook,
-      ),
+      builder: (_) =>
+          AddMenuSheet(onAddRecipe: onAddRecipe, onAddCookbook: onAddCookbook),
     );
   }
 
@@ -80,7 +78,7 @@ class AddMenuSheet extends StatelessWidget {
                   title: 'add_a_recipe_option'.tr,
                   subtitle: 'import_from_anywhere'.tr,
                   onTap: () {
-                    Navigator.pop(context);
+                    Get.back();
                     onAddRecipe?.call();
                   },
                 ),
@@ -91,7 +89,7 @@ class AddMenuSheet extends StatelessWidget {
                   title: 'add_a_cookbook'.tr,
                   subtitle: 'start_new_collection'.tr,
                   onTap: () {
-                    Navigator.pop(context);
+                    Get.back();
                     onAddCookbook?.call();
                   },
                 ),
@@ -116,7 +114,7 @@ Widget _glyph(
   final attrs = filled
       ? 'fill="$color" stroke="none"'
       : 'fill="none" stroke="$color" stroke-width="$stroke" '
-          'stroke-linecap="round" stroke-linejoin="round"';
+            'stroke-linecap="round" stroke-linejoin="round"';
   final svg =
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" $attrs>'
       '$inner</svg>';
@@ -125,7 +123,8 @@ Widget _glyph(
 
 const _kSpark =
     '<path d="M12 2l1.9 5.6L19.5 9.5 14 11.4 12 17l-1.9-5.6L4.5 9.5l5.6-1.9z"/>';
-const _kBook = '<path d="M5 4h12a1 1 0 0 1 1 1v15H7a2 2 0 0 1-2-2z"/>'
+const _kBook =
+    '<path d="M5 4h12a1 1 0 0 1 1 1v15H7a2 2 0 0 1-2-2z"/>'
     '<path d="M5 17a2 2 0 0 1 2-2h11"/>';
 const _kChevR = '<path d="M9 6l6 6-6 6"/>';
 

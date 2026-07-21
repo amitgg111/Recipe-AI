@@ -52,9 +52,11 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(18, 4, 18, 0),
-                child: SettingsUi.header(widget.favoritesOnly
-                    ? 'favorite_recipes'.tr
-                    : 'my_recipes'.tr),
+                child: SettingsUi.header(
+                  widget.favoritesOnly
+                      ? 'favorite_recipes'.tr
+                      : 'my_recipes'.tr,
+                ),
               ),
               const SizedBox(height: 14),
               Padding(
@@ -76,8 +78,8 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
                     _chip(
                       'filter_public_count'.trParams({'count': '$publicCount'}),
                       1,
-                      iconName: 'globe',
-                      iconColor: AppColors.green,
+                      // iconName: 'globe',
+                      // iconColor: AppColors.green,
                     ),
                     const SizedBox(width: 8),
                     _chip(
@@ -85,8 +87,8 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
                         'count': '$privateCount',
                       }),
                       2,
-                      iconName: 'lock',
-                      iconColor: AppColors.textMedium,
+                      // iconName: 'lock',
+                      // iconColor: AppColors.textMedium,
                     ),
                   ],
                 ),

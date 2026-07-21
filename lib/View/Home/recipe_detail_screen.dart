@@ -377,7 +377,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             right: 18,
             child: Row(
               children: [
-                _floatingBtn('back', () => Navigator.pop(context)),
+                _floatingBtn('back', () => Get.back()),
                 const Spacer(),
                 _floatingBtn(
                   'pencil',
@@ -2921,7 +2921,7 @@ $appLink
         final isPublic = _isPublic;
         return InkWell(
           onTap: () {
-            Navigator.pop(context); // close the menu, then confirm
+            Get.back(); // close the menu, then confirm
             _toggleVisibility();
           },
           child: Container(
@@ -3408,7 +3408,7 @@ class _MealPlanPickerSheetState extends State<_MealPlanPickerSheet> {
       // Point the Meal Plan tab at the day we just added to, so the new meal is
       // visible immediately even when it falls outside the week currently shown.
       widget.mealPlanController.selectDate(_selectedDay);
-      if (mounted) Navigator.pop(context);
+      if (mounted) Get.back();
       CustomSnackbar.show(
         title: 'added_to_meal'.trParams({'meal': _selectedMealType}),
         message: 'recipe_added_to_meal_plan'.trParams({
@@ -3481,7 +3481,7 @@ class _MealPlanPickerSheetState extends State<_MealPlanPickerSheet> {
                         size: 20,
                         color: _C.textMedium,
                       ),
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () => Get.back(),
                     ),
                   ],
                 ),
@@ -3760,7 +3760,7 @@ class _CookbookPickerSheetState extends State<CookbookPickerSheet> {
                 ),
                 const Spacer(),
                 GestureDetector(
-                  onTap: () => Navigator.pop(context),
+                  onTap: () => Get.back(),
                   child: Container(
                     width: 34,
                     height: 34,
@@ -4167,7 +4167,7 @@ class _VisibilityConfirmDialog extends StatelessWidget {
               children: [
                 Expanded(
                   child: GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () => Get.back(),
                     child: Container(
                       height: 48,
                       alignment: Alignment.center,

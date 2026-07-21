@@ -476,7 +476,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                 ),
                 const Spacer(),
                 GestureDetector(
-                  onTap: () => Navigator.pop(context),
+                  onTap: () => Get.back(),
                   behavior: HitTestBehavior.opaque,
                   child: Container(
                     width: 32,
@@ -638,7 +638,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
 
   Future<void> _shareVia(String mode) async {
     final text = _buildShareText();
-    Navigator.pop(context);
+    Get.back();
     switch (mode) {
       case 'copy':
         await Clipboard.setData(ClipboardData(text: text));
@@ -2127,7 +2127,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
               labelColor: _S.textDark,
               labelWeight: FontWeight.w600,
               onTap: () {
-                Navigator.pop(context);
+                Get.back();
                 _addMealToGroceries(meal);
               },
             ),
@@ -2145,7 +2145,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
               labelColor: const Color(0xFFE0481F),
               labelWeight: FontWeight.w700,
               onTap: () {
-                Navigator.pop(context);
+                Get.back();
                 controller.deleteMealPlanItem(meal.id);
                 CustomSnackbar.show(
                   title: 'removed'.tr,
@@ -2243,7 +2243,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
               children: [
                 Expanded(
                   child: GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () => Get.back(),
                     child: Container(
                       height: 48,
                       decoration: BoxDecoration(
@@ -2263,7 +2263,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                 Expanded(
                   child: GestureDetector(
                     onTap: () {
-                      Navigator.pop(context);
+                      Get.back();
                       controller.clearWeek();
                     },
                     child: Container(
@@ -2483,7 +2483,7 @@ class _AddMealSheetState extends State<_AddMealSheet> {
                       ),
                     ),
                     GestureDetector(
-                      onTap: () => Navigator.pop(context),
+                      onTap: () => Get.back(),
                       behavior: HitTestBehavior.opaque,
                       child: Container(
                         width: 32,
@@ -2565,7 +2565,7 @@ class _AddMealSheetState extends State<_AddMealSheet> {
               18 + MediaQuery.of(context).padding.bottom,
             ),
             child: GestureDetector(
-              onTap: () => Navigator.pop(context),
+              onTap: () => Get.back(),
               child: Container(
                 height: 52,
                 alignment: Alignment.center,

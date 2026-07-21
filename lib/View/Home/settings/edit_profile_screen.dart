@@ -233,8 +233,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               _field(
                 controller: _contactController,
                 keyboardType: TextInputType.phone,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(10),
+                ],
                 hint: 'add_phone_number'.tr,
-                inputFormatters: ValidationHelper.digitsOnly,
+
                 validator: (v) => ValidationHelper.phone(v, required: false),
               ),
               const SizedBox(height: 13),

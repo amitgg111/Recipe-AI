@@ -408,7 +408,7 @@ async function generateAndStoreRecipeImage(ai, recipe) {
         .replace(/(^-|-$)/g, "")
         .slice(0, 60) || "recipe";
     const fileName =
-      `recipe-images/${safeSeed}-${Date.now()}-` +
+      `recipe_images/${safeSeed}-${Date.now()}-` +
       `${Math.random().toString(36).slice(2, 8)}.png`;
     const file = bucket.file(fileName);
 
@@ -1052,7 +1052,7 @@ exports.analyzeRecipeImage = onCall(
                 .replace(/(^-|-$)/g, "")
                 .slice(0, 60) || "recipe";
             const fileName =
-              `recipe-images/${safeSeed}-${Date.now()}-` +
+              `recipe_images/${safeSeed}-${Date.now()}-` +
               `${Math.random().toString(36).slice(2, 8)}.jpg`;
             const file = bucket.file(fileName);
             const downloadToken = crypto.randomUUID();
