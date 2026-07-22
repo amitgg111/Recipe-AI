@@ -552,10 +552,18 @@ class RecipeImportService {
           return;
         }
 
+        // Upload the photo to Storage IN PARALLEL with the AI vision call —
+        // the bytes are ready up front, so the two overlap instead of the
+        // upload running after. .catchError keeps it from throwing if we bail
+        // on a non-recipe image (the upload just resolves to null then).
+        final uploadFuture = _uploadImageFile(
+          File(image.path),
+          uid,
+        ).catchError((_) => null);
+
         final recipeData = await getRecipeFromImage(File(image.path));
 
-        // Stop here if the image isn't a recipe — no upload, no dish-image
-        // fetch, no save (and no further AI calls).
+        // Stop here if the image isn't a recipe — no save, no further AI calls.
         if (!_isRecipeResult(recipeData)) {
           throw const _NotARecipeException(
             "This image isn't a recipe. Please go back and add a photo of a "
@@ -564,7 +572,7 @@ class RecipeImportService {
         }
         final recipe = SavedRecipe.fromGeminiResponse(recipeData);
 
-        final firebaseImageUrl = await _uploadImageFile(File(image.path), uid);
+        final firebaseImageUrl = await uploadFuture;
 
         await _saveRecipeAndNavigate(
           recipe: recipe,
