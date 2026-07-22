@@ -47,7 +47,7 @@ class RecipeImportService {
   }
 
   static Future<String> askGemini(String prompt) async {
-    final callable = FirebaseFunctions.instance.httpsCallable('askGemini');
+    final callable = FirebaseFunctions.instanceFor(region: 'asia-south1').httpsCallable('askGemini');
 
     final result = await callable.call({'prompt': prompt});
 
@@ -107,7 +107,7 @@ class RecipeImportService {
   static Future<Map<String, dynamic>> getRecipeFromImage(File image) async {
     final bytes = await image.readAsBytes();
 
-    final callable = FirebaseFunctions.instance.httpsCallable(
+    final callable = FirebaseFunctions.instanceFor(region: 'asia-south1').httpsCallable(
       'analyzeRecipeImage',
       // Backend allows 300s; the default 70s can abort a slow-but-successful
       // extraction and force a full retry.
@@ -129,7 +129,7 @@ class RecipeImportService {
     String? url,
     String? caption,
   }) async {
-    final callable = FirebaseFunctions.instance.httpsCallable(
+    final callable = FirebaseFunctions.instanceFor(region: 'asia-south1').httpsCallable(
       'extractRecipeFromSocialContent',
       options: HttpsCallableOptions(timeout: const Duration(seconds: 120)),
     );
@@ -161,7 +161,7 @@ class RecipeImportService {
       _ => 'video/mp4',
     };
 
-    final callable = FirebaseFunctions.instance.httpsCallable(
+    final callable = FirebaseFunctions.instanceFor(region: 'asia-south1').httpsCallable(
       'analyzeRecipeVideo',
       options: HttpsCallableOptions(timeout: const Duration(seconds: 300)),
     );
@@ -810,7 +810,7 @@ class RecipeImportService {
   static Future<Map<String, dynamic>> getRecipeFromName(
     String recipeName,
   ) async {
-    final callable = FirebaseFunctions.instance.httpsCallable(
+    final callable = FirebaseFunctions.instanceFor(region: 'asia-south1').httpsCallable(
       'generateRecipeFromName',
     );
 

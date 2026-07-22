@@ -1,4 +1,4 @@
-const {onCall} = require("firebase-functions/v2/https");
+const {onCall, HttpsError} = require("firebase-functions/v2/https");
 const {setGlobalOptions} = require("firebase-functions/v2");
 const {GoogleGenAI} = require("@google/genai");
 const admin = require("firebase-admin");
@@ -13,6 +13,10 @@ Object.assign(exports, require("./notifications"));
 
 setGlobalOptions({
   maxInstances: 10,
+  // Deploy in Mumbai for low latency to India-based users. Functions still
+  // serve users worldwide (just with higher RTT for far regions). The Flutter
+  // client must call FirebaseFunctions.instanceFor(region: "asia-south1").
+  region: "asia-south1",
 });
 
 // Reuse one client across warm invocations instead of rebuilding per request.
@@ -484,11 +488,11 @@ const RECIPE_IMAGE_PROMPT = `
 
   INGREDIENT FORMAT:
   - Every item MUST include quantity: "1 cup rice", "2 tablespoons oil"
-  - Minimum 8 ingredients total.
+  - List every ingredient the dish genuinely needs (usually 8 or more).
 
   INSTRUCTION FORMAT:
   - Each step is one clear actionable sentence.
-  - Minimum 5 steps total.
+  - Write every step the dish genuinely needs (usually 5 or more).
   - No step numbers in the text.
 
   FLAT LISTS:
@@ -514,6 +518,10 @@ exports.askGemini = onCall(
     },
     async (request) => {
       try {
+        if (!request.auth) {
+          throw new HttpsError(
+              "unauthenticated", "Please sign in to continue.");
+        }
         const prompt = request.data.prompt;
 
         if (!prompt) {
@@ -632,11 +640,11 @@ For simple single-component dishes use one section named "Main Recipe".
 
 INGREDIENT FORMAT:
 - Every item MUST include quantity: "1 cup rice", "2 tablespoons oil"
-- Minimum 8 ingredients total.
+- List every ingredient the dish genuinely needs (usually 8 or more).
 
 INSTRUCTION FORMAT:
 - Each step is one clear actionable sentence.
-- Minimum 5 steps total.
+- Write every step the dish genuinely needs (usually 5 or more).
 - No step numbers in the text.
 
 FLAT LISTS:
@@ -839,6 +847,10 @@ exports.extractRecipeFromSocialContent = onCall(
     },
     async (request) => {
       try {
+        if (!request.auth) {
+          throw new HttpsError(
+              "unauthenticated", "Please sign in to continue.");
+        }
         const url = String(request.data.url || "").trim();
         const caption = String(request.data.caption || "").trim();
 
@@ -913,6 +925,10 @@ exports.analyzeRecipeVideo = onCall(
     },
     async (request) => {
       try {
+        if (!request.auth) {
+          throw new HttpsError(
+              "unauthenticated", "Please sign in to continue.");
+        }
         const videoBase64 = request.data.video;
         const storagePath = String(request.data.storagePath || "").trim();
         const mimeType = String(request.data.mimeType || "video/mp4").trim();
@@ -935,6 +951,17 @@ exports.analyzeRecipeVideo = onCall(
 
         if (!videoData) {
           throw new Error("Video data or storagePath is required");
+        }
+
+        // Cap video size — video is by far the most expensive Gemini input
+        // (billed per second/token). base64 is ~1.37x the raw bytes, so ~40MB
+        // of base64 ≈ ~30MB video. Reject larger clips with a clear message.
+        if (videoData.length > 40 * 1024 * 1024) {
+          throw new HttpsError(
+              "invalid-argument",
+              "This video is too large to import. Please trim it to a short " +
+              "clip (under ~30 MB) and try again.",
+          );
         }
 
         const ai = getAI();
@@ -998,6 +1025,10 @@ exports.analyzeRecipeImage = onCall(
     },
     async (request) => {
       try {
+        if (!request.auth) {
+          throw new HttpsError(
+              "unauthenticated", "Please sign in to continue.");
+        }
         const imageBase64 = request.data.image;
 
         if (!imageBase64) {
@@ -1124,10 +1155,29 @@ exports.generateRecipeFromName = onCall(
     },
     async (request) => {
       try {
+        if (!request.auth) {
+          throw new HttpsError(
+              "unauthenticated", "Please sign in to continue.");
+        }
         const recipeName = String(request.data.recipeName || "").trim();
 
         if (!recipeName) {
           throw new Error("Recipe name is required");
+        }
+
+        // Cache: identical dish names otherwise re-run two AI calls (recipe +
+        // image) every time. Serve a stored copy when we already have one.
+        const cacheKey = recipeName.toLowerCase().replace(/[^a-z0-9]+/g, "-")
+            .replace(/(^-|-$)/g, "").slice(0, 120) || "recipe";
+        const cacheRef = admin.firestore()
+            .collection("aiRecipeCache").doc(cacheKey);
+        try {
+          const cachedDoc = await cacheRef.get();
+          if (cachedDoc.exists) {
+            return {success: true, recipe: cachedDoc.data(), cached: true};
+          }
+        } catch (cacheErr) {
+          console.error("recipe cache read failed:", cacheErr);
         }
 
         const ai = getAI();
@@ -1162,6 +1212,14 @@ Generate a complete recipe for: ${recipeName}
               recipeName.trim().toLowerCase().replace(/ /g, "-"),
           );
           recipe.imageUrl = `https://picsum.photos/seed/${seed}/800/600`;
+        }
+
+        // Store for next time (best-effort — a write failure must not break
+        // the import).
+        try {
+          await cacheRef.set(recipe);
+        } catch (cacheErr) {
+          console.error("recipe cache write failed:", cacheErr);
         }
 
         return {

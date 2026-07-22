@@ -409,7 +409,8 @@ class AuthService {
   /// unavailable / not deployed.
   static Future<bool> isEmailRegistered(String email) async {
     try {
-      final callable = FirebaseFunctions.instance.httpsCallable(
+      final callable =
+          FirebaseFunctions.instanceFor(region: 'asia-south1').httpsCallable(
         'checkEmailRegistered',
       );
       final res = await callable.call({'email': email.trim()});

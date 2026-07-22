@@ -164,8 +164,80 @@ class AiAssistantController extends GetxController {
 
   // ── AI swaps ────────────────────────────────────────────────────────────────
 
+  /// Common, near-deterministic substitutions served locally — no AI call.
+  /// Ordered specific-before-general (buttermilk before butter before milk) so
+  /// substring matching picks the right one.
+  static const Map<String, List<SwapOption>> _commonSwaps = {
+    'buttermilk': [
+      SwapOption(
+          replacement: '1 cup milk + 1 tbsp lemon juice',
+          note: 'Rest 5 minutes'),
+      SwapOption(
+          replacement: '1 cup plain yogurt, thinned with milk',
+          note: 'Similar tang'),
+    ],
+    'butter': [
+      SwapOption(
+          replacement: 'Equal amount olive oil',
+          note: 'Best for sautéing',
+          vegan: true),
+      SwapOption(
+          replacement: 'Equal amount coconut oil',
+          note: 'Best for baking',
+          vegan: true),
+    ],
+    'egg': [
+      SwapOption(
+          replacement: '1 tbsp ground flaxseed + 3 tbsp water',
+          note: 'Rest 5 minutes',
+          vegan: true),
+      SwapOption(
+          replacement: '1/4 cup unsweetened applesauce',
+          note: 'For baking',
+          vegan: true),
+    ],
+    'heavy cream': [
+      SwapOption(
+          replacement: '3/4 cup milk + 1/4 cup melted butter',
+          note: 'For cooking'),
+      SwapOption(
+          replacement: 'Equal amount coconut cream',
+          note: 'Dairy-free',
+          vegan: true),
+    ],
+    'sour cream': [
+      SwapOption(
+          replacement: 'Equal amount plain Greek yogurt', note: 'Same tang'),
+    ],
+    'sugar': [
+      SwapOption(
+          replacement: '3/4 cup honey (reduce other liquid slightly)',
+          note: 'Natural sweetener'),
+      SwapOption(
+          replacement: '3/4 cup maple syrup',
+          note: 'Reduce liquid a bit',
+          vegan: true),
+    ],
+    'milk': [
+      SwapOption(
+          replacement: 'Equal amount unsweetened almond milk',
+          note: 'Dairy-free',
+          vegan: true),
+      SwapOption(
+          replacement: 'Equal amount oat milk',
+          note: 'Creamier, dairy-free',
+          vegan: true),
+    ],
+  };
+
   Future<List<SwapOption>> suggestSwaps(
       RecipeModel recipe, String ingredientLine) async {
+    // Serve well-known swaps from the local table first — instant, no AI call.
+    final name = nameOf(ingredientLine).toLowerCase();
+    for (final entry in _commonSwaps.entries) {
+      if (name.contains(entry.key)) return entry.value;
+    }
+
     final prompt =
         'You are a helpful cooking assistant. The recipe is "${recipe.title}". '
         'A cook has run out of this ingredient: "$ingredientLine". '
