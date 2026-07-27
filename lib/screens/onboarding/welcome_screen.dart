@@ -30,8 +30,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   late final Animation<Offset> _subtitleSlide;
   late final Animation<double> _potFade;
   late final Animation<double> _potScale;
-  late final Animation<double> _buttonFade;
-  late final Animation<Offset> _buttonSlide;
+
   late final Animation<double> _loginFade;
   late final Animation<double> _sheenAnimation;
 
@@ -77,8 +76,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     _sheenAnimation = Tween<double>(begin: -1.0, end: 2.0).animate(
       CurvedAnimation(parent: _sheenController, curve: Curves.easeInOut),
     );
-    _buttonFade = _fade(0.70, 0.90);
-    _buttonSlide = _slide(const Offset(0, 0.3), 0.70, 0.90);
+
     _loginFade = _fade(0.82, 1.0);
 
     _entranceController.forward();

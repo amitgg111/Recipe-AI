@@ -8,7 +8,7 @@ import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_spacing.dart';
 import 'package:recipe_ai/theme/app_dimensions.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
-import 'package:recipe_ai/Service/import_with_image_api_calling_service.dart';
+
 import 'package:recipe_ai/View/Home/import_from_text_screen.dart';
 import 'package:recipe_ai/View/Home/import_from_web.dart';
 import 'package:recipe_ai/View/Home/recipe_editor_screen.dart';

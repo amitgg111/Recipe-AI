@@ -3389,13 +3389,13 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
     );
   }
 
-  Widget _weekArrow(Widget icon, VoidCallback? onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(width: 26, height: 52, child: Center(child: icon)),
-    );
-  }
+  // Widget _weekArrow(Widget icon, VoidCallback? onTap) {
+  //   return GestureDetector(
+  //     onTap: onTap,
+  //     behavior: HitTestBehavior.opaque,
+  //     child: SizedBox(width: 26, height: 52, child: Center(child: icon)),
+  //   );
+  // }
 
   // ── Meal section ──
 
