@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:recipe_ai/widgets/app_network_image.dart';
 import 'package:get/get.dart';
@@ -505,7 +506,11 @@ class _CookbooksScreenState extends State<CookbooksScreen>
             },
           ),
           GestureDetector(
-            onTap: () => _showAddMenu(context),
+            onTap: () {
+              HapticFeedback.mediumImpact();
+
+              _showAddMenu(context);
+            },
             child: Container(
               width: AppDimensions.fabSize,
               height: AppDimensions.fabSize,

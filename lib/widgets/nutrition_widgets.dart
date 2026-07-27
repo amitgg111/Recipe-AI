@@ -31,19 +31,19 @@ class NutritionPalette {
   static const ingredientBarTrack = Color(0xFFF0EADD);
   static const ingredientIconBg = Color(0xFFF4EEFD);
 
-  static TextStyle font(
-          {required double size,
-          FontWeight weight = FontWeight.w600,
-          Color color = ink,
-          double? height,
-          double? letterSpacing}) =>
-      GoogleFonts.plusJakartaSans(
-        fontSize: size,
-        fontWeight: weight,
-        color: color,
-        height: height,
-        letterSpacing: letterSpacing,
-      );
+  static TextStyle font({
+    required double size,
+    FontWeight weight = FontWeight.w600,
+    Color color = ink,
+    double? height,
+    double? letterSpacing,
+  }) => GoogleFonts.plusJakartaSans(
+    fontSize: size,
+    fontWeight: weight,
+    color: color,
+    height: height,
+    letterSpacing: letterSpacing,
+  );
 }
 
 /// Small "crown · PLUS" badge used in nutrition headers and cards.
@@ -73,9 +73,14 @@ class PlusPill extends StatelessWidget {
         children: [
           Icon(Icons.workspace_premium_rounded, size: 12, color: foreground),
           const SizedBox(width: 4),
-          Text('PLUS',
-              style: NutritionPalette.font(
-                  size: 10, weight: FontWeight.w800, color: foreground)),
+          Text(
+            'PLUS',
+            style: NutritionPalette.font(
+              size: 10,
+              weight: FontWeight.w800,
+              color: foreground,
+            ),
+          ),
         ],
       ),
     );
@@ -149,19 +154,23 @@ class NutritionRing extends StatelessWidget {
                 duration: const Duration(milliseconds: 900),
                 format: grouped,
                 style: NutritionPalette.font(
-                    size: valueFontSize,
-                    weight: FontWeight.w800,
-                    color: Colors.white,
-                    height: 1,
-                    letterSpacing: -1),
+                  size: valueFontSize,
+                  weight: FontWeight.w800,
+                  color: Colors.white,
+                  height: 1,
+                  letterSpacing: -1,
+                ),
               ),
               const SizedBox(height: 4),
-              Text(label,
-                  style: NutritionPalette.font(
-                      size: 11,
-                      weight: FontWeight.w700,
-                      color: Colors.white.withValues(alpha: 0.85),
-                      letterSpacing: 0.5)),
+              Text(
+                label,
+                style: NutritionPalette.font(
+                  size: 11,
+                  weight: FontWeight.w700,
+                  color: Colors.white.withValues(alpha: 0.85),
+                  letterSpacing: 0.5,
+                ),
+              ),
             ],
           ),
         ],
@@ -234,8 +243,10 @@ class MacroDonut extends StatelessWidget {
           Container(
             width: size * 0.73,
             height: size * 0.73,
-            decoration:
-                const BoxDecoration(shape: BoxShape.circle, color: Colors.white),
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+            ),
             alignment: Alignment.center,
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -244,16 +255,20 @@ class MacroDonut extends StatelessWidget {
                   value: calories,
                   format: (v) => v.round().toString(),
                   style: NutritionPalette.font(
-                      size: 21,
-                      weight: FontWeight.w800,
-                      color: NutritionPalette.ink,
-                      height: 1),
+                    size: 21,
+                    weight: FontWeight.w800,
+                    color: NutritionPalette.ink,
+                    height: 1,
+                  ),
                 ),
-                Text(unit,
-                    style: NutritionPalette.font(
-                        size: 10,
-                        weight: FontWeight.w700,
-                        color: NutritionPalette.noteGrey)),
+                Text(
+                  unit,
+                  style: NutritionPalette.font(
+                    size: 10,
+                    weight: FontWeight.w700,
+                    color: NutritionPalette.noteGrey,
+                  ),
+                ),
               ],
             ),
           ),
@@ -277,8 +292,7 @@ class _DonutPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final rect = Offset.zero & size;
     var start = -math.pi / 2;
-    final total =
-        fractions.fold<double>(0, (a, b) => a + (b.isNaN ? 0 : b));
+    final total = fractions.fold<double>(0, (a, b) => a + (b.isNaN ? 0 : b));
     final norm = total <= 0
         ? const [1 / 3, 1 / 3, 1 / 3]
         : fractions.map((f) => f / total).toList();
@@ -421,14 +435,22 @@ class MacroCard extends StatelessWidget {
             value: grams,
             format: (v) => '${v.toStringAsFixed(1)}g',
             style: NutritionPalette.font(
-                size: 20, weight: FontWeight.w800, color: NutritionPalette.ink),
+              size: 16,
+              weight: FontWeight.w800,
+
+              color: NutritionPalette.ink,
+            ),
+            maxLines: 1,
           ),
           const SizedBox(height: 2),
-          Text(label,
-              style: NutritionPalette.font(
-                  size: 11,
-                  weight: FontWeight.w700,
-                  color: NutritionPalette.macroLabel)),
+          Text(
+            label,
+            style: NutritionPalette.font(
+              size: 11,
+              weight: FontWeight.w700,
+              color: NutritionPalette.macroLabel,
+            ),
+          ),
           const SizedBox(height: 9),
           AnimatedBar(fraction: fraction, track: track, fill: fill),
         ],
@@ -459,24 +481,29 @@ class FactTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
       decoration: BoxDecoration(
         border: showDivider
-            ? const Border(
-                bottom: BorderSide(color: NutritionPalette.divider))
+            ? const Border(bottom: BorderSide(color: NutritionPalette.divider))
             : null,
       ),
       child: Row(
         children: [
           Expanded(
-            child: Text(label,
-                style: NutritionPalette.font(
-                    size: 14,
-                    weight: FontWeight.w600,
-                    color: NutritionPalette.factLabel)),
+            child: Text(
+              label,
+              style: NutritionPalette.font(
+                size: 14,
+                weight: FontWeight.w600,
+                color: NutritionPalette.factLabel,
+              ),
+            ),
           ),
           AnimatedCounter(
             value: value,
             format: format,
             style: NutritionPalette.font(
-                size: 14, weight: FontWeight.w800, color: NutritionPalette.ink),
+              size: 14,
+              weight: FontWeight.w800,
+              color: NutritionPalette.ink,
+            ),
           ),
         ],
       ),
@@ -505,8 +532,7 @@ class IngredientNutritionTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
       decoration: BoxDecoration(
         border: showDivider
-            ? const Border(
-                bottom: BorderSide(color: NutritionPalette.divider))
+            ? const Border(bottom: BorderSide(color: NutritionPalette.divider))
             : null,
       ),
       child: Column(
@@ -521,27 +547,34 @@ class IngredientNutritionTile extends StatelessWidget {
                   color: NutritionPalette.ingredientIconBg,
                   borderRadius: BorderRadius.circular(9),
                 ),
-                child: const Icon(Icons.shopping_basket_rounded,
-                    size: 16, color: NutritionPalette.purple),
+                child: const Icon(
+                  Icons.shopping_basket_rounded,
+                  size: 16,
+                  color: NutritionPalette.purple,
+                ),
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: TrText(name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: NutritionPalette.font(
-                        size: 14,
-                        weight: FontWeight.w700,
-                        color: NutritionPalette.ink)),
+                child: TrText(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: NutritionPalette.font(
+                    size: 14,
+                    weight: FontWeight.w700,
+                    color: NutritionPalette.ink,
+                  ),
+                ),
               ),
               const SizedBox(width: 8),
               AnimatedCounter(
                 value: kcal,
                 format: (v) => '${v.round()} kcal',
                 style: NutritionPalette.font(
-                    size: 14,
-                    weight: FontWeight.w800,
-                    color: NutritionPalette.purpleDeep),
+                  size: 14,
+                  weight: FontWeight.w800,
+                  color: NutritionPalette.purpleDeep,
+                ),
               ),
             ],
           ),
@@ -552,10 +585,9 @@ class IngredientNutritionTile extends StatelessWidget {
               fraction: fraction,
               minFraction: 0.03,
               track: NutritionPalette.ingredientBarTrack,
-              gradient: const LinearGradient(colors: [
-                NutritionPalette.purple,
-                NutritionPalette.purpleDark,
-              ]),
+              gradient: const LinearGradient(
+                colors: [NutritionPalette.purple, NutritionPalette.purpleDark],
+              ),
               height: 7,
               radius: 4,
               duration: const Duration(milliseconds: 700),
@@ -599,12 +631,20 @@ class NutritionButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(label,
-                style: NutritionPalette.font(
-                    size: 14, weight: FontWeight.w700, color: Colors.white)),
+            Text(
+              label,
+              style: NutritionPalette.font(
+                size: 14,
+                weight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
             const SizedBox(width: 8),
-            const Icon(Icons.chevron_right_rounded,
-                size: 20, color: Colors.white),
+            const Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: Colors.white,
+            ),
           ],
         ),
       ),
@@ -624,14 +664,21 @@ class NutritionDisclaimer extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.auto_awesome, size: 14, color: NutritionPalette.muted),
+          const Icon(
+            Icons.auto_awesome,
+            size: 14,
+            color: NutritionPalette.muted,
+          ),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(text,
-                style: NutritionPalette.font(
-                    size: 11.5,
-                    weight: FontWeight.w600,
-                    color: NutritionPalette.muted)),
+            child: Text(
+              text,
+              style: NutritionPalette.font(
+                size: 11.5,
+                weight: FontWeight.w600,
+                color: NutritionPalette.muted,
+              ),
+            ),
           ),
         ],
       ),

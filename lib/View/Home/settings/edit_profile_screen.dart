@@ -59,9 +59,52 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       return;
     }
 
+    final uid = AuthService.currentUser?.uid;
+
+    if (uid == null) {
+      CustomSnackbar.show(
+        title: 'Error',
+        message: 'User not found',
+        type: SnackbarType.error,
+      );
+      return;
+    }
+
     setState(() => _saving = true);
 
-    // તમારો existing save code...
+    try {
+      // Firebase Auth display name update
+      await FirebaseAuth.instance.currentUser?.updateDisplayName(
+        _nameController.text.trim(),
+      );
+
+      // Firestore profile data update
+      await FirebaseFirestore.instance.collection('users').doc(uid).set({
+        'contact': _contactController.text.trim(),
+        'bio': _bioController.text.trim(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      if (!mounted) return;
+
+      CustomSnackbar.show(
+        title: 'Success',
+        message: 'Profile updated successfully',
+        type: SnackbarType.success,
+      );
+
+      Get.back();
+    } catch (e) {
+      CustomSnackbar.show(
+        title: 'Error',
+        message: 'Failed to update profile',
+        type: SnackbarType.error,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _saving = false);
+      }
+    }
   }
 
   Future<void> _loadUserDoc() async {
@@ -88,54 +131,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _bioController.dispose();
     super.dispose();
   }
-
-  // Future<void> _save() async {
-  //   if (!(_formKey.currentState?.validate() ?? false)) return;
-
-  //   setState(() => _saving = true);
-  //   final name = _nameController.text.trim();
-
-  //   try {
-  //     // Source of truth = the users/{uid} document. This resolves against the
-  //     // local cache immediately (even offline), so it never blocks the UI.
-  //     final uid = AuthService.currentUser?.uid;
-  //     if (uid != null) {
-  //       await FirebaseFirestore.instance.collection('users').doc(uid).set({
-  //         'name': name,
-  //         'contact': _contactController.text.trim(),
-  //         'bio': _bioController.text.trim(),
-  //         'updatedAt': FieldValue.serverTimestamp(),
-  //       }, SetOptions(merge: true));
-  //     }
-  //     // Keep the local profile cache in sync.
-  //     await _profile.updateName(name);
-
-  //     // The FirebaseAuth display name + reload are network-only calls that can
-  //     // hang/throw offline — run them best-effort WITHOUT blocking, so Save
-  //     // always closes the screen and shows feedback.
-  //     final user = FirebaseAuth.instance.currentUser;
-  //     if (user != null && name.isNotEmpty && name != user.displayName) {
-  //       user.updateDisplayName(name).then((_) => user.reload()).ignore();
-  //     }
-  //   } catch (e) {
-  //     if (mounted) setState(() => _saving = false);
-  //     CustomSnackbar.show(
-  //       title: 'error'.tr,
-  //       message: e.toString(),
-  //       type: SnackbarType.error,
-  //     );
-  //     return;
-  //   }
-
-  //   if (!mounted) return;
-  //   setState(() => _saving = false);
-  //   Get.back();
-  //   CustomSnackbar.show(
-  //     title: 'success'.tr,
-  //     message: 'profile_updated_successfully'.tr,
-  //     type: SnackbarType.success,
-  //   );
-  // }
 
   @override
   Widget build(BuildContext context) {
@@ -446,8 +441,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               color: AppColors.textDark,
             ),
             decoration: InputDecoration(
-              isDense: true,
+              filled: false,
+              isDense: false,
               border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              disabledBorder: InputBorder.none,
+              errorBorder: InputBorder.none,
+              focusedErrorBorder: InputBorder.none,
               hintText: hint,
               hintStyle: const TextStyle(
                 fontSize: 15,

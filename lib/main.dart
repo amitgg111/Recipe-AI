@@ -63,7 +63,7 @@ import 'package:recipe_ai/screens/cookbooks/recipes_grid_screen.dart';
 
 // Import screens
 import 'package:recipe_ai/screens/import/import_picker_screen.dart';
-import 'package:recipe_ai/screens/import/import_processing_screen.dart';
+
 import 'package:recipe_ai/screens/import/import_complete_screen.dart';
 
 // Recipe screens
@@ -176,63 +176,165 @@ class MyApp extends StatelessWidget {
       getPages: [
         // Onboarding
         GetPage(name: AppRoutes.onboarding, page: () => const WelcomeScreen()),
-        GetPage(name: AppRoutes.socialProof, page: () => const SocialProofScreen()),
+        GetPage(
+          name: AppRoutes.socialProof,
+          page: () => const SocialProofScreen(),
+        ),
         GetPage(name: AppRoutes.goals, page: () => const GoalsScreen()),
-        GetPage(name: AppRoutes.thatsGreat, page: () => const ThatsGreatScreen()),
-        GetPage(name: AppRoutes.goalsHappen, page: () => const GoalsHappenScreen()),
-        GetPage(name: AppRoutes.whenToCook, page: () => const WhenToCookScreen()),
-        GetPage(name: AppRoutes.notifications, page: () => const NotificationsScreen()),
-        GetPage(name: AppRoutes.howDidYouHear, page: () => const HowDidYouHearScreen()),
-        GetPage(name: AppRoutes.recipeSources, page: () => const RecipeSourcesScreen()),
-        GetPage(name: AppRoutes.awesomeImport, page: () => const AwesomeImportScreen()),
+        GetPage(
+          name: AppRoutes.thatsGreat,
+          page: () => const ThatsGreatScreen(),
+        ),
+        GetPage(
+          name: AppRoutes.goalsHappen,
+          page: () => const GoalsHappenScreen(),
+        ),
+        GetPage(
+          name: AppRoutes.whenToCook,
+          page: () => const WhenToCookScreen(),
+        ),
+        GetPage(
+          name: AppRoutes.notifications,
+          page: () => const NotificationsScreen(),
+        ),
+        GetPage(
+          name: AppRoutes.howDidYouHear,
+          page: () => const HowDidYouHearScreen(),
+        ),
+        GetPage(
+          name: AppRoutes.recipeSources,
+          page: () => const RecipeSourcesScreen(),
+        ),
+        GetPage(
+          name: AppRoutes.awesomeImport,
+          page: () => const AwesomeImportScreen(),
+        ),
         GetPage(name: AppRoutes.age, page: () => const AgeScreen()),
         GetPage(name: AppRoutes.settingUp, page: () => const SettingUpScreen()),
         GetPage(name: AppRoutes.plusIntro, page: () => const PlusIntroScreen()),
-        GetPage(name: AppRoutes.plusComparison, page: () => const PlusComparisonScreen()),
-        GetPage(name: AppRoutes.trialChooser, page: () => const TrialChooserScreen()),
+        GetPage(
+          name: AppRoutes.plusComparison,
+          page: () => const PlusComparisonScreen(),
+        ),
+        GetPage(
+          name: AppRoutes.trialChooser,
+          page: () => const TrialChooserScreen(),
+        ),
 
         // Auth
-        GetPage(name: AppRoutes.createAccount, page: () => const CreateAccountScreen()),
+        GetPage(
+          name: AppRoutes.createAccount,
+          page: () => const CreateAccountScreen(),
+        ),
         GetPage(name: AppRoutes.login, page: () => const LoginScreen()),
         GetPage(name: AppRoutes.signup, page: () => const SignUpScreen()),
-        GetPage(name: AppRoutes.forgotPassword, page: () => const ForgotPasswordScreen()),
+        GetPage(
+          name: AppRoutes.forgotPassword,
+          page: () => const ForgotPasswordScreen(),
+        ),
 
         // Cookbooks
-        GetPage(name: AppRoutes.cookbooksEmpty, page: () => const CookbooksEmptyScreen()),
-        GetPage(name: AppRoutes.cookbooksHome, page: () => const CookbooksHomeScreen()),
-        GetPage(name: AppRoutes.cookbookDetail, page: () => const CookbookDetailScreen()),
-        GetPage(name: AppRoutes.cookbookDetailEmpty, page: () => const CookbookDetailEmptyScreen()),
+        GetPage(
+          name: AppRoutes.cookbooksEmpty,
+          page: () => const CookbooksEmptyScreen(),
+        ),
+        GetPage(
+          name: AppRoutes.cookbooksHome,
+          page: () => const CookbooksHomeScreen(),
+        ),
+        GetPage(
+          name: AppRoutes.cookbookDetail,
+          page: () => const CookbookDetailScreen(),
+        ),
+        GetPage(
+          name: AppRoutes.cookbookDetailEmpty,
+          page: () => const CookbookDetailEmptyScreen(),
+        ),
 
         // Cookbook variants
-        GetPage(name: AppRoutes.recipesGrid, page: () => const RecipesGridScreen()),
+        GetPage(
+          name: AppRoutes.recipesGrid,
+          page: () => const RecipesGridScreen(),
+        ),
 
         // Import
-        GetPage(name: AppRoutes.importPicker, page: () => const ImportPickerScreen()),
-        GetPage(name: AppRoutes.importProcessing, page: () => const ImportProcessingScreen()),
-        GetPage(name: AppRoutes.importComplete, page: () => const ImportCompleteScreen()),
+        GetPage(
+          name: AppRoutes.importPicker,
+          page: () => const ImportPickerScreen(),
+        ),
+
+        GetPage(
+          name: AppRoutes.importComplete,
+          page: () => const ImportCompleteScreen(),
+        ),
 
         // Recipe
-        GetPage(name: AppRoutes.recipeDetailView, page: () => const RecipeDetailViewScreen()),
-        GetPage(name: AppRoutes.recipeDetailEdit, page: () => const RecipeDetailEditScreen()),
+        GetPage(
+          name: AppRoutes.recipeDetailView,
+          page: () => const RecipeDetailViewScreen(),
+        ),
+        GetPage(
+          name: AppRoutes.recipeDetailEdit,
+          page: () => const RecipeDetailEditScreen(),
+        ),
 
         // Cook Mode
-        GetPage(name: AppRoutes.cookModeStep, page: () => const CookModeStepScreen()),
-        GetPage(name: AppRoutes.cookModeTimer, page: () => const CookModeTimerScreen()),
-        GetPage(name: AppRoutes.cookModePaused, page: () => const CookModePausedScreen()),
-        GetPage(name: AppRoutes.cookModeChip, page: () => const CookModeChipScreen()),
-        GetPage(name: AppRoutes.cookModeIngredients, page: () => const CookModeIngredientsScreen()),
-        GetPage(name: AppRoutes.cookModeTimerDone, page: () => const CookModeTimerDoneScreen()),
-        GetPage(name: AppRoutes.cookModeAllTimers, page: () => const CookModeAllTimersScreen()),
-        GetPage(name: AppRoutes.cookModeLockNotification, page: () => const CookModeLockNotification()),
-        GetPage(name: AppRoutes.cookModeFinish, page: () => const CookModeFinishScreen()),
+        GetPage(
+          name: AppRoutes.cookModeStep,
+          page: () => const CookModeStepScreen(),
+        ),
+        GetPage(
+          name: AppRoutes.cookModeTimer,
+          page: () => const CookModeTimerScreen(),
+        ),
+        GetPage(
+          name: AppRoutes.cookModePaused,
+          page: () => const CookModePausedScreen(),
+        ),
+        GetPage(
+          name: AppRoutes.cookModeChip,
+          page: () => const CookModeChipScreen(),
+        ),
+        GetPage(
+          name: AppRoutes.cookModeIngredients,
+          page: () => const CookModeIngredientsScreen(),
+        ),
+        GetPage(
+          name: AppRoutes.cookModeTimerDone,
+          page: () => const CookModeTimerDoneScreen(),
+        ),
+        GetPage(
+          name: AppRoutes.cookModeAllTimers,
+          page: () => const CookModeAllTimersScreen(),
+        ),
+        GetPage(
+          name: AppRoutes.cookModeLockNotification,
+          page: () => const CookModeLockNotification(),
+        ),
+        GetPage(
+          name: AppRoutes.cookModeFinish,
+          page: () => const CookModeFinishScreen(),
+        ),
 
         // Discover
-        GetPage(name: AppRoutes.discoverFeed, page: () => const DiscoverFeedScreen()),
-        GetPage(name: AppRoutes.publicRecipe, page: () => const PublicRecipeScreen()),
+        GetPage(
+          name: AppRoutes.discoverFeed,
+          page: () => const DiscoverFeedScreen(),
+        ),
+        GetPage(
+          name: AppRoutes.publicRecipe,
+          page: () => const PublicRecipeScreen(),
+        ),
 
         // Meal Plan
-        GetPage(name: AppRoutes.mealPlanDay, page: () => const MealPlanDayScreen()),
-        GetPage(name: AppRoutes.mealPlanCalendar, page: () => const MealPlanCalendarScreen()),
+        GetPage(
+          name: AppRoutes.mealPlanDay,
+          page: () => const MealPlanDayScreen(),
+        ),
+        GetPage(
+          name: AppRoutes.mealPlanCalendar,
+          page: () => const MealPlanCalendarScreen(),
+        ),
       ],
     );
   }

@@ -132,25 +132,6 @@ class CookbookRecipesScreen extends StatelessWidget {
       transitionBuilder: (ctx, anim, __, child) {
         return Stack(
           children: [
-            // Pointer triangle
-            Positioned(
-              top: topOffset - 6,
-              right: 30,
-              child: Transform.rotate(
-                angle: 0.785398, // 45°
-                child: Container(
-                  width: 16,
-                  height: 16,
-                  decoration: const BoxDecoration(
-                    color: AppColors.surface,
-                    border: Border(
-                      left: BorderSide(color: Color(0xFFEFE6D6)),
-                      top: BorderSide(color: Color(0xFFEFE6D6)),
-                    ),
-                  ),
-                ),
-              ),
-            ),
             // Menu card
             Positioned(
               top: topOffset,

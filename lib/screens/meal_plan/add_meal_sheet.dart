@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
@@ -200,6 +201,7 @@ class _AddMealSheetState extends State<AddMealSheet> {
 
     return GestureDetector(
       onTap: () => setState(() {
+        HapticFeedback.heavyImpact();
         _selectedRecipe = selected ? null : index;
       }),
       child: Container(

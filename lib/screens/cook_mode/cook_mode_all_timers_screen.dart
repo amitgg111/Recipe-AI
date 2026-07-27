@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
@@ -188,7 +189,9 @@ class CookModeAllTimersScreen extends StatelessWidget {
                     const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF5EFE3),
                         borderRadius: BorderRadius.circular(6),
@@ -219,7 +222,11 @@ class CookModeAllTimersScreen extends StatelessWidget {
               ],
             ),
           ),
-          const Icon(Icons.chevron_right, size: 20, color: AppColors.textMedium),
+          const Icon(
+            Icons.chevron_right,
+            size: 20,
+            color: AppColors.textMedium,
+          ),
         ],
       ),
     );
@@ -238,15 +245,26 @@ class CookModeAllTimersScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: const Color(0xFFE7DECE), width: 1),
             ),
-            child: const Icon(Icons.arrow_back, size: 20, color: AppColors.textDark),
+            child: const Icon(
+              Icons.arrow_back,
+              size: 20,
+              color: AppColors.textDark,
+            ),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: PrimaryButton(
             label: 'next_step'.tr,
-            leadingIcon: const Icon(Icons.arrow_forward, size: 18, color: Colors.white),
-            onPressed: onNext,
+            leadingIcon: const Icon(
+              Icons.arrow_forward,
+              size: 18,
+              color: Colors.white,
+            ),
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              onNext!();
+            },
           ),
         ),
       ],

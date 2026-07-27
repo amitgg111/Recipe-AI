@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show listEquals;
-import 'package:recipe_ai/screens/import/add_cookbook_sheet.dart';
+
 import 'package:recipe_ai/screens/recipe/export_pdf_sheet.dart';
 import 'package:recipe_ai/widgets/app_logo.dart';
 import 'package:recipe_ai/widgets/app_network_image.dart';
@@ -1220,15 +1220,54 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               style: _font(12.5, FontWeight.w700, const Color(0xFF5B3E8C)),
             ),
           ),
+
+          // Container(
+          //   padding: const EdgeInsets.all(2),
+          //   decoration: BoxDecoration(
+          //     color: Colors.white,
+          //     borderRadius: BorderRadius.circular(9),
+          //   ),
+          //   child: Row(
+          //     mainAxisSize: MainAxisSize.min,
+          //     children: [_unitChip('US', isUS), _unitChip('Metric', !isUS)],
+          //   ),
+          // ),
           Container(
+            width: 116,
+            height: 32,
             padding: const EdgeInsets.all(2),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(9),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [_unitChip('US', isUS), _unitChip('Metric', !isUS)],
+            child: Stack(
+              children: [
+                // Sliding purple background
+                AnimatedAlign(
+                  duration: const Duration(milliseconds: 500),
+                  curve: Curves.easeOutCubic,
+                  alignment: isUS
+                      ? Alignment.centerLeft
+                      : Alignment.centerRight,
+                  child: Container(
+                    width: isUS ? 36 : 75,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: _C.purple,
+                      borderRadius: BorderRadius.circular(7),
+                    ),
+                  ),
+                ),
+
+                // Labels
+                Row(
+                  children: [
+                    Expanded(child: _unitChip('US', isUS)),
+
+                    Expanded(flex: 2, child: _unitChip('Metric', !isUS)),
+                  ],
+                ),
+              ],
             ),
           ),
         ],
@@ -1238,23 +1277,43 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
   /// One segment of the functional US/Metric switcher. Persists the choice
   /// globally through SettingsController so every screen reacts.
+  // Widget _unitChip(String label, bool selected) {
+  //   return GestureDetector(
+  //     onTap: () => _settings.setUnits(label),
+  //     behavior: HitTestBehavior.opaque,
+  //     child: AnimatedContainer(
+  //       duration: const Duration(milliseconds: 180),
+  //       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+  //       decoration: BoxDecoration(
+  //         color: selected ? _C.purple : Colors.transparent,
+  //         borderRadius: BorderRadius.circular(7),
+  //       ),
+  //       child: Text(
+  //         label,
+  //         style: _font(
+  //           11,
+  //           selected ? FontWeight.w800 : FontWeight.w700,
+  //           selected ? Colors.white : const Color(0xFF9A938A),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
   Widget _unitChip(String label, bool selected) {
     return GestureDetector(
       onTap: () => _settings.setUnits(label),
       behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
-        decoration: BoxDecoration(
-          color: selected ? _C.purple : Colors.transparent,
-          borderRadius: BorderRadius.circular(7),
-        ),
-        child: Text(
-          label,
-          style: _font(
-            11,
-            selected ? FontWeight.w800 : FontWeight.w700,
-            selected ? Colors.white : const Color(0xFF9A938A),
+      child: SizedBox(
+        height: 28,
+        child: Center(
+          child: AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 180),
+            style: _font(
+              11,
+              selected ? FontWeight.w800 : FontWeight.w700,
+              selected ? Colors.white : const Color(0xFF9A938A),
+            ),
+            child: Text(label),
           ),
         ),
       ),
@@ -2838,24 +2897,6 @@ $appLink
         return Stack(
           children: [
             // Pointer arrow
-            Positioned(
-              top: top - 6,
-              right: 30,
-              child: Transform.rotate(
-                angle: 0.785398,
-                child: Container(
-                  width: 16,
-                  height: 16,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    border: Border(
-                      left: BorderSide(color: _C.border),
-                      top: BorderSide(color: _C.border),
-                    ),
-                  ),
-                ),
-              ),
-            ),
             Positioned(
               top: top,
               right: 20,

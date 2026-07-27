@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/gestures.dart';
 import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:flutter/material.dart';
@@ -280,20 +282,15 @@ class _LoginScreenState extends State<LoginScreen> {
           .collection('users')
           .doc(user.uid)
           .get();
-      final needsTrialChooser =
-          snap.data()?['trialChooserCompleted'] == false;
+      final needsTrialChooser = snap.data()?['trialChooserCompleted'] == false;
 
       Get.offAll(
-        () => needsTrialChooser
-            ? const TrialChooserScreen()
-            : const HomeScreen(),
+        () =>
+            needsTrialChooser ? const TrialChooserScreen() : const HomeScreen(),
         transition: Transition.noTransition,
       );
     } catch (_) {
-      Get.offAll(
-        () => const HomeScreen(),
-        transition: Transition.noTransition,
-      );
+      Get.offAll(() => const HomeScreen(), transition: Transition.noTransition);
     }
   }
 
@@ -745,12 +742,15 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
         const SizedBox(width: 10),
-        Expanded(
-          child: _SocialButton(
-            label: 'apple'.tr,
-            onTap: _isLoading ? null : _onAppleSignIn,
+        if (!Platform.isAndroid) ...[
+          const SizedBox(width: 10),
+          Expanded(
+            child: _SocialButton(
+              label: 'apple'.tr,
+              onTap: _isLoading ? null : _onAppleSignIn,
+            ),
           ),
-        ),
+        ],
       ],
     );
   }

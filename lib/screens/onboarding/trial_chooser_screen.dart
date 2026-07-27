@@ -230,10 +230,7 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
       }
       await _markTrialChooserCompleted();
       if (!mounted) return;
-      Get.offAll(
-        () => const HomeScreen(),
-        transition: Transition.noTransition,
-      );
+      Get.offAll(() => const HomeScreen(), transition: Transition.noTransition);
       return;
     }
 
@@ -279,14 +276,14 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
 
     await _markTrialChooserCompleted();
     if (!mounted) return;
-    Get.offAll(
-      () => const HomeScreen(),
-      transition: Transition.noTransition,
-    );
+    Get.offAll(() => const HomeScreen(), transition: Transition.noTransition);
   }
 
   Future<void> _markTrialChooserCompleted() async {
-    _box.write('trial_chooser_completed_${FirebaseAuth.instance.currentUser?.uid ?? "guest"}', true);
+    _box.write(
+      'trial_chooser_completed_${FirebaseAuth.instance.currentUser?.uid ?? "guest"}',
+      true,
+    );
 
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -371,34 +368,7 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
             ),
           ),
           // Close button: absolute top 14px, right 18px
-          Positioned(
-            top: 14,
-            right: 18,
-            child: GestureDetector(
-              onTap: () async {
-                await _markTrialChooserCompleted();
-                if (!mounted) return;
-                Get.offAll(
-                  () => const HomeScreen(),
-                  transition: Transition.noTransition,
-                );
-              },
-              child: Container(
-                width: 36,
-                height: 36,
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.92),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: const OnboardingLineIcon(
-                  'x',
-                  size: 20,
-                  color: AppColors.textDark,
-                ),
-              ),
-            ),
-          ),
+
           // "Healthy" tag: top 64, left 24, rotate -6deg
           Positioned(
             top: 64,
@@ -447,6 +417,34 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF5A3410),
                   ),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 35,
+            right: 18,
+            child: GestureDetector(
+              onTap: () async {
+                await _markTrialChooserCompleted();
+                if (!mounted) return;
+                Get.offAll(
+                  () => const HomeScreen(),
+                  transition: Transition.noTransition,
+                );
+              },
+              child: Container(
+                width: 36,
+                height: 36,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.92),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: const OnboardingLineIcon(
+                  'x',
+                  size: 20,
+                  color: AppColors.textDark,
                 ),
               ),
             ),

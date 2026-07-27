@@ -515,6 +515,16 @@ class SettingsScreen extends StatelessWidget {
       leadingIcon: OnboardingLineIcon(icon, size: 20, color: color),
       label: label,
       onTap: () {},
+      showChevron: false,
+      trailing: Container(
+        width: 26,
+        height: 26,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(Icons.check_rounded, size: 17, color: color),
+      ),
     );
   }
 

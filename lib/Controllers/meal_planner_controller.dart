@@ -254,7 +254,7 @@ class MealPlannerController extends GetxController {
   static const List<String> slots = ['Breakfast', 'Lunch', 'Dinner'];
   static const int days = 7;
   int get target =>
-      slots.length * _allowedDays.length; // was: slots.length * days
+      slots.length * allowedDays.length; // was: slots.length * days
 
   /// Only generate at most this many recipes via AI in one run — the plan is
   /// always completed (repeats fill any remainder) so we never storm the API.
@@ -274,7 +274,7 @@ class MealPlannerController extends GetxController {
   // ═══════════════════════════════════════════════════════════════════════════
   // GENERATE
   // ═══════════════════════════════════════════════════════════════════════════
-  List<int> _allowedDays = List.generate(days, (i) => i);
+  List<int> allowedDays = List.generate(days, (i) => i);
 
   DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
   bool _matchesCuisine(PlanRecipe r) {
@@ -307,8 +307,8 @@ class MealPlannerController extends GetxController {
     meals.clear();
     final planCtrl = Get.find<MealPlanController>();
     final weekStart = planCtrl.selectedWeekStart.value;
-    _allowedDays = _allowedDayIndices(weekStart);
-    if (_allowedDays.isEmpty) {
+    allowedDays = _allowedDayIndices(weekStart);
+    if (allowedDays.isEmpty) {
       // Entire visible week is already in the past — nothing to generate.
       meals.value = [];
       steps.value = [
@@ -559,7 +559,7 @@ class MealPlannerController extends GetxController {
       return _pool[_rand.nextInt(_pool.length)];
     }
 
-    for (final day in _allowedDays) {
+    for (final day in allowedDays) {
       final dayCuisines = <String>{};
       for (final slot in slots) {
         final r = pick(day, slot, dayCuisines)!;
@@ -585,7 +585,7 @@ class MealPlannerController extends GetxController {
   /// Swap a single meal for a different recipe from the pool (Cookbook first,
   /// then Community, then AI), avoiding this-day repeats.
   void shuffleMeal(int day, String slot) {
-    if (!_allowedDays.contains(day)) return; // never touch a past day
+    if (!allowedDays.contains(day)) return; // never touch a past day
 
     if (_pool.length < 2) return;
     final current = _mealAt(day, slot);
@@ -611,7 +611,7 @@ class MealPlannerController extends GetxController {
   }
 
   void shuffleDay(int day) {
-    if (!_allowedDays.contains(day)) return;
+    if (!allowedDays.contains(day)) return;
     for (final slot in slots) {
       shuffleMeal(day, slot);
     }
@@ -726,8 +726,8 @@ class MealPlannerController extends GetxController {
       // Recompute which days are still valid (date may have moved forward
       // since the draft was saved) and drop any meal that's now in the past.
       final planCtrl = Get.find<MealPlanController>();
-      _allowedDays = _allowedDayIndices(planCtrl.selectedWeekStart.value);
-      restored.removeWhere((m) => !_allowedDays.contains(m.day));
+      allowedDays = _allowedDayIndices(planCtrl.selectedWeekStart.value);
+      restored.removeWhere((m) => !allowedDays.contains(m.day));
 
       if (restored.isEmpty) return false;
 

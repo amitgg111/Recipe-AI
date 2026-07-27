@@ -149,19 +149,19 @@ class _CookbookDetailMenuScreenState extends State<CookbookDetailMenuScreen> {
 
   Widget _buildPopupMenu() {
     return Positioned(
-      top: 108,
+      top: 90,
       right: 22,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           // Triangle pointer
-          Padding(
-            padding: const EdgeInsets.only(right: 14),
-            child: CustomPaint(
-              size: const Size(16, 8),
-              painter: _TrianglePainter(),
-            ),
-          ),
+          // Padding(
+          //   padding: const EdgeInsets.only(right: 14),
+          //   child: CustomPaint(
+          //     size: const Size(16, 8),
+          //     painter: _TrianglePainter(),
+          //   ),
+          // ),
           // Menu card
           Container(
             width: 200,
@@ -285,26 +285,6 @@ class _CookbookDetailMenuScreenState extends State<CookbookDetailMenuScreen> {
       ),
     );
   }
-}
-
-class _TrianglePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.fill;
-
-    final path = Path()
-      ..moveTo(size.width / 2, 0)
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, size.height)
-      ..close();
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _RecipeData {

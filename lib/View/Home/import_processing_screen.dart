@@ -13,9 +13,10 @@ import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 /// gradient progress bar, and a live checklist.
 class ImportProcessingScreen extends StatefulWidget {
   final List<String> steps;
-
+  final Future<void> doneSignal;
   const ImportProcessingScreen({
     super.key,
+    required this.doneSignal,
     this.steps = const [
       'Found recipe title',
       'Extracting ingredients',
@@ -32,60 +33,97 @@ class ImportProcessingScreenState extends State<ImportProcessingScreen>
     with TickerProviderStateMixin {
   late final AnimationController _orbit;
   late final AnimationController _pulse;
-  late final AnimationController _bar;
+  AnimationController? _finishController;
 
-  int _activeStep = 0;
-  final List<_StepStatus> _status = [];
-  Timer? _advance;
+  Timer? _ticker;
+  int _elapsedMs = 0;
+  double _progress = 0.0; // 0..1, drives bar % and checkmarks
+  bool _finishing = false;
 
   static const _c1 = Color(0xFFFF8763);
   static const _c2 = Color(0xFFF2623E);
 
+  // How long each step "should" take before we've heard back from the
+  // server. All steps get the same share of time — no more fast-then-stuck.
+  static const int _msPerStep = 5200;
+
   @override
   void initState() {
     super.initState();
-    // orbit 6s linear infinite (HTML @keyframes orbit / orbitr).
     _orbit = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 6),
     )..repeat();
-    // ringpulse 2.2s ease-out infinite.
     _pulse = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2200),
+      duration: const Duration(milliseconds: 2500),
     )..repeat();
-    // barfill 3.2s (8%→88%). Ping-pong keeps the fill seamless (no snap-reset).
-    _bar = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 5200),
-    )..repeat(reverse: true);
 
-    for (var i = 0; i < widget.steps.length; i++) {
-      _status.add(i == 0 ? _StepStatus.inProgress : _StepStatus.pending);
-    }
-    _scheduleAdvance();
+    _startTicking();
+    widget.doneSignal.then((_) => _finish());
   }
 
-  void _scheduleAdvance() {
-    _advance = Timer(const Duration(milliseconds: 3600), () {
-      if (!mounted) return;
-      if (_activeStep < widget.steps.length - 1) {
-        setState(() {
-          _status[_activeStep] = _StepStatus.completed;
-          _activeStep++;
-          _status[_activeStep] = _StepStatus.inProgress;
-        });
-        _scheduleAdvance();
-      }
+  // void _startTicking() {
+  //   _ticker = Timer.periodic(const Duration(milliseconds: 200), (_) {
+  //     if (!mounted || _finishing) return;
+  //     _elapsedMs += 80;
+  //     setState(() => _progress = _computeProgress(_elapsedMs));
+  //   });
+  // }
+  void _startTicking() {
+    _ticker = Timer.periodic(const Duration(milliseconds: 50), (_) {
+      if (!mounted || _finishing) return;
+      _elapsedMs += 50;
+      setState(() => _progress = _computeProgress(_elapsedMs));
     });
+  }
+
+  // Linear ramp to 90% spread evenly across all steps; if the real call
+  // takes longer, keep creeping slowly towards 97% instead of freezing.
+  double _computeProgress(int elapsedMs) {
+    final totalRampMs = _msPerStep * widget.steps.length;
+    if (elapsedMs <= totalRampMs) {
+      return (elapsedMs / totalRampMs) * 0.90;
+    }
+    final extra = elapsedMs - totalRampMs;
+    final creep = 0.07 * (1 - math.exp(-extra / 15000));
+    return (0.90 + creep).clamp(0.0, 0.97);
+  }
+
+  Future<void> _finish() async {
+    if (!mounted || _finishing) return;
+    _ticker?.cancel();
+    final start = _progress;
+    setState(() => _finishing = true);
+
+    _finishController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 380),
+    );
+    final anim = Tween<double>(begin: start, end: 1.0).animate(
+      CurvedAnimation(parent: _finishController!, curve: Curves.easeOut),
+    );
+    anim.addListener(() {
+      if (mounted) setState(() => _progress = anim.value);
+    });
+    await _finishController!.forward();
+  }
+
+  _StepStatus _statusFor(int index) {
+    if (_finishing) return _StepStatus.completed;
+    final n = widget.steps.length;
+    final unit = 0.99 / n;
+    if (_progress >= unit * (index + 1)) return _StepStatus.completed;
+    if (_progress >= unit * index) return _StepStatus.inProgress;
+    return _StepStatus.pending;
   }
 
   @override
   void dispose() {
-    _advance?.cancel();
+    _ticker?.cancel();
+    _finishController?.dispose();
     _orbit.dispose();
     _pulse.dispose();
-    _bar.dispose();
     super.dispose();
   }
 
@@ -95,9 +133,6 @@ class ImportProcessingScreenState extends State<ImportProcessingScreen>
       canPop: false,
       child: Scaffold(
         backgroundColor: AppColors.background,
-        // A transient keyboard (carried over from the share / import flow) must
-        // not shrink this fixed layout; the scroll view also keeps it safe on
-        // very short screens.
         resizeToAvoidBottomInset: false,
         body: SafeArea(
           child: LayoutBuilder(
@@ -108,7 +143,6 @@ class ImportProcessingScreenState extends State<ImportProcessingScreen>
                   padding: const EdgeInsets.fromLTRB(28, 14, 28, 28),
                   child: Column(
                     children: [
-                      // Brand: app logo + name
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -122,10 +156,7 @@ class ImportProcessingScreenState extends State<ImportProcessingScreen>
                         ],
                       ),
                       const SizedBox(height: 38),
-
-                      // Food-themed AI scan animation
                       _scanAnimation(),
-
                       const SizedBox(height: 34),
                       Text(
                         'reading_your_recipe'.tr,
@@ -148,15 +179,13 @@ class ImportProcessingScreenState extends State<ImportProcessingScreen>
                         ),
                       ),
                       const SizedBox(height: 22),
-
                       _progressBar(),
-
                       const SizedBox(height: 22),
                       ...List.generate(
                         widget.steps.length,
                         (i) => Padding(
                           padding: const EdgeInsets.only(bottom: 12),
-                          child: _checkRow(widget.steps[i], _status[i]),
+                          child: _checkRow(widget.steps[i], _statusFor(i)),
                         ),
                       ),
                       const SizedBox(height: 28),
@@ -452,48 +481,156 @@ class ImportProcessingScreenState extends State<ImportProcessingScreen>
 
   // ─── Progress bar ─────────────────────────────────────────────────────────
 
+  // Widget _progressBar() {
+  //   final pct = (_progress * 100).clamp(0, 100).round();
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.end,
+  //     children: [
+  //       Padding(
+  //         padding: const EdgeInsets.only(bottom: 6),
+  //         child: Text(
+  //           '$pct%',
+  //           style: GoogleFonts.plusJakartaSans(
+  //             fontSize: 12,
+  //             fontWeight: FontWeight.w700,
+  //             color: AppColors.textMedium,
+  //           ),
+  //         ),
+  //       ),
+  //       ClipRRect(
+  //         borderRadius: BorderRadius.circular(5),
+  //         child: Container(
+  //           height: 8,
+  //           width: double.infinity,
+  //           color: const Color(0xFFEEE3D2),
+  //           child: Align(
+  //             alignment: Alignment.centerLeft,
+  //             child: FractionallySizedBox(
+  //               widthFactor: _progress.clamp(0.0, 1.0),
+  //               child: Container(
+  //                 decoration: BoxDecoration(
+  //                   gradient: const LinearGradient(colors: [_c1, _c2]),
+  //                   borderRadius: BorderRadius.circular(5),
+  //                 ),
+  //               ),
+  //             ),
+  //           ),
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
   Widget _progressBar() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(5),
-      child: Container(
-        height: 8,
-        color: const Color(0xFFEEE3D2),
-        child: AnimatedBuilder(
-          animation: _bar,
-          builder: (_, __) {
-            final t = Curves.easeInOut.transform(_bar.value);
-            return Align(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: TweenAnimationBuilder<double>(
+            tween: Tween<double>(end: _progress),
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOut,
+            builder: (_, value, __) => Text(
+              '${(value * 100).clamp(0, 100).round()}%',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textMedium,
+              ),
+            ),
+          ),
+        ),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(5),
+          child: Container(
+            height: 8,
+            width: double.infinity,
+            color: const Color(0xFFEEE3D2),
+            child: Align(
               alignment: Alignment.centerLeft,
-              child: FractionallySizedBox(
-                widthFactor: 0.08 + t * 0.80, // 8% → 88%
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(colors: [_c1, _c2]),
-                    borderRadius: BorderRadius.circular(5),
+              child: TweenAnimationBuilder<double>(
+                tween: Tween<double>(end: _progress.clamp(0.0, 1.0)),
+                duration: const Duration(milliseconds: 320),
+                curve: Curves.easeOut,
+                builder: (_, value, __) => FractionallySizedBox(
+                  widthFactor: value,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(colors: [_c1, _c2]),
+                      borderRadius: BorderRadius.circular(5),
+                    ),
                   ),
                 ),
               ),
-            );
-          },
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 
   // ─── Checklist row ─────────────────────────────────────────────────────────
 
+  // Widget _checkRow(String label, _StepStatus status) {
+  //   late Widget icon;
+  //   switch (status) {
+  //     case _StepStatus.completed:
+  //       // green pill + check (HTML #DBF0E7 / #1F7A5E)
+  //       icon = _pill(
+  //         const Color(0xFFDBF0E7),
+  //         const OnboardingLineIcon('check', color: Color(0xFF1F7A5E), size: 15),
+  //       );
+  //       break;
+  //     case _StepStatus.inProgress:
+  //       // orange pill + clock (HTML #FCE3DB / #F2623E)
+  //       icon = _pill(
+  //         const Color(0xFFFCE3DB),
+  //         const OnboardingLineIcon('clock', color: Color(0xFFF2623E), size: 15),
+  //       );
+  //       break;
+  //     case _StepStatus.pending:
+  //       icon = Container(
+  //         width: 26,
+  //         height: 26,
+  //         decoration: BoxDecoration(
+  //           shape: BoxShape.circle,
+  //           border: Border.all(color: AppColors.surfaceBorder, width: 2),
+  //         ),
+  //       );
+  //       break;
+  //   }
+
+  //   return Row(
+  //     children: [
+  //       icon,
+  //       const SizedBox(width: 11),
+  //       Expanded(
+  //         child: Text(
+  //           label,
+  //           style: GoogleFonts.plusJakartaSans(
+  //             fontSize: 14,
+  //             fontWeight: status == _StepStatus.pending
+  //                 ? FontWeight.w500
+  //                 : FontWeight.w700,
+  //             color: status == _StepStatus.pending
+  //                 ? AppColors.textHint
+  //                 : const Color(0xFF2A211B),
+  //           ),
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
   Widget _checkRow(String label, _StepStatus status) {
     late Widget icon;
     switch (status) {
       case _StepStatus.completed:
-        // green pill + check (HTML #DBF0E7 / #1F7A5E)
         icon = _pill(
           const Color(0xFFDBF0E7),
           const OnboardingLineIcon('check', color: Color(0xFF1F7A5E), size: 15),
         );
         break;
       case _StepStatus.inProgress:
-        // orange pill + clock (HTML #FCE3DB / #F2623E)
         icon = _pill(
           const Color(0xFFFCE3DB),
           const OnboardingLineIcon('clock', color: Color(0xFFF2623E), size: 15),
@@ -513,11 +650,20 @@ class ImportProcessingScreenState extends State<ImportProcessingScreen>
 
     return Row(
       children: [
-        icon,
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 260),
+          switchInCurve: Curves.easeOut,
+          switchOutCurve: Curves.easeIn,
+          transitionBuilder: (child, animation) => ScaleTransition(
+            scale: animation,
+            child: FadeTransition(opacity: animation, child: child),
+          ),
+          child: KeyedSubtree(key: ValueKey(status), child: icon),
+        ),
         const SizedBox(width: 11),
         Expanded(
-          child: Text(
-            label,
+          child: AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 260),
             style: GoogleFonts.plusJakartaSans(
               fontSize: 14,
               fontWeight: status == _StepStatus.pending
@@ -527,6 +673,7 @@ class ImportProcessingScreenState extends State<ImportProcessingScreen>
                   ? AppColors.textHint
                   : const Color(0xFF2A211B),
             ),
+            child: Text(label),
           ),
         ),
       ],

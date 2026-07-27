@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
@@ -53,7 +54,10 @@ class AppBottomNav extends StatelessWidget {
                 icon: item.icon,
                 label: item.label,
                 isActive: isActive,
-                onTap: () => onTap(index),
+                onTap: () {
+                  HapticFeedback.mediumImpact();
+                  onTap(index);
+                },
               );
             }),
           ),

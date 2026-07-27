@@ -102,12 +102,13 @@ class GroceryStore extends GetxController {
         .collection('groceries')
         .snapshots()
         .listen((snapshot) {
-          final loaded = snapshot.docs
-              .map((doc) => GroceryItem.fromMap(doc.data()))
-              .toList()
-            // Restore the saved order — Firestore returns docs by id, which is
-            // random after a delete-and-re-add, so sort by the persisted index.
-            ..sort((a, b) => a.order.compareTo(b.order));
+          final loaded =
+              snapshot.docs
+                  .map((doc) => GroceryItem.fromMap(doc.data()))
+                  .toList()
+                // Restore the saved order — Firestore returns docs by id, which is
+                // random after a delete-and-re-add, so sort by the persisted index.
+                ..sort((a, b) => a.order.compareTo(b.order));
           items.value = loaded;
           _translateNames();
         });
@@ -371,7 +372,8 @@ class GroceryStore extends GetxController {
     'green bean': 'Produce',
     'french bean': 'Produce',
     'bean sprout': 'Produce',
-    'bean': 'Produce', // generic fresh beans; canned variants below win by length
+    'bean':
+        'Produce', // generic fresh beans; canned variants below win by length
     // Condiments / sauces / canned & jarred
     'olive': 'Pantry / Canned & Jarred',
     'cornstarch': 'Pantry / Canned & Jarred',
@@ -763,6 +765,9 @@ class GroceryStore extends GetxController {
     'soda': '🥤',
     'cola': '🥤',
     'cocktail': '🍹',
+    'poori': '🫓',
+    'puri': '🫓',
+    'bhatura': '🫓',
   };
 
   /// Keywords sorted longest-first so the most specific match wins.

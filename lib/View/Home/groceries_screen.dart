@@ -1177,8 +1177,9 @@ class GroceriesScreen extends StatelessWidget {
                     ],
 
                     TextSpan(
-                        text: GroceryStore().trName(item.name),
-                        style: nameStyle),
+                      text: GroceryStore().trName(item.name),
+                      style: nameStyle,
+                    ),
                   ],
                 ),
               ),
@@ -2007,65 +2008,127 @@ class GroceriesScreen extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class _MoreMenuButton extends StatelessWidget {
   final ValueChanged<String> onSelected;
+
   const _MoreMenuButton({required this.onSelected});
 
   @override
   Widget build(BuildContext context) {
     final key = GlobalKey();
+
     return GestureDetector(
       key: key,
       onTap: () {
         final box = key.currentContext?.findRenderObject() as RenderBox?;
         if (box == null) return;
+
         final pos = box.localToGlobal(Offset.zero);
-        showMenu<String>(
+        final screenW = MediaQuery.of(context).size.width;
+
+        const menuWidth = 275.0;
+
+        // Right side aligned with the button
+        final right = screenW - pos.dx - box.size.width;
+
+        showGeneralDialog(
           context: context,
-          color: _G.card,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          position: RelativeRect.fromLTRB(
-            pos.dx - 170,
-            pos.dy + box.size.height + 6,
-            pos.dx + box.size.width,
-            0,
-          ),
-          items: [
-            _mi(
-              'share',
-              Icons.ios_share_rounded,
-              'share_list'.tr,
-              iconWidget: const OnboardingLineIcon(
-                'share',
-                size: 19,
-                color: _G.textBody,
-              ),
-            ),
-            _mi(
-              'clearChecked',
-              Icons.check_circle_outline_rounded,
-              'clear_checked_items'.tr,
-              iconWidget: const OnboardingLineIcon(
-                'checkCircle',
-                size: 19,
-                color: _G.textBody,
-              ),
-            ),
-            _mi(
-              'clearAll',
-              Icons.delete_outline_rounded,
-              'clear_all'.tr,
-              destructive: true,
-              iconWidget: const OnboardingLineIcon(
-                'trash',
-                size: 19,
-                color: Color(0xFFE0481F),
-              ),
-            ),
-          ],
-        ).then((v) {
-          if (v != null) onSelected(v);
-        });
+          barrierDismissible: true,
+          barrierLabel: 'more_menu',
+          barrierColor: Colors.transparent,
+          transitionDuration: const Duration(milliseconds: 140),
+          pageBuilder: (_, __, ___) => const SizedBox.shrink(),
+          transitionBuilder: (ctx, anim, __, ___) {
+            return Stack(
+              children: [
+                Positioned(
+                  top: pos.dy + box.size.height + 6,
+                  right: right,
+                  child: FadeTransition(
+                    opacity: anim,
+                    child: ScaleTransition(
+                      scale: Tween<double>(begin: 0.92, end: 1.0).animate(
+                        CurvedAnimation(
+                          parent: anim,
+                          curve: Curves.easeOutBack,
+                        ),
+                      ),
+                      alignment: Alignment.topRight,
+                      child: Material(
+                        color: Colors.transparent,
+                        child: Container(
+                          width: menuWidth,
+                          decoration: BoxDecoration(
+                            color: _G.card,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: _G.chipBorder),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(
+                                  0xFF1E1B18,
+                                ).withValues(alpha: 0.30),
+                                blurRadius: 30,
+                                offset: const Offset(0, 16),
+                                spreadRadius: -8,
+                              ),
+                            ],
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _menuRow(
+                                icon: const OnboardingLineIcon(
+                                  'share',
+                                  size: 19,
+                                  color: _G.textBody,
+                                ),
+                                label: 'share_list'.tr,
+                                onTap: () {
+                                  Navigator.pop(ctx);
+                                  onSelected('share');
+                                },
+                              ),
+
+                              _menuDivider(),
+
+                              _menuRow(
+                                icon: const OnboardingLineIcon(
+                                  'checkCircle',
+                                  size: 19,
+                                  color: _G.textBody,
+                                ),
+                                label: 'clear_checked_items'.tr,
+                                onTap: () {
+                                  Navigator.pop(ctx);
+                                  onSelected('clearChecked');
+                                },
+                              ),
+
+                              _menuDivider(),
+
+                              _menuRow(
+                                icon: const OnboardingLineIcon(
+                                  'trash',
+                                  size: 19,
+                                  color: Color(0xFFE0481F),
+                                ),
+                                label: 'clear_all'.tr,
+                                color: const Color(0xFFE0481F),
+                                onTap: () {
+                                  Navigator.pop(ctx);
+                                  onSelected('clearAll');
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
       },
       child: Container(
         width: 38,
@@ -2081,32 +2144,35 @@ class _MoreMenuButton extends StatelessWidget {
     );
   }
 
-  PopupMenuItem<String> _mi(
-    String value,
-    IconData icon,
-    String label, {
-    bool destructive = false,
-    Widget? iconWidget,
+  Widget _menuRow({
+    required Widget icon,
+    required String label,
+    required VoidCallback onTap,
+    Color? color,
   }) {
-    final c = destructive ? const Color(0xFFE0481F) : _G.textBody;
-    return PopupMenuItem<String>(
-      value: value,
-      height: 46,
-      child: Row(
-        children: [
-          iconWidget ?? Icon(icon, size: 19, color: c),
-          const SizedBox(width: 12),
-          Text(
-            label,
-            style: _G.f(
-              15,
-              FontWeight.w600,
-              destructive ? const Color(0xFFE0481F) : _G.textDark,
-            ),
+    return InkWell(
+      onTap: onTap,
+      child: SizedBox(
+        height: 52,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              icon,
+              const SizedBox(width: 12),
+              Text(
+                label,
+                style: _G.f(15, FontWeight.w600, color ?? _G.textDark),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
+  }
+
+  Widget _menuDivider() {
+    return Divider(height: 1, thickness: 1, color: _G.chipBorder);
   }
 }
 

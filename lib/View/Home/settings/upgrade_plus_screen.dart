@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -73,8 +75,7 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
       null;
 
   bool get _yearlyHasTrial =>
-      _yearlyPkg == null ||
-      _yearlyPkg!.storeProduct.introductoryPrice != null;
+      _yearlyPkg == null || _yearlyPkg!.storeProduct.introductoryPrice != null;
 
   @override
   void initState() {
@@ -102,17 +103,21 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
   void _initAnimations() {
     // repeat(reverse:true) → half the CSS cycle so a full round-trip matches.
     _glow = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1300))
-      ..repeat(reverse: true);
+      vsync: this,
+      duration: const Duration(milliseconds: 1300),
+    )..repeat(reverse: true);
     _floatHat = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1700))
-      ..repeat(reverse: true);
+      vsync: this,
+      duration: const Duration(milliseconds: 1700),
+    )..repeat(reverse: true);
     _floatS1 = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1500))
-      ..repeat(reverse: true);
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
     _floatS2 = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1800))
-      ..repeat(reverse: true);
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..repeat(reverse: true);
   }
 
   @override
@@ -124,19 +129,19 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
     super.dispose();
   }
 
-  TextStyle _font(
-          {required double size,
-          FontWeight weight = FontWeight.w500,
-          Color color = _ink,
-          double? height,
-          double? letterSpacing}) =>
-      GoogleFonts.plusJakartaSans(
-        fontSize: size,
-        fontWeight: weight,
-        color: color,
-        height: height,
-        letterSpacing: letterSpacing,
-      );
+  TextStyle _font({
+    required double size,
+    FontWeight weight = FontWeight.w500,
+    Color color = _ink,
+    double? height,
+    double? letterSpacing,
+  }) => GoogleFonts.plusJakartaSans(
+    fontSize: size,
+    fontWeight: weight,
+    color: color,
+    height: height,
+    letterSpacing: letterSpacing,
+  );
 
   Future<void> _subscribe() async {
     if (_busy) return;
@@ -227,34 +232,14 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
               right: -50,
               child: _wash(200, const Color(0x21F2623E)),
             ),
+
             // ── content ──
             Positioned.fill(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(22, 2, 22, 28),
+                padding: const EdgeInsets.fromLTRB(22, 22, 22, 28),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // ── close ──
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: GestureDetector(
-                        onTap: () => Navigator.of(context).pop(),
-                        behavior: HitTestBehavior.opaque,
-                        child: Container(
-                          width: 36,
-                          height: 36,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: _ink.withValues(alpha: 0.06),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.close_rounded,
-                              size: 18, color: _grey),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-
                     // ── animated hat badge ──
                     Center(child: _badge()),
                     const SizedBox(height: 18),
@@ -263,7 +248,9 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
                     Center(
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 5),
+                          horizontal: 12,
+                          vertical: 5,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFEFE6FB),
                           borderRadius: BorderRadius.circular(20),
@@ -327,60 +314,62 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
                       // store data loads. (offering is read via _rc.monthly.)
                       _rc.offering.value;
                       return Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        // IntrinsicHeight gives the stretch Row a concrete
-                        // height (the SingleChildScrollView otherwise leaves
-                        // the vertical axis unbounded), so both cards share the
-                        // taller card's height and their bottoms line up.
-                        IntrinsicHeight(
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Expanded(
-                                child: PricingCard(
-                                  selected: _monthly,
-                                  title: _monthlyName,
-                                  price: _monthlyPrice,
-                                  note: 'per_month'.tr,
-                                  highlightNoteWhenSelected: false,
-                                  onTap: () => setState(() => _monthly = true),
+                        clipBehavior: Clip.none,
+                        children: [
+                          // IntrinsicHeight gives the stretch Row a concrete
+                          // height (the SingleChildScrollView otherwise leaves
+                          // the vertical axis unbounded), so both cards share the
+                          // taller card's height and their bottoms line up.
+                          IntrinsicHeight(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Expanded(
+                                  child: PricingCard(
+                                    selected: _monthly,
+                                    title: _monthlyName,
+                                    price: _monthlyPrice,
+                                    note: 'per_month'.tr,
+                                    highlightNoteWhenSelected: false,
+                                    onTap: () =>
+                                        setState(() => _monthly = true),
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 11),
-                              Expanded(
-                                child: PricingCard(
-                                  selected: !_monthly,
-                                  title: _yearlyName,
-                                  price: _yearlyPrice,
-                                  note: _yearlyPerMonth,
-                                  highlightNoteWhenSelected: true,
-                                  onTap: () => setState(() => _monthly = false),
+                                const SizedBox(width: 11),
+                                Expanded(
+                                  child: PricingCard(
+                                    selected: !_monthly,
+                                    title: _yearlyName,
+                                    price: _yearlyPrice,
+                                    note: _yearlyPerMonth,
+                                    highlightNoteWhenSelected: true,
+                                    onTap: () =>
+                                        setState(() => _monthly = false),
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                        // SAVE 30% badge — straddles the top edge of the
-                        // Yearly card (mirrors the Row's right half).
-                        Positioned(
-                          top: -10,
-                          left: 0,
-                          right: 0,
-                          child: Row(
-                            children: [
-                              const Expanded(child: SizedBox()),
-                              const SizedBox(width: 11),
-                              Expanded(
-                                child: Center(
-                                  child: _saveBadge(selected: !_monthly),
+                          // SAVE 30% badge — straddles the top edge of the
+                          // Yearly card (mirrors the Row's right half).
+                          Positioned(
+                            top: -10,
+                            left: 0,
+                            right: 0,
+                            child: Row(
+                              children: [
+                                const Expanded(child: SizedBox()),
+                                const SizedBox(width: 11),
+                                Expanded(
+                                  child: Center(
+                                    child: _saveBadge(selected: !_monthly),
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
-                    );
+                        ],
+                      );
                     }),
 
                     // ── yellow trial banner (only when Monthly is selected) ──
@@ -388,18 +377,22 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
                       const SizedBox(height: 14),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 13, vertical: 10),
+                          horizontal: 13,
+                          vertical: 10,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFFF6E6),
                           borderRadius: BorderRadius.circular(12),
-                          border:
-                              Border.all(color: const Color(0xFFF3E2BC)),
+                          border: Border.all(color: const Color(0xFFF3E2BC)),
                         ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(Icons.auto_awesome,
-                                size: 16, color: Color(0xFFC0860F)),
+                            const Icon(
+                              Icons.auto_awesome,
+                              size: 16,
+                              color: Color(0xFFC0860F),
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
@@ -426,9 +419,11 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
                       final label = _busy
                           ? 'please_wait'.tr
                           : _selectedHasTrial
-                              ? 'start_free_trial'.tr
-                              : 'subscribe_price_period'.trParams(
-                                  {'price': price, 'period': period});
+                          ? 'start_free_trial'.tr
+                          : 'subscribe_price_period'.trParams({
+                              'price': price,
+                              'period': period,
+                            });
                       return PrimaryGradientButton(
                         label: label,
                         onTap: _busy ? () {} : _subscribe,
@@ -442,8 +437,9 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
                       return Text(
                         _monthly
                             ? 'billed_monthly_note'.tr
-                            : 'billed_yearly_cancel_anytime'
-                                .trParams({'price': _yearlyPrice}),
+                            : 'billed_yearly_cancel_anytime'.trParams({
+                                'price': _yearlyPrice,
+                              }),
                         textAlign: TextAlign.center,
                         style: _font(
                           size: 12,
@@ -470,6 +466,29 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
                       ],
                     ),
                   ],
+                ),
+              ),
+            ),
+
+            Positioned(
+              top: 8,
+              right: 22,
+              child: GestureDetector(
+                onTap: () => Navigator.of(context).pop(),
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: _ink.withValues(alpha: 0.06),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.close_rounded,
+                    size: 18,
+                    color: _grey,
+                  ),
                 ),
               ),
             ),
@@ -506,7 +525,8 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
                   boxShadow: [
                     BoxShadow(
                       color: _purple.withValues(
-                          alpha: 0.5 + 0.35 * t), // .5 → .85
+                        alpha: 0.5 + 0.35 * t,
+                      ), // .5 → .85
                       blurRadius: 30 + 10 * t, // 30 → 40
                       offset: Offset(0, 16 + 2 * t), // 16 → 18
                       spreadRadius: -12 + 2 * t, // -12 → -10
@@ -536,8 +556,11 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
             right: 2,
             child: _floatY(
               _floatS1,
-              const Icon(Icons.auto_awesome,
-                  color: Color(0xFFF2A24C), size: 18),
+              const Icon(
+                Icons.auto_awesome,
+                color: Color(0xFFF2A24C),
+                size: 18,
+              ),
             ),
           ),
           Positioned(
@@ -569,68 +592,98 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
   /// The "SAVE 30%" pill. Gradient-filled/white when the yearly card is
   /// [selected]; pale lavender/purple otherwise (matches screens 71 / 71B).
   Widget _saveBadge({required bool selected}) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-        decoration: BoxDecoration(
-          gradient: selected
-              ? const LinearGradient(colors: [_grad1, _grad2])
-              : null,
-          color: selected ? null : const Color(0xFFEFE6FB),
-          borderRadius: BorderRadius.circular(9),
-        ),
-        child: Text(
-          'save_30'.tr,
-          style: _font(
-            size: 9,
-            weight: FontWeight.w800,
-            color: selected ? Colors.white : _purpleDeep,
-            letterSpacing: 0.3,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+    decoration: BoxDecoration(
+      gradient: selected
+          ? const LinearGradient(colors: [_grad1, _grad2])
+          : null,
+      color: selected ? null : const Color(0xFFEFE6FB),
+      borderRadius: BorderRadius.circular(9),
+    ),
+    child: Text(
+      'save_30'.tr,
+      style: _font(
+        size: 9,
+        weight: FontWeight.w800,
+        color: selected ? Colors.white : _purpleDeep,
+        letterSpacing: 0.3,
+      ),
+    ),
+  );
 
   Widget _wash(double size, Color color) => IgnorePointer(
-        child: Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(
-              colors: [color, color.withValues(alpha: 0)],
-              stops: const [0.0, 0.7],
-            ),
-          ),
+    child: Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [color, color.withValues(alpha: 0)],
+          stops: const [0.0, 0.7],
         ),
-      );
+      ),
+    ),
+  );
 
   Widget _footerLink(String s) => Text(
-        s,
-        style: _font(size: 12, weight: FontWeight.w700, color: _grey),
-      );
+    s,
+    style: _font(size: 12, weight: FontWeight.w700, color: _grey),
+  );
 
   Widget _dot() => Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16),
-        width: 3,
-        height: 3,
-        decoration: const BoxDecoration(
-          color: Color(0xFFC7BCAC),
-          shape: BoxShape.circle,
-        ),
-      );
+    margin: const EdgeInsets.symmetric(horizontal: 16),
+    width: 3,
+    height: 3,
+    decoration: const BoxDecoration(
+      color: Color(0xFFC7BCAC),
+      shape: BoxShape.circle,
+    ),
+  );
 
   // ── Feature data ────────────────────────────────────────────────────────────
   static const List<_Feature> _features = [
-    _Feature(Icons.auto_awesome_rounded, Color(0xFF8B5CF6), Color(0xFFF4EEFD),
-        'bnf_imports', 'bnf_imports_sub'),
-    _Feature(Icons.chat_bubble_rounded, Color(0xFF2D6FE0), Color(0xFFE4ECFB),
-        'plus_feature_ai_assistant', 'bnf_assistant_sub'),
-    _Feature(Icons.rice_bowl_rounded, Color(0xFF1F8A5B), Color(0xFFEAF6F0),
-        'nutrition_calculator', 'bnf_nutrition_sub'),
-    _Feature(Icons.calendar_month_rounded, Color(0xFFE0481F), Color(0xFFFCEAE3),
-        'ai_meal_plan_autofill', 'bnf_mealplan_sub'),
-    _Feature(Icons.straighten_rounded, Color(0xFFC0860F), Color(0xFFFCF3DE),
-        'feature_measurement_converter', 'feature_converter_subtitle'),
-    _Feature(Icons.picture_as_pdf_rounded, Color(0xFF8B5CF6), Color(0xFFF4EEFD),
-        'bnf_pdf', 'bnf_pdf_sub'),
+    _Feature(
+      Icons.auto_awesome_rounded,
+      Color(0xFF8B5CF6),
+      Color(0xFFF4EEFD),
+      'bnf_imports',
+      'bnf_imports_sub',
+    ),
+    _Feature(
+      Icons.chat_bubble_rounded,
+      Color(0xFF2D6FE0),
+      Color(0xFFE4ECFB),
+      'plus_feature_ai_assistant',
+      'bnf_assistant_sub',
+    ),
+    _Feature(
+      Icons.rice_bowl_rounded,
+      Color(0xFF1F8A5B),
+      Color(0xFFEAF6F0),
+      'nutrition_calculator',
+      'bnf_nutrition_sub',
+    ),
+    _Feature(
+      Icons.calendar_month_rounded,
+      Color(0xFFE0481F),
+      Color(0xFFFCEAE3),
+      'ai_meal_plan_autofill',
+      'bnf_mealplan_sub',
+    ),
+    _Feature(
+      Icons.straighten_rounded,
+      Color(0xFFC0860F),
+      Color(0xFFFCF3DE),
+      'feature_measurement_converter',
+      'feature_converter_subtitle',
+    ),
+    _Feature(
+      Icons.picture_as_pdf_rounded,
+      Color(0xFF8B5CF6),
+      Color(0xFFF4EEFD),
+      'bnf_pdf',
+      'bnf_pdf_sub',
+    ),
   ];
 }
 
@@ -642,7 +695,12 @@ class _Feature {
   final String title;
   final String subtitle;
   const _Feature(
-      this.icon, this.iconColor, this.iconBg, this.title, this.subtitle);
+    this.icon,
+    this.iconColor,
+    this.iconBg,
+    this.title,
+    this.subtitle,
+  );
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -722,8 +780,11 @@ class PremiumFeatureCard extends StatelessWidget {
               color: Color(0xFFEAF6F0),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.check_rounded,
-                size: 15, color: Color(0xFF1F8A5B)),
+            child: const Icon(
+              Icons.check_rounded,
+              size: 15,
+              color: Color(0xFF1F8A5B),
+            ),
           ),
         ],
       ),
@@ -845,9 +906,11 @@ class _PrimaryGradientButtonState extends State<PrimaryGradientButton>
   @override
   void initState() {
     super.initState();
+
     _sheen = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 3200))
-      ..repeat();
+      vsync: this,
+      duration: const Duration(milliseconds: 3200),
+    )..repeat();
   }
 
   @override
@@ -861,72 +924,65 @@ class _PrimaryGradientButtonState extends State<PrimaryGradientButton>
     return GestureDetector(
       onTap: widget.onTap,
       behavior: HitTestBehavior.opaque,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(15),
-        child: Container(
-          height: 54,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(15),
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF9466F2), Color(0xFF6D3BD4)],
+      child: Container(
+        height: 54,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF8B5CF6).withValues(alpha: 0.7),
+              blurRadius: 32,
+              offset: const Offset(0, 16),
+              spreadRadius: -12,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF8B5CF6).withValues(alpha: 0.7),
-                blurRadius: 32,
-                offset: const Offset(0, 16),
-                spreadRadius: -12,
-              ),
-            ],
-          ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(15),
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // shimmer strip
+              // Button background
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF9466F2), Color(0xFF6D3BD4)],
+                  ),
+                ),
+              ),
+
+              // Full button shimmer
               Positioned.fill(
-                child: LayoutBuilder(
-                  builder: (_, c) {
-                    const stripW = 60.0;
-                    final w = c.maxWidth;
-                    return AnimatedBuilder(
-                      animation: _sheen,
-                      builder: (_, __) {
-                        final t = _sheen.value;
-                        // hold off-screen for the first 60%, then sweep across.
-                        final p = t < 0.6 ? 0.0 : (t - 0.6) / 0.4;
-                        final dx = -stripW + p * (w + stripW);
-                        return Stack(
-                          children: [
-                            Positioned(
-                              left: dx,
-                              top: 0,
-                              bottom: 0,
-                              width: stripW,
-                              child: Transform.rotate(
-                                angle: 0.35,
-                                child: Container(
-                                  decoration: const BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        Color(0x00FFFFFF),
-                                        Color(0x80FFFFFF),
-                                        Color(0x00FFFFFF),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
+                child: AnimatedBuilder(
+                  animation: _sheen,
+                  builder: (_, __) {
+                    final t = _sheen.value;
+
+                    return IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment(-2.0 + (t * 4.0), -0.5),
+                            end: Alignment(-1.0 + (t * 4.0), 0.5),
+                            colors: const [
+                              Color(0x00FFFFFF),
+                              Color(0x25FFFFFF),
+                              Color(0x70FFFFFF),
+                              Color(0x25FFFFFF),
+                              Color(0x00FFFFFF),
+                            ],
+                            stops: const [0.0, 0.35, 0.5, 0.65, 1.0],
+                          ),
+                        ),
+                      ),
                     );
                   },
                 ),
               ),
+
+              // Button text
               Text(
                 widget.label,
                 style: GoogleFonts.plusJakartaSans(

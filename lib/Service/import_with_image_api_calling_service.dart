@@ -1,7 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
-import 'dart:ui' as ui;
+import 'dart:typed_data';
+
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:image/image.dart' as img;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -12,16 +16,13 @@ import 'package:image_picker/image_picker.dart';
 import 'package:recipe_ai/Controllers/home_controller.dart';
 import 'package:recipe_ai/Model/saved_recipe_from_web_model.dart';
 
-import 'package:camera/camera.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:recipe_ai/Model/recipe_section_model.dart';
 
 import 'package:recipe_ai/View/Home/import_processing_screen.dart';
 import 'package:recipe_ai/View/Home/import_complete_screen.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:recipe_ai/Service/subscription_service.dart';
-import 'package:recipe_ai/theme/app_colors.dart';
 
 /// Thrown when an imported image/post doesn't actually contain a recipe, so the
 /// import is aborted (no recipe generated, no save) with a clear message.
@@ -33,8 +34,6 @@ class _NotARecipeException implements Exception {
 }
 
 class RecipeImportService {
-  RecipeImportService._();
-
   static const int _maxInlineVideoBytes = 15 * 1024 * 1024;
 
   static final _urlPattern = RegExp(r'https?://[^\s]+', caseSensitive: false);
@@ -47,11 +46,13 @@ class RecipeImportService {
   }
 
   static Future<String> askGemini(String prompt) async {
+    log('start');
     final callable = FirebaseFunctions.instance.httpsCallable('askGemini');
 
     final result = await callable.call({'prompt': prompt});
 
     if (result.data['success'] == true) {
+      log('finis');
       return result.data['text'];
     }
 
@@ -62,6 +63,10 @@ class RecipeImportService {
     BuildContext context,
     File imageFile,
   ) async {
+    final totalStopwatch = Stopwatch()..start();
+
+    log('========== IMAGE IMPORT STARTED ==========');
+
     await _runImport(
       loadingSteps: const [
         'Reading your image…',
@@ -70,17 +75,49 @@ class RecipeImportService {
         'Saving your recipe…',
       ],
       errorMessage: 'Could not read recipe from image. Please try again.',
-      import: () async {
+      import: (doneSignal) async {
         final uid = AuthService.currentUser?.uid;
 
         if (uid == null) {
           throw Exception('You must be logged in to save recipes.');
         }
 
-        // Analyze image using Gemini
-        final recipeData = await getRecipeFromImage(imageFile);
+        log('[PARALLEL] AI + IMAGE UPLOAD STARTED');
 
-        // Check whether image actually contains a recipe
+        final aiStopwatch = Stopwatch()..start();
+        final uploadStopwatch = Stopwatch()..start();
+
+        // બંને calls simultaneously start
+        final aiFuture = getRecipeFromImage(imageFile).then((result) {
+          aiStopwatch.stop();
+
+          log(
+            '[AI] COMPLETED: '
+            '${aiStopwatch.elapsedMilliseconds} ms',
+          );
+
+          return result;
+        });
+
+        final uploadFuture = _uploadImageFile(imageFile, uid).then((result) {
+          uploadStopwatch.stop();
+
+          log(
+            '[UPLOAD] COMPLETED: '
+            '${uploadStopwatch.elapsedMilliseconds} ms',
+          );
+
+          return result;
+        });
+
+        // બંને parallel run થાય છે
+        final results = await Future.wait([aiFuture, uploadFuture]);
+
+        final recipeData = results[0] as Map<String, dynamic>;
+
+        final firebaseImageUrl = results[1] as String?;
+
+        // Validation
         if (!_isRecipeResult(recipeData)) {
           throw const _NotARecipeException(
             "This image isn't a recipe. Please add a photo of a "
@@ -88,36 +125,70 @@ class RecipeImportService {
           );
         }
 
-        // Convert Gemini response into SavedRecipe
         final recipe = SavedRecipe.fromGeminiResponse(recipeData);
 
-        // Upload original image to Firebase Storage
-        final firebaseImageUrl = await _uploadImageFile(imageFile, uid);
-
-        // Save recipe and navigate to complete screen
         await _saveRecipeAndNavigate(
           recipe: recipe,
           sourceUrl: 'gemini_image_import',
           firebaseImageUrl: firebaseImageUrl,
+          doneSignal: doneSignal,
+        );
+
+        totalStopwatch.stop();
+
+        log(
+          '========== IMAGE IMPORT COMPLETED ==========\n'
+          'TOTAL TIME: '
+          '${totalStopwatch.elapsedMilliseconds} ms '
+          '(${totalStopwatch.elapsed.inSeconds}s)',
         );
       },
     );
   }
 
   static Future<Map<String, dynamic>> getRecipeFromImage(File image) async {
-    final bytes = await image.readAsBytes();
+    final stopwatch = Stopwatch()..start();
 
     final callable = FirebaseFunctions.instance.httpsCallable(
       'analyzeRecipeImage',
+      options: HttpsCallableOptions(timeout: const Duration(seconds: 120)),
     );
 
-    final result = await callable.call({'image': base64Encode(bytes)});
+    final originalBytes = await image.readAsBytes();
+
+    log(
+      'ORIGINAL IMAGE SIZE: '
+      '${(originalBytes.length / 1024 / 1024).toStringAsFixed(2)} MB',
+    );
+
+    final compressedBytes = await _compressImageBytes(originalBytes);
+
+    if (compressedBytes == null || compressedBytes.isEmpty) {
+      throw Exception('Failed to compress image.');
+    }
+
+    log(
+      'COMPRESSED IMAGE SIZE: '
+      '${(compressedBytes.length / 1024 / 1024).toStringAsFixed(2)} MB',
+    );
+
+    final result = await callable.call({
+      'image': base64Encode(compressedBytes),
+    });
 
     final data = Map<String, dynamic>.from(result.data);
 
     if (data['success'] != true) {
       throw Exception(data['error']);
     }
+
+    stopwatch.stop();
+
+    log(
+      'TOTAL IMAGE AI TIME: '
+      '${stopwatch.elapsedMilliseconds} ms '
+      '(${stopwatch.elapsed.inSeconds}s)',
+    );
 
     return Map<String, dynamic>.from(data['recipe']);
   }
@@ -211,6 +282,8 @@ class RecipeImportService {
     required String sourceUrl,
     String? firebaseImageUrl,
     String? remoteImageUrl,
+    bool isVideoImport = false,
+    Completer<void>? doneSignal,
   }) async {
     final uid = AuthService.currentUser?.uid;
 
@@ -218,216 +291,341 @@ class RecipeImportService {
       throw Exception('You must be logged in to save recipes.');
     }
 
-    var imageUrl =
-        firebaseImageUrl ??
-        remoteImageUrl ??
-        (recipe.imageUrl?.isNotEmpty == true ? recipe.imageUrl : null);
+    log('========== SAVE RECIPE STARTED ==========');
+    log('Recipe: ${recipe.title}');
+    log('Source: $sourceUrl');
+    log('firebaseImageUrl: ${firebaseImageUrl ?? "null"}');
+    log('remoteImageUrl: ${remoteImageUrl ?? "null"}');
+    log('isVideoImport: $isVideoImport');
 
-    // No image from the import source (common for text / video / some social
-    // imports) → fetch a dish-specific image from the recipe title so every
-    // generated recipe still gets a picture.
-    if (imageUrl == null || imageUrl.isEmpty) {
-      imageUrl = await _resolveDishImage(recipe.title, uid);
+    String? imageUrl;
+
+    // ============================================================
+    // CASE 1: VIDEO IMPORT
+    // ============================================================
+    //
+    // Video has no direct recipe image.
+    //
+    // Therefore:
+    // ❌ Do not use video thumbnail
+    // ❌ Do not use Picsum placeholder
+    // ❌ Do not use TheMealDB/Wikipedia image
+    //
+    // ✅ Generate a new AI food image in background.
+    //
+    if (isVideoImport) {
+      imageUrl = '';
+
+      log(
+        '[VIDEO IMPORT] No existing image found. '
+        'AI image generation will start.',
+      );
     }
 
-    // Count this import against the free-tier quota. Image / Text / Social all
-    // route through here; Website imports use a separate path and stay free.
-    // No-op for Plus users.
+    // ============================================================
+    // CASE 2: IMAGE / SOCIAL IMAGE IMPORT
+    // ============================================================
+    //
+    // Existing image should always be used.
+    //
+    // Priority:
+    // 1. Uploaded Firebase image
+    // 2. Remote social image
+    // 3. Image URL returned by AI
+    //
+    // ❌ AI image generation is NOT done.
+    //
+    if (!isVideoImport) {
+      imageUrl = firebaseImageUrl ?? remoteImageUrl ?? '';
+
+      log(
+        '[IMAGE IMPORT] Existing Firebase image selected: '
+        '${imageUrl.isEmpty ? "NO IMAGE" : imageUrl}',
+      );
+    }
+
+    // ============================================================
+    // CASE 3: NO IMAGE AVAILABLE
+    // ============================================================
+    //
+    // This is mainly for recipe-name import.
+    //
+    // Example:
+    // Recipe name → AI recipe generated → no image
+    //
+    // Therefore:
+    // ✅ Save recipe first
+    // ✅ Generate AI image in background
+    //
+    bool needsImageGeneration = false;
+
+    if (!isVideoImport &&
+        (imageUrl == null || imageUrl.isEmpty) &&
+        sourceUrl != 'social_caption_import' &&
+        sourceUrl != 'social_video_share' &&
+        !sourceUrl.startsWith('http')) {
+      needsImageGeneration = true;
+
+      imageUrl = '';
+
+      log(
+        '[NO IMAGE] No existing image found. '
+        'AI image generation will start.',
+      );
+    }
+
+    // ============================================================
+    // CONSUME CREDIT
+    // ============================================================
+
     final hasCredit = await SubscriptionService.instance.consumeCredit();
+
     if (!hasCredit) {
       throw Exception('Not enough credits to save this recipe.');
     }
 
+    // ============================================================
+    // SAVE RECIPE TO FIRESTORE
+    // ============================================================
+
     final docRef = await FirebaseFirestore.instance.collection('recipes').add({
       'title': recipe.title,
       'description': recipe.description,
-      'imageUrl': imageUrl,
+
+      // For image import:
+      //     Existing image URL
+      //
+      // For video/name import:
+      //     Empty initially.
+      //     Firebase Function will update it after AI generation.
+      'imageUrl': imageUrl ?? '',
+
       'sourceUrl': sourceUrl,
+
       'prepTime': recipe.prepTime,
       'cookTime': recipe.cookTime,
       'totalTime': recipe.totalTime,
       'servings': recipe.servings.toString(),
+
       'category': recipe.category,
       'cuisine': recipe.cuisine,
       'keywords': recipe.keywords,
+
       'ingredientSections': recipe.ingredientSections
           .map((e) => {'name': e.name, 'items': e.items})
           .toList(),
+
       'instructionSections': recipe.instructionSections
           .map((e) => {'name': e.name, 'steps': e.steps})
           .toList(),
+
       'ingredients': recipe.ingredients,
       'instructions': recipe.instructions,
-      // Privacy: AI / photo-imported recipes are private by default.
+
       'isPublic': false,
-      // Ownership: imported recipes MAY later be published by the user.
       'recipeSource': 'imported',
       'originalRecipeId': null,
       'ownerId': uid,
       'isDeleted': false,
+
       'likesCount': 0,
       'commentsCount': 0,
       'savesCount': 0,
       'sharesCount': 0,
       'viewsCount': 0,
+
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
+
+    log('[FIRESTORE] Recipe saved: ${docRef.id}');
+
+    // ============================================================
+    // AI IMAGE GENERATION
+    // ============================================================
+    //
+    // VIDEO:
+    // ✅ Always generate AI image
+    //
+    // IMAGE:
+    // ❌ Never generate AI image
+    //
+    // RECIPE NAME / NO IMAGE:
+    // ✅ Generate AI image
+    //
+    if (isVideoImport || needsImageGeneration) {
+      log(
+        '[AI IMAGE] Starting background image generation | '
+        'recipeId=${docRef.id}',
+      );
+
+      unawaited(
+        _generateRealImageInBackground(
+          recipeId: docRef.id,
+          title: recipe.title,
+          description: recipe.description,
+        ),
+      );
+    } else {
+      log(
+        '[AI IMAGE] Generation SKIPPED. '
+        'Existing image is already available.',
+      );
+    }
+
+    // ============================================================
+    // CREATE UI MODEL
+    // ============================================================
 
     final recipeModel = RecipeModel(
       id: docRef.id,
       title: recipe.title,
       description: recipe.description,
+
+      // For video/name import this is initially empty.
+      // The recipe detail screen can listen to Firestore updates
+      // and receive the generated image later.
       imageUrl: imageUrl,
+
       sourceUrl: sourceUrl,
+
       prepTime: recipe.prepTime,
       cookTime: recipe.cookTime,
       totalTime: recipe.totalTime,
       servings: recipe.servings.toString(),
+
       category: recipe.category,
       cuisine: recipe.cuisine,
       keywords: recipe.keywords,
+
       ingredients: recipe.ingredients,
       instructions: recipe.instructions,
+
       ingredientSections: recipe.ingredientSections
           .map((e) => IngredientSection(name: e.name, items: e.items))
           .toList(),
+
       instructionSections: recipe.instructionSections
           .map((e) => InstructionSection(name: e.name, steps: e.steps))
           .toList(),
     );
 
-    log("firebaseImageUrl = $firebaseImageUrl");
-    log("remoteImageUrl = $remoteImageUrl");
-    log("recipe.imageUrl = ${recipe.imageUrl}");
-    log("final imageUrl = $imageUrl");
+    // ============================================================
+    // COMPLETE PROCESSING SCREEN
+    // ============================================================
+
+    if (doneSignal != null && !doneSignal.isCompleted) {
+      doneSignal.complete();
+
+      await Future.delayed(const Duration(milliseconds: 350));
+    }
+
+    // ============================================================
+    // NAVIGATE TO COMPLETE SCREEN
+    // ============================================================
 
     Get.off(
       () => ImportCompleteScreen(recipe: recipeModel),
       transition: Transition.fadeIn,
     );
+
+    log('========== SAVE RECIPE COMPLETED ==========');
   }
 
-  /// Finds a dish-specific REAL food photo for [title] when the import produced
-  /// none: TheMealDB → Wikipedia (food-validated) → a keyless AI photo as a last
-  /// resort. Chosen images are stored in Firebase (durable). Null only for an
-  /// empty title.
-  static Future<String?> _resolveDishImage(String title, String uid) async {
-    final q = title.trim();
-    if (q.isEmpty) return null;
-
-    // 1) TheMealDB — real photo for common (mostly Western) dishes.
-    final mealDb = await _theMealDbImage(q);
-    if (mealDb != null) return await uploadNetworkImage(mealDb, uid) ?? mealDb;
-
-    // 2) Wikipedia — real photo of the best-matching FOOD article. Covers most
-    // Indian/Asian dishes (Manchurian, Biryani, Dosa, Tikka Masala, …) and is
-    // only used when the article is verified (by its categories) to be food, so
-    // a name like "Rainbow Buddha Bowl" can never return a non-food image.
-    final wiki = await _wikipediaFoodImage(q);
-    if (wiki != null) return await uploadNetworkImage(wiki, uid) ?? wiki;
-
-    // 3) Pollinations (keyless AI) — last resort. The `flux` model + a food-only
-    // frame-filling prompt keeps it from drifting to scenery.
-    final prompt =
-        'extreme close-up professional food photograph of $q, '
-        'the finished cooked dish, plated and filling the entire frame, '
-        'ultra realistic, restaurant quality, natural lighting, appetizing, '
-        'sharp focus, high detail, food only';
-    return 'https://image.pollinations.ai/prompt/${Uri.encodeComponent(prompt)}'
-        '?width=800&height=600&nologo=true&model=flux';
-  }
-
-  /// TheMealDB thumbnail for [q], or null.
-  static Future<String?> _theMealDbImage(String q) async {
+  static Future<void> _generateRealImageInBackground({
+    required String recipeId,
+    required String title,
+    String? description,
+    String? imagePrompt,
+  }) async {
     try {
-      final r = await http
-          .get(
-            Uri.parse(
-              'https://www.themealdb.com/api/json/v1/1/search.php'
-              '?s=${Uri.encodeQueryComponent(q)}',
-            ),
-          )
-          .timeout(const Duration(seconds: 8));
-      if (r.statusCode == 200) {
-        final meals = (jsonDecode(r.body) as Map)['meals'];
-        if (meals is List && meals.isNotEmpty) {
-          final thumb = (meals.first as Map)['strMealThumb']?.toString();
-          if (thumb != null && thumb.isNotEmpty) return thumb;
-        }
-      }
-    } catch (e) {
-      log('TheMealDB image lookup failed: $e');
-    }
-    return null;
-  }
-
-  /// Lead image of the best-matching Wikipedia article for [q], returned ONLY
-  /// when that article is verified to be about food (via its categories).
-  static Future<String?> _wikipediaFoodImage(String q) async {
-    try {
-      final uri = Uri.parse(
-        'https://en.wikipedia.org/w/api.php?action=query&format=json'
-        '&generator=search&gsrsearch=${Uri.encodeQueryComponent(q)}'
-        '&gsrlimit=1&prop=pageimages%7Ccategories&piprop=thumbnail'
-        '&pithumbsize=800&cllimit=60&redirects=1',
+      log(
+        '[AI IMAGE] Generation STARTED | '
+        'recipeId=$recipeId',
       );
-      final r = await http
-          .get(
-            uri,
-            headers: {'User-Agent': 'RecipeAI/1.0 (recipe image lookup)'},
-          )
-          .timeout(const Duration(seconds: 8));
-      if (r.statusCode != 200) return null;
-      final query = (jsonDecode(r.body) as Map)['query'] as Map?;
-      final pages = query?['pages'] as Map?;
-      if (pages == null || pages.isEmpty) return null;
-      final page = pages.values.first as Map;
-      final thumb = (page['thumbnail'] as Map?)?['source']?.toString();
-      if (thumb == null || thumb.isEmpty) return null;
-      final cats = (page['categories'] as List?) ?? [];
-      final catText = cats
-          .map((c) => (c as Map)['title']?.toString().toLowerCase() ?? '')
-          .join(' ');
-      const foodWords = [
-        'cuisine',
-        'food',
-        'dish',
-        'cooking',
-        'recipe',
-        'curry',
-        'dessert',
-        'snack',
-        'bread',
-        'rice',
-        'noodle',
-        'soup',
-        'stew',
-        'sauce',
-        'beverage',
-        'drink',
-        'cake',
-        'meat',
-        'vegetable',
-        'seafood',
-        'breakfast',
-        'street food',
-        'appetizer',
-        'salad',
-        'pasta',
-        'pizza',
-      ];
-      final isFood = foodWords.any((w) => catText.contains(w));
-      return isFood ? thumb : null;
-    } catch (e) {
-      log('Wikipedia image lookup failed: $e');
-      return null;
+
+      final callable = FirebaseFunctions.instance.httpsCallable(
+        'generateRecipeImage',
+        options: HttpsCallableOptions(timeout: const Duration(seconds: 120)),
+      );
+
+      final result = await callable.call({
+        'recipeId': recipeId,
+
+        // IMPORTANT:
+        // Cloud Function expects recipe object
+        'recipe': {
+          'title': title,
+          'description': description ?? '',
+          'imagePrompt': imagePrompt ?? '',
+        },
+      });
+
+      final data = Map<String, dynamic>.from(result.data);
+
+      log(
+        '[AI IMAGE] Generation COMPLETED | '
+        'recipeId=$recipeId',
+      );
+
+      log('[AI IMAGE] Response: $data');
+
+      if (data['success'] != true) {
+        log(
+          '[AI IMAGE] Generation FAILED | '
+          '${data['error']}',
+        );
+        return;
+      }
+
+      final imageUrl = data['imageUrl']?.toString();
+
+      if (imageUrl == null || imageUrl.isEmpty) {
+        log('[AI IMAGE] imageUrl is empty');
+        return;
+      }
+
+      // If Cloud Function does not update Firestore itself,
+      // update it here.
+      await FirebaseFirestore.instance
+          .collection('recipes')
+          .doc(recipeId)
+          .update({
+            'imageUrl': imageUrl,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+
+      log(
+        '[AI IMAGE] Firestore image URL updated SUCCESS | '
+        'recipeId=$recipeId',
+      );
+    } catch (e, stack) {
+      log('[AI IMAGE] Generation FAILED: $e');
+      log(stack.toString());
     }
   }
 
   static Future<String?> _uploadImageFile(File imageFile, String uid) async {
     try {
-      final bytes = await imageFile.readAsBytes();
+      final originalBytes = await imageFile.readAsBytes();
+
+      log(
+        '[ImageUpload] Original size: '
+        '${(originalBytes.length / 1024 / 1024).toStringAsFixed(2)} MB',
+      );
+
+      final compressedBytes = await _compressImageBytes(originalBytes);
+
+      if (compressedBytes == null || compressedBytes.isEmpty) {
+        log('[ImageUpload] Compression failed');
+        return null;
+      }
+
+      log(
+        '[ImageUpload] Compressed size: '
+        '${(compressedBytes.length / 1024 / 1024).toStringAsFixed(2)} MB',
+      );
+
       final fileName = 'recipe_${DateTime.now().millisecondsSinceEpoch}.jpg';
 
       final ref = FirebaseStorage.instance
@@ -437,12 +635,18 @@ class RecipeImportService {
           .child('recipes')
           .child(fileName);
 
-      await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
-      // Await so a transient getDownloadURL() failure is caught here (returns
-      // null → recipe still saves without an image) instead of aborting import.
+      await ref.putData(
+        compressedBytes,
+        SettableMetadata(
+          contentType: 'image/jpeg',
+          cacheControl: 'public,max-age=31536000',
+        ),
+      );
+
       return await ref.getDownloadURL();
-    } catch (e) {
-      log('Image upload error: $e');
+    } catch (e, stack) {
+      log('[ImageUpload] ERROR: $e');
+      log(stack.toString());
       return null;
     }
   }
@@ -450,26 +654,34 @@ class RecipeImportService {
   /// Runs an import behind the processing screen. Returns `true` when the
   /// import completed successfully (and the complete/review screen is shown),
   /// or `false` when it failed (processing dismissed + error snackbar).
+  //
+
   static Future<bool> _runImport({
     required List<String> loadingSteps,
     required String errorMessage,
-    required Future<void> Function() import,
+    required Future<void> Function(Completer<void> doneSignal) import,
   }) async {
+    final doneSignal = Completer<void>();
+
     Get.to(
-      () => ImportProcessingScreen(steps: loadingSteps),
+      () => ImportProcessingScreen(
+        steps: loadingSteps,
+        doneSignal: doneSignal.future,
+      ),
       transition: Transition.fadeIn,
     );
 
     try {
-      await import();
+      await import(doneSignal);
       return true;
     } catch (e, stack) {
       log('Import error: $e');
       log(stack.toString());
 
+      if (!doneSignal.isCompleted) doneSignal.complete();
+
       Get.back();
 
-      // A non-recipe image gets its own clear message instead of the generic one.
       final notRecipe = e is _NotARecipeException;
       CustomSnackbar.show(
         title: notRecipe ? 'Not a recipe' : 'Error',
@@ -516,17 +728,13 @@ class RecipeImportService {
     final ImagePicker picker = ImagePicker();
     final nav = Navigator.of(context);
 
-    // Downscale/compress the photo before base64-ing it to the AI — a smaller
-    // payload uploads and analyses much faster while staying readable for OCR.
     final XFile? image = await picker.pickImage(
       source: ImageSource.gallery,
       imageQuality: 85,
       maxWidth: 2000,
       maxHeight: 2000,
     );
-
     if (image == null) return;
-
     nav.pop();
 
     await _runImport(
@@ -537,9 +745,10 @@ class RecipeImportService {
         'Saving your recipe…',
       ],
       errorMessage: 'Could not read recipe from image. Please try again.',
-      import: () async {
+      import: (doneSignal) async {
         final uid = AuthService.currentUser?.uid;
         if (uid == null) {
+          if (!doneSignal.isCompleted) doneSignal.complete();
           if (Get.isDialogOpen ?? false) Get.back();
           CustomSnackbar.show(
             title: 'Error',
@@ -549,28 +758,209 @@ class RecipeImportService {
           return;
         }
 
-        final recipeData = await getRecipeFromImage(File(image.path));
+        final imageFile = File(image.path);
 
-        // Stop here if the image isn't a recipe — no upload, no dish-image
-        // fetch, no save (and no further AI calls).
+        final results = await Future.wait([
+          getRecipeFromImage(imageFile),
+          _uploadImageFile(imageFile, uid),
+        ]);
+
+        final recipeData = results[0] as Map<String, dynamic>;
+
+        final firebaseImageUrl = results[1] as String?;
+
         if (!_isRecipeResult(recipeData)) {
           throw const _NotARecipeException(
             "This image isn't a recipe. Please go back and add a photo of a "
             "dish or a recipe card.",
           );
         }
-        final recipe = SavedRecipe.fromGeminiResponse(recipeData);
 
-        final firebaseImageUrl = await _uploadImageFile(File(image.path), uid);
+        final recipe = SavedRecipe.fromGeminiResponse(recipeData);
 
         await _saveRecipeAndNavigate(
           recipe: recipe,
           sourceUrl: 'gemini_image_import',
           firebaseImageUrl: firebaseImageUrl,
+          doneSignal: doneSignal,
         );
+        // final recipe = SavedRecipe.fromGeminiResponse(recipeData);
+        // final firebaseImageUrl = await _uploadImageFile(File(image.path), uid);
       },
     );
   }
+
+  // ============================================================
+  // SOCIAL CONTENT IMPORT
+  // ============================================================
+
+  static Future<void> importRecipeFromSocialContent({
+    String? url,
+    String? caption,
+  }) async {
+    final totalTimer = Stopwatch()..start();
+
+    await _runImport(
+      loadingSteps: const [
+        'Reading social media content…',
+        'Extracting recipe…',
+        'Preparing ingredients…',
+        'Saving your recipe…',
+      ],
+      errorMessage: 'Failed to import recipe from social media.',
+      import: (doneSignal) async {
+        try {
+          log('========== SOCIAL IMPORT STARTED ==========');
+          log('[SocialImport] URL: ${url ?? "null"}');
+          log('[SocialImport] Caption available: ${caption != null}');
+
+          if ((url == null || url.trim().isEmpty) &&
+              (caption == null || caption.trim().isEmpty)) {
+            throw Exception('No social content found.');
+          }
+
+          // ========================================================
+          // STEP 1: AI RECIPE EXTRACTION
+          // ========================================================
+
+          final aiTimer = Stopwatch()..start();
+
+          final recipeData = await getRecipeFromSocialContent(
+            url: url,
+            caption: caption,
+          );
+
+          aiTimer.stop();
+
+          log(
+            '[SocialImport] AI extraction DONE | '
+            '${aiTimer.elapsedMilliseconds} ms',
+          );
+
+          if (recipeData.isEmpty) {
+            throw Exception('Recipe data is empty.');
+          }
+
+          // ========================================================
+          // STEP 2: VALIDATE RECIPE
+          // ========================================================
+
+          if (!_isRecipeResult(recipeData)) {
+            throw const _NotARecipeException(
+              "This social media content doesn't contain a valid recipe.",
+            );
+          }
+
+          // ========================================================
+          // STEP 3: CONVERT RECIPE
+          // ========================================================
+
+          final recipe = SavedRecipe.fromGeminiResponse(recipeData);
+
+          log(
+            '[SocialImport] Recipe parsed | '
+            'title=${recipe.title}',
+          );
+
+          // ========================================================
+          // STEP 4: SAVE RECIPE IMMEDIATELY
+          // ========================================================
+          //
+          // Existing image from AI response is used immediately.
+          // Original social thumbnail is processed in background.
+          //
+
+          final remoteImageUrl = recipeData['imageUrl']?.toString();
+
+          final isVideoImport = _isVideoSocialContent(
+            url: url,
+            recipeData: recipeData,
+          );
+
+          log(
+            '[SocialImport] Media type detected | '
+            'isVideoImport=$isVideoImport | '
+            'mediaType=${recipeData['mediaType']}',
+          );
+
+          await _saveRecipeAndNavigate(
+            recipe: recipe,
+            sourceUrl: url ?? 'social_caption_import',
+            remoteImageUrl: remoteImageUrl,
+
+            // Reel/Video => AI image generate
+            // Image post => existing image use
+            isVideoImport: isVideoImport,
+
+            doneSignal: doneSignal,
+          );
+          log(
+            '[SocialImport] RECIPE DISPLAYED | '
+            '${totalTimer.elapsedMilliseconds} ms',
+          );
+
+          // ========================================================
+          // STEP 5: BACKGROUND IMAGE PROCESSING
+          // ========================================================
+          //
+          // Only possible when a real social URL exists.
+          //
+
+          if (url != null && url.trim().isNotEmpty && !isVideoImport) {
+            unawaited(
+              uploadSocialImageInBackground(recipe: recipe, sourceUrl: url),
+            );
+          }
+
+          totalTimer.stop();
+
+          log(
+            '========== SOCIAL IMPORT COMPLETED ==========\n'
+            'TOTAL TIME: '
+            '${totalTimer.elapsedMilliseconds} ms '
+            '(${totalTimer.elapsed.inSeconds}s)',
+          );
+        } catch (e, stack) {
+          totalTimer.stop();
+
+          log('[SocialImport] FAILED: $e');
+          log(stack.toString());
+
+          rethrow;
+        }
+      },
+    );
+  }
+
+  static bool _isVideoSocialContent({
+    required String? url,
+    required Map<String, dynamic> recipeData,
+  }) {
+    // Backend value is the most reliable
+    final mediaType = recipeData['mediaType']?.toString().toLowerCase().trim();
+
+    if (mediaType == 'video' || mediaType == 'reel') {
+      return true;
+    }
+
+    if (mediaType == 'image' || mediaType == 'photo') {
+      return false;
+    }
+
+    // Fallback: Instagram Reel URL
+    final normalizedUrl = url?.toLowerCase() ?? '';
+
+    if (normalizedUrl.contains('/reel/') ||
+        normalizedUrl.contains('/reels/') ||
+        normalizedUrl.contains('/tv/')) {
+      return true;
+    }
+
+    return false;
+  }
+  // ============================================================
+  // SHARED IMAGE IMPORT
+  // ============================================================
 
   static Future<void> importRecipeFromSharedImage(File imageFile) async {
     await _runImport(
@@ -581,38 +971,59 @@ class RecipeImportService {
         'Saving your recipe…',
       ],
       errorMessage: 'Failed to import recipe from shared image.',
-      import: () async {
+      import: (doneSignal) async {
         final uid = AuthService.currentUser?.uid;
+
         if (uid == null) {
-          if (Get.isDialogOpen ?? false) Get.back();
-          CustomSnackbar.show(
-            title: 'Error',
-            message: 'You must be logged in to save recipes.',
-            type: SnackbarType.error,
-          );
-          return;
+          throw Exception('You must be logged in to save recipes.');
         }
 
-        final recipeData = await getRecipeFromImage(imageFile);
+        log('[SharedImage] AI + Firebase upload STARTED');
+
+        // AI analysis and Firebase upload run in parallel.
+        final results = await Future.wait([
+          getRecipeFromImage(imageFile),
+          _uploadImageFile(imageFile, uid),
+        ]);
+
+        final recipeData = results[0] as Map<String, dynamic>;
+        final firebaseImageUrl = results[1] as String?;
+
+        // ========================================================
+        // VALIDATE RECIPE
+        // ========================================================
 
         if (!_isRecipeResult(recipeData)) {
           throw const _NotARecipeException(
-            "This image isn't a recipe. Please go back and share a photo of a "
-            "dish or a recipe card.",
+            "This image isn't a recipe. Please share a photo of "
+            "a dish or a recipe card.",
           );
         }
+
+        // ========================================================
+        // CONVERT RECIPE
+        // ========================================================
+
         final recipe = SavedRecipe.fromGeminiResponse(recipeData);
 
-        final firebaseImageUrl = await _uploadImageFile(imageFile, uid);
+        // ========================================================
+        // SAVE RECIPE
+        // ========================================================
 
         await _saveRecipeAndNavigate(
           recipe: recipe,
-          sourceUrl: 'instagram_share',
+          sourceUrl: 'shared_image_import',
           firebaseImageUrl: firebaseImageUrl,
+          isVideoImport: false,
+          doneSignal: doneSignal,
         );
       },
     );
   }
+
+  // ============================================================
+  // SHARED VIDEO IMPORT
+  // ============================================================
 
   static Future<void> importRecipeFromSharedVideo(
     File videoFile, {
@@ -626,19 +1037,337 @@ class RecipeImportService {
         'Saving your recipe…',
       ],
       errorMessage: 'Failed to import recipe from shared video.',
-      import: () async {
+      import: (doneSignal) async {
+        log(
+          '[SharedVideo] Import STARTED | '
+          'sourceUrl=${sourceUrl ?? "null"}',
+        );
+
+        // ========================================================
+        // STEP 1: AI VIDEO ANALYSIS
+        // ========================================================
+
         final recipeData = await getRecipeFromVideo(
           videoFile,
           sourceUrl: sourceUrl,
         );
+
+        if (recipeData.isEmpty) {
+          throw Exception('Recipe data is empty.');
+        }
+
+        // ========================================================
+        // STEP 2: VALIDATE RECIPE
+        // ========================================================
+
+        if (!_isRecipeResult(recipeData)) {
+          throw const _NotARecipeException(
+            "This video doesn't contain a valid recipe.",
+          );
+        }
+
+        // ========================================================
+        // STEP 3: CONVERT RECIPE
+        // ========================================================
+
         final recipe = SavedRecipe.fromGeminiResponse(recipeData);
+
+        // ========================================================
+        // STEP 4: SAVE RECIPE
+        // ========================================================
+        //
+        // Video has no direct image.
+        // AI image generation starts in background
+        // inside _saveRecipeAndNavigate().
+        //
 
         await _saveRecipeAndNavigate(
           recipe: recipe,
           sourceUrl: sourceUrl ?? 'social_video_share',
+          isVideoImport: true,
+          doneSignal: doneSignal,
         );
       },
     );
+  }
+
+  static Future<Map<String, dynamic>> getRecipeFromSocialMedia(
+    String sourceUrl,
+  ) async {
+    try {
+      log('[SocialImport] Calling AI extraction API');
+
+      final callable = FirebaseFunctions.instance.httpsCallable(
+        'analyzeRecipeFromSocialMedia',
+        options: HttpsCallableOptions(timeout: const Duration(seconds: 120)),
+      );
+
+      final result = await callable.call({'url': sourceUrl});
+
+      final data = result.data;
+
+      if (data is Map) {
+        return Map<String, dynamic>.from(data);
+      }
+
+      throw Exception('Invalid recipe response from AI');
+    } catch (e, stack) {
+      log('[SocialImport] AI extraction FAILED: $e');
+
+      log(stack.toString());
+
+      rethrow;
+    }
+  }
+
+  static Future<bool> importRecipeFromName(String recipeName) async {
+    final totalStart = DateTime.now();
+
+    log('========== RECIPE NAME IMPORT STARTED ==========');
+
+    return _runImport(
+      loadingSteps: const [
+        'Generating recipe...',
+        'Preparing ingredients...',
+        'Saving recipe...',
+      ],
+      errorMessage: 'Failed to generate recipe.',
+      import: (doneSignal) async {
+        final step1Start = DateTime.now();
+
+        final uid = AuthService.currentUser?.uid;
+
+        if (uid == null) {
+          throw Exception('Login required');
+        }
+
+        log(
+          '[1] User validation COMPLETED in '
+          '${DateTime.now().difference(step1Start).inMilliseconds} ms',
+        );
+
+        log('[2] AI recipe generation STARTED');
+
+        final aiStart = DateTime.now();
+
+        final recipeData = await getRecipeFromName(recipeName);
+
+        log(
+          '[2] AI recipe generation COMPLETED in '
+          '${DateTime.now().difference(aiStart).inMilliseconds} ms',
+        );
+
+        log('[3] SavedRecipe conversion STARTED');
+
+        final conversionStart = DateTime.now();
+
+        final recipe = SavedRecipe.fromGeminiResponse(recipeData);
+
+        log(
+          '[3] SavedRecipe conversion COMPLETED in '
+          '${DateTime.now().difference(conversionStart).inMilliseconds} ms',
+        );
+
+        log('[4] Save recipe & navigate STARTED');
+
+        final saveStart = DateTime.now();
+
+        await _saveRecipeAndNavigate(
+          recipe: recipe,
+          sourceUrl: 'recipe_name_search',
+          doneSignal: doneSignal,
+        );
+
+        log(
+          '[4] Save recipe & navigate COMPLETED in '
+          '${DateTime.now().difference(saveStart).inMilliseconds} ms',
+        );
+
+        log(
+          '========== TOTAL TIME: '
+          '${DateTime.now().difference(totalStart).inMilliseconds} ms '
+          '==========',
+        );
+      },
+    );
+  }
+
+  static Future<void> uploadSocialImageInBackground({
+    required SavedRecipe recipe,
+    required String sourceUrl,
+  }) async {
+    try {
+      log(
+        '[Background] Firebase image upload START | '
+        'recipe=${recipe.title}',
+      );
+
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+
+      if (uid == null) {
+        log(
+          '[Background] Upload skipped | '
+          'user not logged in',
+        );
+
+        return;
+      }
+
+      // ============================================================
+      // STEP 1: FETCH SOCIAL THUMBNAIL
+      // ============================================================
+
+      log('[Background] Fetching ORIGINAL SOCIAL THUMBNAIL START');
+
+      final socialImageUrl = await _fetchSocialThumbnail(sourceUrl);
+
+      log(
+        '[Background] ORIGINAL SOCIAL THUMBNAIL DONE | '
+        'found=${socialImageUrl != null}',
+      );
+
+      if (socialImageUrl == null || socialImageUrl.trim().isEmpty) {
+        log('[Background] No social thumbnail found');
+
+        return;
+      }
+
+      // ============================================================
+      // STEP 2: DOWNLOAD ORIGINAL IMAGE
+      // ============================================================
+
+      log('[Background] Image download START');
+
+      final response = await http
+          .get(
+            Uri.parse(_normalizeImageUrl(socialImageUrl)),
+            headers: const {
+              'User-Agent': 'Mozilla/5.0',
+              'Referer': 'https://www.instagram.com/',
+            },
+          )
+          .timeout(const Duration(seconds: 30));
+
+      if (response.statusCode != 200) {
+        log(
+          '[Background] Image download FAILED | '
+          'status=${response.statusCode}',
+        );
+
+        return;
+      }
+
+      final originalBytes = response.bodyBytes;
+
+      if (originalBytes.isEmpty) {
+        log('[Background] Empty image bytes');
+
+        return;
+      }
+
+      log(
+        '[Background] Image download SUCCESS | '
+        'bytes=${originalBytes.length}',
+      );
+
+      // ============================================================
+      // STEP 3: ALWAYS COMPRESS IMAGE
+      // ============================================================
+
+      log('[Background] Image compression START');
+
+      final compressedBytes = await _compressImageBytes(originalBytes);
+
+      if (compressedBytes == null || compressedBytes.isEmpty) {
+        log('[Background] Image compression FAILED');
+
+        return;
+      }
+
+      log(
+        '[Background] Image compression DONE | '
+        'original=${originalBytes.length} bytes | '
+        'compressed=${compressedBytes.length} bytes',
+      );
+
+      // ============================================================
+      // STEP 4: UPLOAD COMPRESSED IMAGE TO FIREBASE
+      // ============================================================
+
+      final fileName =
+          'social_recipe_'
+          '${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('users')
+          .child(uid)
+          .child('recipes')
+          .child(fileName);
+
+      await storageRef.putData(
+        compressedBytes,
+        SettableMetadata(
+          contentType: 'image/jpeg',
+          cacheControl: 'public,max-age=31536000',
+        ),
+      );
+
+      final firebaseImageUrl = await storageRef.getDownloadURL();
+
+      log('[Background] Firebase upload SUCCESS');
+
+      // ============================================================
+      // STEP 5: FIND RECIPE WITHOUT COMPOSITE INDEX
+      // ============================================================
+
+      final snapshot = await FirebaseFirestore.instance
+          .collection('recipes')
+          .where('ownerId', isEqualTo: uid)
+          .where('sourceUrl', isEqualTo: sourceUrl)
+          .limit(10)
+          .get();
+
+      if (snapshot.docs.isEmpty) {
+        log('[Background] Recipe not found');
+
+        return;
+      }
+
+      QueryDocumentSnapshot<Map<String, dynamic>>? recipeDoc;
+
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+
+        if (data['title'] == recipe.title) {
+          recipeDoc = doc;
+          break;
+        }
+      }
+
+      if (recipeDoc == null) {
+        log('[Background] Matching recipe not found');
+
+        return;
+      }
+
+      // ============================================================
+      // STEP 6: UPDATE FIRESTORE IMAGE URL
+      // ============================================================
+
+      await recipeDoc.reference.update({
+        'imageUrl': firebaseImageUrl,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      log('[Background] Firestore image URL updated SUCCESS');
+
+      log('[Background] Social image processing COMPLETED');
+    } catch (e, stack) {
+      log('[Background] Social image upload FAILED: $e');
+
+      log(stack.toString());
+    }
   }
 
   /// Scrape a social post's own thumbnail (its `og:image` / `twitter:image`) so
@@ -700,26 +1429,77 @@ class RecipeImportService {
     }
   }
 
+  static String _normalizeImageUrl(String url) {
+    return url
+        .replaceAll('&amp;', '&')
+        .replaceAll('&#x26;', '&')
+        .replaceAll('&#38;', '&')
+        .replaceAll('&quot;', '"')
+        .replaceAll('&#x2F;', '/')
+        .replaceAll('&#47;', '/')
+        .trim();
+  }
+
   static Future<String?> uploadNetworkImage(String imageUrl, String uid) async {
     try {
-      // final response = await http.get(Uri.parse(imageUrl));
-      final response = await http.get(Uri.parse(imageUrl));
+      final normalizedUrl = _normalizeImageUrl(imageUrl);
 
-      final bytes = response.bodyBytes;
+      log('[NetworkImage] Download START');
+      log('[NetworkImage] Normalized URL: $normalizedUrl');
 
-      log("Downloaded Size = ${bytes.length}");
+      final response = await http
+          .get(
+            Uri.parse(normalizedUrl),
+            headers: const {
+              'User-Agent':
+                  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) '
+                  'AppleWebKit/605.1.15 '
+                  '(KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+              'Accept':
+                  'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+              'Referer': 'https://www.instagram.com/',
+            },
+          )
+          .timeout(const Duration(seconds: 20));
 
-      final codec = await ui.instantiateImageCodec(bytes);
-      final frame = await codec.getNextFrame();
-
-      log("Width=${frame.image.width} Height=${frame.image.height}");
+      log(
+        '[NetworkImage] Status: ${response.statusCode} | '
+        'Content-Type: ${response.headers['content-type']}',
+      );
 
       if (response.statusCode != 200) {
-        log("Image download failed: ${response.statusCode}");
+        log(
+          '[NetworkImage] Download FAILED | '
+          'status=${response.statusCode}',
+        );
         return null;
       }
 
-      final fileName = 'recipe_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final compressedBytes = await _compressImageBytes(response.bodyBytes);
+
+      if (compressedBytes == null || compressedBytes.isEmpty) {
+        return null;
+      }
+      if (compressedBytes.isEmpty) {
+        log('[NetworkImage] Empty image bytes');
+        return null;
+      }
+
+      final decodedImage = img.decodeImage(compressedBytes);
+
+      if (decodedImage == null) {
+        log('[NetworkImage] Invalid image data');
+        return null;
+      }
+
+      log(
+        '[NetworkImage] Image validated | '
+        'width=${decodedImage.width} | '
+        'height=${decodedImage.height}',
+      );
+
+      final fileName =
+          'social_recipe_${DateTime.now().millisecondsSinceEpoch}.jpg';
 
       final ref = FirebaseStorage.instance
           .ref()
@@ -729,79 +1509,24 @@ class RecipeImportService {
           .child(fileName);
 
       await ref.putData(
-        response.bodyBytes,
-        SettableMetadata(contentType: 'image/jpeg'),
+        compressedBytes,
+        SettableMetadata(
+          contentType: 'image/jpeg',
+          customMetadata: {'source': 'social_media'},
+        ),
       );
 
-      final downloadUrl = await ref.getDownloadURL();
+      final firebaseUrl = await ref.getDownloadURL();
 
-      log("Firebase Image URL: $downloadUrl");
+      log('[NetworkImage] Firebase Upload SUCCESS');
+      log('[NetworkImage] Firebase URL: $firebaseUrl');
 
-      return downloadUrl;
-    } catch (e) {
-      log("uploadNetworkImage error: $e");
+      return firebaseUrl;
+    } catch (e, stack) {
+      log('[NetworkImage] Upload FAILED: $e');
+      log(stack.toString());
       return null;
     }
-  }
-
-  static Future<void> importRecipeFromSocialContent({
-    String? url,
-    String? caption,
-  }) async {
-    await _runImport(
-      loadingSteps: const [
-        'Reading post content…',
-        'Extracting recipe details…',
-        'Structuring ingredients…',
-        'Saving your recipe…',
-      ],
-      errorMessage:
-          'Could not extract recipe from this post. Try sharing the image or video directly.',
-      import: () async {
-        final uid = AuthService.currentUser?.uid;
-
-        if (uid == null) {
-          throw Exception('You must be logged in.');
-        }
-
-        final recipeData = await getRecipeFromSocialContent(
-          url: url,
-          caption: caption,
-        );
-
-        log("Recipe Data: ${jsonEncode(recipeData)}");
-
-        final recipe = SavedRecipe.fromGeminiResponse(recipeData);
-
-        log("Recipe Image URL: ${recipe.imageUrl}");
-
-        // Image = the reel/post's own thumbnail. Prefer whatever the AI/cloud
-        // returned; otherwise scrape the shared post's og:image directly so the
-        // recipe shows the actual social preview instead of a generic photo.
-        var thumb = (recipe.imageUrl?.isNotEmpty == true)
-            ? recipe.imageUrl
-            : null;
-        if ((thumb == null || thumb.isEmpty) && url != null && url.isNotEmpty) {
-          thumb = await _fetchSocialThumbnail(url);
-          log('Social thumbnail: $thumb');
-        }
-
-        // Re-host it on Firebase Storage (social CDN URLs expire) so it keeps
-        // loading later.
-        String? firebaseImageUrl;
-        if (thumb != null && thumb.isNotEmpty) {
-          firebaseImageUrl = await uploadNetworkImage(thumb, uid);
-          log('firebaseImageUrl = $firebaseImageUrl');
-        }
-
-        await _saveRecipeAndNavigate(
-          recipe: recipe,
-          sourceUrl: url ?? recipe.sourceUrl ?? 'social_media_import',
-          firebaseImageUrl: firebaseImageUrl,
-          remoteImageUrl: firebaseImageUrl == null ? thumb : null,
-        );
-      },
-    );
   }
 
   static Future<Map<String, dynamic>> getRecipeFromName(
@@ -816,519 +1541,47 @@ class RecipeImportService {
     final data = Map<String, dynamic>.from(result.data);
 
     if (data['success'] != true) {
-      throw Exception('Recipe generation failed');
-    }
+      log('generateRecipeFromName response: ${jsonEncode(data)}');
 
+      throw Exception(
+        data['error']?.toString() ??
+            data['message']?.toString() ??
+            'Recipe generation failed',
+      );
+    }
     final recipeData = Map<String, dynamic>.from(data['recipe']);
 
     return recipeData;
   }
 
-  static Future<bool> importRecipeFromName(String recipeName) async {
-    return _runImport(
-      loadingSteps: const [
-        'Searching recipe...',
-        'Generating ingredients...',
-        'Generating instructions...',
-        'Saving recipe...',
-      ],
-      errorMessage: 'Failed to generate recipe.',
-      import: () async {
-        final uid = AuthService.currentUser?.uid;
-
-        if (uid == null) {
-          throw Exception('Login required');
-        }
-
-        final recipeData = await getRecipeFromName(recipeName);
-
-        final recipe = SavedRecipe.fromGeminiResponse(recipeData);
-
-        String? firebaseImageUrl;
-
-        if (recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty) {
-          firebaseImageUrl = await uploadNetworkImage(recipe.imageUrl!, uid);
-        }
-
-        await _saveRecipeAndNavigate(
-          recipe: recipe,
-          sourceUrl: 'recipe_name_search',
-          firebaseImageUrl: firebaseImageUrl,
-        );
-      },
-    );
-  }
-}
-
-class RecipeCameraScreen extends StatefulWidget {
-  const RecipeCameraScreen({super.key});
-
-  @override
-  State<RecipeCameraScreen> createState() => _RecipeCameraScreenState();
-}
-
-class _RecipeCameraScreenState extends State<RecipeCameraScreen> {
-  CameraController? _cameraController;
-  List<CameraDescription> _cameras = [];
-
-  bool _isInitializing = true;
-  bool _isProcessing = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeCamera();
-  }
-
-  Future<void> _initializeCamera() async {
+  static Future<Uint8List?> _compressImageBytes(Uint8List originalBytes) async {
     try {
-      // Explicitly ask camera permission
-      final permissionStatus = await Permission.camera.request();
+      final decodedImage = img.decodeImage(originalBytes);
 
-      if (!permissionStatus.isGranted) {
-        if (permissionStatus.isPermanentlyDenied) {
-          await openAppSettings();
-        }
-
-        if (mounted) {
-          setState(() {
-            _isInitializing = false;
-          });
-        }
-
-        return;
+      if (decodedImage == null) {
+        log('[ImageCompressor] Invalid image');
+        return null;
       }
 
-      _cameras = await availableCameras();
+      final resizedImage = decodedImage.width > 1600
+          ? img.copyResize(decodedImage, width: 1600)
+          : decodedImage;
 
-      if (_cameras.isEmpty) {
-        return;
-      }
+      final compressed = img.encodeJpg(resizedImage, quality: 85);
 
-      final camera = _cameras.firstWhere(
-        (camera) => camera.lensDirection == CameraLensDirection.back,
-        orElse: () => _cameras.first,
+      final compressedBytes = Uint8List.fromList(compressed);
+
+      log(
+        '[ImageCompressor] '
+        'original=${(originalBytes.length / 1024 / 1024).toStringAsFixed(2)} MB | '
+        'compressed=${(compressedBytes.length / 1024 / 1024).toStringAsFixed(2)} MB',
       );
 
-      _cameraController = CameraController(
-        camera,
-        ResolutionPreset.high,
-        enableAudio: false,
-      );
-
-      await _cameraController!.initialize();
-
-      if (mounted) {
-        setState(() {
-          _isInitializing = false;
-        });
-      }
-    } catch (e) {
-      debugPrint('Camera initialization error: $e');
-
-      if (mounted) {
-        setState(() {
-          _isInitializing = false;
-        });
-      }
+      return compressedBytes;
+    } catch (e, stack) {
+      log('[ImageCompressor] FAILED: $e');
+      log(stack.toString());
+      return null;
     }
   }
-
-  Future<void> _captureRecipe() async {
-    if (_cameraController == null ||
-        !_cameraController!.value.isInitialized ||
-        _isProcessing) {
-      return;
-    }
-
-    try {
-      setState(() {
-        _isProcessing = true;
-      });
-
-      final image = await _cameraController!.takePicture();
-
-      await _processRecipeImage(File(image.path));
-      log('-----------done');
-    } catch (e) {
-      log('Capture error: $e');
-
-      if (mounted) {
-        setState(() {
-          _isProcessing = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _pickFromGallery() async {
-    if (_isProcessing) return;
-
-    final picker = ImagePicker();
-
-    final pickedImage = await picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 90,
-    );
-
-    if (pickedImage == null) return;
-
-    setState(() {
-      _isProcessing = true;
-    });
-
-    await _processRecipeImage(File(pickedImage.path));
-  }
-
-  Future<void> _processRecipeImage(File image) async {
-    try {
-      await RecipeImportService.importRecipeFromImage(context, image);
-
-      if (mounted) {
-        setState(() {
-          _isProcessing = false;
-        });
-      }
-      log('---------api call');
-    } catch (e) {
-      debugPrint('Recipe image processing error: $e');
-
-      if (mounted) {
-        setState(() {
-          _isProcessing = false;
-        });
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _cameraController?.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final controller = _cameraController;
-
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (_isInitializing)
-              const Center(
-                child: CircularProgressIndicator(color: Colors.white),
-              )
-            else if (controller != null && controller.value.isInitialized)
-              CameraPreview(controller)
-            else
-              const Center(
-                child: Text(
-                  'Unable to access camera',
-                  style: TextStyle(color: Colors.white, fontSize: 16),
-                ),
-              ),
-
-            // Dark overlay around scanning area.
-            IgnorePointer(
-              child: CustomPaint(painter: _ScannerOverlayPainter()),
-            ),
-
-            // Top bar.
-            Positioned(
-              top: 16,
-              left: 16,
-              right: 16,
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Get.back(),
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.45),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.close_rounded,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                  ),
-
-                  const Spacer(),
-
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.45),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Row(
-                      children: [
-                        Icon(
-                          Icons.auto_awesome_rounded,
-                          color: Colors.white,
-                          size: 15,
-                        ),
-                        SizedBox(width: 6),
-                        Text(
-                          'Scan Recipe',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Instruction.
-            Positioned(
-              top: 92,
-              left: 24,
-              right: 24,
-              child: Column(
-                children: [
-                  const Text(
-                    'Scan your recipe',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Place the recipe clearly inside the frame',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.8),
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Scanning frame.
-            Positioned(
-              left: 32,
-              right: 32,
-              top: MediaQuery.of(context).size.height * 0.25,
-              height: MediaQuery.of(context).size.height * 0.36,
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.85),
-                    width: 2,
-                  ),
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                // child: Stack(
-                //   children: [
-                //     _corner(top: 0, left: 0, borderLeft: true, borderTop: true),
-                //     _corner(
-                //       top: 0,
-                //       right: 0,
-                //       borderRight: true,
-                //       borderTop: true,
-                //     ),
-                //     _corner(
-                //       bottom: 0,
-                //       left: 0,
-                //       borderLeft: true,
-                //       borderBottom: true,
-                //     ),
-                //     _corner(
-                //       bottom: 0,
-                //       right: 0,
-                //       borderRight: true,
-                //       borderBottom: true,
-                //     ),
-                //   ],
-                // ),
-              ),
-            ),
-
-            // Bottom controls.
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 28,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Gallery button - bottom left.
-                  SizedBox(
-                    width: 82,
-                    child: GestureDetector(
-                      onTap: _pickFromGallery,
-                      child: Column(
-                        children: [
-                          Container(
-                            width: 52,
-                            height: 52,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.18),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.4),
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.photo_library_outlined,
-                              color: Colors.white,
-                              size: 25,
-                            ),
-                          ),
-                          const SizedBox(height: 7),
-                          const Text(
-                            'Gallery',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(width: 32),
-
-                  // Camera capture button.
-                  GestureDetector(
-                    onTap: _captureRecipe,
-                    child: Container(
-                      width: 76,
-                      height: 76,
-                      padding: const EdgeInsets.all(5),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 3),
-                      ),
-                      child: Container(
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(width: 114),
-                ],
-              ),
-            ),
-
-            // Processing overlay.
-            if (_isProcessing)
-              Container(
-                color: Colors.black.withValues(alpha: 0.65),
-                child: const Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      CircularProgressIndicator(color: Colors.white),
-                      SizedBox(height: 16),
-                      Text(
-                        'Detecting your recipe...',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _corner({
-    double? top,
-    double? bottom,
-    double? left,
-    double? right,
-    bool borderLeft = false,
-    bool borderRight = false,
-    bool borderTop = false,
-    bool borderBottom = false,
-  }) {
-    return Positioned(
-      top: top,
-      bottom: bottom,
-      left: left,
-      right: right,
-      child: SizedBox(
-        width: 30,
-        height: 30,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            border: Border(
-              left: borderLeft
-                  ? const BorderSide(color: AppColors.primary, width: 4)
-                  : BorderSide.none,
-              right: borderRight
-                  ? const BorderSide(color: AppColors.primary, width: 4)
-                  : BorderSide.none,
-              top: borderTop
-                  ? const BorderSide(color: AppColors.primary, width: 4)
-                  : BorderSide.none,
-              bottom: borderBottom
-                  ? const BorderSide(color: AppColors.primary, width: 4)
-                  : BorderSide.none,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ScannerOverlayPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.38)
-      ..style = PaintingStyle.fill;
-
-    final scanRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(
-        32,
-        size.height * 0.27,
-        size.width - 64,
-        size.height * 0.38,
-      ),
-      const Radius.circular(24),
-    );
-
-    final path = Path()
-      ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
-      ..addRRect(scanRect)
-      ..fillType = PathFillType.evenOdd;
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

@@ -19,6 +19,59 @@ enum ImportStage { landing, browsing }
 // Data model returned after scraping
 // ─────────────────────────────────────────────────────────────────────────────
 
+// class ScrapedRecipeData {
+//   final String title;
+//   final String? description;
+//   final String? imageUrl;
+//   final String sourceUrl;
+//   final String? prepTime;
+//   final String? cookTime;
+//   final String? totalTime;
+//   final String? servings;
+//   final String? category;
+//   final String? cuisine;
+//   final List<String> keywords;
+//   final List<IngredientSection> ingredientSections;
+//   final List<InstructionSection> instructionSections;
+
+//   ScrapedRecipeData({
+//     required this.title,
+//     required this.description,
+//     required this.imageUrl,
+//     required this.sourceUrl,
+//     required this.prepTime,
+//     required this.cookTime,
+//     required this.totalTime,
+//     required this.servings,
+//     required this.category,
+//     required this.cuisine,
+//     required this.keywords,
+//     required List<IngredientSection> ingredientSections,
+//     required this.instructionSections,
+//   }) : ingredientSections = ingredientSections.map((section) {
+//          return IngredientSection(
+//            name: section.name,
+//            items: section.items.map((item) => cleanIngredient(item)).toList(),
+//          );
+//        }).toList();
+
+//   static String cleanIngredient(String raw) {
+//     return raw
+//         .replaceAll(RegExp(r'\s*[\(\[].*?([\)\]]|$)\s*'), ' ')
+//         .replaceAll(RegExp(r'\s+'), ' ')
+//         .replaceAll(RegExp(r'[,;]+$'), '')
+//         .trim();
+//   }
+
+//   /// Flat list of all ingredients across all sections.
+//   List<String> get ingredients =>
+//       ingredientSections.expand((s) => s.items).toList();
+
+//   /// Flat list of all instruction steps across all sections.
+//   List<String> get instructions =>
+//       instructionSections.expand((s) => s.steps).toList();
+// }
+
 class ScrapedRecipeData {
   final String title;
   final String? description;
@@ -47,13 +100,15 @@ class ScrapedRecipeData {
     required this.cuisine,
     required this.keywords,
     required List<IngredientSection> ingredientSections,
-    required this.instructionSections,
-  }) : ingredientSections = ingredientSections.map((section) {
-         return IngredientSection(
-           name: section.name,
-           items: section.items.map((item) => cleanIngredient(item)).toList(),
-         );
-       }).toList();
+    required List<InstructionSection> instructionSections,
+  }) : ingredientSections = _deduplicateIngredientSections(ingredientSections),
+       instructionSections = _deduplicateInstructionSections(
+         instructionSections,
+       );
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Ingredient cleaning
+  // ─────────────────────────────────────────────────────────────────────────
 
   static String cleanIngredient(String raw) {
     return raw
@@ -63,11 +118,100 @@ class ScrapedRecipeData {
         .trim();
   }
 
-  /// Flat list of all ingredients across all sections.
+  // ─────────────────────────────────────────────────────────────────────────
+  // Normalize text for duplicate comparison
+  // ─────────────────────────────────────────────────────────────────────────
+
+  static String _normalize(String value) {
+    return value
+        .toLowerCase()
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .replaceAll(RegExp(r'[.,;:]+$'), '')
+        .trim();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Deduplicate ingredients
+  // ─────────────────────────────────────────────────────────────────────────
+
+  static List<IngredientSection> _deduplicateIngredientSections(
+    List<IngredientSection> sections,
+  ) {
+    final result = <IngredientSection>[];
+
+    // Global set:
+    // Same ingredient appearing in two different sections
+    // will also be removed.
+    final globalSeen = <String>{};
+
+    for (final section in sections) {
+      final uniqueItems = <String>[];
+
+      for (final rawItem in section.items) {
+        final cleaned = cleanIngredient(rawItem);
+
+        if (cleaned.isEmpty) continue;
+
+        final normalized = _normalize(cleaned);
+
+        if (globalSeen.add(normalized)) {
+          uniqueItems.add(cleaned);
+        }
+      }
+
+      if (uniqueItems.isNotEmpty) {
+        result.add(IngredientSection(name: section.name, items: uniqueItems));
+      }
+    }
+
+    return result;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Deduplicate instructions
+  // ─────────────────────────────────────────────────────────────────────────
+
+  static List<InstructionSection> _deduplicateInstructionSections(
+    List<InstructionSection> sections,
+  ) {
+    final result = <InstructionSection>[];
+
+    final globalSeen = <String>{};
+
+    for (final section in sections) {
+      final uniqueSteps = <String>[];
+
+      for (final rawStep in section.steps) {
+        final cleaned = rawStep.replaceAll(RegExp(r'\s+'), ' ').trim();
+
+        if (cleaned.isEmpty) continue;
+
+        final normalized = _normalize(cleaned);
+
+        if (globalSeen.add(normalized)) {
+          uniqueSteps.add(cleaned);
+        }
+      }
+
+      if (uniqueSteps.isNotEmpty) {
+        result.add(InstructionSection(name: section.name, steps: uniqueSteps));
+      }
+    }
+
+    return result;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Flat ingredient list
+  // ─────────────────────────────────────────────────────────────────────────
+
   List<String> get ingredients =>
       ingredientSections.expand((s) => s.items).toList();
 
-  /// Flat list of all instruction steps across all sections.
+  // ─────────────────────────────────────────────────────────────────────────
+  // Flat instruction list
+  // ─────────────────────────────────────────────────────────────────────────
+
   List<String> get instructions =>
       instructionSections.expand((s) => s.steps).toList();
 }
@@ -462,9 +606,16 @@ JSON.stringify((function() {
 
   function getWprmIngredients() {
     var groups = [];
-    var groupEls = document.querySelectorAll(
-      '.wprm-recipe-ingredient-group, .wprm-recipe-ingredients-container .wprm-recipe-block-container-columns'
-    );
+   var groupEls = document.querySelectorAll(
+  '.wprm-recipe-ingredient-group'
+);
+
+if (groupEls.length === 0) {
+  groupEls = document.querySelectorAll(
+    '.wprm-recipe-ingredients-container .wprm-recipe-block-container-columns'
+  );
+}
+    
     if (groupEls.length === 0) return null;
 
     groupEls.forEach(function(group) {
@@ -509,9 +660,15 @@ JSON.stringify((function() {
 
   function getWprmInstructions() {
     var groups = [];
-    var groupEls = document.querySelectorAll(
-      '.wprm-recipe-instruction-group, .wprm-recipe-instructions-container .wprm-recipe-block-container-columns'
-    );
+   var groupEls = document.querySelectorAll(
+  '.wprm-recipe-instruction-group'
+);
+
+if (groupEls.length === 0) {
+  groupEls = document.querySelectorAll(
+    '.wprm-recipe-instructions-container .wprm-recipe-block-container-columns'
+  );
+}
     if (groupEls.length === 0) return null;
 
     groupEls.forEach(function(group) {

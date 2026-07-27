@@ -70,21 +70,24 @@ class _WeekReviewScreenState extends State<WeekReviewScreen> {
                     children: [
                       _infoCard(),
                       const SizedBox(height: 14),
-                      for (var day = 0; day < MealPlannerController.days; day++)
-                        ...[
+                      for (final day in _controller.allowedDays) ...[
                         RevealIn(
                           delay: Duration(milliseconds: 80 + day * 55),
                           beginOffset: const Offset(0, 14),
                           child: MealDayCard(
                             title: _dayTitle(weekStart, day),
-                            meals: meals
-                                .where((m) => m.day == day)
-                                .toList()
-                              ..sort((a, b) => MealPlannerController.slots
-                                  .indexOf(a.slot)
-                                  .compareTo(
-                                      MealPlannerController.slots.indexOf(b.slot))),
-                            onTapMeal: (m) => _controller.shuffleMeal(m.day, m.slot),
+                            meals: meals.where((m) => m.day == day).toList()
+                              ..sort(
+                                (a, b) => MealPlannerController.slots
+                                    .indexOf(a.slot)
+                                    .compareTo(
+                                      MealPlannerController.slots.indexOf(
+                                        b.slot,
+                                      ),
+                                    ),
+                              ),
+                            onTapMeal: (m) =>
+                                _controller.shuffleMeal(m.day, m.slot),
                             onSwapMeal: (m) =>
                                 _controller.shuffleMeal(m.day, m.slot),
                           ),
@@ -110,8 +113,7 @@ class _WeekReviewScreenState extends State<WeekReviewScreen> {
 
   Widget _appBar() {
     final c = _controller;
-    final subtitle =
-        '${c.goal.value.shortLabel} · Serves ${c.servings}';
+    final subtitle = '${c.goal.value.shortLabel} · Serves ${c.servings}';
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
       child: Row(
@@ -127,8 +129,11 @@ class _WeekReviewScreenState extends State<WeekReviewScreen> {
                 borderRadius: BorderRadius.circular(13),
                 border: Border.all(color: Mp.border),
               ),
-              child: const Icon(Icons.chevron_left_rounded,
-                  size: 24, color: Mp.ink),
+              child: const Icon(
+                Icons.chevron_left_rounded,
+                size: 24,
+                color: Mp.ink,
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -136,8 +141,10 @@ class _WeekReviewScreenState extends State<WeekReviewScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Your AI meal plan',
-                    style: Mp.f(17, FontWeight.w800, Mp.ink)),
+                Text(
+                  'Your AI meal plan',
+                  style: Mp.f(17, FontWeight.w800, Mp.ink),
+                ),
                 const SizedBox(height: 1),
                 Text(subtitle, style: Mp.f(12, FontWeight.w600, Mp.muted)),
               ],
@@ -155,11 +162,16 @@ class _WeekReviewScreenState extends State<WeekReviewScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.autorenew_rounded,
-                      size: 15, color: Mp.purpleDark),
+                  const Icon(
+                    Icons.autorenew_rounded,
+                    size: 15,
+                    color: Mp.purpleDark,
+                  ),
                   const SizedBox(width: 6),
-                  Text('Shuffle all',
-                      style: Mp.f(12.5, FontWeight.w800, Mp.purpleDark)),
+                  Text(
+                    'Shuffle all',
+                    style: Mp.f(12.5, FontWeight.w800, Mp.purpleDark),
+                  ),
                 ],
               ),
             ),
@@ -184,7 +196,12 @@ class _WeekReviewScreenState extends State<WeekReviewScreen> {
           Expanded(
             child: Text(
               'Balanced for the week. Tap any meal to swap it, then apply.',
-              style: Mp.f(12.5, FontWeight.w600, const Color(0xFF5A4A78), h: 1.35),
+              style: Mp.f(
+                12.5,
+                FontWeight.w600,
+                const Color(0xFF5A4A78),
+                h: 1.35,
+              ),
             ),
           ),
         ],
@@ -195,7 +212,11 @@ class _WeekReviewScreenState extends State<WeekReviewScreen> {
   Widget _bottomBar() {
     return Container(
       padding: EdgeInsets.fromLTRB(
-          16, 12, 16, 12 + MediaQuery.of(context).padding.bottom),
+        16,
+        12,
+        16,
+        12 + MediaQuery.of(context).padding.bottom,
+      ),
       decoration: const BoxDecoration(
         color: Mp.bg,
         border: Border(top: BorderSide(color: Mp.divider)),

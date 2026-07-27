@@ -3,6 +3,7 @@ import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/utils/auth_error_mapper.dart';
@@ -63,15 +64,15 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   }
 
   void _onOtherOptions() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const SignUpScreen()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const SignUpScreen()));
   }
 
   void _onLogIn() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const LoginScreen()));
   }
 
   Future<void> _routeAfterAuth() async {
@@ -83,20 +84,15 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           .collection('users')
           .doc(user.uid)
           .get();
-      final needsTrialChooser =
-          snap.data()?['trialChooserCompleted'] == false;
+      final needsTrialChooser = snap.data()?['trialChooserCompleted'] == false;
 
       Get.offAll(
-        () => needsTrialChooser
-            ? const TrialChooserScreen()
-            : const HomeScreen(),
+        () =>
+            needsTrialChooser ? const TrialChooserScreen() : const HomeScreen(),
         transition: Transition.noTransition,
       );
     } catch (_) {
-      Get.offAll(
-        () => const HomeScreen(),
-        transition: Transition.noTransition,
-      );
+      Get.offAll(() => const HomeScreen(), transition: Transition.noTransition);
     }
   }
 
@@ -129,7 +125,6 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               // Back button + progress line (like the reference)
               Row(
                 children: [
-                 
                   const SizedBox(width: 14),
                   Expanded(
                     child: ClipRRect(
@@ -216,16 +211,30 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               const SizedBox(height: 13),
 
               // Continue with Apple button
-              _OutlinedAuthButton(
-                label: 'continue_with_apple'.tr,
-                onTap: _isLoading ? null : _onAppleContinue,
-                leading: const Icon(
-                  Icons.apple,
-                  size: 20,
-                  color: Color(0xFF2A211B),
-                ),
-              ),
+              if (!Platform.isAndroid) ...[
+                const SizedBox(height: 13),
 
+                // Continue with Apple button
+                _OutlinedAuthButton(
+                  label: 'continue_with_apple'.tr,
+                  onTap: _isLoading ? null : _onAppleContinue,
+                  leading: const Icon(
+                    Icons.apple,
+                    size: 20,
+                    color: Color(0xFF2A211B),
+                  ),
+                ),
+              ],
+
+              // _OutlinedAuthButton(
+              //   label: 'continue_with_apple'.tr,
+              //   onTap: _isLoading ? null : _onAppleContinue,
+              //   leading: const Icon(
+              //     Icons.apple,
+              //     size: 20,
+              //     color: Color(0xFF2A211B),
+              //   ),
+              // ),
               const SizedBox(height: 13),
 
               // Other options button
@@ -305,10 +314,7 @@ class _OutlinedAuthButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (leading != null) ...[
-              leading!,
-              const SizedBox(width: 11),
-            ],
+            if (leading != null) ...[leading!, const SizedBox(width: 11)],
             Text(
               label,
               style: GoogleFonts.plusJakartaSans(

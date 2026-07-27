@@ -56,12 +56,12 @@ class _NutritionScreenState extends State<NutritionScreen> {
 
   /// Full-facts rows: (label, per-serving value, formatter).
   List<(String, double, String Function(double))> get _facts => [
-        ('nutrition_fact_fiber'.tr, n.fiber, _fmtG),
-        ('nutrition_fact_sugar'.tr, n.sugar, _fmtG),
-        ('nutrition_fact_saturated_fat'.tr, n.saturatedFat, _fmtG),
-        ('nutrition_fact_sodium'.tr, n.sodium, _fmtMg),
-        ('nutrition_fact_cholesterol'.tr, n.cholesterol, _fmtMg),
-      ];
+    ('nutrition_fact_fiber'.tr, n.fiber, _fmtG),
+    ('nutrition_fact_sugar'.tr, n.sugar, _fmtG),
+    ('nutrition_fact_saturated_fat'.tr, n.saturatedFat, _fmtG),
+    ('nutrition_fact_sodium'.tr, n.sodium, _fmtMg),
+    ('nutrition_fact_cholesterol'.tr, n.cholesterol, _fmtMg),
+  ];
 
   double get _kcal =>
       _perServing ? n.caloriesPerServing : n.caloriesWholeRecipe;
@@ -84,177 +84,188 @@ class _NutritionScreenState extends State<NutritionScreen> {
         duration: const Duration(milliseconds: 400),
         beginOffset: const Offset(0, 20),
         child: SingleChildScrollView(
-        padding: EdgeInsets.zero,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _header(),
-            Transform.translate(
-              offset: const Offset(0, -26),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(18, 0, 18, 28),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // macro chips — reveal one-by-one (scale 0.9→1.0 + fade)
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: RevealIn.scale(
-                            delay: const Duration(milliseconds: 200),
-                            child: MacroCard(
-                              grams: _grams(n.protein),
-                              label: 'nutrition_macro_protein'.tr,
-                              track: NutritionPalette.proteinTrack,
-                              fill: NutritionPalette.protein,
-                              fraction: frac[0],
+          padding: EdgeInsets.zero,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _header(),
+              Transform.translate(
+                offset: const Offset(0, -26),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 0, 18, 28),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // macro chips — reveal one-by-one (scale 0.9→1.0 + fade)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: RevealIn.scale(
+                              delay: const Duration(milliseconds: 200),
+                              child: MacroCard(
+                                grams: _grams(n.protein),
+                                label: 'nutrition_macro_protein'.tr,
+                                track: NutritionPalette.proteinTrack,
+                                fill: NutritionPalette.protein,
+                                fraction: frac[0],
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: RevealIn.scale(
-                            delay: const Duration(milliseconds: 260),
-                            child: MacroCard(
-                              grams: _grams(n.carbs),
-                              label: 'nutrition_macro_carbs'.tr,
-                              track: NutritionPalette.carbsTrack,
-                              fill: NutritionPalette.carbs,
-                              fraction: frac[1],
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: RevealIn.scale(
+                              delay: const Duration(milliseconds: 260),
+                              child: MacroCard(
+                                grams: _grams(n.carbs),
+                                label: 'nutrition_macro_carbs'.tr,
+                                track: NutritionPalette.carbsTrack,
+                                fill: NutritionPalette.carbs,
+                                fraction: frac[1],
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: RevealIn.scale(
-                            delay: const Duration(milliseconds: 320),
-                            child: MacroCard(
-                              grams: _grams(n.fat),
-                              label: 'nutrition_macro_fats'.tr,
-                              track: NutritionPalette.fatTrack,
-                              fill: NutritionPalette.fat,
-                              fraction: frac[2],
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: RevealIn.scale(
+                              delay: const Duration(milliseconds: 320),
+                              child: MacroCard(
+                                grams: _grams(n.fat),
+                                label: 'nutrition_macro_fats'.tr,
+                                track: NutritionPalette.fatTrack,
+                                fill: NutritionPalette.fat,
+                                fraction: frac[2],
+                              ),
                             ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-
-                    // whole-recipe info card — appears/disappears smoothly
-                    AnimatedSize(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeOutCubic,
-                      alignment: Alignment.topCenter,
-                      child: _perServing
-                          ? const SizedBox(width: double.infinity)
-                          : Column(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 14, vertical: 11),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFF4EEFD),
-                                    border: Border.all(
-                                        color: const Color(0xFFE0D2F7)),
-                                    borderRadius: BorderRadius.circular(13),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      const Icon(Icons.person_rounded,
-                                          size: 18,
-                                          color: NutritionPalette.purple),
-                                      const SizedBox(width: 9),
-                                      Expanded(
-                                        child: Text(
-                                          'nutrition_whole_recipe_hint'.tr,
-                                          style: NutritionPalette.font(
-                                              size: 12.5,
-                                              weight: FontWeight.w600,
-                                              color: const Color(0xFF5A4A78)),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 18),
-                              ],
-                            ),
-                    ),
-
-                    // FULL FACTS
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(2, 4, 2, 9),
-                      child: Text(
-                        _perServing
-                            ? 'nutrition_full_facts'.tr
-                            : 'nutrition_full_facts_whole_recipe'.tr,
-                        style: NutritionPalette.font(
-                            size: 12,
-                            weight: FontWeight.w800,
-                            color: NutritionPalette.muted,
-                            letterSpacing: 0.7),
-                      ),
-                    ),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(color: NutritionPalette.cardBorder),
-                        borderRadius: BorderRadius.circular(18),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF2A211B).withValues(alpha: 0.4),
-                            blurRadius: 26,
-                            offset: const Offset(0, 12),
-                            spreadRadius: -22,
                           ),
                         ],
                       ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(18),
-                        child: Column(
-                          children: [
-                            // Facts rows fade + slide up, one after another.
-                            for (var i = 0; i < _facts.length; i++)
-                              RevealIn(
-                                delay: Duration(milliseconds: 360 + i * 70),
-                                beginOffset: const Offset(0, 14),
-                                child: FactTile(
-                                  label: _facts[i].$1,
-                                  value: _scaled(_facts[i].$2),
-                                  format: _facts[i].$3,
-                                  showDivider: i != _facts.length - 1,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    NutritionButton(
-                      label: 'nutrition_see_ingredient_breakdown'.tr,
-                      onTap: () => Get.to(
-                        () => IngredientNutritionScreen(
-                          recipeName: widget.recipeName,
-                          nutrition: n,
-                        ),
-                        transition: Transition.fadeIn,
+                      const SizedBox(height: 20),
+
+                      // whole-recipe info card — appears/disappears smoothly
+                      AnimatedSize(
                         duration: const Duration(milliseconds: 300),
                         curve: Curves.easeOutCubic,
+                        alignment: Alignment.topCenter,
+                        child: _perServing
+                            ? const SizedBox(width: double.infinity)
+                            : Column(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 11,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF4EEFD),
+                                      border: Border.all(
+                                        color: const Color(0xFFE0D2F7),
+                                      ),
+                                      borderRadius: BorderRadius.circular(13),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.person_rounded,
+                                          size: 18,
+                                          color: NutritionPalette.purple,
+                                        ),
+                                        const SizedBox(width: 9),
+                                        Expanded(
+                                          child: Text(
+                                            'nutrition_whole_recipe_hint'.tr,
+                                            style: NutritionPalette.font(
+                                              size: 12.5,
+                                              weight: FontWeight.w600,
+                                              color: const Color(0xFF5A4A78),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 18),
+                                ],
+                              ),
                       ),
-                    ),
-                    const SizedBox(height: 14),
-                    NutritionDisclaimer(
-                      text: 'nutrition_disclaimer'.tr,
-                    ),
-                  ],
+
+                      // FULL FACTS
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(2, 4, 2, 9),
+                        child: Text(
+                          _perServing
+                              ? 'nutrition_full_facts'.tr
+                              : 'nutrition_full_facts_whole_recipe'.tr,
+                          style: NutritionPalette.font(
+                            size: 12,
+                            weight: FontWeight.w800,
+                            color: NutritionPalette.muted,
+                            letterSpacing: 0.7,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(
+                            color: NutritionPalette.cardBorder,
+                          ),
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(
+                                0xFF2A211B,
+                              ).withValues(alpha: 0.4),
+                              blurRadius: 26,
+                              offset: const Offset(0, 12),
+                              spreadRadius: -22,
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(18),
+                          child: Column(
+                            children: [
+                              // Facts rows fade + slide up, one after another.
+                              for (var i = 0; i < _facts.length; i++)
+                                RevealIn(
+                                  delay: Duration(milliseconds: 360 + i * 70),
+                                  beginOffset: const Offset(0, 14),
+                                  child: FactTile(
+                                    label: _facts[i].$1,
+                                    value: _scaled(_facts[i].$2),
+                                    format: _facts[i].$3,
+                                    showDivider: i != _facts.length - 1,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      NutritionButton(
+                        label: 'nutrition_see_ingredient_breakdown'.tr,
+                        onTap: () => Get.to(
+                          () => IngredientNutritionScreen(
+                            recipeName: widget.recipeName,
+                            nutrition: n,
+                            perServing:
+                                _perServing, // <-- pass current toggle state
+                          ),
+                          transition: Transition.fadeIn,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOutCubic,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      NutritionDisclaimer(text: 'nutrition_disclaimer'.tr),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -271,16 +282,8 @@ class _NutritionScreenState extends State<NutritionScreen> {
         ),
         child: Stack(
           children: [
-            Positioned(
-              top: -60,
-              right: -50,
-              child: _wash(200, 0.18),
-            ),
-            Positioned(
-              bottom: -40,
-              left: -40,
-              child: _wash(170, 0.10),
-            ),
+            Positioned(top: -60, right: -50, child: _wash(200, 0.18)),
+            Positioned(bottom: -40, left: -40, child: _wash(170, 0.10)),
             SafeArea(
               bottom: false,
               child: Padding(
@@ -290,14 +293,19 @@ class _NutritionScreenState extends State<NutritionScreen> {
                     Row(
                       children: [
                         _iconButton(
-                            Icons.arrow_back_rounded, () => Get.back<void>()),
+                          Icons.arrow_back_rounded,
+                          () => Get.back<void>(),
+                        ),
                         const SizedBox(width: 14),
                         Expanded(
-                          child: Text('nutrition'.tr,
-                              style: NutritionPalette.font(
-                                  size: 17,
-                                  weight: FontWeight.w800,
-                                  color: Colors.white)),
+                          child: Text(
+                            'nutrition'.tr,
+                            style: NutritionPalette.font(
+                              size: 17,
+                              weight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
                         const PlusPill(
                           background: Color(0x38FFFFFF),
@@ -307,19 +315,22 @@ class _NutritionScreenState extends State<NutritionScreen> {
                       ],
                     ),
                     const SizedBox(height: 6),
-                    Text(widget.recipeName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: NutritionPalette.font(
-                            size: 13,
-                            weight: FontWeight.w700,
-                            color: Colors.white.withValues(alpha: 0.85))),
+                    Text(
+                      widget.recipeName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: NutritionPalette.font(
+                        size: 13,
+                        weight: FontWeight.w700,
+                        color: Colors.white.withValues(alpha: 0.85),
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     SegmentControl(
                       options: [
                         'nutrition_segment_per_serving'.tr,
-                        'nutrition_segment_whole_recipe'.tr
+                        'nutrition_segment_whole_recipe'.tr,
                       ],
                       selectedIndex: _perServing ? 0 : 1,
                       onChanged: (i) => setState(() => _perServing = i == 0),
@@ -333,8 +344,9 @@ class _NutritionScreenState extends State<NutritionScreen> {
                         kcal: _kcal,
                         label: _perServing
                             ? 'nutrition_kcal_per_serving'.tr
-                            : 'nutrition_kcal_serves'
-                                .trParams({'servings': '${n.servings}'}),
+                            : 'nutrition_kcal_serves'.trParams({
+                                'servings': '${n.servings}',
+                              }),
                         valueFontSize: _perServing ? 42 : 38,
                       ),
                     ),
@@ -349,34 +361,34 @@ class _NutritionScreenState extends State<NutritionScreen> {
   }
 
   Widget _iconButton(IconData icon, VoidCallback onTap) => GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: Container(
-          width: 40,
-          height: 40,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(13),
-          ),
-          child: Icon(icon, size: 20, color: Colors.white),
-        ),
-      );
+    onTap: onTap,
+    behavior: HitTestBehavior.opaque,
+    child: Container(
+      width: 40,
+      height: 40,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(13),
+      ),
+      child: Icon(icon, size: 20, color: Colors.white),
+    ),
+  );
 
   Widget _wash(double size, double opacity) => IgnorePointer(
-        child: Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(
-              colors: [
-                Colors.white.withValues(alpha: opacity),
-                Colors.white.withValues(alpha: 0),
-              ],
-              stops: const [0, 0.7],
-            ),
-          ),
+    child: Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [
+            Colors.white.withValues(alpha: opacity),
+            Colors.white.withValues(alpha: 0),
+          ],
+          stops: const [0, 0.7],
         ),
-      );
+      ),
+    ),
+  );
 }

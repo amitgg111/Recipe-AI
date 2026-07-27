@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../theme/app_dimensions.dart';
@@ -110,7 +111,12 @@ class _PrimaryButtonState extends State<PrimaryButton>
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: widget.isLoading ? null : widget.onPressed,
+          onTap: widget.isLoading
+              ? null
+              : () {
+                  HapticFeedback.mediumImpact();
+                  widget.onPressed?.call();
+                },
           borderRadius: BorderRadius.circular(AppDimensions.radiusButton),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(AppDimensions.radiusButton),

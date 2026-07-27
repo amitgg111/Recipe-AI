@@ -237,13 +237,21 @@ function detectInstructionSections(flatList) {
  */
 function normalizeRecipe(raw) {
   const recipe = {...raw};
+  const decodeHtmlEntities = (value) =>
+    String(value || "")
+        .trim()
+        .replaceAll("&amp;", "&")
+        .replaceAll("&#x2F;", "/")
+        .replaceAll("&#47;", "/")
+        .replaceAll("&quot;", "\"")
+        .replaceAll("&#39;", "'");
 
   recipe.title = String(
       recipe.title || recipe.recipeName || recipe.name || "",
   ).trim();
 
   recipe.description = String(recipe.description || "").trim();
-  recipe.imageUrl = String(recipe.imageUrl || "").trim();
+  recipe.imageUrl = decodeHtmlEntities(recipe.imageUrl);
   recipe.sourceUrl = String(recipe.sourceUrl || "AI Generated").trim();
   recipe.prepTime = String(recipe.prepTime || "").trim();
   recipe.cookTime = String(recipe.cookTime || "").trim();
@@ -476,7 +484,15 @@ const RECIPE_IMAGE_PROMPT = `
       "Toss balls in sauce...", "..."
     ]}
   ]
-
+NUTRITION:
+- Calculate approximate nutrition based on all ingredients and quantities.
+- Return values for the complete recipe per serving.
+- Estimate:
+  calories in kcal
+  protein in grams
+  carbs in grams
+  fat in grams
+- Use realistic culinary nutrition estimates.
   Burger: sections for Patty, Sauce, Assembly.
   Pizza: sections for Dough, Sauce, Toppings.
   Cake: sections for Batter, Frosting.
@@ -514,7 +530,11 @@ exports.askGemini = onCall(
       secrets: ["GEMINI_API_KEY"],
     },
     async (request) => {
+      const startTime = Date.now();
+
       try {
+        console.log("API CALL STARTED");
+
         const prompt = request.data.prompt;
 
         if (!prompt) {
@@ -526,14 +546,25 @@ exports.askGemini = onCall(
         const response = await ai.models.generateContent({
           model: "gemini-2.5-flash",
           contents: prompt,
+          config: {
+            maxOutputTokens: 2000,
+            temperature: 0.7,
+          },
         });
+
+        const responseTime = Date.now() - startTime;
+
+        console.log(`API RESPONSE TIME: ${responseTime} ms`);
+        console.log(
+            `API RESPONSE TIME: ${(responseTime / 1000).toFixed(2)} seconds`,
+        );
 
         return {
           success: true,
           text: response.text,
         };
       } catch (error) {
-        console.error(error);
+        console.error("API ERROR:", error);
 
         return {
           success: false,
@@ -569,6 +600,11 @@ INSTRUCTION FORMAT:
 - Each step is one clear actionable sentence.
 - Minimum 5 steps total when possible.
 - No step numbers in the text.
+
+NUTRITION:
+- Estimate nutrition per serving using all available ingredients and quantities.
+- Return approximate values for calories, protein, carbohydrates, and fat.
+- Do not leave any nutrition field empty.
 
 FLAT LISTS:
 - "ingredients" = ALL items from every ingredientSection combined in order.
@@ -620,7 +656,14 @@ instructionSections: [
     "Toss balls in sauce...", "..."
   ]}
 ]
-
+NUTRITION:
+- Calculate approximate nutrition for one serving based
+  on the ingredients and quantities.
+- Return realistic estimated values.
+- calories: e.g. "450 kcal"
+- protein: e.g. "18 g"
+- carbs: e.g. "55 g"
+- fat: e.g. "20 g"
 Burger: sections for Patty, Sauce, Assembly.
 Pizza: sections for Dough, Sauce, Toppings.
 Cake: sections for Batter, Frosting.
@@ -703,6 +746,11 @@ No commentary:
 // search phrase
 // for this dish.
  }
+
+ NUTRITION:
+- Estimate nutrition per serving using all available ingredients and quantities.
+- Return approximate values for calories, protein, carbohydrates, and fat.
+- Do not leave any nutrition field empty.
  
   RULES:
 - Sections are primary.
@@ -789,12 +837,35 @@ async function fetchUrlContext(url) {
 
     const html = await response.text();
     const meta = extractPageMeta(html);
+    const contentType = String(
+        response.headers.get("content-type") || "",
+    ).toLowerCase();
+
+    const socialType = (() => {
+      const ogType = String(meta["og:type"] || "").toLowerCase();
+      const twitterCard = String(meta["twitter:card"] || "").toLowerCase();
+      const hasVideoMeta = Boolean(
+          meta["og:video"] ||
+          meta["og:video:url"] ||
+          meta["twitter:player"] ||
+          meta["twitter:player:stream"],
+      );
+
+      if (contentType.startsWith("video/")) return "video";
+      if (contentType.startsWith("image/")) return "image";
+      if (ogType.startsWith("video")) return "video";
+      if (ogType.startsWith("image")) return "image";
+      if (twitterCard.includes("player")) return "video";
+      if (hasVideoMeta) return "video";
+      return "unknown";
+    })();
 
     return {
       pageTitle: meta.title || meta["og:title"] || "",
       description: meta["og:description"] || meta.description || "",
       imageUrl: meta["og:image"] || meta["twitter:image"] || "",
       siteName: meta["og:site_name"] || "",
+      contentType: socialType,
     };
   } catch (error) {
     return {fetchError: error.message};
@@ -813,6 +884,9 @@ async function generateStructuredRecipe(ai, prompt) {
     config: {
       responseMimeType: "application/json",
       responseSchema: RECIPE_RESPONSE_SCHEMA,
+      thinkingConfig: {
+        thinkingBudget: 0,
+      },
     },
   });
 
@@ -878,17 +952,22 @@ exports.extractRecipeFromSocialContent = onCall(
           recipe.sourceUrl = url;
         }
 
-        // Prefer a real thumbnail scraped from the post; otherwise generate
-        // an AI food photo so the recipe never ships without an image.
-        if (pageContext.imageUrl && !recipe.imageUrl) {
-          recipe.imageUrl = pageContext.imageUrl;
-        }
-        if (!recipe.imageUrl) {
+        const socialType = String(pageContext.contentType || "unknown");
+
+        if (socialType === "video") {
+          // Video imports do not have a stable source still image, so generate
+          // a durable food image and save that URL in Firebase.
           const generatedUrl = await generateAndStoreRecipeImage(ai, recipe);
           if (generatedUrl) {
             recipe.imageUrl = generatedUrl;
+          } else if (pageContext.imageUrl) {
+            recipe.imageUrl = pageContext.imageUrl;
           }
+        } else if (pageContext.imageUrl) {
+          // Image imports must keep the original social-media image.
+          recipe.imageUrl = pageContext.imageUrl;
         }
+
 
         return {success: true, recipe};
       } catch (error) {
@@ -906,40 +985,90 @@ exports.analyzeRecipeVideo = onCall(
       memory: "2GiB",
     },
     async (request) => {
+      const startTime = Date.now();
+
       try {
+        console.log("VIDEO ANALYSIS STARTED");
+
         const videoBase64 = request.data.video;
-        const storagePath = String(request.data.storagePath || "").trim();
-        const mimeType = String(request.data.mimeType || "video/mp4").trim();
-        const sourceUrl = String(request.data.sourceUrl || "").trim();
+        const storagePath = String(
+            request.data.storagePath || "",
+        ).trim();
+        const mimeType = String(
+            request.data.mimeType || "video/mp4",
+        ).trim();
+        const sourceUrl = String(
+            request.data.sourceUrl || "",
+        ).trim();
 
         let videoData = videoBase64;
         let resolvedMimeType = mimeType;
+        const rawRecipe = JSON.parse(text);
 
+        if (
+          rawRecipe.isRecipe === false ||
+  !rawRecipe.title ||
+  !Array.isArray(rawRecipe.ingredients) ||
+  rawRecipe.ingredients.length === 0
+        ) {
+          return {
+            success: true,
+            recipe: {
+              isRecipe: false,
+            },
+          };
+        }
+
+        const recipe = normalizeRecipe(rawRecipe);
+        recipe.isRecipe = true;
+        // Download video from Storage only when base64 is not available.
         if (!videoData && storagePath) {
+          console.log("Downloading video from Storage...");
+
           const bucket = admin.storage().bucket();
           const file = bucket.file(storagePath);
-          const [buffer] = await file.download();
-          videoData = buffer.toString("base64");
 
-          const [metadata] = await file.getMetadata();
+          const [buffer, metadataResult] = await Promise.all([
+            file.download(),
+            file.getMetadata(),
+          ]);
+
+          videoData = buffer[0].toString("base64");
+
+          const metadata = metadataResult[0];
+
           if (metadata.contentType) {
             resolvedMimeType = metadata.contentType;
           }
+
+          console.log(
+              "Video downloaded in:",
+              Date.now() - startTime,
+              "ms",
+          );
         }
 
+
         if (!videoData) {
-          throw new Error("Video data or storagePath is required");
+          throw new Error(
+              "Video data or storagePath is required",
+          );
         }
 
         const ai = getAI();
+
         const promptText = sourceUrl ?
           `${RECIPE_VIDEO_PROMPT}\n\nSource URL: ${sourceUrl}` :
           RECIPE_VIDEO_PROMPT;
 
+        console.log("Gemini video analysis started");
+
         const response = await ai.models.generateContent({
           model: "gemini-2.5-flash",
           contents: [
-            {text: promptText},
+            {
+              text: promptText,
+            },
             {
               inlineData: {
                 mimeType: resolvedMimeType,
@@ -950,36 +1079,117 @@ exports.analyzeRecipeVideo = onCall(
           config: {
             responseMimeType: "application/json",
             responseSchema: RECIPE_RESPONSE_SCHEMA,
+
+            // Disable thinking for faster response.
+            thinkingConfig: {
+              thinkingBudget: 0,
+            },
+
+            // Limit unnecessary output tokens.
+            maxOutputTokens: 2500,
+
+            // More deterministic and slightly faster.
+            temperature: 0.2,
           },
         });
 
-        let text = response.text.trim();
-        text = text.replace(/```json/g, "");
-        text = text.replace(/```/g, "");
+        console.log(
+            "Gemini response received in:",
+            Date.now() - startTime,
+            "ms",
+        );
 
-        const rawRecipe = JSON.parse(text);
-        const recipe = normalizeRecipe(rawRecipe);
+        let text = response.text.trim();
+
+        // Remove accidental markdown code blocks.
+        text = text
+            .replace(/^```json\s*/i, "")
+            .replace(/^```\s*/i, "")
+            .replace(/\s*```$/i, "")
+            .trim();
 
         if (sourceUrl) {
           recipe.sourceUrl = sourceUrl;
         }
 
-        // Video frames aren't a great thumbnail; generate a clean AI photo
-        // whenever no image was already provided.
+        console.log(
+            "Recipe generated:",
+            recipe.title,
+        );
+
+        // ---------------------------------------------------------
+        // IMPORTANT:
+        // Do NOT generate Imagen image here if response speed matters.
+        //
+        // Video thumbnail/frame will be used as image.
+        // This saves one complete Imagen API call.
+        // ---------------------------------------------------------
+
         if (!recipe.imageUrl) {
-          const generatedUrl = await generateAndStoreRecipeImage(ai, recipe);
-          if (generatedUrl) {
-            recipe.imageUrl = generatedUrl;
-          }
+          recipe.imageUrl = "";
         }
 
-        return {success: true, recipe};
+        console.log(
+            "TOTAL VIDEO ANALYSIS TIME:",
+            Date.now() - startTime,
+            "ms",
+        );
+
+        return {
+          success: true,
+          recipe,
+        };
       } catch (error) {
-        console.error(error);
-        return {success: false, error: error.message};
+        console.error(
+            "analyzeRecipeVideo failed:",
+            error,
+        );
+
+        return {
+          success: false,
+          error: error.message,
+        };
       }
     },
 );
+
+exports.generateRecipeImage = onCall(
+    {
+      secrets: ["GEMINI_API_KEY"],
+      timeoutSeconds: 300,
+      memory: "1GiB",
+    },
+    async (request) => {
+      try {
+        const recipe = request.data.recipe;
+
+        if (!recipe || !recipe.title) {
+          throw new Error("Recipe data is required");
+        }
+
+        const ai = getAI();
+
+        const imageUrl = await generateAndStoreRecipeImage(ai, recipe);
+
+        if (!imageUrl) {
+          throw new Error("Image generation failed");
+        }
+
+        return {
+          success: true,
+          imageUrl: imageUrl,
+        };
+      } catch (error) {
+        console.error("generateRecipeImage failed:", error);
+
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+    },
+);
+
 
 // IMAGE TO RECIPE
 exports.analyzeRecipeImage = onCall(
@@ -1012,6 +1222,9 @@ exports.analyzeRecipeImage = onCall(
           config: {
             responseMimeType: "application/json",
             responseSchema: RECIPE_RESPONSE_SCHEMA,
+            thinkingConfig: {
+              thinkingBudget: 0,
+            },
           },
         });
 

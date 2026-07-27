@@ -97,6 +97,7 @@ class CreatorProfileScreen extends StatelessWidget {
             child: Container(
               width: 40,
               height: 40,
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(13),
@@ -299,19 +300,20 @@ class CreatorProfileScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: AppColors.greenBgLight,
-                    borderRadius: BorderRadius.circular(9),
-                  ),
-                  child: const OnboardingLineIcon(
-                    'globe',
-                    size: 16,
-                    color: AppColors.green,
-                  ),
-                ),
+                // Container(
+                //   width: 30,
+                //   height: 30,
+                //   padding: const EdgeInsets.all(5),
+                //   decoration: BoxDecoration(
+                //     color: AppColors.greenBgLight,
+                //     borderRadius: BorderRadius.circular(9),
+                //   ),
+                //   child: const OnboardingLineIcon(
+                //     'globe',
+                //     size: 16,
+                //     color: AppColors.green,
+                //   ),
+                // ),
               ],
             ),
           ),

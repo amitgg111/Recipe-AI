@@ -1,22 +1,22 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 enum SnackbarType { success, error, warning, info }
 
 class CustomSnackbar {
-  static void show({
+  static Future<void> show({
     required String title,
-
     String? message,
     String? actionText,
     VoidCallback? onAction,
-
     SnackbarType type = SnackbarType.success,
     Duration duration = const Duration(seconds: 2),
-  }) {
+  }) async {
     Get.closeAllSnackbars();
 
-    final config = _getConfig(type);
+    final config = await _getConfig(type);
 
     Get.rawSnackbar(
       snackPosition: SnackPosition.BOTTOM,
@@ -24,7 +24,6 @@ class CustomSnackbar {
       borderRadius: 18,
       backgroundColor: Colors.transparent,
       duration: duration,
-
       messageText: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
@@ -101,19 +100,57 @@ class CustomSnackbar {
     );
   }
 
-  static _SnackbarConfig _getConfig(SnackbarType type) {
+  static Future<_SnackbarConfig> _getConfig(SnackbarType type) async {
     switch (type) {
       case SnackbarType.success:
-        return const _SnackbarConfig(color: Colors.green, icon: Icons.check_circle);
+        return const _SnackbarConfig(
+          color: Colors.green,
+          icon: Icons.check_circle,
+        );
 
       case SnackbarType.error:
         return const _SnackbarConfig(color: Colors.red, icon: Icons.error);
 
       case SnackbarType.warning:
-        return const _SnackbarConfig(color: Colors.orange, icon: Icons.warning_amber);
+        return const _SnackbarConfig(
+          color: Colors.orange,
+          icon: Icons.warning_amber,
+        );
 
       case SnackbarType.info:
-        return const _SnackbarConfig(color: Colors.blue, icon: Icons.info);
+        return await _getInfoConfig();
+    }
+  }
+
+  static Future<_SnackbarConfig> _getInfoConfig() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+
+      // User login nathi hoy
+      if (user == null) {
+        return const _SnackbarConfig(color: Colors.orange, icon: Icons.info);
+      }
+
+      final userDocument = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      final data = userDocument.data();
+
+      final bool isPlusUser = data?['isPlus'] == true;
+
+      if (isPlusUser) {
+        return const _SnackbarConfig(
+          color: Color(0xFF6155F5),
+          icon: Icons.info,
+        );
+      }
+
+      return const _SnackbarConfig(color: Colors.orange, icon: Icons.info);
+    } catch (e) {
+      // Firebase error hoy to normal user color
+      return const _SnackbarConfig(color: Colors.orange, icon: Icons.info);
     }
   }
 }

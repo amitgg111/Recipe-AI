@@ -5,6 +5,7 @@ import 'package:recipe_ai/View/Auth/auth_wrapper.dart';
 import 'dart:ui' as ui;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_ai/Controllers/cookbook_controller.dart';
 import 'package:recipe_ai/Controllers/home_controller.dart';
 import 'package:recipe_ai/Controllers/grocery_store_controller.dart';
@@ -29,8 +30,9 @@ import 'package:recipe_ai/widgets/tr_text.dart';
 /// white cards for ingredients (basket rows) and instructions (numbered steps).
 class ImportCompleteScreen extends StatelessWidget {
   final RecipeModel recipe;
+  final String? recipeId;
 
-  const ImportCompleteScreen({super.key, required this.recipe});
+  const ImportCompleteScreen({super.key, required this.recipe, this.recipeId});
 
   @override
   Widget build(BuildContext context) {
@@ -172,43 +174,102 @@ class ImportCompleteScreen extends StatelessWidget {
 
   // ─── Hero ────────────────────────────────────────────────────────────────
 
+  // Widget _hero() {
+  //   final hasImage = recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty;
+  //   return SizedBox(
+  //     height: 280,
+  //     width: double.infinity,
+  //     child: Stack(
+  //       fit: StackFit.expand,
+  //       children: [
+  //         if (hasImage)
+  //           AppNetworkImage(
+  //             recipe.imageUrl!,
+  //             fit: BoxFit.cover,
+  //             cacheWidth: 900,
+  //             // While the (often large, freshly-uploaded) image downloads, show
+  //             // an animated shimmer skeleton so it reads as "loading", not
+  //             // "missing". A failed load still falls back to the icon.
+  //             placeholder: _heroLoading(),
+  //             error: _heroFallback(),
+  //           )
+  //         else
+  //           _heroFallback(),
+  //         const DecoratedBox(
+  //           decoration: BoxDecoration(
+  //             gradient: LinearGradient(
+  //               begin: Alignment.topCenter,
+  //               end: Alignment.bottomCenter,
+  //               colors: [
+  //                 Color(0x66140F0A),
+  //                 Color(0x00140F0A),
+  //                 Color(0x00140F0A),
+  //                 AppColors.background,
+  //               ],
+  //               stops: [0.0, 0.32, 0.64, 1.0],
+  //             ),
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
   Widget _hero() {
-    final hasImage = recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty;
+    final firestoreRecipeId = recipe.id;
+
     return SizedBox(
       height: 280,
       width: double.infinity,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (hasImage)
-            AppNetworkImage(
-              recipe.imageUrl!,
-              fit: BoxFit.cover,
-              cacheWidth: 900,
-              // While the (often large, freshly-uploaded) image downloads, show
-              // an animated shimmer skeleton so it reads as "loading", not
-              // "missing". A failed load still falls back to the icon.
-              placeholder: _heroLoading(),
-              error: _heroFallback(),
-            )
-          else
-            _heroFallback(),
-          const DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0x66140F0A),
-                  Color(0x00140F0A),
-                  Color(0x00140F0A),
-                  AppColors.background,
-                ],
-                stops: [0.0, 0.32, 0.64, 1.0],
+      child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+        stream: FirebaseFirestore.instance
+            .collection('recipes')
+            .doc(firestoreRecipeId)
+            .snapshots(),
+        builder: (context, snapshot) {
+          String? imageUrl;
+
+          if (snapshot.hasData && snapshot.data!.exists) {
+            final data = snapshot.data!.data();
+            imageUrl = data?['imageUrl'] as String?;
+          }
+
+          // Firestore image has priority.
+          // Initial recipe image is used as fallback.
+          imageUrl ??= recipe.imageUrl;
+
+          final hasImage = imageUrl != null && imageUrl.isNotEmpty;
+
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              if (hasImage)
+                AppNetworkImage(
+                  imageUrl,
+                  fit: BoxFit.cover,
+                  cacheWidth: 900,
+                  placeholder: _heroLoading(),
+                )
+              else
+                _heroFallback(),
+
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0x66140F0A),
+                      Color(0x00140F0A),
+                      Color(0x00140F0A),
+                      AppColors.background,
+                    ],
+                    stops: [0.0, 0.32, 0.64, 1.0],
+                  ),
+                ),
               ),
-            ),
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }

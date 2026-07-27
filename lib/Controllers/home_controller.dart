@@ -270,36 +270,89 @@ class HomeController extends GetxController {
         });
   }
 
+  // void fetchRecipes() {
+  //   final uid = AuthService.currentUser?.uid;
+  //   if (uid == null) {
+  //     isLoading.value = false;
+  //     return;
+  //   }
+  //   isLoading.value = true;
+  //   _recipesSub?.cancel();
+
+  //   _recipesSub = FirebaseFirestore.instance
+  //       .collection('recipes')
+  //       .where('ownerId', isEqualTo: uid) // માત્ર પોતાના recipes
+  //       // .orderBy('createdAt', descending: true)
+  //       .snapshots()
+  //       .listen(
+  //         (snapshot) async {
+  //           log("Docs: ${snapshot.docs.length}");
+
+  //           final english = snapshot.docs
+  //               .map((doc) => RecipeModel.fromDocument(doc))
+  //               .where((r) => !r.isDeleted)
+  //               .toList();
+  //           // Keep the English originals, then show them translated into the
+  //           // current language (no-op for English / until the model is ready).
+  //           // _englishRecipes = english;
+  //           // recipes.value = await Future.wait(english.map(_translateRecipe));
+  //           // isLoading.value = false;
+
+  //           _englishRecipes = english;
+
+  //           // Show recipes immediately
+  //           recipes.value = english;
+  //           isLoading.value = false;
+
+  //           // Translate in background
+  //           _translateRecipesInBackground();
+  //         },
+  //         onError: (error) {
+  //           isLoading.value = false;
+  //           CustomSnackbar.show(
+  //             title: 'Error',
+  //             message: 'Failed to fetch recipes: $error',
+  //             type: SnackbarType.error,
+  //           );
+  //         },
+  //       );
+  // }
   void fetchRecipes() {
     final uid = AuthService.currentUser?.uid;
+
     if (uid == null) {
       isLoading.value = false;
       return;
     }
+
     isLoading.value = true;
     _recipesSub?.cancel();
 
     _recipesSub = FirebaseFirestore.instance
         .collection('recipes')
-        .where('ownerId', isEqualTo: uid) // માત્ર પોતાના recipes
-        // .orderBy('createdAt', descending: true)
+        .where('ownerId', isEqualTo: uid)
         .snapshots()
         .listen(
-          (snapshot) async {
+          (snapshot) {
             log("Docs: ${snapshot.docs.length}");
 
             final english = snapshot.docs
                 .map((doc) => RecipeModel.fromDocument(doc))
                 .where((r) => !r.isDeleted)
                 .toList();
-            // Keep the English originals, then show them translated into the
-            // current language (no-op for English / until the model is ready).
+
             _englishRecipes = english;
-            recipes.value = await Future.wait(english.map(_translateRecipe));
+
+            // Instant UI
+            recipes.value = english;
             isLoading.value = false;
+
+            // Background translation
+            _translateRecipesInBackground();
           },
           onError: (error) {
             isLoading.value = false;
+
             CustomSnackbar.show(
               title: 'Error',
               message: 'Failed to fetch recipes: $error',
@@ -315,33 +368,100 @@ class HomeController extends GetxController {
   /// steps, sections) into the current language. Category/cuisine/keywords are
   /// left untouched because RecipeModel.copyWith doesn't expose them. No-op for
   /// English or before the ML Kit model is ready.
+  // Future<RecipeModel> _translateRecipe(RecipeModel recipe) async {
+  //   if (!AiTranslationService.isTranslating) return recipe;
+  //   try {
+  //     final title = await AiTranslationService.translate(recipe.title);
+  //     final description = recipe.description == null
+  //         ? null
+  //         : await AiTranslationService.translate(recipe.description!);
+  //     final ingredients = await AiTranslationService.translateList(
+  //       recipe.ingredients,
+  //     );
+  //     final instructions = await AiTranslationService.translateList(
+  //       recipe.instructions,
+  //     );
+  //     final ingredientSections = await Future.wait(
+  //       recipe.ingredientSections.map(
+  //         (s) async => IngredientSection(
+  //           name: s.name == null
+  //               ? null
+  //               : await AiTranslationService.translate(s.name!),
+  //           items: await AiTranslationService.translateList(s.items),
+  //         ),
+  //       ),
+  //     );
+  //     final instructionSections = await Future.wait(
+  //       recipe.instructionSections.map(
+  //         (s) async => InstructionSection(
+  //           name: s.name == null
+  //               ? null
+  //               : await AiTranslationService.translate(s.name!),
+  //           steps: await AiTranslationService.translateList(s.steps),
+  //         ),
+  //       ),
+  //     );
+  //     return recipe.copyWith(
+  //       title: title,
+  //       description: description,
+  //       ingredients: ingredients,
+  //       instructions: instructions,
+  //       ingredientSections: ingredientSections,
+  //       instructionSections: instructionSections,
+  //     );
+  //   } catch (e) {
+  //     return recipe; // never break the list on a translation hiccup
+  //   }
+  // }
   Future<RecipeModel> _translateRecipe(RecipeModel recipe) async {
-    if (!AiTranslationService.isTranslating) return recipe;
+    if (!AiTranslationService.isTranslating) {
+      return recipe;
+    }
+
     try {
-      final title = await AiTranslationService.translate(recipe.title);
-      final description = recipe.description == null
-          ? null
-          : await AiTranslationService.translate(recipe.description!);
-      final ingredients =
-          await AiTranslationService.translateList(recipe.ingredients);
-      final instructions =
-          await AiTranslationService.translateList(recipe.instructions);
+      final titleFuture = AiTranslationService.translate(recipe.title);
+
+      final descriptionFuture = recipe.description == null
+          ? Future.value(null)
+          : AiTranslationService.translate(recipe.description!);
+
+      final ingredientsFuture = AiTranslationService.translateList(
+        recipe.ingredients,
+      );
+
+      final instructionsFuture = AiTranslationService.translateList(
+        recipe.instructions,
+      );
+
+      final title = await titleFuture;
+      final description = await descriptionFuture;
+      final ingredients = await ingredientsFuture;
+      final instructions = await instructionsFuture;
+
       final ingredientSections = await Future.wait(
-        recipe.ingredientSections.map((s) async => IngredientSection(
-              name: s.name == null
-                  ? null
-                  : await AiTranslationService.translate(s.name!),
-              items: await AiTranslationService.translateList(s.items),
-            )),
+        recipe.ingredientSections.map((section) async {
+          final name = section.name == null
+              ? null
+              : await AiTranslationService.translate(section.name!);
+
+          final items = await AiTranslationService.translateList(section.items);
+
+          return IngredientSection(name: name, items: items);
+        }),
       );
+
       final instructionSections = await Future.wait(
-        recipe.instructionSections.map((s) async => InstructionSection(
-              name: s.name == null
-                  ? null
-                  : await AiTranslationService.translate(s.name!),
-              steps: await AiTranslationService.translateList(s.steps),
-            )),
+        recipe.instructionSections.map((section) async {
+          final name = section.name == null
+              ? null
+              : await AiTranslationService.translate(section.name!);
+
+          final steps = await AiTranslationService.translateList(section.steps);
+
+          return InstructionSection(name: name, steps: steps);
+        }),
       );
+
       return recipe.copyWith(
         title: title,
         description: description,
@@ -351,19 +471,80 @@ class HomeController extends GetxController {
         instructionSections: instructionSections,
       );
     } catch (e) {
-      return recipe; // never break the list on a translation hiccup
+      log('Recipe translation error: $e');
+      return recipe;
     }
   }
 
+  Future<void> _translateRecipesInBackground() async {
+    if (!AiTranslationService.isTranslating) return;
+
+    final currentLanguageRecipes = List<RecipeModel>.from(_englishRecipes);
+
+    // First translate only first few recipes.
+    // These are normally the recipes user sees immediately.
+    final visibleCount = currentLanguageRecipes.length > 5
+        ? 5
+        : currentLanguageRecipes.length;
+
+    final visibleRecipes = currentLanguageRecipes.take(visibleCount).toList();
+
+    // Translate visible recipes first
+    final translatedVisible = await Future.wait(
+      visibleRecipes.map(_translateRecipe),
+    );
+
+    // Update UI immediately
+    for (int i = 0; i < translatedVisible.length; i++) {
+      final index = recipes.indexWhere((r) => r.id == translatedVisible[i].id);
+
+      if (index != -1) {
+        recipes[index] = translatedVisible[i];
+      }
+    }
+
+    recipes.refresh();
+
+    // Translate remaining recipes in background
+    Future.microtask(() async {
+      final remaining = currentLanguageRecipes.skip(visibleCount);
+
+      for (final recipe in remaining) {
+        try {
+          final translated = await _translateRecipe(recipe);
+
+          final index = recipes.indexWhere((r) => r.id == translated.id);
+
+          if (index != -1) {
+            recipes[index] = translated;
+            recipes.refresh();
+          }
+        } catch (e) {
+          log('Background recipe translation error: $e');
+        }
+      }
+    });
+  }
+
   /// Re-translate the already-loaded recipes after the app language changes.
+  // Future<void> refreshRecipesLanguage() async {
+  //   if (_englishRecipes.isEmpty) return;
+  //   try {
+  //     isLoading.value = true;
+  //     recipes.value = await Future.wait(_englishRecipes.map(_translateRecipe));
+  //   } finally {
+  //     isLoading.value = false;
+  //   }
+  // }
   Future<void> refreshRecipesLanguage() async {
     if (_englishRecipes.isEmpty) return;
-    try {
-      isLoading.value = true;
-      recipes.value = await Future.wait(_englishRecipes.map(_translateRecipe));
-    } finally {
-      isLoading.value = false;
-    }
+
+    // Keep English originals as fallback.
+    recipes.value = List<RecipeModel>.from(_englishRecipes);
+
+    // Do not show full-screen loader.
+    // Translate in background.
+    unawaited(_translateRecipesInBackground());
   }
 
   /// Deletes the recipe (image, Firestore doc) and cascades to the meal plan,

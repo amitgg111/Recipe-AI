@@ -79,9 +79,7 @@
 	</array>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Photos and videos can be shared to Recipe AI to extract recipes.</string>
-	<key>NSCameraUsageDescription</key>
-	<string>Recipe AI uses the camera so you can capture a recipe photo to import it.</string>
-	<key>NSMicrophoneUsageDescription</key>
+		<key>NSMicrophoneUsageDescription</key>
 	<string>Recipe AI needs microphone access when you record a recipe video to import.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Recipe AI saves recipe images to your photo library when you export them.</string>

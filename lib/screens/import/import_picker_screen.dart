@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
+import 'package:recipe_ai/View/Home/recipe_camera_screen.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_spacing.dart';
@@ -105,10 +107,8 @@ class ImportPickerScreen extends StatelessWidget {
                             title: 'import_from_photo'.tr,
                             subtitle: 'snap_or_upload_pic'.tr,
                             onTap: () {
-                              // Get.back();
-                              // RecipeImportService.importRecipeFromGallery(
-                              //   context,
-                              // );
+                              HapticFeedback.heavyImpact();
+
                               Get.to(() => const RecipeCameraScreen());
                             },
                           ),
@@ -123,6 +123,7 @@ class ImportPickerScreen extends StatelessWidget {
                             subtitle: 'paste_or_type'.tr,
                             onTap: () {
                               // Get.back();
+                              HapticFeedback.heavyImpact();
                               Get.to(() => const GenerateRecipeScreen());
                             },
                           ),
@@ -141,6 +142,7 @@ class ImportPickerScreen extends StatelessWidget {
                             subtitle: 'paste_recipe_url'.tr,
                             onTap: () {
                               // Get.back();
+                              HapticFeedback.heavyImpact();
                               Get.to(() => const ImportFromWebScreen());
                             },
                           ),
@@ -156,6 +158,7 @@ class ImportPickerScreen extends StatelessWidget {
                             onTap: () {
                               // Get.back();
                               Get.to(() => const RecipeEditorScreen());
+                              HapticFeedback.heavyImpact();
                             },
                           ),
                         ),
