@@ -179,12 +179,15 @@ exports.onNewFollower = onDocumentCreated(
 );
 
 // ─────────────────────────────── New like ──────────────────────────────────
-// Path: users/{ownerId}/recipes/{recipeId}/likes/{likerUid}
+// Path: recipes/{recipeId}/likes/{likerUid}
 exports.onNewLike = onDocumentCreated(
-    "users/{ownerId}/recipes/{recipeId}/likes/{likerUid}",
+    "recipes/{recipeId}/likes/{likerUid}",
     async (event) => {
-      const {ownerId, recipeId, likerUid} = event.params;
-      if (ownerId === likerUid) return;
+      const {recipeId, likerUid} = event.params;
+      const recipeSnap = await db().collection("recipes").doc(recipeId).get();
+      if (!recipeSnap.exists) return;
+      const ownerId = (recipeSnap.data() || {}).ownerId;
+      if (!ownerId || ownerId === likerUid) return;
       const [sender, recipe] = await Promise.all([
         getUserBrief(likerUid),
         getRecipeBrief(ownerId, recipeId),
@@ -214,14 +217,17 @@ exports.onNewLike = onDocumentCreated(
 );
 
 // ─────────────────────────────── New save ──────────────────────────────────
-// Path: users/{ownerId}/recipes/{recipeId}/saves/{saverUid}
+// Path: recipes/{recipeId}/saves/{saverUid}
 // Mirrors onNewLike: another user saving your recipe notifies you (in-app +
 // push), gated by the same "Likes & comments" toggle.
 exports.onNewSave = onDocumentCreated(
-    "users/{ownerId}/recipes/{recipeId}/saves/{saverUid}",
+    "recipes/{recipeId}/saves/{saverUid}",
     async (event) => {
-      const {ownerId, recipeId, saverUid} = event.params;
-      if (ownerId === saverUid) return;
+      const {recipeId, saverUid} = event.params;
+      const recipeSnap = await db().collection("recipes").doc(recipeId).get();
+      if (!recipeSnap.exists) return;
+      const ownerId = (recipeSnap.data() || {}).ownerId;
+      if (!ownerId || ownerId === saverUid) return;
       const [sender, recipe] = await Promise.all([
         getUserBrief(saverUid),
         getRecipeBrief(ownerId, recipeId),
@@ -251,11 +257,15 @@ exports.onNewSave = onDocumentCreated(
 );
 
 // ─────────────────────────────── New comment ───────────────────────────────
-// Path: users/{ownerId}/recipes/{recipeId}/comments/{commentId}
+// Path: recipes/{recipeId}/comments/{commentId}
 exports.onNewComment = onDocumentCreated(
-    "users/{ownerId}/recipes/{recipeId}/comments/{commentId}",
+    "recipes/{recipeId}/comments/{commentId}",
     async (event) => {
-      const {ownerId, recipeId, commentId} = event.params;
+      const {recipeId, commentId} = event.params;
+      const recipeSnap = await db().collection("recipes").doc(recipeId).get();
+      if (!recipeSnap.exists) return;
+      const ownerId = (recipeSnap.data() || {}).ownerId;
+      if (!ownerId) return;
       const data = event.data && event.data.data ? event.data.data() : {};
       const commenterUid = data.userId;
       if (!commenterUid || commenterUid === ownerId) return;
@@ -285,6 +295,54 @@ exports.onNewComment = onDocumentCreated(
             "New Comment",
             `💬 ${name} commented on your recipe`,
             {type: "comment", recipeId, commentId},
+        ),
+      ]);
+    },
+);
+
+// ─────────────────────────────── New share ─────────────────────────────────
+// Path: recipes/{recipeId}/shares/{shareId}
+// A share marker is written by the client so we can notify the owner and keep
+// the share count in sync without guessing from UI-only actions.
+exports.onNewShare = onDocumentCreated(
+    "recipes/{recipeId}/shares/{shareId}",
+    async (event) => {
+      const {recipeId} = event.params;
+      const recipeSnap = await db().collection("recipes").doc(recipeId).get();
+      if (!recipeSnap.exists) return;
+
+      const recipeData = recipeSnap.data() || {};
+      const ownerId = recipeData.ownerId;
+
+      const shareData = event.data && event.data.data ?
+          event.data.data() : {};
+      const sharerUid = shareData.userId;
+
+      if (!ownerId || !sharerUid || ownerId === sharerUid) return;
+
+      const [sender, recipe] = await Promise.all([
+        getUserBrief(sharerUid),
+        getRecipeBrief(ownerId, recipeId),
+      ]);
+
+      await Promise.all([
+        writeNotification({
+          docId: null,
+          receiverUserId: ownerId,
+          senderUserId: sharerUid,
+          type: "share",
+          recipeId,
+          title: "Recipe Shared",
+          message: `${sender.name} shared your recipe.`,
+          sender,
+          recipe,
+        }),
+        sendIfEnabled(
+            ownerId,
+            "likesAndComments",
+            "Recipe Shared",
+            `🔁 ${sender.name} shared your recipe`,
+            {type: "share", recipeId},
         ),
       ]);
     },

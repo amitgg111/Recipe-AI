@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:recipe_ai/Controllers/discover_controller.dart';
 import 'package:recipe_ai/Controllers/cookbook_controller.dart';
+import 'package:recipe_ai/Controllers/profile_controller.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:recipe_ai/Service/recipe_social_service.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
@@ -53,7 +54,7 @@ class DiscoverScreen extends StatefulWidget {
 class _DiscoverScreenState extends State<DiscoverScreen> {
   final ScrollController scrollController = ScrollController();
   late final DiscoverController controller;
-
+  late final ProfileController profileController;
   final ScrollController categoryScrollController = ScrollController();
 
   final ScrollController feedScrollController = ScrollController();
@@ -63,6 +64,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     super.initState();
 
     controller = Get.put(DiscoverController(), permanent: true);
+
+    profileController = Get.find<ProfileController>();
 
     feedScrollController.addListener(_onFeedScroll);
   }
@@ -115,170 +118,180 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   Widget build(BuildContext context) {
     final top = MediaQuery.of(context).padding.top;
 
-    return Scaffold(
-      backgroundColor: _D.bg,
-      body: Column(
-        children: [
-          // ── Header: logo + credits ──
-          Container(
-            color: _D.bg,
-            padding: EdgeInsets.only(top: top),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 2, 16, 12),
-                  child: Row(
-                    children: [
-                      const AppLogo(size: 28),
-                      const SizedBox(width: 8),
-                      Text.rich(
-                        TextSpan(
-                          text: 'Recipe',
-                          style: _f(18, FontWeight.w800, _D.textDark, ls: -0.3),
-                          children: [
-                            TextSpan(
-                              text: ' AI',
-                              style: _f(
-                                18,
-                                FontWeight.w800,
-                                _D.primary,
-                                ls: -0.3,
-                              ),
+    return Obx(() {
+      final _ = profileController.name.value;
+      return Scaffold(
+        backgroundColor: _D.bg,
+        body: Column(
+          children: [
+            // ── Header: logo + credits ──
+            Container(
+              color: _D.bg,
+              padding: EdgeInsets.only(top: top),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 2, 16, 12),
+                    child: Row(
+                      children: [
+                        const AppLogo(size: 28),
+                        const SizedBox(width: 8),
+                        Text.rich(
+                          TextSpan(
+                            text: 'Recipe',
+                            style: _f(
+                              18,
+                              FontWeight.w800,
+                              _D.textDark,
+                              ls: -0.3,
                             ),
-                          ],
+                            children: [
+                              TextSpan(
+                                text: ' AI',
+                                style: _f(
+                                  18,
+                                  FontWeight.w800,
+                                  _D.primary,
+                                  ls: -0.3,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      const Spacer(),
-                      const NotificationBell(),
-                      const SizedBox(width: 10),
-                      _creditsBadge(),
-                    ],
+                        const Spacer(),
+                        const NotificationBell(),
+                        const SizedBox(width: 10),
+                        _creditsBadge(),
+                      ],
+                    ),
                   ),
-                ),
 
-                // Search bar (opens search focus on the community feed)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _SearchField(controller: controller),
-                ),
-                const SizedBox(height: 12),
+                  // Search bar (opens search focus on the community feed)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _SearchField(controller: controller),
+                  ),
+                  const SizedBox(height: 12),
 
-                // Category chips
-                Obx(() {
-                  final selected = controller.selectedCategory.value;
-                  return SizedBox(
-                    height: 40,
-                    child: ListView.separated(
-                      controller: categoryScrollController,
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: controller.categories.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 8),
-                      itemBuilder: (_, i) {
-                        final cat = controller.categories[i];
-                        final on = selected == cat;
-                        return GestureDetector(
-                          onTap: () => controller.selectCategory(cat),
-                          child: Container(
-                            alignment: Alignment.center,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 15,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: on ? _D.primary : _D.card,
-                              borderRadius: BorderRadius.circular(20),
-                              border: on
-                                  ? null
-                                  : Border.all(color: _D.chipBorder),
-                              boxShadow: on
-                                  ? [
-                                      BoxShadow(
-                                        color: _D.primary.withValues(
-                                          alpha: 0.7,
+                  // Category chips
+                  Obx(() {
+                    final selected = controller.selectedCategory.value;
+                    return SizedBox(
+                      height: 40,
+                      child: ListView.separated(
+                        controller: categoryScrollController,
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: controller.categories.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 8),
+                        itemBuilder: (_, i) {
+                          final cat = controller.categories[i];
+                          final on = selected == cat;
+                          return GestureDetector(
+                            onTap: () => controller.selectCategory(cat),
+                            child: Container(
+                              alignment: Alignment.center,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 15,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: on ? _D.primary : _D.card,
+                                borderRadius: BorderRadius.circular(20),
+                                border: on
+                                    ? null
+                                    : Border.all(color: _D.chipBorder),
+                                boxShadow: on
+                                    ? [
+                                        BoxShadow(
+                                          color: _D.primary.withValues(
+                                            alpha: 0.7,
+                                          ),
+                                          blurRadius: 16,
+                                          offset: const Offset(0, 8),
+                                          spreadRadius: -10,
                                         ),
-                                        blurRadius: 16,
-                                        offset: const Offset(0, 8),
-                                        spreadRadius: -10,
-                                      ),
-                                    ]
-                                  : null,
-                            ),
-                            child: Text(
-                              textAlign: TextAlign.center,
-                              _catLabel(cat),
-                              style: _f(
-                                13,
-                                on ? FontWeight.w700 : FontWeight.w600,
-                                on ? Colors.white : _D.textBody,
+                                      ]
+                                    : null,
+                              ),
+                              child: Text(
+                                textAlign: TextAlign.center,
+                                _catLabel(cat),
+                                style: _f(
+                                  13,
+                                  on ? FontWeight.w700 : FontWeight.w600,
+                                  on ? Colors.white : _D.textBody,
+                                ),
                               ),
                             ),
+                          );
+                        },
+                      ),
+                    );
+                  }),
+                  const SizedBox(height: 4),
+                ],
+              ),
+            ),
+
+            // ── Feed ──
+            Expanded(
+              child: Obx(() {
+                if (controller.isLoading.value) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: _D.primary),
+                  );
+                }
+
+                final items = controller.filteredRecipes;
+
+                if (items.isEmpty) {
+                  return _emptyState();
+                }
+
+                return RefreshIndicator(
+                  color: _D.primary,
+
+                  onRefresh: () =>
+                      controller.fetchDiscoverRecipes(refresh: true),
+
+                  child: ListView.separated(
+                    controller: feedScrollController,
+
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+
+                    itemCount:
+                        items.length + (controller.isLoadingMore ? 1 : 0),
+
+                    separatorBuilder: (_, index) {
+                      if (index >= items.length - 1) {
+                        return const SizedBox.shrink();
+                      }
+
+                      return const SizedBox(height: 16);
+                    },
+
+                    itemBuilder: (_, index) {
+                      if (index >= items.length) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 24),
+                          child: Center(
+                            child: CircularProgressIndicator(color: _D.primary),
                           ),
                         );
-                      },
-                    ),
-                  );
-                }),
-                const SizedBox(height: 4),
-              ],
-            ),
-          ),
+                      }
 
-          // ── Feed ──
-          Expanded(
-            child: Obx(() {
-              if (controller.isLoading.value) {
-                return const Center(
-                  child: CircularProgressIndicator(color: _D.primary),
+                      return _RecipeCard(recipe: items[index]);
+                    },
+                  ),
                 );
-              }
-
-              final items = controller.filteredRecipes;
-
-              if (items.isEmpty) {
-                return _emptyState();
-              }
-
-              return RefreshIndicator(
-                color: _D.primary,
-
-                onRefresh: () => controller.fetchDiscoverRecipes(refresh: true),
-
-                child: ListView.separated(
-                  controller: feedScrollController,
-
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-
-                  itemCount: items.length + (controller.isLoadingMore ? 1 : 0),
-
-                  separatorBuilder: (_, index) {
-                    if (index >= items.length - 1) {
-                      return const SizedBox.shrink();
-                    }
-
-                    return const SizedBox(height: 16);
-                  },
-
-                  itemBuilder: (_, index) {
-                    if (index >= items.length) {
-                      return const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 24),
-                        child: Center(
-                          child: CircularProgressIndicator(color: _D.primary),
-                        ),
-                      );
-                    }
-
-                    return _RecipeCard(recipe: items[index]);
-                  },
-                ),
-              );
-            }),
-          ),
-        ],
-      ),
-    );
+              }),
+            ),
+          ],
+        ),
+      );
+    });
   }
 
   Widget _creditsBadge() {
@@ -409,7 +422,7 @@ class _RecipeCard extends StatefulWidget {
 
 class _RecipeCardState extends State<_RecipeCard> {
   DiscoverRecipe get recipe => widget.recipe;
-
+  ProfileController get _profile => Get.find<ProfileController>();
   late int _likes = recipe.likesCount;
   late int _shares = recipe.sharesCount;
   late int _saves = recipe.savesCount;
@@ -632,6 +645,7 @@ class _RecipeCardState extends State<_RecipeCard> {
   @override
   Widget build(BuildContext context) {
     final ago = _ago();
+    final isCurrentUser = recipe.userId == _profile.uid;
     return Obx(() {
       // Wrapped in Obx so this card rebuilds when the shared liked/saved sets
       // change (batch load completing, or another card/screen mutating them)
@@ -675,7 +689,9 @@ class _RecipeCardState extends State<_RecipeCard> {
                           (recipe.userAvatar == null ||
                               recipe.userAvatar!.isEmpty)
                           ? Text(
-                              recipe.userName.isNotEmpty
+                              isCurrentUser && _profile.name.value.isNotEmpty
+                                  ? _profile.name.value[0].toUpperCase()
+                                  : recipe.userName.isNotEmpty
                                   ? recipe.userName[0].toUpperCase()
                                   : 'C',
                               style: _f(14, FontWeight.w800, _D.textDark),
@@ -692,7 +708,9 @@ class _RecipeCardState extends State<_RecipeCard> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            recipe.userName.isNotEmpty
+                            isCurrentUser && _profile.name.value.isNotEmpty
+                                ? _profile.name.value
+                                : recipe.userName.isNotEmpty
                                 ? recipe.userName
                                 : 'recipe_creator'.tr,
                             style: _f(13.5, FontWeight.w800, _D.textDark),

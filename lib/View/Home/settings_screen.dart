@@ -174,7 +174,6 @@ class SettingsScreen extends StatelessWidget {
   }
 
   Widget _profileCard(ProfileController profileController) {
-    final user = FirebaseAuth.instance.currentUser;
     return GestureDetector(
       onTap: () => Get.to(() => const ProfileViewScreen()),
       child: Container(
@@ -196,36 +195,40 @@ class SettingsScreen extends StatelessWidget {
           children: [
             const ProfileAvatar(size: 54),
             const SizedBox(width: 13),
+
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    user?.displayName?.isNotEmpty == true
-                        ? user!.displayName!
-                        : 'User',
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textDark,
+              child: Obx(
+                () => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      profileController.name.value.isNotEmpty
+                          ? profileController.name.value
+                          : 'User',
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textDark,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 1),
-                  Text(
-                    user?.email ?? '',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textMedium,
+                    const SizedBox(height: 1),
+                    Text(
+                      FirebaseAuth.instance.currentUser?.email ?? '',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textMedium,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
+
             const OnboardingLineIcon(
               'chevR',
               color: SettingsUi.chevron,

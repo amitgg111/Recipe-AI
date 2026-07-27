@@ -73,17 +73,26 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     setState(() => _saving = true);
 
     try {
-      // Firebase Auth display name update
-      await FirebaseAuth.instance.currentUser?.updateDisplayName(
-        _nameController.text.trim(),
-      );
+      final newName = _nameController.text.trim();
 
-      // Firestore profile data update
+      // 1. Update Firebase Auth profile
+      final firebaseUser = FirebaseAuth.instance.currentUser;
+
+      await firebaseUser?.updateDisplayName(newName);
+
+      // Important: Refresh currentUser cache
+      await firebaseUser?.reload();
+
+      // 2. Update complete profile in Firestore
       await FirebaseFirestore.instance.collection('users').doc(uid).set({
+        'name': newName,
         'contact': _contactController.text.trim(),
         'bio': _bioController.text.trim(),
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
+
+      // 3. Refresh ProfileController
+      await _profile.loadProfile();
 
       if (!mounted) return;
 
@@ -93,7 +102,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         type: SnackbarType.success,
       );
 
-      Get.back();
+      Get.back(result: true);
     } catch (e) {
       CustomSnackbar.show(
         title: 'Error',

@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:recipe_ai/Controllers/profile_controller.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -19,7 +20,7 @@ class CreatorProfileScreen extends StatelessWidget {
   final String? fallbackName;
   final String? fallbackAvatar;
 
-  const CreatorProfileScreen({
+  CreatorProfileScreen({
     super.key,
     required this.userId,
     this.fallbackName,
@@ -27,7 +28,7 @@ class CreatorProfileScreen extends StatelessWidget {
   });
 
   bool get _isSelf => AuthService.currentUser?.uid == userId;
-
+  final profileController = Get.find<ProfileController>();
   TextStyle _f(double s, FontWeight w, Color c, {double? sp}) =>
       GoogleFonts.plusJakartaSans(
         fontSize: s,
@@ -123,6 +124,14 @@ class CreatorProfileScreen extends StatelessWidget {
   }
 
   Widget _identity(UserModel user) {
+    final isCurrentUser = profileController.uid == userId;
+
+    final displayName = isCurrentUser && profileController.name.value.isNotEmpty
+        ? profileController.name.value
+        : user.displayName;
+
+    final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'C';
+
     return Column(
       children: [
         Container(
@@ -139,16 +148,15 @@ class CreatorProfileScreen extends StatelessWidget {
           ),
           child: UserAvatar(
             photoUrl: user.photoUrl.isNotEmpty ? user.photoUrl : fallbackAvatar,
-            initial: user.initial,
+            initial: initial,
             size: 96,
           ),
         ),
         const SizedBox(height: 12),
         Text(
-          user.displayName,
+          displayName.isNotEmpty ? displayName : 'recipe_creator'.tr,
           style: _f(21, FontWeight.w800, AppColors.textDark, sp: -0.3),
         ),
-
         if (user.bio.isNotEmpty) ...[
           const SizedBox(height: 8),
           Text(
@@ -166,6 +174,10 @@ class CreatorProfileScreen extends StatelessWidget {
   }
 
   Widget _statsCard(BuildContext context, UserModel user, int publicRecipes) {
+    final displayName = _isSelf && profileController.name.value.isNotEmpty
+        ? profileController.name.value
+        : user.displayName;
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14),
       decoration: BoxDecoration(
@@ -183,7 +195,7 @@ class CreatorProfileScreen extends StatelessWidget {
             () => Get.to(
               () => FollowListScreen(
                 userId: userId,
-                title: user.displayName,
+                title: displayName,
                 showFollowers: true,
               ),
             ),
@@ -195,7 +207,7 @@ class CreatorProfileScreen extends StatelessWidget {
             () => Get.to(
               () => FollowListScreen(
                 userId: userId,
-                title: user.displayName,
+                title: displayName,
                 showFollowers: false,
               ),
             ),
