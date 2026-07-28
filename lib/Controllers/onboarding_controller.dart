@@ -52,6 +52,42 @@ class OnboardingController extends GetxController {
   final RxnBool notificationsOptIn = RxnBool();
   final RxnBool notificationsGranted = RxnBool();
 
+  // Goals
+  static const List<String> kGoalValues = [
+    'Eat Healthier',
+    'Save Money',
+    'Improve cooking skills',
+    'Organize recipes',
+    'Plan out meals',
+    'Try new cuisines',
+  ];
+
+  // When to cook
+  static const List<String> kWhenToCookValues = [
+    'Breakfast',
+    'Lunch',
+    'Dinner',
+    'Dessert',
+    'Snacks',
+    'Anytime',
+  ];
+
+  // Recipe sources
+  static const List<String> kRecipeSourceValues = [
+    'Social Media',
+    'Recipe websites',
+    'Printed / handwritten',
+  ];
+
+  // Age
+  static const List<String> kAgeValues = [
+    '24 And Under',
+    '25-34',
+    '35-44',
+    '45-54',
+    '55+',
+  ];
+
   @override
   void onInit() {
     super.onInit();
@@ -157,11 +193,13 @@ class OnboardingController extends GetxController {
 
   // ── Firebase ────────────────────────────────────────────────────────────────
   Map<String, dynamic> _toMap() => {
-    'goals': goals.toList()..sort(),
-    'whenToCook': whenToCook.value,
+    'goals': (goals.toList()..sort()).map((i) => kGoalValues[i]).toList(),
+    'whenToCook': kWhenToCookValues[whenToCook.value],
     'attributionSources': attributionSources.toList()..sort(),
-    'recipeSources': recipeSources.toList()..sort(),
-    'age': age.value,
+    'recipeSources': (recipeSources.toList()..sort())
+        .map((i) => kRecipeSourceValues[i])
+        .toList(),
+    'age': kAgeValues[age.value],
     'cuisines': cuisines.toList()..sort(), // ADD THIS
     // Only written once the notifications step is completed, so we never
     // clobber a real value with null on early syncs.
@@ -213,12 +251,21 @@ class OnboardingController extends GetxController {
       if (onb == null) return;
 
       if (onb['goals'] is List) {
-        goals.assignAll((onb['goals'] as List).map((e) => e as int));
+        goals.assignAll(
+          (onb['goals'] as List)
+              .map((e) => kGoalValues.indexOf(e as String))
+              .where((e) => e != -1),
+        );
+
         _box.write(_kGoals, goals.toList());
       }
-      if (onb['whenToCook'] is int) {
-        whenToCook.value = onb['whenToCook'] as int;
-        _box.write(_kWhenToCook, whenToCook.value);
+      if (onb['whenToCook'] is String) {
+        final index = kWhenToCookValues.indexOf(onb['whenToCook']);
+
+        if (index != -1) {
+          whenToCook.value = index;
+          _box.write(_kWhenToCook, index);
+        }
       }
       if (onb['attributionSources'] is List) {
         attributionSources.assignAll(
@@ -228,13 +275,20 @@ class OnboardingController extends GetxController {
       }
       if (onb['recipeSources'] is List) {
         recipeSources.assignAll(
-          (onb['recipeSources'] as List).map((e) => e as int),
+          (onb['recipeSources'] as List)
+              .map((e) => kRecipeSourceValues.indexOf(e as String))
+              .where((e) => e != -1),
         );
+
         _box.write(_kSources, recipeSources.toList());
       }
-      if (onb['age'] is int) {
-        age.value = onb['age'] as int;
-        _box.write(_kAge, age.value);
+      if (onb['age'] is String) {
+        final index = kAgeValues.indexOf(onb['age']);
+
+        if (index != -1) {
+          age.value = index;
+          _box.write(_kAge, index);
+        }
       }
       if (onb['notificationsOptIn'] is bool) {
         notificationsOptIn.value = onb['notificationsOptIn'] as bool;

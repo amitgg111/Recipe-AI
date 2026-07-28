@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -148,6 +149,11 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   bool _seenInList = false;
 
   RecipeModel get recipe => _recipe;
+  final ScreenshotController _shareController = ScreenshotController();
+
+  Uint8List? _cachedImageBytes;
+  File? _cachedShareFile;
+  bool _isPreparingShare = false;
 
   @override
   void initState() {
@@ -200,6 +206,63 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           highlightCommentId: focusId,
         );
       });
+    }
+    _prepareShareFile();
+  }
+
+  Future<void> _prepareShareFile({bool force = false}) async {
+    if (_isPreparingShare) return;
+
+    if (!force && _cachedShareFile != null) {
+      return;
+    }
+
+    _isPreparingShare = true;
+
+    try {
+      // Reset old cache
+      _cachedShareFile = null;
+      _cachedImageBytes = null;
+
+      // Download recipe image
+      final imgUrl = recipe.imageUrl?.trim();
+      log("Image URL: $imgUrl");
+
+      if (imgUrl != null && imgUrl.isNotEmpty) {
+        try {
+          final response = await http
+              .get(Uri.parse(imgUrl))
+              .timeout(const Duration(seconds: 8));
+          log("Status Code: ${response.statusCode}");
+          log("Bytes: ${response.bodyBytes.length}");
+          if (response.statusCode == 200) {
+            _cachedImageBytes = response.bodyBytes;
+          }
+        } catch (e) {
+          log('Image download failed: $e');
+        }
+      }
+
+      // Build share card
+      final cardBytes = await _shareController.captureFromWidget(
+        _buildShareRecipeCard(_cachedImageBytes),
+        delay: const Duration(milliseconds: 150),
+        pixelRatio: 2.0,
+        targetSize: const Size(1080, 1700),
+      );
+
+      // Save image
+      final directory = await getTemporaryDirectory();
+
+      final file = File('${directory.path}/recipe_share_${recipe.id}.png');
+
+      await file.writeAsBytes(cardBytes, flush: true);
+
+      _cachedShareFile = file;
+    } catch (e) {
+      log('Prepare share failed: $e');
+    } finally {
+      _isPreparingShare = false;
     }
   }
 
@@ -1598,118 +1661,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
   /// A swapped ingredient row: purple-tinted card, swap icon, the new line with
   /// a "SWAPPED" badge, the struck-through original ("was …"), and inline Undo.
-  // Widget _swappedIngredientRow(String text, SwapEntry swap) {
-  //   final parts = _parseIngredient(text);
-  //   return Container(
-  //     margin: const EdgeInsets.symmetric(vertical: 4),
-  //     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-  //     decoration: BoxDecoration(
-  //       color: const Color(0xFFF6F1FE),
-  //       borderRadius: BorderRadius.circular(12),
-  //       border: Border.all(color: const Color(0xFFE6DAF9)),
-  //     ),
-  //     child: Row(
-  //       crossAxisAlignment: CrossAxisAlignment.start,
-  //       children: [
-  //         Container(
-  //           width: 28,
-  //           height: 28,
-  //           alignment: Alignment.center,
-  //           decoration: BoxDecoration(
-  //             color: const Color(0xFFEDE3FC),
-  //             borderRadius: BorderRadius.circular(9),
-  //           ),
-  //           child: const Icon(
-  //             Icons.swap_horiz_rounded,
-  //             size: 17,
-  //             color: Color(0xFF8B5CF6),
-  //           ),
-  //         ),
-  //         const SizedBox(width: 12),
-  //         Expanded(
-  //           child: Column(
-  //             crossAxisAlignment: CrossAxisAlignment.end,
-  //             children: [
-  //               Row(
-  //                 crossAxisAlignment: CrossAxisAlignment.start,
-  //                 children: [
-  //                   Expanded(
-  //                     child: Text.rich(
-  //                       TextSpan(
-  //                         children: [
-  //                           if (parts.$1 != null)
-  //                             TextSpan(
-  //                               text: '${parts.$1!} ',
-  //                               style: _font(14, FontWeight.w800, _C.textDark),
-  //                             ),
-  //                           TextSpan(
-  //                             text: parts.$2,
-  //                             style: _font(14, FontWeight.w700, _C.textDark),
-  //                           ),
-  //                         ],
-  //                       ),
-  //                       style: const TextStyle(height: 1.3),
-  //                     ),
-  //                   ),
-  //                   const SizedBox(width: 7),
-  //                   GestureDetector(
-  //                     behavior: HitTestBehavior.opaque,
-  //                     onTap: () async {
-  //                       await AiAssistantController.to.undoSwap(recipe, swap);
-  //                       if (!mounted) return;
-  //                       CustomSnackbar.show(
-  //                         title: 'Undone',
-  //                         message: 'Restored ${swap.oldName}.',
-  //                         type: SnackbarType.info,
-  //                       );
-  //                     },
-  //                     child: Padding(
-  //                       padding: const EdgeInsets.only(top: 1),
-  //                       child: Text(
-  //                         'Undo',
-  //                         style: _font(
-  //                           13,
-  //                           FontWeight.w800,
-  //                           const Color(0xFF7A45E0),
-  //                         ),
-  //                       ),
-  //                     ),
-  //                   ),
-  //                 ],
-  //               ),
-  //               const SizedBox(height: 3),
-  //               Text(
-  //                 'was ${swap.oldLine}',
-  //                 style: _font(
-  //                   12,
-  //                   FontWeight.w500,
-  //                   const Color(0xFF9A8FB0),
-  //                 ).copyWith(decoration: TextDecoration.lineThrough),
-  //               ),
-  //               Padding(
-  //                 padding: const EdgeInsets.only(top: 1),
-  //                 child: Container(
-  //                   padding: const EdgeInsets.symmetric(
-  //                     horizontal: 6,
-  //                     vertical: 2,
-  //                   ),
-  //                   decoration: BoxDecoration(
-  //                     color: const Color(0xFFEDE3FC),
-  //                     borderRadius: BorderRadius.circular(5),
-  //                   ),
-  //                   child: Text(
-  //                     'SWAPPED',
-  //                     style: _font(9, FontWeight.w800, const Color(0xFF7A45E0)),
-  //                   ),
-  //                 ),
-  //               ),
-  //             ],
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
+
   Widget _swappedIngredientRow(String text, SwapEntry swap) {
     final parts = _parseIngredient(text);
     return Container(
@@ -2075,79 +2027,90 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   // ACTIONS  (business logic preserved verbatim)
   // ═══════════════════════════════════════════════════════════════════════════
 
-  // void _shareRecipe() {
-  //   final buf = StringBuffer();
-  //   buf.writeln(recipe.title);
-  //   buf.writeln();
-  //   if (recipe.description != null && recipe.description!.isNotEmpty) {
-  //     buf.writeln(recipe.description);
-  //     buf.writeln();
-  //   }
-  //   buf.writeln('INGREDIENTS');
-  //   for (final ing in recipe.ingredients) {
-  //     buf.writeln('• $ing');
-  //   }
-  //   buf.writeln();
-  //   buf.writeln('INSTRUCTIONS');
-  //   for (var i = 0; i < recipe.instructions.length; i++) {
-  //     buf.writeln('${i + 1}. ${recipe.instructions[i]}');
-  //   }
-  //   if (recipe.sourceUrl.isNotEmpty) {
-  //     buf.writeln();
-  //     buf.writeln('Source: ${recipe.sourceUrl}');
-  //   }
-  //   Share.share(buf.toString(), subject: recipe.title);
-  // }
+  // Future<void> _shareRecipe() async {
+  //   try {
+  //     Uint8List? imageBytes;
+  //     final imgUrl = recipe.imageUrl?.trim();
+  //     if (imgUrl != null && imgUrl.isNotEmpty) {
+  //       try {
+  //         final res = await http
+  //             .get(Uri.parse(imgUrl))
+  //             .timeout(const Duration(seconds: 8));
+  //         if (res.statusCode == 200) imageBytes = res.bodyBytes;
+  //       } catch (e) {
+  //         log('Recipe image fetch failed: $e');
+  //       }
+  //     }
 
+  //     // Content height varies with title length (max 2 lines) etc, so give
+  //     // enough headroom — 2200 covers the tallest realistic case at width 1080.
+  //     final cardBytes = await _shareController.captureFromWidget(
+  //       _buildShareRecipeCard(imageBytes),
+  //       delay: Duration.zero,
+  //       pixelRatio: 2.0,
+  //       targetSize: const Size(1080, 1700), // <-- overflow fix
+  //     );
+
+  //     final directory = await getTemporaryDirectory();
+  //     final file = File(
+  //       '${directory.path}/recipe_${DateTime.now().millisecondsSinceEpoch}.png',
+  //     );
+  //     await file.writeAsBytes(cardBytes);
+
+  //     const appLink = 'https://yourapp.page.link/recipe';
+  //     final shareText =
+  //         '''
+  // 🍴 ${recipe.title}
+
+  // View the full recipe, ingredients, instructions and more in the app 👇
+
+  // $appLink
+  // ''';
+
+  //     // await Share.shareXFiles(
+  //     //   [XFile(file.path)],
+  //     //   text: shareText,
+  //     //   subject: recipe.title,
+  //     // );
+  //     await Share.shareXFiles(
+  //       [XFile(file.path)],
+  //       text: shareText,
+  //       subject: recipe.title,
+  //     );
+  //   } catch (e) {
+  //     log('Share recipe error: $e');
+  //   }
+  // }
   Future<void> _shareRecipe() async {
     try {
-      final screenshotController = ScreenshotController();
-
-      Uint8List? imageBytes;
-      final imgUrl = recipe.imageUrl?.trim();
-      if (imgUrl != null && imgUrl.isNotEmpty) {
-        try {
-          final res = await http
-              .get(Uri.parse(imgUrl))
-              .timeout(const Duration(seconds: 8));
-          if (res.statusCode == 200) imageBytes = res.bodyBytes;
-        } catch (e) {
-          debugPrint('Recipe image fetch failed: $e');
-        }
+      // If preload is not finished, prepare once.
+      if (_cachedShareFile == null) {
+        await _prepareShareFile();
       }
 
-      // Content height varies with title length (max 2 lines) etc, so give
-      // enough headroom — 2200 covers the tallest realistic case at width 1080.
-      final cardBytes = await screenshotController.captureFromWidget(
-        _buildShareRecipeCard(imageBytes),
-        delay: const Duration(milliseconds: 50),
-        pixelRatio: 3.0,
-        targetSize: const Size(1080, 2200), // <-- overflow fix
-      );
-
-      final directory = await getTemporaryDirectory();
-      final file = File(
-        '${directory.path}/recipe_${DateTime.now().millisecondsSinceEpoch}.png',
-      );
-      await file.writeAsBytes(cardBytes);
+      if (_cachedShareFile == null) {
+        Get.snackbar('Error', 'Unable to prepare recipe for sharing.');
+        return;
+      }
 
       const appLink = 'https://yourapp.page.link/recipe';
+
       final shareText =
           '''
-🍴 ${recipe.title}
+  🍴 ${recipe.title}
 
-View the full recipe, ingredients, instructions and more in the app 👇
+  View the full recipe, ingredients, instructions and more in the app 👇
 
-$appLink
-''';
+  $appLink
+  ''';
 
       await Share.shareXFiles(
-        [XFile(file.path)],
+        [XFile(_cachedShareFile!.path)],
         text: shareText,
         subject: recipe.title,
       );
     } catch (e) {
-      debugPrint('Share recipe error: $e');
+      log('Share recipe error: $e');
     }
   }
 
@@ -2269,8 +2232,27 @@ $appLink
     );
   }
 
+  // Widget _buildRecipeImage(Uint8List? imageBytes) {
+  //   if (imageBytes == null) return _shareImagePlaceholder();
+  //   return SizedBox(
+  //     width: 1080,
+  //     height: 600,
+  //     child: Image.memory(
+  //       imageBytes,
+  //       width: 1080,
+  //       height: 600,
+  //       fit: BoxFit.cover,
+  //       errorBuilder: (_, __, ___) => _shareImagePlaceholder(),
+  //     ),
+  //   );
+  // }
   Widget _buildRecipeImage(Uint8List? imageBytes) {
-    if (imageBytes == null) return _shareImagePlaceholder();
+    log("Image Bytes in Widget: ${imageBytes?.length}");
+
+    if (imageBytes == null) {
+      return _shareImagePlaceholder();
+    }
+
     return SizedBox(
       width: 1080,
       height: 600,
@@ -2279,7 +2261,13 @@ $appLink
         width: 1080,
         height: 600,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _shareImagePlaceholder(),
+        frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+          if (wasSynchronouslyLoaded || frame != null) {
+            return child;
+          }
+
+          return _shareImagePlaceholder();
+        },
       ),
     );
   }
