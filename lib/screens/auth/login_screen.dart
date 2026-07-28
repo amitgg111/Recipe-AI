@@ -1,6 +1,8 @@
 import 'dart:io';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/gestures.dart';
+import 'package:recipe_ai/Service/language_service.dart';
 import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -278,10 +280,17 @@ class _LoginScreenState extends State<LoginScreen> {
     if (user == null) return;
 
     try {
+      // Save device country/languages AFTER authentication.
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+        'countryCode': LanguageService.deviceCountryCode,
+        'countryLanguages': LanguageService.deviceLanguages,
+      }, SetOptions(merge: true));
+
       final snap = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .get();
+
       final needsTrialChooser = snap.data()?['trialChooserCompleted'] == false;
 
       Get.offAll(
@@ -289,7 +298,7 @@ class _LoginScreenState extends State<LoginScreen> {
             needsTrialChooser ? const TrialChooserScreen() : const HomeScreen(),
         transition: Transition.noTransition,
       );
-    } catch (_) {
+    } catch (e) {
       Get.offAll(() => const HomeScreen(), transition: Transition.noTransition);
     }
   }

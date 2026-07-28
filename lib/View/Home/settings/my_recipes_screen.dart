@@ -254,7 +254,7 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                _visibilityBadge(recipe.isPublic),
+                if (_filter == 0) _visibilityBadge(recipe.isPublic),
                 GestureDetector(
                   onTap: () => _showOptions(recipe),
                   child: const Padding(

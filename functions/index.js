@@ -40,14 +40,37 @@ const RECIPE_RESPONSE_SCHEMA = {
     imagePrompt: {
       type: "STRING",
       description:
-        "A single, self-contained food-photography prompt for an AI " +
-        "image generator that shows ONLY the finished, cooked dish of " +
-        "THIS exact recipe, plated and filling the frame. Describe its " +
-        "real appearance, colours, textures, main visible ingredients, " +
-        "garnish and serving vessel. Food only — never landscapes, " +
-        "scenery, nature, people, buildings, text or another dish. Add: " +
-        "ultra realistic professional restaurant food photo, DSLR, 4K, " +
-        "natural lighting, 45-degree close-up hero shot.",
+      "Generate ONE detailed, self-contained prompt for an AI food " +
+      "image generator. The prompt must recreate the EXACT finished " +
+      "dish from this recipe with maximum visual accuracy. Describe " +
+      "the dish in enough detail that another AI can generate a " +
+      "nearly identical result. " +
+
+      "Include ALL visible characteristics: exact food colour, " +
+      "browning level, sauce or gravy thickness, texture, " +
+      "crispiness, moisture, visible ingredients, ingredient " +
+      "placement, garnish type and exact garnish placement, " +
+      "portion size, food shape, layering, height, arrangement, " +
+      "serving bowl or plate type, plate colour, plate material, " +
+      "camera angle, zoom level, framing and lighting. " +
+
+      "The food must fill about 90% of the frame and show ONLY one " +
+      "finished dish. " +
+
+      "Do NOT redesign the recipe. Do NOT improve presentation. " +
+      "Do NOT change colours. Do NOT change garnish. Do NOT change " +
+      "ingredient proportions. Do NOT add extra ingredients. " +
+      "Do NOT change the serving vessel. Do NOT add side dishes, " +
+      "drinks, cutlery, napkins or decorations. " +
+
+      "Food only. Never include people, hands, tables, " +
+      "restaurants, kitchens, scenery, landscapes, buildings, " +
+      "text, logos or watermarks. " +
+
+      "Always end the prompt with: ultra realistic DSLR " +
+      "professional food photography, macro food details, " +
+      "authentic colours, shallow depth of field, natural " +
+      "lighting, 4K, 45-degree close-up hero shot.",
     },
     keywords: {type: "ARRAY", items: {type: "STRING"}},
     ingredients: {type: "ARRAY", items: {type: "STRING"}},
@@ -384,12 +407,67 @@ async function generateAndStoreRecipeImage(ai, recipe) {
     // is prepended so Imagen can never drift to a non-food subject.
     const base = String(recipe.imagePrompt || "").trim() ||
       buildImagePrompt(recipe);
-    const prompt =
-      "Ultra-realistic FOOD PHOTOGRAPH, food only. The single finished " +
-      "cooked dish fills almost the entire frame. " + base + " Never " +
-      "generate landscapes, scenery, nature, sky, people, buildings, " +
-      "text, watermark or any non-food subject.";
+    const prompt = `
+"Generate ONLY a photorealistic image of the EXACT finished " +
+"recipe described below. "
+CRITICAL REQUIREMENTS
 
+- Recreate the exact cooked dish.
+- Do NOT redesign the recipe.
+- Do NOT improve the presentation.
+- Do NOT invent ingredients.
+- Do NOT change colours.
+- Do NOT change garnish.
+- Do NOT change plating.
+- Do NOT change bowl, plate or serving vessel.
+- Do NOT change sauce consistency.
+- Do NOT change food texture.
+- Do NOT change ingredient proportions.
+"- The generated dish must look as close as possible to the " +
+"original recipe description."
+FOOD COMPOSITION
+
+- Show ONLY one finished dish.
+- Fill approximately 90% of the frame with the food.
+- Close-up hero shot.
+- 45-degree camera angle.
+- Natural shadows.
+- Realistic reflections.
+- Restaurant-quality plating only if the recipe explicitly describes it.
+- Authentic homemade appearance.
+- No extra side dishes.
+- No drinks.
+- No cutlery.
+- No napkins.
+- No table decorations.
+- No flowers.
+- No hands.
+- No people.
+- No background objects.
+
+IMAGE STYLE
+
+- Ultra realistic
+- DSLR
+- Professional food photography
+- Macro food details
+- Natural lighting
+- High dynamic range
+- Extremely realistic textures
+- 4K
+- Sharp focus
+- No illustration
+- No CGI
+- No cartoon
+- No painting
+- No text
+- No logo
+- No watermark
+
+Recipe Description:
+
+${base}
+`.trim();
     const response = await ai.models.generateImages({
       model: "imagen-4.0-generate-001",
       prompt,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:recipe_ai/Service/ai_translation_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// One selectable app language.
@@ -8,12 +9,7 @@ class AppLanguage {
   final String native; // shown to the user (e.g. "हिन्दी")
   final String english; // English name (e.g. "Hindi")
   final bool isRtl; // right-to-left script (Arabic, Hebrew, Urdu, Persian)
-  const AppLanguage(
-    this.code,
-    this.native,
-    this.english, {
-    this.isRtl = false,
-  });
+  const AppLanguage(this.code, this.native, this.english, {this.isRtl = false});
 }
 
 /// Owns the app's language: the supported locales, loading the saved choice on
@@ -56,6 +52,34 @@ class LanguageService {
     AppLanguage('sw', 'Kiswahili', 'Swahili'),
   ];
 
+  static const Map<String, List<String>> countryLanguages = {
+    'IN': ['en', 'hi'],
+    'JP': ['en', 'ja'],
+    'FR': ['en', 'fr'],
+    'DE': ['en', 'de'],
+    'ES': ['en', 'es'],
+    'IT': ['en', 'it'],
+    'BR': ['en', 'pt'],
+    'PT': ['en', 'pt'],
+    'KR': ['en', 'ko'],
+    'CN': ['en', 'zh'],
+    'RU': ['en', 'ru'],
+    'ID': ['en', 'id'],
+    'TH': ['en', 'th'],
+    'VN': ['en', 'vi'],
+    'TR': ['en', 'tr'],
+    'SA': ['en', 'ar'],
+    'AE': ['en', 'ar'],
+    'IL': ['en', 'he'],
+    'IR': ['en', 'fa'],
+    'BD': ['en', 'bn'],
+    'PK': ['en', 'ur'],
+    'NL': ['en', 'nl'],
+    'PL': ['en', 'pl'],
+    'MY': ['en', 'ms'],
+    'TZ': ['en', 'sw'],
+  };
+
   static const Locale fallbackLocale = Locale('en');
 
   static String _current = 'en';
@@ -66,8 +90,7 @@ class LanguageService {
   static List<Locale> get supportedLocales =>
       supported.map((l) => Locale(l.code)).toList();
 
-  static bool _isSupported(String code) =>
-      supported.any((l) => l.code == code);
+  static bool _isSupported(String code) => supported.any((l) => l.code == code);
 
   /// Whether [code] is a right-to-left language (Arabic, Hebrew, Urdu, Persian).
   static bool isRtlCode(String code) {
@@ -94,6 +117,33 @@ class LanguageService {
     } catch (_) {
       _current = 'en';
     }
+  }
+
+  static String get deviceLanguageCode {
+    final code = WidgetsBinding.instance.platformDispatcher.locale.languageCode;
+
+    return _isSupported(code) ? code : 'en';
+  }
+
+  static String get deviceCountryCode {
+    final locale = WidgetsBinding.instance.platformDispatcher.locale;
+
+    return locale.countryCode?.toUpperCase() ?? '';
+  }
+
+  // static List<String> get deviceLanguages {
+  //   final country = deviceCountryCode;
+
+  //   return countryLanguages[country] ?? [deviceLanguageCode];
+  // }
+  static List<String> get deviceLanguages {
+    final country = deviceCountryCode;
+
+    if (country == 'IN' || country == 'GB') {
+      return ['en', 'hi'];
+    }
+
+    return countryLanguages[country] ?? [deviceLanguageCode];
   }
 
   /// Switch the whole app to [code] immediately (no restart) and remember it.

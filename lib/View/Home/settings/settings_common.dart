@@ -1,5 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
@@ -194,40 +194,61 @@ class SettingsUi {
 /// with a FirebaseAuth photoURL fallback and a person-icon placeholder.
 class ProfileAvatar extends StatelessWidget {
   final double size;
+
   const ProfileAvatar({super.key, required this.size});
 
   @override
   Widget build(BuildContext context) {
-    final profileController = Get.find<ProfileController>();
+    final controller = Get.find<ProfileController>();
+
     return Obx(() {
-      final path = profileController.imagePath.value;
-      final url = path.isNotEmpty
-          ? path
-          : (FirebaseAuth.instance.currentUser?.photoURL ?? '');
-      Widget child;
-      if (url.isEmpty) {
-        child = _placeholder();
-      } else if (url.startsWith('http')) {
-        child = CachedNetworkImage(
-          imageUrl: url,
-          width: size,
-          height: size,
-          fit: BoxFit.cover,
-          memCacheWidth: (size * 3).round(),
-          placeholder: (_, __) => _placeholder(),
-          errorWidget: (_, __, ___) => _placeholder(),
-        );
-      } else {
-        child = Image.file(
-          profileController.profileFile!,
-          width: size,
-          height: size,
-          fit: BoxFit.cover,
-          cacheWidth: (size * 3).round(),
-          errorBuilder: (_, __, ___) => _placeholder(),
+      final path = controller.imagePath.value.trim();
+
+      // --------------------------------------------------------
+      // LOCAL IMAGE = INSTANT
+      // --------------------------------------------------------
+
+      if (path.isNotEmpty && !path.startsWith('http')) {
+        final file = controller.profileFile;
+
+        if (file != null) {
+          return ClipOval(
+            child: Image.file(
+              file,
+              width: size,
+              height: size,
+              fit: BoxFit.cover,
+              cacheWidth: 200,
+              cacheHeight: 200,
+              gaplessPlayback: true,
+              errorBuilder: (_, __, ___) => _placeholder(),
+            ),
+          );
+        }
+      }
+
+      // --------------------------------------------------------
+      // NETWORK IMAGE
+      // --------------------------------------------------------
+
+      if (path.isNotEmpty && path.startsWith('http')) {
+        return ClipOval(
+          child: CachedNetworkImage(
+            imageUrl: path,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+            memCacheWidth: 200,
+            memCacheHeight: 200,
+            fadeInDuration: Duration.zero,
+            fadeOutDuration: Duration.zero,
+            placeholder: (_, __) => _placeholder(),
+            errorWidget: (_, __, ___) => _placeholder(),
+          ),
         );
       }
-      return ClipOval(child: child);
+
+      return ClipOval(child: _placeholder());
     });
   }
 
@@ -236,6 +257,7 @@ class ProfileAvatar extends StatelessWidget {
       width: size,
       height: size,
       color: AppColors.shimmerBase,
+      alignment: Alignment.center,
       child: Icon(Icons.person_rounded, size: size * 0.5, color: Colors.white),
     );
   }

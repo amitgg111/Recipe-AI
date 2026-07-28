@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:recipe_ai/View/Home/cookbooks_screen.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
@@ -97,7 +98,8 @@ class ImportCompleteScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 GestureDetector(
-                  onTap: () => Get.back(),
+                  onTap: () => Get.offAll(() => const CookbooksScreen()),
+
                   child: Container(
                     width: 42,
                     height: 42,

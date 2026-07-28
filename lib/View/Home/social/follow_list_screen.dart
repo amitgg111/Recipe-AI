@@ -51,7 +51,9 @@ class _FollowListScreenState extends State<FollowListScreen> {
                   if (uids == null) {
                     return const Center(
                       child: CircularProgressIndicator(
-                          color: AppColors.primary, strokeWidth: 2.5),
+                        color: AppColors.primary,
+                        strokeWidth: 2.5,
+                      ),
                     );
                   }
                   if (uids.isEmpty) return _empty();
@@ -80,13 +82,17 @@ class _FollowListScreenState extends State<FollowListScreen> {
             child: Container(
               width: 40,
               height: 40,
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(13),
                 border: Border.all(color: const Color(0xFFEFEDE6)),
               ),
-              child: const OnboardingLineIcon('back',
-                  size: 20, color: AppColors.textDark),
+              child: const OnboardingLineIcon(
+                'back',
+                size: 20,
+                color: AppColors.textDark,
+              ),
             ),
           ),
           const SizedBox(width: 14),
@@ -133,11 +139,13 @@ class _FollowListScreenState extends State<FollowListScreen> {
           ),
           child: UserTile(
             user: user,
-            onTap: () => Get.to(() => CreatorProfileScreen(
-                  userId: user.uid,
-                  fallbackName: user.displayName,
-                  fallbackAvatar: user.photoUrl,
-                )),
+            onTap: () => Get.to(
+              () => CreatorProfileScreen(
+                userId: user.uid,
+                fallbackName: user.displayName,
+                fallbackAvatar: user.photoUrl,
+              ),
+            ),
           ),
         );
       },
@@ -149,8 +157,11 @@ class _FollowListScreenState extends State<FollowListScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(_followers ? Icons.group_outlined : Icons.person_add_alt_1_outlined,
-              size: 40, color: AppColors.iconLight),
+          Icon(
+            _followers ? Icons.group_outlined : Icons.person_add_alt_1_outlined,
+            size: 40,
+            color: AppColors.iconLight,
+          ),
           const SizedBox(height: 12),
           Text(
             _followers ? 'no_followers_yet'.tr : 'not_following_anyone_yet'.tr,

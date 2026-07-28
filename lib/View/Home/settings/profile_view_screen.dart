@@ -24,27 +24,32 @@ class ProfileViewScreen extends StatefulWidget {
   State<ProfileViewScreen> createState() => _ProfileViewScreenState();
 }
 
-class _ProfileViewScreenState extends State<ProfileViewScreen> {
+class _ProfileViewScreenState extends State<ProfileViewScreen>
+    with WidgetsBindingObserver {
   final HomeController _home = Get.find<HomeController>();
   String _bio = '';
   String _contact = '';
   String _username = '';
   int _followers = 0;
   int _following = 0;
+
   StreamSubscription<UserModel?>? _userSub;
 
   @override
   void initState() {
     super.initState();
-    // UserService.ensureUsername();
+
+    WidgetsBinding.instance.addObserver(this);
+
     _loadUserDoc();
+
     final uid = AuthService.currentUser?.uid;
     if (uid != null) {
       _userSub = UserService.userStream(uid).listen((u) {
         if (u == null || !mounted) return;
+
         setState(() {
           _bio = u.bio;
-          // _username = u.handle;
           _followers = u.followersCount;
           _following = u.followingCount;
         });
@@ -54,19 +59,38 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _userSub?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshProfile();
+    }
+  }
+
+  Future<void> _refreshProfile() async {
+    await _loadUserDoc();
+
+    if (!mounted) return;
+
+    setState(() {});
   }
 
   Future<void> _loadUserDoc() async {
     final uid = AuthService.currentUser?.uid;
     if (uid == null) return;
+
     try {
       final doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
           .get();
+
       final data = doc.data();
+
       if (data != null && mounted) {
         setState(() {
           _bio = (data['bio'] as String?)?.trim() ?? '';
@@ -93,9 +117,13 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                 'profile'.tr,
                 trailing: SettingsUi.squareIconButton(
                   icon: Icons.edit_outlined,
-                  onTap: () => Get.to(
-                    () => const EditProfileScreen(),
-                  )?.then((_) => _loadUserDoc()),
+                  onTap: () async {
+                    await Get.to(() => const EditProfileScreen());
+
+                    if (!mounted) return;
+
+                    await _refreshProfile();
+                  },
                 ),
               ),
               const SizedBox(height: 10),
@@ -499,23 +527,42 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
   }
 
   Widget _thumb(String? url) {
-    return Container(
-      width: 50,
-      height: 50,
-      decoration: BoxDecoration(
-        color: AppColors.shimmerBase,
-        borderRadius: BorderRadius.circular(12),
+    if (url == null || url.isEmpty || !url.startsWith('http')) {
+      return Container(
+        width: 50,
+        height: 50,
+        decoration: BoxDecoration(
+          color: AppColors.shimmerBase,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Icon(Icons.restaurant_rounded, color: Colors.white),
+      );
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: CachedNetworkImage(
+        imageUrl: url,
+        width: 50,
+        height: 50,
+        fit: BoxFit.cover,
+
+        // Small thumbnail mate enough.
+        memCacheWidth: 100,
+        memCacheHeight: 100,
+
+        // Cache ma hoy to immediately show.
+        fadeInDuration: Duration.zero,
+        fadeOutDuration: Duration.zero,
+
+        placeholder: (_, __) =>
+            Container(width: 50, height: 50, color: AppColors.shimmerBase),
+
+        errorWidget: (_, __, ___) => Container(
+          color: AppColors.shimmerBase,
+          child: const Icon(Icons.restaurant_rounded, color: Colors.white),
+        ),
       ),
-      clipBehavior: Clip.antiAlias,
-      child: (url != null && url.startsWith('http'))
-          ? CachedNetworkImage(
-              imageUrl: url,
-              fit: BoxFit.cover,
-              memCacheWidth: 150,
-              errorWidget: (_, __, ___) =>
-                  const Icon(Icons.restaurant_rounded, color: Colors.white),
-            )
-          : const Icon(Icons.restaurant_rounded, color: Colors.white),
     );
   }
 

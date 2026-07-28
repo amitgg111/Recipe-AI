@@ -327,22 +327,36 @@ class UnitConverter {
   /// imperial cooking units read best as fractions (e.g. "1 1/2 cup"), so the
   /// formatter is unit-aware. Imperial units reuse the app's existing
   /// fraction/decimal formatter so output matches everywhere else.
-  static String format(double value, String unit) {
-    final u = unit.toLowerCase();
-    String number;
-    if (u == 'ml' || u == 'g' || u == 'mg') {
-      number = value.round().toString(); // whole numbers read best
-    } else if (u == 'l' || u == 'kg') {
+
+static String format(double value, String unit) {
+  final u = unit.toLowerCase();
+
+  String number;
+
+  if (u == 'ml' || u == 'g' || u == 'mg') {
+    // Never round a small positive quantity down to 0.
+    if (value > 0 && value < 1) {
       number = _trimDecimal(value, 2);
-    } else if (u == 'cm' || u == 'mm' || u == 'inch' || u == 'in') {
-      number = _trimDecimal(value, 1);
     } else {
-      // Imperial cooking units → fractions, matching the rest of the app.
-      number = IngredientScaleHelper.formatDouble(value);
+      number = _trimDecimal(value, 2);
     }
-    // Units are shown UPPERCASE in the UI (e.g. "133 G", "22 ML", "2.19 L").
-    return unit.isEmpty ? number : '$number ${unit.toUpperCase()}';
+  } else if (u == 'l' || u == 'kg') {
+    number = _trimDecimal(value, 2);
+  } else if (u == 'cm' || u == 'mm' || u == 'inch' || u == 'in') {
+    number = _trimDecimal(value, 1);
+  } else {
+    number = IngredientScaleHelper.formatDouble(value);
+
+    // A positive quantity must never be displayed as 0.
+    if (value > 0 && (number.isEmpty || number == '0')) {
+      number = _trimDecimal(value, 2);
+    }
   }
+
+  return unit.isEmpty ? number : '$number ${unit.toUpperCase()}';
+}
+
+
 
   static String _trimDecimal(double value, int places) {
     var s = value.toStringAsFixed(places);

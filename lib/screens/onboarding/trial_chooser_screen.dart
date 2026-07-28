@@ -168,7 +168,7 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
                       ),
                       const SizedBox(height: 8),
                       // Stats row
-                      _buildStatsRow(),
+                      // _buildStatsRow(),
                       const SizedBox(height: 8),
                       // No payment row
                       _buildNoPaymentRow(),
@@ -591,65 +591,65 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
     );
   }
 
-  Widget _buildStatsRow() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // 10M+ stat
-        Column(
-          children: [
-            Text(
-              '10M+',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textDark,
-              ),
-            ),
-            Text(
-              'happy_cooks'.tr,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textMedium,
-              ),
-            ),
-          ],
-        ),
-        // Divider: 1px wide, 28px tall
-        Container(
-          width: 1,
-          height: 28,
-          color: AppColors.unselectedBorder,
-          margin: const EdgeInsets.symmetric(horizontal: 22),
-        ),
-        // Stars + rating
-        Column(
-          children: [
-            Row(
-              children: List.generate(
-                5,
-                (_) => const OnboardingLineIcon(
-                  'starF',
-                  color: AppColors.goldStar,
-                  size: 14,
-                ),
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              'rating_4_8'.tr,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textMedium,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
+  // Widget _buildStatsRow() {
+  //   return Row(
+  //     mainAxisAlignment: MainAxisAlignment.center,
+  //     children: [
+  //       // 10M+ stat
+  //       Column(
+  //         children: [
+  //           Text(
+  //             '10M+',
+  //             style: GoogleFonts.plusJakartaSans(
+  //               fontSize: 18,
+  //               fontWeight: FontWeight.w800,
+  //               color: AppColors.textDark,
+  //             ),
+  //           ),
+  //           Text(
+  //             'happy_cooks'.tr,
+  //             style: GoogleFonts.plusJakartaSans(
+  //               fontSize: 11,
+  //               fontWeight: FontWeight.w600,
+  //               color: AppColors.textMedium,
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //       // Divider: 1px wide, 28px tall
+  //       Container(
+  //         width: 1,
+  //         height: 28,
+  //         color: AppColors.unselectedBorder,
+  //         margin: const EdgeInsets.symmetric(horizontal: 22),
+  //       ),
+  //       // Stars + rating
+  //       Column(
+  //         children: [
+  //           Row(
+  //             children: List.generate(
+  //               5,
+  //               (_) => const OnboardingLineIcon(
+  //                 'starF',
+  //                 color: AppColors.goldStar,
+  //                 size: 14,
+  //               ),
+  //             ),
+  //           ),
+  //           const SizedBox(height: 2),
+  //           Text(
+  //             'rating_4_8'.tr,
+  //             style: GoogleFonts.plusJakartaSans(
+  //               fontSize: 11,
+  //               fontWeight: FontWeight.w600,
+  //               color: AppColors.textMedium,
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     ],
+  //   );
+  // }
 
   Widget _buildNoPaymentRow() {
     return Padding(

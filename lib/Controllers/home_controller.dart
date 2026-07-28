@@ -28,6 +28,7 @@ class RecipeModel {
   final String? servings;
   final String? category;
   final String? cuisine;
+  final DateTime? createdAt;
   final List<String> keywords;
   final List<String> ingredients;
   final List<String> instructions;
@@ -86,6 +87,7 @@ class RecipeModel {
     required this.ingredientSections,
     required this.instructionSections,
     this.note,
+    this.createdAt,
     this.nutritionData,
     this.visibility = 'private',
     this.isDeleted = false,
@@ -189,14 +191,80 @@ class RecipeModel {
       isFavorite: data['isFavorite'] == true,
     );
   }
+  // double get servingCount {
+  //   if (servings == null) return 1;
+
+  //   final match = RegExp(r'(\d+(\.\d+)?)').firstMatch(servings!);
+
+  //   if (match == null) return 1;
+
+  //   return double.tryParse(match.group(1)!) ?? 1;
+  // }
+
   double get servingCount {
-    if (servings == null) return 1;
+    if (servings == null || servings!.trim().isEmpty) {
+      return 1;
+    }
 
-    final match = RegExp(r'(\d+(\.\d+)?)').firstMatch(servings!);
+    final value = servings!.trim();
 
-    if (match == null) return 1;
+    // Mixed number: "1 1/2"
+    final mixed = RegExp(
+      r'^(\d+(?:\.\d+)?)\s+(\d+)\s*/\s*(\d+)',
+    ).firstMatch(value);
 
-    return double.tryParse(match.group(1)!) ?? 1;
+    if (mixed != null) {
+      final whole = double.tryParse(mixed.group(1)!);
+      final numerator = double.tryParse(mixed.group(2)!);
+      final denominator = double.tryParse(mixed.group(3)!);
+
+      if (whole != null &&
+          numerator != null &&
+          denominator != null &&
+          denominator != 0) {
+        return whole + (numerator / denominator);
+      }
+    }
+
+    // Simple fraction: "1/2"
+    final fraction = RegExp(r'^(\d+)\s*/\s*(\d+)').firstMatch(value);
+
+    if (fraction != null) {
+      final numerator = double.tryParse(fraction.group(1)!);
+      final denominator = double.tryParse(fraction.group(2)!);
+
+      if (numerator != null && denominator != null && denominator != 0) {
+        return numerator / denominator;
+      }
+    }
+
+    // Decimal/integer: "1", "1.5", "2"
+    final number = RegExp(r'^\d+(?:\.\d+)?').firstMatch(value);
+
+    if (number != null) {
+      return double.tryParse(number.group(0)!) ?? 1;
+    }
+
+    // Unicode fractions.
+    const fractions = {
+      '¼': 0.25,
+      '½': 0.5,
+      '¾': 0.75,
+      '⅓': 1 / 3,
+      '⅔': 2 / 3,
+      '⅛': 0.125,
+      '⅜': 0.375,
+      '⅝': 0.625,
+      '⅞': 0.875,
+    };
+
+    for (final entry in fractions.entries) {
+      if (value.startsWith(entry.key)) {
+        return entry.value;
+      }
+    }
+
+    return 1;
   }
 }
 
@@ -270,53 +338,6 @@ class HomeController extends GetxController {
         });
   }
 
-  // void fetchRecipes() {
-  //   final uid = AuthService.currentUser?.uid;
-  //   if (uid == null) {
-  //     isLoading.value = false;
-  //     return;
-  //   }
-  //   isLoading.value = true;
-  //   _recipesSub?.cancel();
-
-  //   _recipesSub = FirebaseFirestore.instance
-  //       .collection('recipes')
-  //       .where('ownerId', isEqualTo: uid) // માત્ર પોતાના recipes
-  //       // .orderBy('createdAt', descending: true)
-  //       .snapshots()
-  //       .listen(
-  //         (snapshot) async {
-  //           log("Docs: ${snapshot.docs.length}");
-
-  //           final english = snapshot.docs
-  //               .map((doc) => RecipeModel.fromDocument(doc))
-  //               .where((r) => !r.isDeleted)
-  //               .toList();
-  //           // Keep the English originals, then show them translated into the
-  //           // current language (no-op for English / until the model is ready).
-  //           // _englishRecipes = english;
-  //           // recipes.value = await Future.wait(english.map(_translateRecipe));
-  //           // isLoading.value = false;
-
-  //           _englishRecipes = english;
-
-  //           // Show recipes immediately
-  //           recipes.value = english;
-  //           isLoading.value = false;
-
-  //           // Translate in background
-  //           _translateRecipesInBackground();
-  //         },
-  //         onError: (error) {
-  //           isLoading.value = false;
-  //           CustomSnackbar.show(
-  //             title: 'Error',
-  //             message: 'Failed to fetch recipes: $error',
-  //             type: SnackbarType.error,
-  //           );
-  //         },
-  //       );
-  // }
   void fetchRecipes() {
     final uid = AuthService.currentUser?.uid;
 
@@ -368,51 +389,7 @@ class HomeController extends GetxController {
   /// steps, sections) into the current language. Category/cuisine/keywords are
   /// left untouched because RecipeModel.copyWith doesn't expose them. No-op for
   /// English or before the ML Kit model is ready.
-  // Future<RecipeModel> _translateRecipe(RecipeModel recipe) async {
-  //   if (!AiTranslationService.isTranslating) return recipe;
-  //   try {
-  //     final title = await AiTranslationService.translate(recipe.title);
-  //     final description = recipe.description == null
-  //         ? null
-  //         : await AiTranslationService.translate(recipe.description!);
-  //     final ingredients = await AiTranslationService.translateList(
-  //       recipe.ingredients,
-  //     );
-  //     final instructions = await AiTranslationService.translateList(
-  //       recipe.instructions,
-  //     );
-  //     final ingredientSections = await Future.wait(
-  //       recipe.ingredientSections.map(
-  //         (s) async => IngredientSection(
-  //           name: s.name == null
-  //               ? null
-  //               : await AiTranslationService.translate(s.name!),
-  //           items: await AiTranslationService.translateList(s.items),
-  //         ),
-  //       ),
-  //     );
-  //     final instructionSections = await Future.wait(
-  //       recipe.instructionSections.map(
-  //         (s) async => InstructionSection(
-  //           name: s.name == null
-  //               ? null
-  //               : await AiTranslationService.translate(s.name!),
-  //           steps: await AiTranslationService.translateList(s.steps),
-  //         ),
-  //       ),
-  //     );
-  //     return recipe.copyWith(
-  //       title: title,
-  //       description: description,
-  //       ingredients: ingredients,
-  //       instructions: instructions,
-  //       ingredientSections: ingredientSections,
-  //       instructionSections: instructionSections,
-  //     );
-  //   } catch (e) {
-  //     return recipe; // never break the list on a translation hiccup
-  //   }
-  // }
+
   Future<RecipeModel> _translateRecipe(RecipeModel recipe) async {
     if (!AiTranslationService.isTranslating) {
       return recipe;
@@ -527,15 +504,7 @@ class HomeController extends GetxController {
   }
 
   /// Re-translate the already-loaded recipes after the app language changes.
-  // Future<void> refreshRecipesLanguage() async {
-  //   if (_englishRecipes.isEmpty) return;
-  //   try {
-  //     isLoading.value = true;
-  //     recipes.value = await Future.wait(_englishRecipes.map(_translateRecipe));
-  //   } finally {
-  //     isLoading.value = false;
-  //   }
-  // }
+
   Future<void> refreshRecipesLanguage() async {
     if (_englishRecipes.isEmpty) return;
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -12,7 +13,8 @@ class ProfileController extends GetxController {
 
   final RxString imagePath = ''.obs;
   final RxString name = ''.obs;
-
+  final RxBool isUploadingImage = false.obs;
+  final RxBool isLocalPreview = false.obs;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -37,15 +39,24 @@ class ProfileController extends GetxController {
     if (user == null) return;
 
     final googleImage = user.photoURL ?? '';
-    final localImage = box.read(imageKey) ?? '';
+    final cachedImage = box.read(imageKey)?.toString() ?? '';
 
-    // Show cached data instantly
-    imagePath.value = localImage.isNotEmpty ? localImage : googleImage;
+    // Cached image instantly show.
+    if (cachedImage.isNotEmpty) {
+      imagePath.value = cachedImage;
+    } else if (googleImage.isNotEmpty) {
+      imagePath.value = googleImage;
+    }
 
-    final cachedName = box.read(nameKey) ?? '';
-    name.value = cachedName.isNotEmpty ? cachedName : (user.displayName ?? '');
+    final cachedName = box.read(nameKey)?.toString() ?? '';
 
-    // Load latest data from Firestore
+    if (cachedName.isNotEmpty) {
+      name.value = cachedName;
+    } else {
+      name.value = user.displayName ?? '';
+    }
+
+    // Latest Firestore data background ma fetch.
     try {
       final doc = await _firestore.collection('users').doc(user.uid).get();
 
@@ -53,7 +64,6 @@ class ProfileController extends GetxController {
 
       if (data == null) return;
 
-      // Prefer Firestore name
       final firestoreName = (data['name'] ?? '').toString().trim();
 
       if (firestoreName.isNotEmpty) {
@@ -61,70 +71,210 @@ class ProfileController extends GetxController {
         await box.write(nameKey, firestoreName);
       }
 
-      // Prefer Firestore profile image
-      final firestoreImage = (data['photoUrl'] ?? '').toString();
+      final firestoreImage = (data['photoUrl'] ?? '').toString().trim();
 
-      if (firestoreImage.startsWith('http')) {
-        imagePath.value = firestoreImage;
-        await box.write(imageKey, firestoreImage);
-      }
+     if (firestoreImage.startsWith('http') &&
+    !isLocalPreview.value &&
+    !isUploadingImage.value) {
+  imagePath.value = firestoreImage;
+  await box.write(imageKey, firestoreImage);
+}
     } catch (_) {
-      // Offline mode:
-      // Keep cached name and image
+      // Cached data remains available offline.
     }
   }
 
-  // Alias method
-  // Can be called after profile update.
   Future<void> loadProfile() async {
     await loadUserData();
   }
 
   // ------------------------------------------------------------
-  // PICK AND UPLOAD PROFILE IMAGE
+  // PICK PROFILE IMAGE
   // ------------------------------------------------------------
 
   Future<void> pickImage() async {
-    final XFile? file = await ImagePicker().pickImage(
+    final XFile? pickedFile = await ImagePicker().pickImage(
       source: ImageSource.gallery,
-      imageQuality: 80,
+      imageQuality: 70,
+      maxWidth: 600,
+      maxHeight: 600,
     );
 
-    if (file == null) return;
+    if (pickedFile == null) return;
 
-    // Instant local preview
-    imagePath.value = file.path;
-    await box.write(imageKey, file.path);
-
+    final file = File(pickedFile.path);
     final userId = uid;
 
     if (userId.isEmpty) return;
 
+    // ----------------------------------------------------------
+    // INSTANT PREVIEW
+    // ----------------------------------------------------------
+
+    isLocalPreview.value = true;
+    imagePath.value = file.path;
+
+    // Local path cache ma immediately save.
+    await box.write(imageKey, file.path);
+
+    // Loader/upload state.
+    isUploadingImage.value = true;
+
+    // ----------------------------------------------------------
+    // BACKGROUND UPLOAD
+    // ----------------------------------------------------------
+
+    unawaited(_uploadProfileImage(userId: userId, file: file));
+  }
+
+  // Future<void> pickImage() async {
+  //   final XFile? pickedFile = await ImagePicker().pickImage(
+  //     source: ImageSource.gallery,
+  //     imageQuality: 70,
+  //     maxWidth: 600,
+  //     maxHeight: 600,
+  //   );
+
+  //   if (pickedFile == null) return;
+
+  //   final file = File(pickedFile.path);
+  //   final userId = uid;
+
+  //   if (userId.isEmpty) return;
+
+  //   // ----------------------------------------------------------
+  //   // 1. INSTANT LOCAL PREVIEW
+  //   // ----------------------------------------------------------
+
+  //   // New image immediately screen par show thase.
+  //   imagePath.value = file.path;
+
+  //   // Local path cache ma save.
+  //   await box.write(imageKey, file.path);
+
+  //   // Loader ON.
+  //   isUploadingImage.value = true;
+
+  //   // ----------------------------------------------------------
+  //   // 2. UPLOAD BACKGROUND
+  //   // ----------------------------------------------------------
+
+  //   // Await na karo.
+  //   // UI local image immediately show karto rahe.
+  //   unawaited(_uploadProfileImage(userId: userId, file: file));
+  // }
+
+  // ------------------------------------------------------------
+  // UPLOAD PROFILE IMAGE
+  // ------------------------------------------------------------
+
+  Future<void> _uploadProfileImage({
+    required String userId,
+    required File file,
+  }) async {
     try {
-      final ref = FirebaseStorage.instance.ref(
-        'users/$userId/profile/avatar_${DateTime.now().millisecondsSinceEpoch}.jpg',
+      final fileName = 'avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+      final ref = FirebaseStorage.instance.ref().child(
+        'users/$userId/profile/$fileName',
       );
 
-      await ref.putFile(File(file.path));
+      await ref.putFile(
+        file,
+        SettableMetadata(
+          contentType: 'image/jpeg',
+          cacheControl: 'public,max-age=31536000',
+        ),
+      );
 
       final url = await ref.getDownloadURL();
 
-      // Save image URL to Firestore
+      // Firestore background update.
       await _firestore.collection('users').doc(userId).set({
         'photoUrl': url,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-      // Update Firebase Auth photo
+      // Auth background update.
       await _auth.currentUser?.updatePhotoURL(url);
 
-      // Update observable and cache
-      imagePath.value = url;
+      // Save final URL.
       await box.write(imageKey, url);
-    } catch (_) {
-      // Local preview remains if upload fails.
+
+      // IMPORTANT:
+      // Local preview already visible છે.
+      // Have network URL ma switch karvani jarur nathi.
+      //
+      // Local preview screen par j rehse.
+      // Next time app/profile load thase tyare URL use thase.
+    } catch (e) {
+      // Local preview visible રહેવા દો.
+    } finally {
+      isUploadingImage.value = false;
     }
   }
+
+  // Future<void> _uploadProfileImage({
+  //   required String userId,
+  //   required File file,
+  // }) async {
+  //   try {
+  //     final fileName = 'avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+  //     final ref = FirebaseStorage.instance.ref().child(
+  //       'users/$userId/profile/$fileName',
+  //     );
+
+  //     // Upload.
+  //     await ref.putFile(
+  //       file,
+  //       SettableMetadata(
+  //         contentType: 'image/jpeg',
+  //         cacheControl: 'public,max-age=31536000',
+  //       ),
+  //     );
+
+  //     // Download URL.
+  //     final url = await ref.getDownloadURL();
+
+  //     // --------------------------------------------------------
+  //     // Update Firestore
+  //     // --------------------------------------------------------
+
+  //     await _firestore.collection('users').doc(userId).set({
+  //       'photoUrl': url,
+  //       'updatedAt': FieldValue.serverTimestamp(),
+  //     }, SetOptions(merge: true));
+
+  //     // --------------------------------------------------------
+  //     // Update Firebase Auth
+  //     // --------------------------------------------------------
+
+  //     await _auth.currentUser?.updatePhotoURL(url);
+
+  //     // --------------------------------------------------------
+  //     // Save final URL
+  //     // --------------------------------------------------------
+
+  //     await box.write(imageKey, url);
+
+  //     // IMPORTANT:
+  //     // Local file already showing.
+  //     // Network URL par immediately switch karvani jarur nathi.
+  //     //
+  //     // Ahiya URL set kariye to CachedNetworkImage fari network
+  //     // request/check kari shake.
+  //     //
+  //     // Etle local image ne screen par j rehva do.
+  //     //
+  //     // Next app/profile load ma cached URL use thase.
+  //   } catch (_) {
+  //     // Upload fail thay to local selected image screen par
+  //     // visible rehse.
+  //   } finally {
+  //     isUploadingImage.value = false;
+  //   }
+  // }
 
   // ------------------------------------------------------------
   // UPDATE NAME
@@ -135,10 +285,9 @@ class ProfileController extends GetxController {
 
     if (newName.isEmpty) return;
 
-    // Update UI instantly
+    // Instant UI update.
     name.value = newName;
 
-    // Update local cache
     await box.write(nameKey, newName);
 
     final userId = uid;
@@ -146,19 +295,16 @@ class ProfileController extends GetxController {
     if (userId.isEmpty) return;
 
     try {
-      // Update Firebase Auth display name
       await _auth.currentUser?.updateDisplayName(newName);
 
-      // Refresh Firebase Auth user
       await _auth.currentUser?.reload();
 
-      // Update Firestore profile
       await _firestore.collection('users').doc(userId).set({
         'name': newName,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     } catch (_) {
-      // UI and cache are already updated.
+      // UI/cache already updated.
     }
   }
 
@@ -177,23 +323,25 @@ class ProfileController extends GetxController {
 
     final cleanName = newName.trim();
 
-    // Update observable instantly
+    // Instant UI update.
     name.value = cleanName;
 
-    // Update local cache
     await box.write(nameKey, cleanName);
 
-    // Update Firebase Auth
-    await _auth.currentUser?.updateDisplayName(cleanName);
-    await _auth.currentUser?.reload();
+    try {
+      await _auth.currentUser?.updateDisplayName(cleanName);
 
-    // Update Firestore
-    await _firestore.collection('users').doc(userId).set({
-      'name': cleanName,
-      if (contact != null) 'contact': contact.trim(),
-      if (bio != null) 'bio': bio.trim(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+      await _auth.currentUser?.reload();
+
+      await _firestore.collection('users').doc(userId).set({
+        'name': cleanName,
+        if (contact != null) 'contact': contact.trim(),
+        if (bio != null) 'bio': bio.trim(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (_) {
+      // UI/cache already updated.
+    }
   }
 
   // ------------------------------------------------------------
@@ -203,13 +351,17 @@ class ProfileController extends GetxController {
   File? get profileFile {
     final path = imagePath.value;
 
-    if (path.isEmpty) return null;
+    if (path.isEmpty || path.startsWith('http')) {
+      return null;
+    }
 
-    // Only return File for local file paths.
-    // Firebase URLs should be used with NetworkImage.
-    if (path.startsWith('http')) return null;
+    final file = File(path);
 
-    return File(path);
+    if (!file.existsSync()) {
+      return null;
+    }
+
+    return file;
   }
 
   // ------------------------------------------------------------

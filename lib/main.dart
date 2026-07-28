@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:recipe_ai/Service/ai_translation_service.dart';
 import 'package:recipe_ai/Service/language_service.dart';
+import 'package:recipe_ai/Service/recipe_auto_translate_service.dart';
 import 'package:recipe_ai/translations/app_translations.dart';
 import 'package:recipe_ai/Controllers/cookbook_controller.dart';
 import 'package:recipe_ai/Controllers/grocery_store_controller.dart';
@@ -97,6 +99,7 @@ void main() async {
   // Restore the saved language before the first frame so the app opens already
   // localized (defaults to English when nothing is saved).
   await LanguageService.init();
+
   runApp(const MyApp());
 
   Get.put(ThemeController(), permanent: true);
@@ -113,6 +116,13 @@ void main() async {
   // RevenueCatConfig; entitlement changes drive SubscriptionService.isPlus.
   Get.put(RevenueCatService(), permanent: true);
   unawaited(RevenueCatService.instance.configure());
+  await NotificationService.instance.init();
+  await LocalNotificationService.instance.init();
+  _bindNotificationsToAuth();
+
+  // 🆕 App-level periodic recipe auto-translate check — permanent, splash
+  // screen dispose થાય તોય ચાલુ રહે.
+  RecipeAutoTranslateService.instance.start();
   Get.put(OnboardingController(), permanent: true);
   // Real-time in-app notification feed + unread badge (self-binds to auth).
   Get.put(NotificationController(), permanent: true);

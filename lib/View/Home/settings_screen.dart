@@ -197,14 +197,24 @@ class SettingsScreen extends StatelessWidget {
             const SizedBox(width: 13),
 
             Expanded(
-              child: Obx(
-                () => Column(
+              child: Obx(() {
+                final email = FirebaseAuth.instance.currentUser?.email ?? '';
+                final emailName = email.contains('@')
+                    ? email.split('@').first
+                    : '';
+
+                final displayName =
+                    profileController.name.value.trim().isNotEmpty &&
+                        profileController.name.value.trim().toLowerCase() !=
+                            'user'
+                    ? profileController.name.value.trim()
+                    : (emailName.isNotEmpty ? emailName : 'User');
+
+                return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      profileController.name.value.isNotEmpty
-                          ? profileController.name.value
-                          : 'User',
+                      displayName,
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
@@ -215,7 +225,7 @@ class SettingsScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 1),
                     Text(
-                      FirebaseAuth.instance.currentUser?.email ?? '',
+                      email,
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -225,8 +235,8 @@ class SettingsScreen extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
-                ),
-              ),
+                );
+              }),
             ),
 
             const OnboardingLineIcon(

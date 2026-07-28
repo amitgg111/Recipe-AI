@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/Service/ai_translation_service.dart';
 import 'package:recipe_ai/Service/recipe_social_service.dart';
+import 'package:recipe_ai/Controllers/onboarding_controller.dart';
 
 class DiscoverRecipe {
   final String id;
@@ -133,6 +134,41 @@ class DiscoverController extends GetxController {
       if (r.id == id) return r;
     }
     return null;
+  }
+
+  List<String> get preferredCuisines {
+    if (!Get.isRegistered<OnboardingController>()) {
+      return const [];
+    }
+
+    final onboarding = Get.find<OnboardingController>();
+
+    return onboarding.cuisines
+        .map((e) => e.trim().toLowerCase())
+        .where((e) => e.isNotEmpty && e != 'a bit of everything')
+        .toList();
+  }
+
+  int _cuisinePriority(DiscoverRecipe recipe) {
+    final preferences = preferredCuisines;
+
+    if (preferences.isEmpty) {
+      return 0;
+    }
+
+    final cuisine = recipe.filterCuisine.trim().toLowerCase();
+
+    if (cuisine.isEmpty) {
+      return 0;
+    }
+
+    for (var i = 0; i < preferences.length; i++) {
+      if (cuisine == preferences[i]) {
+        return preferences.length - i + 1;
+      }
+    }
+
+    return 0;
   }
 
   /// Translate the CARD fields (title/description/category/cuisine) of every
@@ -522,6 +558,19 @@ class DiscoverController extends GetxController {
 
       list = list.where(hit).toList();
     }
+    list.sort((a, b) {
+      final aPriority = _cuisinePriority(a);
+      final bPriority = _cuisinePriority(b);
+
+      if (aPriority != bPriority) {
+        return bPriority.compareTo(aPriority);
+      }
+
+      final aDate = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bDate = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+
+      return bDate.compareTo(aDate);
+    });
 
     return list;
   }

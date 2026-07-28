@@ -313,36 +313,48 @@ class _CookbooksScreenState extends State<CookbooksScreen>
 
   List<CookbookModel> _sortCookbooks(List<CookbookModel> cookbooks) {
     final sorted = List<CookbookModel>.from(cookbooks);
+
     switch (_sortIndex) {
       case 0: // Newest first
         sorted.sort((a, b) {
-          if (a.createdAt == null && b.createdAt == null) return 0;
-          if (a.createdAt == null) return 1; // no date -> push to bottom
-          if (b.createdAt == null) return -1;
-          return b.createdAt!.compareTo(a.createdAt!); // descending
+          final aDate = a.createdAt;
+          final bDate = b.createdAt;
+
+          if (aDate == null && bDate == null) return 0;
+          if (aDate == null) return 1;
+          if (bDate == null) return -1;
+
+          return bDate.compareTo(aDate);
         });
-        return sorted;
+        break;
+
       case 1: // Oldest first
         sorted.sort((a, b) {
-          if (a.createdAt == null && b.createdAt == null) return 0;
-          if (a.createdAt == null) return 1;
-          if (b.createdAt == null) return -1;
-          return a.createdAt!.compareTo(b.createdAt!); // ascending
+          final aDate = a.createdAt;
+          final bDate = b.createdAt;
+
+          if (aDate == null && bDate == null) return 0;
+          if (aDate == null) return 1;
+          if (bDate == null) return -1;
+
+          return aDate.compareTo(bDate);
         });
-        return sorted;
+        break;
+
       case 2: // Name A-Z
         sorted.sort(
           (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
         );
-        return sorted;
+        break;
+
       case 3: // Name Z-A
         sorted.sort(
           (a, b) => b.name.toLowerCase().compareTo(a.name.toLowerCase()),
         );
-        return sorted;
-      default:
-        return sorted;
+        break;
     }
+
+    return sorted;
   }
 
   Widget _buildCookbooksGrid(HomeController controller) {
@@ -409,24 +421,48 @@ class _CookbooksScreenState extends State<CookbooksScreen>
 
   List<RecipeModel> _sortRecipes(List<RecipeModel> recipes) {
     final sorted = List<RecipeModel>.from(recipes);
+
     switch (_sortIndex) {
-      case 0: // Newest first (already from Firestore in desc order)
-        return sorted;
+      case 0: // Newest first
+        sorted.sort((a, b) {
+          final aDate = a.createdAt;
+          final bDate = b.createdAt;
+
+          if (aDate == null && bDate == null) return 0;
+          if (aDate == null) return 1;
+          if (bDate == null) return -1;
+
+          return bDate.compareTo(aDate);
+        });
+        break;
+
       case 1: // Oldest first
-        return sorted.reversed.toList();
+        sorted.sort((a, b) {
+          final aDate = a.createdAt;
+          final bDate = b.createdAt;
+
+          if (aDate == null && bDate == null) return 0;
+          if (aDate == null) return 1;
+          if (bDate == null) return -1;
+
+          return aDate.compareTo(bDate);
+        });
+        break;
+
       case 2: // Name A-Z
         sorted.sort(
           (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
         );
-        return sorted;
+        break;
+
       case 3: // Name Z-A
         sorted.sort(
           (a, b) => b.title.toLowerCase().compareTo(a.title.toLowerCase()),
         );
-        return sorted;
-      default:
-        return sorted;
+        break;
     }
+
+    return sorted;
   }
 
   Widget _buildRecipesGrid(HomeController controller) {
@@ -551,8 +587,8 @@ class _CookbooksScreenState extends State<CookbooksScreen>
       context: context,
       backgroundColor: Colors.transparent,
       builder: (_) {
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
+        return Builder(
+          builder: (_) {
             return Container(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 26),
               decoration: const BoxDecoration(
@@ -1124,15 +1160,21 @@ class _CookbookCard extends StatelessWidget {
 
   List<String?> get _imageUrls {
     final images = <String?>[];
+
     for (final id in cookbook.recipeIds) {
-      final recipe = recipes.firstWhereOrNull((r) => r.id == id);
+      final recipe = recipes.firstWhereOrNull((recipe) => recipe.id == id);
+
       if (recipe != null &&
           recipe.imageUrl != null &&
           recipe.imageUrl!.isNotEmpty) {
         images.add(recipe.imageUrl);
       }
-      if (images.length >= 4) break;
+
+      if (images.length == 4) {
+        break;
+      }
     }
+
     return images;
   }
 
@@ -1143,39 +1185,34 @@ class _CookbookCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Flexible so the square image yields a couple of pixels when the
-          // labels below are taller (e.g. Devanagari text) — prevents the
-          // fixed grid cell from overflowing.
-          Flexible(
-            child: AspectRatio(
-              aspectRatio: 1,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEDE5D7),
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-                  border: Border.all(color: AppColors.surfaceBorder),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(
-                    AppDimensions.radiusLg - 1,
-                  ),
-                  child: _buildImageGrid(),
-                ),
+          AspectRatio(
+            aspectRatio: 1,
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFEDE5D7),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+                border: Border.all(color: AppColors.surfaceBorder),
               ),
+              clipBehavior: Clip.antiAlias,
+              child: _buildImageGrid(),
             ),
           ),
+
           const SizedBox(height: 9),
+
           Text(
             cookbook.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 15,
               fontWeight: FontWeight.w600,
               color: AppColors.textDark,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
+
           const SizedBox(height: 2),
+
           Text(
             cookbook.recipeCount == 1
                 ? 'n_recipe_lc'.trParams({'count': '${cookbook.recipeCount}'})
@@ -1193,23 +1230,24 @@ class _CookbookCard extends StatelessWidget {
 
   Widget _buildImageGrid() {
     final urls = _imageUrls;
+
     return Column(
       children: [
         Expanded(
           child: Row(
             children: [
               Expanded(child: _gridCell(urls, 0)),
-              const SizedBox(width: 2),
+
               Expanded(child: _gridCell(urls, 1)),
             ],
           ),
         ),
-        const SizedBox(height: 2),
+        // const SizedBox(height: 2),
         Expanded(
           child: Row(
             children: [
               Expanded(child: _gridCell(urls, 2)),
-              const SizedBox(width: 2),
+
               Expanded(child: _gridCell(urls, 3)),
             ],
           ),
@@ -1219,24 +1257,27 @@ class _CookbookCard extends StatelessWidget {
   }
 
   Widget _gridCell(List<String?> urls, int index) {
-    if (index < urls.length && urls[index] != null) {
-      return AppNetworkImage(
-        urls[index]!,
-        fit: BoxFit.cover,
-        cacheWidth: 300,
-        placeholder: _placeholder(),
-        error: _placeholder(),
-      );
+    if (index >= urls.length || urls[index] == null || urls[index]!.isEmpty) {
+      return _placeholder();
     }
-    return _placeholder();
+
+    return AppNetworkImage(
+      urls[index]!,
+      width: double.infinity,
+      height: double.infinity,
+      fit: BoxFit.cover,
+      cacheWidth: 300,
+      placeholder: _placeholder(),
+      error: _placeholder(),
+    );
   }
 
   Widget _placeholder() {
     return Container(
+      width: double.infinity,
+      height: double.infinity,
       color: const Color(0xFFE7DECE),
       child: const Center(
-        // Design's exact image-placeholder glyph (rect + mountain + sun),
-        // matching the HTML cookbook cover cell — not Material's image_outlined.
         child: OnboardingLineIcon('image', size: 20, color: Color(0xFFCFC5B4)),
       ),
     );
@@ -1272,21 +1313,25 @@ class _RecipeCard extends StatelessWidget {
           children: [
             Expanded(
               child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
+                  const ClipRRect(
+                    borderRadius: BorderRadius.vertical(
                       top: Radius.circular(AppDimensions.radiusLg - 1),
                     ),
-                    child: _buildImage(),
                   ),
+                  _buildImage(),
+
                   Positioned(
                     top: 8,
                     right: 8,
                     child: GestureDetector(
-                      onTap: () => Get.find<HomeController>().toggleFavorite(
-                        recipe.id,
-                        !recipe.isFavorite,
-                      ),
+                      onTap: () {
+                        Get.find<HomeController>().toggleFavorite(
+                          recipe.id,
+                          !recipe.isFavorite,
+                        );
+                      },
                       behavior: HitTestBehavior.opaque,
                       child: Container(
                         width: 28,
@@ -1304,7 +1349,7 @@ class _RecipeCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // Privacy badge (🔒 Private / 🌍 Public)
+
                   Positioned(
                     top: 8,
                     left: 8,
@@ -1313,6 +1358,7 @@ class _RecipeCard extends StatelessWidget {
                 ],
               ),
             ),
+
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
               child: Column(
@@ -1344,7 +1390,7 @@ class _RecipeCard extends StatelessWidget {
                             fontSize: 12,
                           ),
                           maxLines: 1,
-                          overflow: TextOverflow.clip,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -1359,18 +1405,33 @@ class _RecipeCard extends StatelessWidget {
   }
 
   Widget _buildImage() {
-    if (recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty) {
-      return AppNetworkImage(
-        recipe.imageUrl!,
+    final imageUrl = recipe.imageUrl;
+
+    if (imageUrl == null || imageUrl.isEmpty) {
+      return _imagePlaceholder();
+    }
+
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(
+        top: Radius.circular(AppDimensions.radiusLg - 1),
+      ),
+      child: AppNetworkImage(
+        imageUrl,
         width: double.infinity,
         height: double.infinity,
         fit: BoxFit.cover,
-        cacheWidth: 600,
+
+        // Smaller decoded image = faster memory usage
+        // and faster rendering inside a card.
+        cacheWidth: 400,
+
+        // Show placeholder immediately.
         placeholder: _imagePlaceholder(),
+
+        // Don't leave the card blank if image fails.
         error: _imagePlaceholder(),
-      );
-    }
-    return _imagePlaceholder();
+      ),
+    );
   }
 
   Widget _imagePlaceholder() {
@@ -1378,6 +1439,7 @@ class _RecipeCard extends StatelessWidget {
       width: double.infinity,
       height: double.infinity,
       color: const Color(0xFFF5EDE0),
+      alignment: Alignment.center,
       child: Icon(
         Icons.restaurant_rounded,
         size: 36,

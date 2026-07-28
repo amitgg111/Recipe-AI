@@ -71,6 +71,18 @@ class _CuisinesBodyState extends State<CuisinesBody> {
           _cuisineC.categories['popular'] ??
           _cuisineC.allCuisines.take(9).toList();
 
+      final displayCuisines = <String>[];
+
+      /// First add selected cuisines
+      displayCuisines.addAll(_selectedCuisines);
+
+      /// Then add popular cuisines (avoid duplicates)
+      for (final cuisine in popular) {
+        if (!displayCuisines.contains(cuisine)) {
+          displayCuisines.add(cuisine);
+        }
+      }
+      final visibleCuisines = displayCuisines.take(10).toList();
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 26),
         child: Column(
@@ -107,7 +119,7 @@ class _CuisinesBodyState extends State<CuisinesBody> {
                       spacing: 11,
                       runSpacing: 11,
                       children: [
-                        for (final cuisine in popular)
+                        for (final cuisine in visibleCuisines)
                           SizedBox(
                             width:
                                 (MediaQuery.of(context).size.width - 52 - 11) /

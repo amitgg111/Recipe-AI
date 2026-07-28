@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:recipe_ai/View/Home/home_screen.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:recipe_ai/widgets/app_network_image.dart';
 import 'package:recipe_ai/View/Auth/auth_wrapper.dart';
@@ -112,12 +114,14 @@ class ImportCompleteScreen extends StatelessWidget {
                       // screen); if it ended up as the ONLY route, a bare pop
                       // would leave an empty, black navigator — so fall back to
                       // the app home instead.
-                      final nav = Navigator.of(context);
-                      if (nav.canPop()) {
-                        nav.pop();
-                      } else {
-                        Get.offAll(() => const AuthWrapper());
-                      }
+                      Get.offAll(() => const HomeScreen());
+
+                      // final nav = Navigator.of(context);
+                      // if (nav.canPop()) {
+                      //   nav.pop();
+                      // } else {
+                      //   Get.offAll(() => const AuthWrapper());
+                      // }
                     },
                     child: Container(
                       width: 42,

@@ -109,12 +109,12 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               const SizedBox(height: 8),
 
               // Centered "Recipe AI" logo (app name + icon)
-              Center(
+              const Center(
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const AppLogo(size: 28),
-                    const SizedBox(width: 8),
+                    AppLogo(size: 28),
+                    SizedBox(width: 8),
                     AppWordmark(fontSize: 16, fontWeight: FontWeight.w700),
                   ],
                 ),
@@ -226,15 +226,6 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 ),
               ],
 
-              // _OutlinedAuthButton(
-              //   label: 'continue_with_apple'.tr,
-              //   onTap: _isLoading ? null : _onAppleContinue,
-              //   leading: const Icon(
-              //     Icons.apple,
-              //     size: 20,
-              //     color: Color(0xFF2A211B),
-              //   ),
-              // ),
               const SizedBox(height: 13),
 
               // Other options button

@@ -146,7 +146,7 @@ class AuthService {
 
   static Future<UserCredential?> signInWithGoogle() async {
     final GoogleSignIn googleSignIn = GoogleSignIn(
-      scopes: ['email', 'profile'], // IMPORTANT
+      scopes: ['email', 'profile'],
     );
 
     await googleSignIn.signOut();
@@ -166,21 +166,27 @@ class AuthService {
 
     final user = userCredential.user!;
 
-    // 🔥 IMPORTANT: FORCE REFRESH
     await user.reload();
     final freshUser = FirebaseAuth.instance.currentUser;
 
     final photo = freshUser?.photoURL ?? account.photoUrl ?? "";
 
+    final email = user.email ?? account.email;
+    final googleName = (user.displayName?.trim().isNotEmpty == true)
+        ? user.displayName!.trim()
+        : email.split('@').first;
+
+    // Update Firebase Auth display name
+    await user.updateDisplayName(googleName);
+
     final doc = _firestore.collection("users").doc(user.uid);
     final snapshot = await doc.get();
 
     if (!snapshot.exists) {
-      // First-time Google user
       await doc.set({
         "uid": user.uid,
-        "name": user.displayName ?? account.displayName ?? "",
-        "email": user.email ?? account.email,
+        "name": googleName,
+        "email": email,
         "photoUrl": photo,
         "provider": "google",
         "trialChooserCompleted": false,
@@ -192,10 +198,9 @@ class AuthService {
         await OnboardingController.to.syncToFirebase(user.uid);
       }
     } else {
-      // Returning user -> update fields without clobbering freeCredits
       await doc.set({
-        "name": user.displayName ?? account.displayName ?? "",
-        "email": user.email ?? account.email,
+        "name": googleName,
+        "email": email,
         "photoUrl": photo,
         "updatedAt": FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
@@ -203,6 +208,86 @@ class AuthService {
 
     return userCredential;
   }
+
+  // static Future<UserCredential?> signInWithGoogle() async {
+  //   final GoogleSignIn googleSignIn = GoogleSignIn(
+  //     scopes: ['email', 'profile'], // IMPORTANT
+  //   );
+
+  //   await googleSignIn.signOut();
+
+  //   final GoogleSignInAccount? account = await googleSignIn.signIn();
+
+  //   if (account == null) return null;
+
+  //   final GoogleSignInAuthentication auth = await account.authentication;
+
+  //   final credential = GoogleAuthProvider.credential(
+  //     accessToken: auth.accessToken,
+  //     idToken: auth.idToken,
+  //   );
+
+  //   final userCredential = await _auth.signInWithCredential(credential);
+
+  //   final user = userCredential.user!;
+
+  //   // 🔥 IMPORTANT: FORCE REFRESH
+  //   await user.reload();
+  //   final freshUser = FirebaseAuth.instance.currentUser;
+
+  //   final photo = freshUser?.photoURL ?? account.photoUrl ?? "";
+
+  //   final doc = _firestore.collection("users").doc(user.uid);
+  //   final snapshot = await doc.get();
+  //   final email = user.email ?? account.email;
+  //   final googleName = (user.displayName?.trim().isNotEmpty == true)
+  //       ? user.displayName!.trim()
+  //       : email.split('@').first;
+
+  //   await user.updateDisplayName(googleName);
+  //   if (!snapshot.exists) {
+  //     // First-time Google user
+  //     await doc.set({
+  //       "uid": user.uid,
+  //       "name": googleName,
+  //       "email": user.email ?? account.email,
+  //       "photoUrl": photo,
+  //       "provider": "google",
+  //       "trialChooserCompleted": false,
+  //       "freeCredits": SubscriptionService.kInitialFreeCredits,
+  //       "createdAt": FieldValue.serverTimestamp(),
+  //     }, SetOptions(merge: true));
+
+  //     if (Get.isRegistered<OnboardingController>()) {
+  //       await OnboardingController.to.syncToFirebase(user.uid);
+  //     }
+  //   } else {
+  //     // Returning user -> update fields without clobbering freeCredits
+
+  //     final email = user.email ?? account.email;
+  //     final googleName = (user.displayName?.trim().isNotEmpty == true)
+  //         ? user.displayName!.trim()
+  //         : email.split('@').first;
+
+  //     await user.updateDisplayName(googleName);
+
+  //     await doc.set({
+  //       "name": googleName,
+  //       "email": email,
+  //       "photoUrl": photo,
+  //       "updatedAt": FieldValue.serverTimestamp(),
+  //     }, SetOptions(merge: true));
+
+  //     // await doc.set({
+  //     //   "name": googleName,
+  //     //   "email": user.email ?? account.email,
+  //     //   "photoUrl": photo,
+  //     //   "updatedAt": FieldValue.serverTimestamp(),
+  //     // }, SetOptions(merge: true));
+  //   }
+
+  //   return userCredential;
+  // }
 
   // ====================================================
   // Apple Sign In

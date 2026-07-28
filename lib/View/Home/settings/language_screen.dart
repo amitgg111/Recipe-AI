@@ -122,47 +122,12 @@ class _LanguageScreenState extends State<LanguageScreen> {
   // }
 
   Future<void> _applyContentLanguage() async {
-    final targetLanguage = LanguageService.currentCode;
-
-    if (targetLanguage == 'en') {
-      await Future.wait([
-        if (Get.isRegistered<HomeController>())
-          Get.find<HomeController>().refreshRecipesLanguage(),
-
-        if (Get.isRegistered<DiscoverController>())
-          Get.find<DiscoverController>().refreshLanguage(),
-
-        if (Get.isRegistered<GroceryStore>())
-          Get.find<GroceryStore>().refreshLanguage(),
-
-        if (Get.isRegistered<MealPlanController>())
-          Get.find<MealPlanController>().refreshLanguage(),
-      ]);
-
-      return;
-    }
-
-    Get.dialog(
-      const Center(
-        child: Card(
-          child: Padding(
-            padding: EdgeInsets.all(22),
-            child: SizedBox(
-              width: 30,
-              height: 30,
-              child: CircularProgressIndicator(strokeWidth: 2.6),
-            ),
-          ),
-        ),
-      ),
-      barrierDismissible: false,
-    );
-
     try {
-      // Model ready only once.
+      // Language model should already be downloaded during
+      // splash/login background preparation.
       await AiTranslationService.onLanguageChanged();
 
-      // All Firebase content refresh in parallel.
+      // Refresh all Firebase-backed content in parallel.
       await Future.wait([
         if (Get.isRegistered<HomeController>())
           Get.find<HomeController>().refreshRecipesLanguage(),
@@ -176,10 +141,8 @@ class _LanguageScreenState extends State<LanguageScreen> {
         if (Get.isRegistered<MealPlanController>())
           Get.find<MealPlanController>().refreshLanguage(),
       ]);
-    } finally {
-      if (Get.isDialogOpen ?? false) {
-        Get.back();
-      }
+    } catch (_) {
+      // Language change should never crash/block the app.
     }
   }
 
@@ -234,17 +197,30 @@ class _LanguageScreenState extends State<LanguageScreen> {
 
   Widget _languageRow({required AppLanguage lang, required bool selected}) {
     return InkWell(
+      // onTap: () async {
+      //   if (LanguageService.currentCode == lang.code) return;
+      //   // Instant, no-restart switch + persist. Keep the settings row's label in
+      //   // sync too, then rebuild so the checkmark and (now-translated) UI labels
+      //   // update in place.
+      //   await LanguageService.setLanguage(lang.code);
+      //   _settings.setLanguage(lang.english);
+      //   if (mounted) setState(() {});
+      //   // Then translate the Firebase-backed CONTENT (recipes, discover feed,
+      //   // groceries, meal plan) into the new language and re-render live.
+      //   await _applyContentLanguage();
+      // },
       onTap: () async {
         if (LanguageService.currentCode == lang.code) return;
-        // Instant, no-restart switch + persist. Keep the settings row's label in
-        // sync too, then rebuild so the checkmark and (now-translated) UI labels
-        // update in place.
+
         await LanguageService.setLanguage(lang.code);
+
         _settings.setLanguage(lang.english);
-        if (mounted) setState(() {});
-        // Then translate the Firebase-backed CONTENT (recipes, discover feed,
-        // groceries, meal plan) into the new language and re-render live.
-        await _applyContentLanguage();
+
+        if (mounted) {
+          setState(() {});
+        }
+
+
       },
       child: Padding(
         padding: const EdgeInsets.all(15),

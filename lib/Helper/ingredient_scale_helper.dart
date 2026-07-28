@@ -11,22 +11,85 @@ class IngredientScaleHelper {
     '⅞': 0.875,
   };
 
-  static String formatDouble(double val) {
-    if (val <= 0) return '';
+  // static String formatDouble(double val) {
+  //   if (val <= 0) return '';
 
-    // Extract whole and fractional parts
+  //   // Extract whole and fractional parts
+  //   int whole = val.floor();
+  //   double fraction = val - whole;
+
+  //   // Handle rounding/precision issues
+  //   if (fraction < 0.01) {
+  //     return whole.toString();
+  //   }
+  //   if (fraction > 0.99) {
+  //     return (whole + 1).toString();
+  //   }
+
+  //   // Find the closest common fraction
+  //   final fractionTargets = [
+  //     _FractionTarget(1, 8, 0.125),
+  //     _FractionTarget(1, 4, 0.25),
+  //     _FractionTarget(1, 3, 0.3333),
+  //     _FractionTarget(3, 8, 0.375),
+  //     _FractionTarget(1, 2, 0.5),
+  //     _FractionTarget(5, 8, 0.625),
+  //     _FractionTarget(2, 3, 0.6667),
+  //     _FractionTarget(3, 4, 0.75),
+  //     _FractionTarget(7, 8, 0.875),
+  //   ];
+
+  //   _FractionTarget? closest;
+  //   double minDiff = 0.02; // Tolerance for matching a common fraction
+
+  //   for (final target in fractionTargets) {
+  //     double diff = (fraction - target.value).abs();
+  //     if (diff < minDiff) {
+  //       minDiff = diff;
+  //       closest = target;
+  //     }
+  //   }
+
+  //   if (closest != null) {
+  //     if (whole > 0) {
+  //       return '$whole ${closest.numerator}/${closest.denominator}';
+  //     } else {
+  //       return '${closest.numerator}/${closest.denominator}';
+  //     }
+  //   }
+
+  //   // Otherwise, display as decimal with up to 2 decimal places
+  //   String decimalStr = val.toStringAsFixed(2);
+  //   // Remove trailing zeros and possible trailing dot
+  //   if (decimalStr.endsWith('.00')) {
+  //     return decimalStr.substring(0, decimalStr.length - 3);
+  //   }
+  //   if (decimalStr.contains('.')) {
+  //     while (decimalStr.endsWith('0')) {
+  //       decimalStr = decimalStr.substring(0, decimalStr.length - 1);
+  //     }
+  //     if (decimalStr.endsWith('.')) {
+  //       decimalStr = decimalStr.substring(0, decimalStr.length - 1);
+  //     }
+  //   }
+  //   return decimalStr;
+  // }
+
+  static String formatDouble(double val) {
+    if (val < 0) return '';
+    if (val == 0) return '0';
+
     int whole = val.floor();
     double fraction = val - whole;
 
-    // Handle rounding/precision issues
     if (fraction < 0.01) {
       return whole.toString();
     }
+
     if (fraction > 0.99) {
       return (whole + 1).toString();
     }
 
-    // Find the closest common fraction
     final fractionTargets = [
       _FractionTarget(1, 8, 0.125),
       _FractionTarget(1, 4, 0.25),
@@ -40,10 +103,11 @@ class IngredientScaleHelper {
     ];
 
     _FractionTarget? closest;
-    double minDiff = 0.02; // Tolerance for matching a common fraction
+    double minDiff = 0.02;
 
     for (final target in fractionTargets) {
-      double diff = (fraction - target.value).abs();
+      final diff = (fraction - target.value).abs();
+
       if (diff < minDiff) {
         minDiff = diff;
         closest = target;
@@ -53,25 +117,21 @@ class IngredientScaleHelper {
     if (closest != null) {
       if (whole > 0) {
         return '$whole ${closest.numerator}/${closest.denominator}';
-      } else {
-        return '${closest.numerator}/${closest.denominator}';
       }
+
+      return '${closest.numerator}/${closest.denominator}';
     }
 
-    // Otherwise, display as decimal with up to 2 decimal places
-    String decimalStr = val.toStringAsFixed(2);
-    // Remove trailing zeros and possible trailing dot
-    if (decimalStr.endsWith('.00')) {
-      return decimalStr.substring(0, decimalStr.length - 3);
+    var decimalStr = val.toStringAsFixed(2);
+
+    while (decimalStr.contains('.') && decimalStr.endsWith('0')) {
+      decimalStr = decimalStr.substring(0, decimalStr.length - 1);
     }
-    if (decimalStr.contains('.')) {
-      while (decimalStr.endsWith('0')) {
-        decimalStr = decimalStr.substring(0, decimalStr.length - 1);
-      }
-      if (decimalStr.endsWith('.')) {
-        decimalStr = decimalStr.substring(0, decimalStr.length - 1);
-      }
+
+    if (decimalStr.endsWith('.')) {
+      decimalStr = decimalStr.substring(0, decimalStr.length - 1);
     }
+
     return decimalStr;
   }
 
@@ -127,7 +187,10 @@ class IngredientScaleHelper {
       final matchedText = match.group(0)!;
       final firstNumStr = match.group(1)!;
       final secondNumStr = match.group(3)!;
-      final separatorWithSpaces = matchedText.substring(firstNumStr.length, matchedText.length - secondNumStr.length);
+      final separatorWithSpaces = matchedText.substring(
+        firstNumStr.length,
+        matchedText.length - secondNumStr.length,
+      );
       final remaining = trimmed.substring(match.end);
 
       return '${formatDouble(scaledVal1)}$separatorWithSpaces${formatDouble(scaledVal2)}$remaining';

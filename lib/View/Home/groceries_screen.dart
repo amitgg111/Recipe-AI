@@ -1210,6 +1210,7 @@ class GroceriesScreen extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(40, 0, 40, 40),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+
           children: [
             Container(
               width: 84,
@@ -1289,8 +1290,10 @@ class GroceriesScreen extends StatelessWidget {
             GestureDetector(
               onTap: () => _showAddItemSheet(context),
               child: Container(
-                height: 44,
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 8,
+                ),
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: _G.card,
@@ -1298,6 +1301,7 @@ class GroceriesScreen extends StatelessWidget {
                   border: Border.all(color: _G.fieldBorder),
                 ),
                 child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const OnboardingLineIcon(
@@ -1306,9 +1310,11 @@ class GroceriesScreen extends StatelessWidget {
                       color: _G.primary,
                     ),
                     const SizedBox(width: 7),
-                    Text(
-                      'add_item_manually'.tr,
-                      style: _G.f(13.5, FontWeight.w700, _G.textDark),
+                    Expanded(
+                      child: Text(
+                        'add_item_manually'.tr,
+                        style: _G.f(13.5, FontWeight.w700, _G.textDark),
+                      ),
                     ),
                   ],
                 ),
@@ -2160,9 +2166,11 @@ class _MoreMenuButton extends StatelessWidget {
             children: [
               icon,
               const SizedBox(width: 12),
-              Text(
-                label,
-                style: _G.f(15, FontWeight.w600, color ?? _G.textDark),
+              Expanded(
+                child: Text(
+                  label,
+                  style: _G.f(15, FontWeight.w600, color ?? _G.textDark),
+                ),
               ),
             ],
           ),
