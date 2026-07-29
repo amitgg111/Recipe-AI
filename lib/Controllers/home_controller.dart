@@ -139,7 +139,7 @@ class RecipeModel {
       instructionSections: instructionSections ?? this.instructionSections,
       note: note ?? this.note,
       nutritionData: nutritionData ?? this.nutritionData,
-      visibility: visibility,
+
       isDeleted: isDeleted,
       visibilityWasStored: visibilityWasStored,
       likesCount: likesCount,
@@ -163,6 +163,8 @@ class RecipeModel {
       prepTime: parsed.prepTime,
       cookTime: parsed.cookTime,
       totalTime: parsed.totalTime,
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+
       servings: parsed.servings.toString(),
       category: parsed.category,
       cuisine: parsed.cuisine,

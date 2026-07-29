@@ -830,19 +830,18 @@ class GroceriesScreen extends StatelessWidget {
                 allChecked,
                 onTap: () => store.setCheckedAll(m.parts, !allChecked),
               ),
-              const SizedBox(width: 10),
+
               // Per-ingredient emoji, matching the single-source rows.
-              Text(
-                store.emojiForIngredient(m.name),
-                style: const TextStyle(fontSize: 17),
-              ),
-              const SizedBox(width: 9),
+              const SizedBox(width: 10),
               Expanded(
                 child: GestureDetector(
                   onTap: () => _toggleExpanded(key),
                   behavior: HitTestBehavior.opaque,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 10,
+                      horizontal: 5,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1005,103 +1004,6 @@ class GroceriesScreen extends StatelessWidget {
       ),
     );
   }
-
-  // Widget _itemRow(
-  //   BuildContext context,
-  //   GroceryItem item, {
-  //   required bool last,
-  // }) {
-  //   final checked = item.checked;
-  //   return Container(
-  //     decoration: BoxDecoration(
-  //       border: last
-  //           ? null
-  //           : const Border(bottom: BorderSide(color: _G.rowLine)),
-  //     ),
-  //     child: Row(
-  //       children: [
-  //         GestureDetector(
-  //           onTap: () => store.toggleItem(item),
-  //           behavior: HitTestBehavior.opaque,
-  //           child: Padding(
-  //             padding: const EdgeInsets.fromLTRB(14, 12, 2, 12),
-  //             child: Container(
-  //               width: 23,
-  //               height: 23,
-  //               decoration: BoxDecoration(
-  //                 borderRadius: BorderRadius.circular(7),
-  //                 color: checked ? _G.green : Colors.transparent,
-  //                 border: checked
-  //                     ? null
-  //                     : Border.all(color: _G.checkBorder, width: 2),
-  //               ),
-  //               child: checked
-  //                   ? const OnboardingLineIcon(
-  //                       'check',
-  //                       size: 14,
-  //                       color: Colors.white,
-  //                     )
-  //                   : null,
-  //             ),
-  //           ),
-  //         ),
-  //         const SizedBox(width: 10),
-  //         // Per-ingredient emoji (By category) so each item reads like the
-  //         // recipe ingredient list — a distinct icon per ingredient.
-  //         if (item.quantity.trim().isNotEmpty) ...[
-  //           const SizedBox(width: 8),
-  //           Text(
-  //             // Convert the stored quantity to the active unit system on
-  //             // display (reactive via the enclosing Obx over store.items).
-  //             UnitConverter.applySystemQuantity(
-  //               item.quantity,
-  //               item.name,
-  //               settings.unitSystem,
-  //             ),
-
-  //             style: _G
-  //                 .f(14, FontWeight.w700, checked ? _G.textHint : _G.textDark)
-  //                 .copyWith(
-  //                   decoration: checked ? TextDecoration.lineThrough : null,
-  //                 ),
-  //           ),
-  //         ],
-  //         Expanded(
-  //           child: Padding(
-  //             padding: const EdgeInsets.symmetric(vertical: 12),
-  //             child: Text(
-  //               item.name,
-  //               style: _G
-  //                   .f(
-  //                     13,
-  //                     FontWeight.w700,
-  //                     checked ? const Color(0xFFC7BCAC) : _G.textMed,
-  //                   )
-  //                   .copyWith(
-  //                     decoration: checked ? TextDecoration.lineThrough : null,
-  //                   ),
-  //               maxLines: 3,
-  //               overflow: TextOverflow.ellipsis,
-  //             ),
-  //           ),
-  //         ),
-
-  //         GestureDetector(
-  //           onTap: () => _showItemOptions(context, item),
-  //           behavior: HitTestBehavior.opaque,
-  //           child: const Padding(
-  //             padding: EdgeInsets.fromLTRB(6, 12, 12, 12),
-  //             child: OnboardingLineIcon(
-  //               'dots',
-  //               size: 18,
-  //               color: Color(0xFFB0A899),
-  //             ),
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
 
   Widget _itemRow(
     BuildContext context,

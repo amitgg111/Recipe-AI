@@ -1,5 +1,8 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:recipe_ai/screens/cookbooks/sort_sheet.dart';
 import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:recipe_ai/widgets/app_network_image.dart';
 import 'package:get/get.dart';
@@ -422,8 +425,17 @@ class _CookbooksScreenState extends State<CookbooksScreen>
   List<RecipeModel> _sortRecipes(List<RecipeModel> recipes) {
     final sorted = List<RecipeModel>.from(recipes);
 
+    log('========== SORT DEBUG ==========');
+    log('SORT INDEX: $_sortIndex');
+    log('TOTAL RECIPES: ${sorted.length}');
+
+    for (final recipe in sorted) {
+      log('${recipe.title} => ${recipe.createdAt}');
+    }
+
     switch (_sortIndex) {
-      case 0: // Newest first
+      case 0:
+        // NEWEST FIRST
         sorted.sort((a, b) {
           final aDate = a.createdAt;
           final bDate = b.createdAt;
@@ -436,7 +448,8 @@ class _CookbooksScreenState extends State<CookbooksScreen>
         });
         break;
 
-      case 1: // Oldest first
+      case 1:
+        // OLDEST FIRST
         sorted.sort((a, b) {
           final aDate = a.createdAt;
           final bDate = b.createdAt;
@@ -449,17 +462,31 @@ class _CookbooksScreenState extends State<CookbooksScreen>
         });
         break;
 
-      case 2: // Name A-Z
-        sorted.sort(
-          (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
-        );
+      case 2:
+        // A-Z
+        sorted.sort((a, b) {
+          final aTitle = a.title.trim().toLowerCase();
+          final bTitle = b.title.trim().toLowerCase();
+
+          return aTitle.compareTo(bTitle);
+        });
         break;
 
-      case 3: // Name Z-A
-        sorted.sort(
-          (a, b) => b.title.toLowerCase().compareTo(a.title.toLowerCase()),
-        );
+      case 3:
+        // Z-A
+        sorted.sort((a, b) {
+          final aTitle = a.title.trim().toLowerCase();
+          final bTitle = b.title.trim().toLowerCase();
+
+          return bTitle.compareTo(aTitle);
+        });
         break;
+    }
+
+    log('========== AFTER SORT ==========');
+
+    for (final recipe in sorted) {
+      log('${recipe.title} => ${recipe.createdAt}');
     }
 
     return sorted;
@@ -576,147 +603,30 @@ class _CookbooksScreenState extends State<CookbooksScreen>
   }
 
   // ── Sort By bottom sheet ──────────────────────────────────────────────────
-  void _showSortSheet(BuildContext context) {
-    final options = [
-      ('newest_first'.tr, 'clock'),
-      ('oldest_first'.tr, 'clock'),
-      ('name_a_z'.tr, 'A'),
-      ('name_z_a'.tr, 'Z'),
-    ];
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) {
-        return Builder(
-          builder: (_) {
-            return Container(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 26),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Drag handle (HTML: 42x5, #E7E0D2). No close button.
-                  Center(
-                    child: Container(
-                      width: 42,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE7E0D2),
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8, bottom: 14),
-                    child: Text(
-                      'sort_by'.tr,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF2A211B),
-                        letterSpacing: -0.4,
-                      ),
-                    ),
-                  ),
-                  for (var i = 0; i < options.length; i++)
-                    _sortRow(
-                      leading: options[i].$2,
-                      label: options[i].$1,
-                      isSelected: _sortIndex == i,
-                      onTap: () {
-                        setState(() => _sortIndex = i);
-                        Get.back();
-                      },
-                    ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
+
+  Future<void> _showSortSheet(BuildContext context) async {
+    final result = await SortSheet.show(context, selectedIndex: _sortIndex);
+
+    if (!mounted || result == null) return;
+
+    setState(() {
+      _sortIndex = result;
+    });
   }
+
+  // Future<void> _showSortSheet(BuildContext context) async {
+  //   final selectedIndex = await SortSheet.show(context);
+
+  //   if (!mounted || selectedIndex == null) return;
+
+  //   setState(() {
+  //     _sortIndex = selectedIndex;
+  //   });
+  // }
 
   // A single HTML-style sort row: a leading rounded icon box (a clock for the
   // time sorts, or a letter for the name sorts) + the label, with a trailing
   // orange check and a highlighted background on the selected row.
-  Widget _sortRow({
-    required String leading, // 'clock' or a single letter (e.g. 'A')
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    final fg = isSelected ? const Color(0xFFF2623E) : const Color(0xFF8A7E70);
-    final Widget leadingChild = leading == 'clock'
-        ? OnboardingLineIcon('clock', color: fg, size: 20)
-        : Text(
-            leading,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              color: fg,
-            ),
-          );
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 2),
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFFF3EF) : Colors.transparent,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 38,
-              height: 38,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? const Color(0xFFFCE3DB)
-                    : const Color(0xFFF4F1EA),
-                borderRadius: BorderRadius.circular(11),
-              ),
-              child: leadingChild,
-            ),
-            const SizedBox(width: 13),
-            Expanded(
-              child: Text(
-                label,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 16,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                  color: const Color(0xFF2A211B),
-                ),
-              ),
-            ),
-            if (isSelected)
-              Container(
-                width: 24,
-                height: 24,
-                alignment: Alignment.center,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF2623E),
-                  borderRadius: BorderRadius.all(Radius.circular(12)),
-                ),
-                child: const OnboardingLineIcon(
-                  'check',
-                  color: Colors.white,
-                  size: 14,
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
 
   // ── Add Menu bottom sheet (Add Recipe / Add Cookbook) ───────────────────────
   void _showAddMenu(BuildContext context) {
