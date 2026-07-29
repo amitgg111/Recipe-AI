@@ -151,6 +151,138 @@ class AiTranslationService {
     }
   }
 
+  /// Warm the cache for a language the user has NOT switched to yet.
+  ///
+  /// [prewarmExistingRecipesTranslation] can only ever warm the *current*
+  /// language, so at startup — when everyone is on English — it returns
+  /// immediately and warms nothing. This does the opposite: it downloads the
+  /// model for [code] and pre-translates the user's recipes into it using a
+  /// throwaway translator, leaving the live one untouched. By the time the
+  /// user taps "हिन्दी", the strings are already cached and the switch is
+  /// instant instead of a screen full of live `translateText()` calls.
+  ///
+  /// Capped so a large library can't turn app start into a long CPU burn.
+  static Future<void> prewarmLanguage(String code, {int maxRecipes = 40}) async {
+    final target = _mlKitFor(code);
+    if (target == null) return; // English, or a language ML Kit can't do
+
+    final bcp = target.bcpCode;
+
+    try {
+      final manager = OnDeviceTranslatorModelManager();
+      if (!await manager.isModelDownloaded(bcp)) {
+        log('⬇️ Prewarm: downloading model for $code ($bcp)');
+        await manager.downloadModel(bcp, isWifiRequired: false);
+      }
+    } catch (e) {
+      log('❌ Prewarm: model download failed [$code]: $e');
+      return; // no model, nothing else to do
+    }
+
+    // On a cold start Firebase restores the session asynchronously, so
+    // `currentUser` is usually still null at splash time. The model download
+    // above doesn't care, but pre-translating the user's recipes does — so
+    // give auth a moment to settle rather than silently skipping the cache.
+    final user =
+        FirebaseAuth.instance.currentUser ??
+        await FirebaseAuth.instance
+            .authStateChanges()
+            .firstWhere((u) => u != null)
+            .timeout(const Duration(seconds: 8), onTimeout: () => null);
+
+    if (user == null) {
+      log('⏭️ Prewarm[$code]: signed out — model ready, no text to cache');
+      return;
+    }
+
+    final cache = _cacheFor(bcp);
+
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('recipes')
+          .where('ownerId', isEqualTo: user.uid)
+          .limit(maxRecipes)
+          .get();
+
+      // Collect every translatable string once, then drop the ones already
+      // cached from a previous run.
+      final texts = <String>{};
+      for (final doc in snap.docs) {
+        final data = doc.data();
+        for (final key in const ['title', 'description', 'prepTime', 'totalTime']) {
+          final value = data[key];
+          if (value is String && value.trim().isNotEmpty) texts.add(value.trim());
+        }
+        for (final key in const ['ingredients', 'instructions']) {
+          final list = data[key] as List?;
+          if (list == null) continue;
+          for (final item in list) {
+            final text = item.toString().trim();
+            if (text.isNotEmpty) texts.add(text);
+          }
+        }
+      }
+
+      final missing = texts.where((t) => !cache.containsKey(t)).toList();
+
+      log(
+        '🌐 Prewarm[$code]: ${snap.docs.length} recipe(s), '
+        '${texts.length} string(s), ${missing.length} to translate',
+      );
+
+      if (missing.isEmpty) return;
+
+      // A dedicated translator so we never disturb the live one, which may be
+      // pointed at a different language (usually English = null).
+      final translator = OnDeviceTranslator(
+        sourceLanguage: _source,
+        targetLanguage: target,
+      );
+
+      try {
+        const batchSize = 8;
+        for (int i = 0; i < missing.length; i += batchSize) {
+          final batch = missing.skip(i).take(batchSize).toList();
+          final results = await Future.wait(
+            batch.map((text) async {
+              try {
+                final result = (await translator.translateText(text)).trim();
+                return MapEntry(text, result.isEmpty ? text : result);
+              } catch (_) {
+                return MapEntry(text, text);
+              }
+            }),
+          );
+          for (final entry in results) {
+            cache[entry.key] = entry.value;
+          }
+        }
+        await _saveCache();
+      } finally {
+        await translator.close();
+      }
+
+      log('✅ Prewarm[$code]: cache warm, ${cache.length} entries');
+    } catch (e) {
+      log('❌ Prewarm[$code] failed: $e');
+    }
+  }
+
+  /// Download models and warm the cache for every language this user could
+  /// switch to. Fire-and-forget from splash.
+  static Future<void> prepareAlternateLanguages() async {
+    final languages = LanguageService.preloadLanguages;
+
+    log('🌍 Country: ${LanguageService.resolvedCountryCode}');
+    log('🌐 Alternate languages to prepare: $languages');
+
+    for (final language in languages) {
+      await prewarmLanguage(language);
+    }
+
+    log('✅ Alternate language preparation completed');
+  }
+
   static Future<bool> ensureReady() async {
     final target = _mlKitFor(LanguageService.currentCode);
 
@@ -275,22 +407,14 @@ class AiTranslationService {
   }
 
   static Future<void> preloadDeviceLanguages() async {
-    final country = LanguageService.deviceCountryCode;
-    final languages = LanguageService.deviceLanguages;
+    final languages = LanguageService.preloadLanguages;
 
-    log('🌍 Device country: $country');
-    log('🌐 Device languages: $languages');
     log('🌍 Locale: ${WidgetsBinding.instance.platformDispatcher.locale}');
-    log('🌍 Country: ${LanguageService.deviceCountryCode}');
-    log('🌐 Language: ${LanguageService.deviceLanguageCode}');
+    log('🌍 Resolved country: ${LanguageService.resolvedCountryCode}');
+    log('🌐 Models to preload: $languages');
+
     for (final language in languages) {
-      if (language == 'en') {
-        log('⏭️ Skipping English model');
-        continue;
-      }
-
       log('🔄 Preparing language model: $language');
-
       await preloadLanguageModel(language);
     }
 
