@@ -25,7 +25,12 @@ class _LanguageScreenState extends State<LanguageScreen> {
   @override
   Widget build(BuildContext context) {
     final q = _query.toLowerCase();
-    final filtered = LanguageService.supported.where((l) {
+    // Only the languages this user's country is rolled out to — English plus,
+    // for India, Hindi. See LanguageService.enabledCountries.
+    final options = LanguageService.selectableLanguages;
+    // A search box over two rows is just noise.
+    final showSearch = options.length > 4;
+    final filtered = options.where((l) {
       if (q.isEmpty) return true;
       return l.native.toLowerCase().contains(q) ||
           l.english.toLowerCase().contains(q);
@@ -42,11 +47,13 @@ class _LanguageScreenState extends State<LanguageScreen> {
               child: SettingsUi.header('language'.tr),
             ),
             const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18),
-              child: _searchBar(),
-            ),
-            const SizedBox(height: 16),
+            if (showSearch) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                child: _searchBar(),
+              ),
+              const SizedBox(height: 16),
+            ],
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(18, 0, 18, 28),
@@ -69,11 +76,10 @@ class _LanguageScreenState extends State<LanguageScreen> {
     );
   }
 
-  /// Prepare on-device translation for the freshly-selected language (downloads
-  /// the ML Kit model the first time it's used) and re-translate any already
-  /// loaded Firebase content so the switch is live — not on next launch. Shows a
-  /// brief blocking loader while the model downloads.
-
+  /// Re-point the on-device translator at the freshly-selected language and
+  /// re-translate the Firebase content that's already loaded, so the switch is
+  /// live rather than "next launch". The model itself was downloaded in the
+  /// background at splash, so this is normally cache-fast.
   Future<void> _applyContentLanguage() async {
     try {
       // Language model should already be downloaded during
@@ -153,13 +159,16 @@ class _LanguageScreenState extends State<LanguageScreen> {
       onTap: () async {
         if (LanguageService.currentCode == lang.code) return;
 
+        // Instant, no-restart switch + persist. This alone updates the static
+        // UI, because the GetX `.tr` strings are compiled into the app.
         await LanguageService.setLanguage(lang.code);
-
         _settings.setLanguage(lang.english);
+        if (mounted) setState(() {});
 
-        if (mounted) {
-          setState(() {});
-        }
+        // Re-point the on-device translator and re-render the Firebase-backed
+        // CONTENT (recipes, discover, groceries, meal plan). Without this the
+        // chrome switches to Hindi but every recipe stays in English.
+        await _applyContentLanguage();
       },
       child: Padding(
         padding: const EdgeInsets.all(15),

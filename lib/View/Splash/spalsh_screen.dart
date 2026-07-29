@@ -334,7 +334,6 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/Service/ai_translation_service.dart';
-import 'package:recipe_ai/Service/language_service.dart';
 import 'package:recipe_ai/View/Auth/auth_wrapper.dart';
 import 'package:recipe_ai/screens/onboarding/onboarding_flow_screen.dart';
 import 'package:recipe_ai/widgets/app_logo.dart';
@@ -362,7 +361,6 @@ class _SplashScreenState extends State<SplashScreen>
   // Continuous ripple rings + loading dots.
   late final AnimationController _loop;
 
-  final country = LanguageService.deviceCountryCode;
   @override
   void initState() {
     super.initState();
@@ -447,7 +445,12 @@ class _SplashScreenState extends State<SplashScreen>
   ///    recipe later hits `cachedOrSelf()` instead of firing a live
   ///    `translateText()` call on the UI thread.
   Future<void> _prepareLanguageAndContent() async {
-    await AiTranslationService.preloadDeviceLanguages();
+    // The alternate language for this user's country (India -> Hindi):
+    // download the ML Kit model AND pre-translate their recipes into it, so a
+    // later switch is instant rather than a screen full of live translate
+    // calls. Does nothing for users outside the rollout — they stay English.
+    await AiTranslationService.prepareAlternateLanguages();
+    // Then top up the cache for whatever language is active right now.
     await AiTranslationService.prewarmExistingRecipesTranslation();
   }
 

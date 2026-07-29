@@ -6,6 +6,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:recipe_ai/Service/ai_translation_service.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:recipe_ai/utils/validation_helper.dart';
 import 'package:recipe_ai/Helper/recipe_publish_policy.dart';
@@ -13,6 +14,45 @@ import 'package:recipe_ai/Helper/recipe_publish_policy.dart';
 import '../Controllers/home_controller.dart';
 import '../Model/recipe_section_model.dart';
 import '../Service/auth_service.dart';
+
+/// Result of [RecipeEditorController._translateFieldsToEnglish]: every
+/// user-facing text field of the recipe, already translated to English (or
+/// left as-is when the recipe was already English / language couldn't be
+/// determined). Kept as a small holder class rather than passing a dozen
+/// separate variables around.
+class _TranslatedRecipeFields {
+  final String title;
+  final String description;
+  final String prepTime;
+  final String cookTime;
+  final String totalTime;
+  final String servings;
+  final String category;
+  final String cuisine;
+  final List<String> keywords;
+  final List<IngredientSection> ingredientSections;
+  final List<InstructionSection> instructionSections;
+
+  _TranslatedRecipeFields({
+    required this.title,
+    required this.description,
+    required this.prepTime,
+    required this.cookTime,
+    required this.totalTime,
+    required this.servings,
+    required this.category,
+    required this.cuisine,
+    required this.keywords,
+    required this.ingredientSections,
+    required this.instructionSections,
+  });
+
+  List<String> get ingredients =>
+      ingredientSections.expand((s) => s.items).toList();
+
+  List<String> get instructions =>
+      instructionSections.expand((s) => s.steps).toList();
+}
 
 class RecipeEditorController extends GetxController {
   final RecipeModel? recipe;
@@ -161,20 +201,6 @@ class RecipeEditorController extends GetxController {
   // IMAGE PICKER
   // ===================================================
 
-  // Future<void> pickImage() async {
-  //   final picker = ImagePicker();
-
-  //   final picked = await picker.pickImage(
-  //     source: ImageSource.gallery,
-  //     imageQuality: 80,
-  //   );
-
-  //   if (picked == null) return;
-
-  //   imageFile.value = File(picked.path);
-
-  //   imagePath.value = picked.path;
-  // }
   Future<void> pickImage() async {
     final picker = ImagePicker();
 
@@ -405,6 +431,147 @@ class RecipeEditorController extends GetxController {
   }
 
   // ===================================================
+  // TRANSLATE-TO-ENGLISH (mirrors ImportWebController's approach)
+  // ===================================================
+
+  /// Detects the dominant language across the recipe's OWN text (title,
+  /// description, a few ingredients/steps combined into one sample — more
+  /// reliable than checking short strings one at a time) and, if it isn't
+  /// already English, translates every text field using ONE shared
+  /// translator instance. This mirrors
+  /// `ImportWebController._translateRecipeToEnglish` so a recipe typed
+  /// manually in Gujarati (or any other language) ends up stored in English
+  /// exactly like a web-imported one — the on-screen text the user typed is
+  /// left untouched; only what gets SAVED is translated.
+  Future<_TranslatedRecipeFields> _translateFieldsToEnglish() async {
+    final rawTitle = titleController.text.trim();
+    final rawDescription = descriptionController.text.trim();
+    final rawPrepTime = prepTimeController.text.trim();
+    final rawCookTime = cookTimeController.text.trim();
+    final rawTotalTime = _composedTotalTime();
+    final rawServings = servingsController.text.trim();
+    final rawCategory = categoryController.text.trim();
+    final rawCuisine = cuisineController.text.trim();
+    final rawKeywords = tags.toList();
+    final rawIngredientSections = ingredientSections.isNotEmpty
+        ? ingredientSections.toList()
+        : [IngredientSection(items: ingredients.toList())];
+    final rawInstructionSections = instructionSections.isNotEmpty
+        ? instructionSections.toList()
+        : [InstructionSection(steps: instructions.toList())];
+
+    final fallback = _TranslatedRecipeFields(
+      title: rawTitle,
+      description: rawDescription,
+      prepTime: rawPrepTime,
+      cookTime: rawCookTime,
+      totalTime: rawTotalTime,
+      servings: rawServings,
+      category: rawCategory,
+      cuisine: rawCuisine,
+      keywords: rawKeywords,
+      ingredientSections: rawIngredientSections,
+      instructionSections: rawInstructionSections,
+    );
+
+    // Detect language ONCE using a combined sample of the recipe's own text.
+    final sample = <String>[
+      rawTitle,
+      if (rawDescription.isNotEmpty) rawDescription,
+      ...fallback.ingredients.take(3),
+      ...fallback.instructions.take(2),
+    ];
+
+    final detected = await AiTranslationService.detectDominantLanguage(sample);
+    log('🌍 Recipe language: $detected');
+
+    if (detected == 'en' || detected == 'und') {
+      // Already English, or couldn't reliably tell — save exactly as typed.
+      return fallback;
+    }
+
+    final translator = await AiTranslationService.prepareTranslatorFor(
+      detected,
+    );
+    if (translator == null) {
+      log(
+        '⚠️ Could not prepare translator for $detected — saving original text',
+      );
+      return fallback;
+    }
+
+    Future<String> t(String text) async {
+      if (text.trim().isEmpty) return text;
+      return AiTranslationService.translateWithTranslator(translator, text);
+    }
+
+    try {
+      final title = await t(rawTitle);
+      final description = await t(rawDescription);
+      final prepTime = await t(rawPrepTime);
+      final cookTime = await t(rawCookTime);
+      final totalTime = await t(rawTotalTime);
+      final servings = await t(rawServings);
+      final category = await t(rawCategory);
+      final cuisine = await t(rawCuisine);
+
+      final keywords = <String>[];
+      for (final keyword in rawKeywords) {
+        final translated = await t(keyword);
+        if (translated.trim().isNotEmpty) keywords.add(translated.trim());
+      }
+
+      final translatedIngredientSections = <IngredientSection>[];
+      for (final section in rawIngredientSections) {
+        final sectionName = (section.name == null || section.name!.isEmpty)
+            ? section.name
+            : await t(section.name!);
+        final items = <String>[];
+        for (final item in section.items) {
+          final translated = await t(item);
+          items.add(translated.trim().isEmpty ? item : translated.trim());
+        }
+        translatedIngredientSections.add(
+          IngredientSection(name: sectionName?.trim(), items: items),
+        );
+      }
+
+      final translatedInstructionSections = <InstructionSection>[];
+      for (final section in rawInstructionSections) {
+        final sectionName = (section.name == null || section.name!.isEmpty)
+            ? section.name
+            : await t(section.name!);
+        final steps = <String>[];
+        for (final step in section.steps) {
+          final translated = await t(step);
+          steps.add(translated.trim().isEmpty ? step : translated.trim());
+        }
+        translatedInstructionSections.add(
+          InstructionSection(name: sectionName?.trim(), steps: steps),
+        );
+      }
+
+      log('✅ Recipe fields translated: ${title.trim()}');
+
+      return _TranslatedRecipeFields(
+        title: title.trim().isEmpty ? rawTitle : title.trim(),
+        description: description.trim(),
+        prepTime: prepTime.trim(),
+        cookTime: cookTime.trim(),
+        totalTime: totalTime.trim(),
+        servings: servings.trim(),
+        category: category.trim(),
+        cuisine: cuisine.trim(),
+        keywords: keywords,
+        ingredientSections: translatedIngredientSections,
+        instructionSections: translatedInstructionSections,
+      );
+    } finally {
+      await translator.close();
+    }
+  }
+
+  // ===================================================
   // SAVE
   // ===================================================
 
@@ -498,42 +665,56 @@ class RecipeEditorController extends GetxController {
         imageUrl = imagePath.value.isEmpty ? null : imagePath.value;
       }
 
+      // ============================================================
+      // ALWAYS convert the recipe text to English BEFORE saving — same
+      // language-detect + translate approach used for web-imported recipes,
+      // so a manually-typed Gujarati (or any other language) recipe is
+      // stored in English too.
+      // ============================================================
+
+      log('Translating recipe to English before save...');
+
+      final translated = await _translateFieldsToEnglish();
+
+      log('English fields ready');
+      log('Title: ${translated.title}');
+
       // Discovered copies can never be published — never let an edit flip them
       // public even if the toggle somehow says so.
       final bool discoveredCopy = recipe?.isDiscoveredCopy ?? false;
       final bool effectiveIsPublic = discoveredCopy ? false : isPublic.value;
 
       final recipeData = {
-        "title": titleController.text.trim(),
-        "description": descriptionController.text.trim(),
+        "title": translated.title,
+        "description": translated.description,
 
         "imageUrl": imageUrl,
 
         "sourceUrl": "",
 
-        "prepTime": prepTimeController.text.trim(),
-        "cookTime": cookTimeController.text.trim(),
-        "totalTime": _composedTotalTime(),
+        "prepTime": translated.prepTime,
+        "cookTime": translated.cookTime,
+        "totalTime": translated.totalTime,
 
-        "servings": servingsController.text.trim(),
+        "servings": translated.servings,
 
-        "category": categoryController.text.trim(),
+        "category": translated.category,
 
-        "cuisine": cuisineController.text.trim(),
+        "cuisine": translated.cuisine,
 
-        "keywords": tags.toList(),
+        "keywords": translated.keywords,
 
-        "ingredients": ingredients.toList(),
+        "ingredients": translated.ingredients,
 
-        "instructions": instructions.toList(),
+        "instructions": translated.instructions,
 
-        "ingredientSections": ingredientSections.isNotEmpty
-            ? ingredientSections.map((s) => s.toMap()).toList()
-            : [IngredientSection(items: ingredients.toList()).toMap()],
+        "ingredientSections": translated.ingredientSections
+            .map((s) => s.toMap())
+            .toList(),
 
-        "instructionSections": instructionSections.isNotEmpty
-            ? instructionSections.map((s) => s.toMap()).toList()
-            : [InstructionSection(steps: instructions.toList()).toMap()],
+        "instructionSections": translated.instructionSections
+            .map((s) => s.toMap())
+            .toList(),
 
         // Privacy: recipes are private by default. `visibility` is canonical;
         // `isPublic` is kept in sync for backward compatibility.

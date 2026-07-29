@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:get/get.dart';
-import 'package:recipe_ai/Service/ai_translation_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// One selectable app language.
@@ -80,9 +80,59 @@ class LanguageService {
     'TZ': ['en', 'sw'],
   };
 
+  /// ---------------------------------------------------------------------
+  /// ROLLOUT GATE
+  ///
+  /// Only users in these countries are offered a second language; everyone
+  /// else stays on English-only. India first — to widen the rollout, add the
+  /// country code here (the language mapping already exists in
+  /// [countryLanguages], so this set is the only switch).
+  /// ---------------------------------------------------------------------
+  static const Set<String> enabledCountries = {'IN'};
+
+  /// Forces a country for testing (e.g. `'IN'` on a US device). Debug only —
+  /// set it before [detectCountry] runs. Never set in production code.
+  static String? debugCountryOverride;
+
+  /// Maps an IANA timezone to a country, used when the device locale carries
+  /// no usable country — e.g. an Indian user whose phone is set to
+  /// "English (United States)" still sits in `Asia/Kolkata`.
+  static const Map<String, String> _timezoneCountries = {
+    'Asia/Kolkata': 'IN',
+    'Asia/Calcutta': 'IN', // legacy alias still reported by some Android builds
+    'Asia/Tokyo': 'JP',
+    'Europe/Paris': 'FR',
+    'Europe/Berlin': 'DE',
+    'Europe/Madrid': 'ES',
+    'Europe/Rome': 'IT',
+    'America/Sao_Paulo': 'BR',
+    'Europe/Lisbon': 'PT',
+    'Asia/Seoul': 'KR',
+    'Asia/Shanghai': 'CN',
+    'Europe/Moscow': 'RU',
+    'Asia/Jakarta': 'ID',
+    'Asia/Bangkok': 'TH',
+    'Asia/Ho_Chi_Minh': 'VN',
+    'Europe/Istanbul': 'TR',
+    'Asia/Riyadh': 'SA',
+    'Asia/Dubai': 'AE',
+    'Asia/Jerusalem': 'IL',
+    'Asia/Tehran': 'IR',
+    'Asia/Dhaka': 'BD',
+    'Asia/Karachi': 'PK',
+    'Europe/Amsterdam': 'NL',
+    'Europe/Warsaw': 'PL',
+    'Asia/Kuala_Lumpur': 'MY',
+    'Africa/Dar_es_Salaam': 'TZ',
+  };
+
   static const Locale fallbackLocale = Locale('en');
 
+  static const String _countryPrefKey = 'detected_country_code';
+
   static String _current = 'en';
+
+  static String _resolvedCountry = '';
 
   static String get currentCode => _current;
   static Locale get locale => Locale(_current);
@@ -114,10 +164,100 @@ class LanguageService {
       } else {
         _current = 'en';
       }
+      // Last known country, so the very first frame already has the right
+      // language options even before [detectCountry] finishes.
+      _resolvedCountry = prefs.getString(_countryPrefKey) ?? '';
     } catch (_) {
       _current = 'en';
     }
   }
+
+  /// Resolve which country the user is in, and remember it.
+  ///
+  /// The device locale is checked first because it is synchronous and free.
+  /// When it doesn't yield a country we're rolling out to, the timezone is
+  /// consulted as a second opinion — that's what catches the very common case
+  /// of an Indian user whose phone language is "English (United States)" but
+  /// whose clock is on `Asia/Kolkata`.
+  ///
+  /// Safe to call before `runApp`; failures fall back to the locale country.
+  static Future<String> detectCountry() async {
+    if (debugCountryOverride != null) {
+      _resolvedCountry = debugCountryOverride!.toUpperCase();
+      return _resolvedCountry;
+    }
+
+    var country = deviceCountryCode;
+
+    // Only pay for the platform channel when the locale hasn't already put us
+    // in a rollout country.
+    if (!enabledCountries.contains(country)) {
+      final fromZone = await _countryFromTimezone();
+      if (fromZone.isNotEmpty &&
+          (country.isEmpty || enabledCountries.contains(fromZone))) {
+        country = fromZone;
+      }
+    }
+
+    if (country.isNotEmpty) {
+      _resolvedCountry = country;
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_countryPrefKey, country);
+      } catch (_) {
+        // Not persisting just means we re-detect next launch — harmless.
+      }
+    }
+
+    return _resolvedCountry;
+  }
+
+  static Future<String> _countryFromTimezone() async {
+    try {
+      final zone = await FlutterTimezone.getLocalTimezone().timeout(
+        const Duration(seconds: 2),
+      );
+      return _timezoneCountries[zone] ?? '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  /// The country we believe the user is in. Falls back to the locale country
+  /// when [detectCountry] hasn't run or couldn't resolve one.
+  static String get resolvedCountryCode =>
+      debugCountryOverride?.toUpperCase() ??
+      (_resolvedCountry.isNotEmpty ? _resolvedCountry : deviceCountryCode);
+
+  /// The languages actually offered in the Language screen.
+  ///
+  /// English is always present and always first. A second language is added
+  /// only for countries inside the [enabledCountries] rollout. The user's
+  /// current language is always included too, so someone who picked a language
+  /// before the rollout gate existed can still see and change it.
+  static List<AppLanguage> get selectableLanguages {
+    final codes = <String>{'en', _current};
+
+    final country = resolvedCountryCode;
+    if (enabledCountries.contains(country)) {
+      codes.addAll(countryLanguages[country] ?? const <String>[]);
+    }
+
+    final list = supported.where((l) => codes.contains(l.code)).toList();
+    // Keep English pinned to the top; the rest follow [supported] order.
+    list.sort((a, b) {
+      if (a.code == 'en') return -1;
+      if (b.code == 'en') return 1;
+      return 0;
+    });
+    return list;
+  }
+
+  /// Non-English languages worth pre-downloading for this user, in priority
+  /// order. Empty for users outside the rollout — they never leave English, so
+  /// downloading a model would waste their data.
+  static List<String> get preloadLanguages =>
+      selectableLanguages.map((l) => l.code).where((c) => c != 'en').toList();
 
   static String get deviceLanguageCode {
     final code = WidgetsBinding.instance.platformDispatcher.locale.languageCode;
@@ -131,20 +271,10 @@ class LanguageService {
     return locale.countryCode?.toUpperCase() ?? '';
   }
 
-  // static List<String> get deviceLanguages {
-  //   final country = deviceCountryCode;
-
-  //   return countryLanguages[country] ?? [deviceLanguageCode];
-  // }
-  static List<String> get deviceLanguages {
-    final country = deviceCountryCode;
-
-    if (country == 'IN' || country == 'GB') {
-      return ['en', 'hi'];
-    }
-
-    return countryLanguages[country] ?? [deviceLanguageCode];
-  }
+  /// Languages available to this user, as plain codes. Gated by
+  /// [enabledCountries] so users outside the rollout stay English-only.
+  static List<String> get deviceLanguages =>
+      selectableLanguages.map((l) => l.code).toList();
 
   /// Switch the whole app to [code] immediately (no restart) and remember it.
   static Future<void> setLanguage(String code) async {

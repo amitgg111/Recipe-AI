@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_mlkit_language_id/google_mlkit_language_id.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:google_mlkit_translation/google_mlkit_translation.dart';
 import 'package:recipe_ai/Service/language_service.dart';
@@ -151,6 +152,147 @@ class AiTranslationService {
     }
   }
 
+  /// Warm the cache for a language the user has NOT switched to yet.
+  ///
+  /// [prewarmExistingRecipesTranslation] can only ever warm the *current*
+  /// language, so at startup — when everyone is on English — it returns
+  /// immediately and warms nothing. This does the opposite: it downloads the
+  /// model for [code] and pre-translates the user's recipes into it using a
+  /// throwaway translator, leaving the live one untouched. By the time the
+  /// user taps "हिन्दी", the strings are already cached and the switch is
+  /// instant instead of a screen full of live `translateText()` calls.
+  ///
+  /// Capped so a large library can't turn app start into a long CPU burn.
+  static Future<void> prewarmLanguage(
+    String code, {
+    int maxRecipes = 40,
+  }) async {
+    final target = _mlKitFor(code);
+    if (target == null) return; // English, or a language ML Kit can't do
+
+    final bcp = target.bcpCode;
+
+    try {
+      final manager = OnDeviceTranslatorModelManager();
+      if (!await manager.isModelDownloaded(bcp)) {
+        log('⬇️ Prewarm: downloading model for $code ($bcp)');
+        await manager.downloadModel(bcp, isWifiRequired: false);
+      }
+    } catch (e) {
+      log('❌ Prewarm: model download failed [$code]: $e');
+      return; // no model, nothing else to do
+    }
+
+    // On a cold start Firebase restores the session asynchronously, so
+    // `currentUser` is usually still null at splash time. The model download
+    // above doesn't care, but pre-translating the user's recipes does — so
+    // give auth a moment to settle rather than silently skipping the cache.
+    final user =
+        FirebaseAuth.instance.currentUser ??
+        await FirebaseAuth.instance
+            .authStateChanges()
+            .firstWhere((u) => u != null)
+            .timeout(const Duration(seconds: 8), onTimeout: () => null);
+
+    if (user == null) {
+      log('⏭️ Prewarm[$code]: signed out — model ready, no text to cache');
+      return;
+    }
+
+    final cache = _cacheFor(bcp);
+
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('recipes')
+          .where('ownerId', isEqualTo: user.uid)
+          .limit(maxRecipes)
+          .get();
+
+      // Collect every translatable string once, then drop the ones already
+      // cached from a previous run.
+      final texts = <String>{};
+      for (final doc in snap.docs) {
+        final data = doc.data();
+        for (final key in const [
+          'title',
+          'description',
+          'prepTime',
+          'totalTime',
+        ]) {
+          final value = data[key];
+          if (value is String && value.trim().isNotEmpty)
+            texts.add(value.trim());
+        }
+        for (final key in const ['ingredients', 'instructions']) {
+          final list = data[key] as List?;
+          if (list == null) continue;
+          for (final item in list) {
+            final text = item.toString().trim();
+            if (text.isNotEmpty) texts.add(text);
+          }
+        }
+      }
+
+      final missing = texts.where((t) => !cache.containsKey(t)).toList();
+
+      log(
+        '🌐 Prewarm[$code]: ${snap.docs.length} recipe(s), '
+        '${texts.length} string(s), ${missing.length} to translate',
+      );
+
+      if (missing.isEmpty) return;
+
+      // A dedicated translator so we never disturb the live one, which may be
+      // pointed at a different language (usually English = null).
+      final translator = OnDeviceTranslator(
+        sourceLanguage: _source,
+        targetLanguage: target,
+      );
+
+      try {
+        const batchSize = 8;
+        for (int i = 0; i < missing.length; i += batchSize) {
+          final batch = missing.skip(i).take(batchSize).toList();
+          final results = await Future.wait(
+            batch.map((text) async {
+              try {
+                final result = (await translator.translateText(text)).trim();
+                return MapEntry(text, result.isEmpty ? text : result);
+              } catch (_) {
+                return MapEntry(text, text);
+              }
+            }),
+          );
+          for (final entry in results) {
+            cache[entry.key] = entry.value;
+          }
+        }
+        await _saveCache();
+      } finally {
+        await translator.close();
+      }
+
+      log('✅ Prewarm[$code]: cache warm, ${cache.length} entries');
+    } catch (e) {
+      log('❌ Prewarm[$code] failed: $e');
+    }
+  }
+
+  /// Download models and warm the cache for every language this user could
+  /// switch to. Fire-and-forget from splash.
+  static Future<void> prepareAlternateLanguages() async {
+    final languages = LanguageService.preloadLanguages;
+
+    log('🌍 Country: ${LanguageService.resolvedCountryCode}');
+    log('🌐 Alternate languages to prepare: $languages');
+
+    for (final language in languages) {
+      await prewarmLanguage(language);
+    }
+
+    log('✅ Alternate language preparation completed');
+  }
+
   static Future<bool> ensureReady() async {
     final target = _mlKitFor(LanguageService.currentCode);
 
@@ -275,22 +417,14 @@ class AiTranslationService {
   }
 
   static Future<void> preloadDeviceLanguages() async {
-    final country = LanguageService.deviceCountryCode;
-    final languages = LanguageService.deviceLanguages;
+    final languages = LanguageService.preloadLanguages;
 
-    log('🌍 Device country: $country');
-    log('🌐 Device languages: $languages');
     log('🌍 Locale: ${WidgetsBinding.instance.platformDispatcher.locale}');
-    log('🌍 Country: ${LanguageService.deviceCountryCode}');
-    log('🌐 Language: ${LanguageService.deviceLanguageCode}');
+    log('🌍 Resolved country: ${LanguageService.resolvedCountryCode}');
+    log('🌐 Models to preload: $languages');
+
     for (final language in languages) {
-      if (language == 'en') {
-        log('⏭️ Skipping English model');
-        continue;
-      }
-
       log('🔄 Preparing language model: $language');
-
       await preloadLanguageModel(language);
     }
 
@@ -455,5 +589,389 @@ class AiTranslationService {
 
   static void dispose() {
     reset();
+  }
+
+  static final LanguageIdentifier _languageIdentifier = LanguageIdentifier(
+    confidenceThreshold: 0.5,
+  );
+
+  static Future<String> translateToEnglish(String? text) async {
+    final input = text?.trim() ?? '';
+
+    if (input.isEmpty) return input;
+
+    try {
+      // Detect source language
+      final detectedLanguage = await _languageIdentifier.identifyLanguage(
+        input,
+      );
+
+      log('🌍 Detected language: $detectedLanguage');
+
+      // Already English
+      if (detectedLanguage == 'en') {
+        return input;
+      }
+
+      // Unknown language
+      if (detectedLanguage == 'und') {
+        return input;
+      }
+
+      final sourceLanguage = _sourceLanguageFor(detectedLanguage);
+
+      // Unsupported language
+      if (sourceLanguage == null) {
+        log('⚠️ Unsupported source language: $detectedLanguage');
+        return input;
+      }
+
+      final manager = OnDeviceTranslatorModelManager();
+
+      final sourceBcp = sourceLanguage.bcpCode;
+      final englishBcp = TranslateLanguage.english.bcpCode;
+
+      // Download source language model if required
+      if (!await manager.isModelDownloaded(sourceBcp)) {
+        await manager.downloadModel(sourceBcp, isWifiRequired: false);
+      }
+
+      // Download English model if required
+      if (!await manager.isModelDownloaded(englishBcp)) {
+        await manager.downloadModel(englishBcp, isWifiRequired: false);
+      }
+
+      final translator = OnDeviceTranslator(
+        sourceLanguage: sourceLanguage,
+        targetLanguage: TranslateLanguage.english,
+      );
+
+      try {
+        final result = await translator.translateText(input);
+
+        final translated = result.trim();
+
+        return translated.isEmpty ? input : translated;
+      } finally {
+        await translator.close();
+      }
+    } catch (e) {
+      log('❌ translateToEnglish error: $e');
+
+      // Translation fail થાય તો original data ગુમાવવું નહીં.
+      return input;
+    }
+  }
+  // AiTranslationService ma umero:
+
+  /// Fast, dependency-free source-language guess from the Unicode script of
+  /// the text. Doesn't rely on the ML Kit language-identifier plugin at all —
+  /// so it works even if that plugin's native side isn't registered
+  /// (MissingPluginException), and it's instant/offline.
+  static TranslateLanguage? _scriptBasedLanguage(String text) {
+    bool hasRange(String pattern) => RegExp(pattern).hasMatch(text);
+
+    if (hasRange(r'[\u0A80-\u0AFF]')) return TranslateLanguage.gujarati;
+    if (hasRange(r'[\u0900-\u097F]')) {
+      return TranslateLanguage.hindi; // Devanagari (Hindi/Marathi)
+    }
+    if (hasRange(r'[\u0980-\u09FF]')) return TranslateLanguage.bengali;
+    if (hasRange(r'[\u0B80-\u0BFF]')) return TranslateLanguage.tamil;
+    if (hasRange(r'[\u0C00-\u0C7F]')) return TranslateLanguage.telugu;
+    if (hasRange(r'[\u0C80-\u0CFF]')) return TranslateLanguage.kannada;
+    if (hasRange(r'[\u0600-\u06FF]')) return TranslateLanguage.arabic;
+    if (hasRange(r'[\u0590-\u05FF]')) return TranslateLanguage.hebrew;
+    if (hasRange(r'[\u0400-\u04FF]')) return TranslateLanguage.russian;
+    if (hasRange(r'[\u4E00-\u9FFF]')) return TranslateLanguage.chinese;
+    if (hasRange(r'[\u3040-\u30FF]')) return TranslateLanguage.japanese;
+    if (hasRange(r'[\uAC00-\uD7AF]')) return TranslateLanguage.korean;
+    if (hasRange(r'[\u0E00-\u0E7F]')) return TranslateLanguage.thai;
+
+    return null; // Latin script or unrecognized -> let ML Kit / assume English
+  }
+
+  /// Detects the dominant language using COMBINED representative text
+  /// (title + description + a few ingredients/steps) instead of one string
+  /// at a time — short strings like a single ingredient are unreliable for
+  /// language identification.
+  static Future<String> detectDominantLanguage(List<String> sampleTexts) async {
+    final combined = sampleTexts
+        .map((t) => t.trim())
+        .where((t) => t.isNotEmpty)
+        .take(6)
+        .join('. ');
+
+    if (combined.isEmpty) return 'und';
+    final scriptLang = _scriptBasedLanguage(combined);
+    if (scriptLang != null) {
+      final code = _codeFor(scriptLang);
+      log('🌍 Script-detected language: $code');
+      return code;
+    }
+    try {
+      final detected = await _languageIdentifier.identifyLanguage(combined);
+      log('🌍 Dominant language detected: $detected (sample: "$combined")');
+      return detected;
+    } catch (e) {
+      log('❌ detectDominantLanguage error: $e');
+      return 'und';
+    }
+  }
+
+  static String _codeFor(TranslateLanguage lang) {
+    const map = {
+      TranslateLanguage.gujarati: 'gu',
+      TranslateLanguage.hindi: 'hi',
+      TranslateLanguage.bengali: 'bn',
+      TranslateLanguage.tamil: 'ta',
+      TranslateLanguage.telugu: 'te',
+      TranslateLanguage.kannada: 'kn',
+      TranslateLanguage.arabic: 'ar',
+      TranslateLanguage.hebrew: 'he',
+      TranslateLanguage.russian: 'ru',
+      TranslateLanguage.chinese: 'zh',
+      TranslateLanguage.japanese: 'ja',
+      TranslateLanguage.korean: 'ko',
+      TranslateLanguage.thai: 'th',
+    };
+    return map[lang] ?? 'und';
+  }
+
+  /// Downloads models (if needed) and returns a ready-to-use translator for
+  /// [languageCode] -> English. Returns null if unsupported or download fails.
+  static Future<OnDeviceTranslator?> prepareTranslatorFor(
+    String languageCode,
+  ) async {
+    if (languageCode == 'en' || languageCode == 'und') return null;
+
+    final sourceLanguage = _sourceLanguageFor(languageCode);
+    if (sourceLanguage == null) {
+      log('⚠️ Unsupported source language: $languageCode');
+      return null;
+    }
+
+    final manager = OnDeviceTranslatorModelManager();
+    final sourceBcp = sourceLanguage.bcpCode;
+    final englishBcp = TranslateLanguage.english.bcpCode;
+
+    try {
+      if (!await manager.isModelDownloaded(sourceBcp)) {
+        await manager.downloadModel(sourceBcp, isWifiRequired: false);
+      }
+      if (!await manager.isModelDownloaded(englishBcp)) {
+        await manager.downloadModel(englishBcp, isWifiRequired: false);
+      }
+    } catch (e) {
+      log('❌ Model download failed for $languageCode: $e');
+      return null;
+    }
+
+    return OnDeviceTranslator(
+      sourceLanguage: sourceLanguage,
+      targetLanguage: TranslateLanguage.english,
+    );
+  }
+
+  /// Translates one string using an already-prepared translator (reused
+  /// across a whole recipe instead of creating a new one per string).
+  static Future<String> translateWithTranslator(
+    OnDeviceTranslator? translator,
+    String? text,
+  ) async {
+    final input = text?.trim() ?? '';
+    if (input.isEmpty || translator == null) return input;
+
+    try {
+      final result = (await translator.translateText(input)).trim();
+      return result.isEmpty ? input : result;
+    } catch (e) {
+      log('❌ translateWithTranslator failed: $e');
+      return input;
+    }
+  }
+
+  static TranslateLanguage? _sourceLanguageFor(String code) {
+    switch (code.toLowerCase()) {
+      case 'af':
+        return TranslateLanguage.afrikaans;
+
+      case 'sq':
+        return TranslateLanguage.albanian;
+
+      case 'ar':
+        return TranslateLanguage.arabic;
+
+      case 'be':
+        return TranslateLanguage.belarusian;
+
+      case 'bn':
+        return TranslateLanguage.bengali;
+
+      case 'bg':
+        return TranslateLanguage.bulgarian;
+
+      case 'ca':
+        return TranslateLanguage.catalan;
+
+      case 'zh':
+        return TranslateLanguage.chinese;
+
+      case 'hr':
+        return TranslateLanguage.croatian;
+
+      case 'cs':
+        return TranslateLanguage.czech;
+
+      case 'da':
+        return TranslateLanguage.danish;
+
+      case 'nl':
+        return TranslateLanguage.dutch;
+
+      case 'en':
+        return TranslateLanguage.english;
+
+      case 'eo':
+        return TranslateLanguage.esperanto;
+
+      case 'et':
+        return TranslateLanguage.estonian;
+
+      case 'fi':
+        return TranslateLanguage.finnish;
+
+      case 'fr':
+        return TranslateLanguage.french;
+
+      case 'gl':
+        return TranslateLanguage.galician;
+
+      case 'ka':
+        return TranslateLanguage.georgian;
+
+      case 'de':
+        return TranslateLanguage.german;
+
+      case 'el':
+        return TranslateLanguage.greek;
+
+      case 'gu':
+        return TranslateLanguage.gujarati;
+
+      case 'ht':
+        return TranslateLanguage.haitian;
+
+      case 'he':
+        return TranslateLanguage.hebrew;
+
+      case 'hi':
+        return TranslateLanguage.hindi;
+
+      case 'hu':
+        return TranslateLanguage.hungarian;
+
+      case 'is':
+        return TranslateLanguage.icelandic;
+
+      case 'id':
+        return TranslateLanguage.indonesian;
+
+      case 'ga':
+        return TranslateLanguage.irish;
+
+      case 'it':
+        return TranslateLanguage.italian;
+
+      case 'ja':
+        return TranslateLanguage.japanese;
+
+      case 'kn':
+        return TranslateLanguage.kannada;
+
+      case 'ko':
+        return TranslateLanguage.korean;
+
+      case 'lv':
+        return TranslateLanguage.latvian;
+
+      case 'lt':
+        return TranslateLanguage.lithuanian;
+
+      case 'mk':
+        return TranslateLanguage.macedonian;
+
+      case 'ms':
+        return TranslateLanguage.malay;
+
+      case 'mt':
+        return TranslateLanguage.maltese;
+
+      case 'mr':
+        return TranslateLanguage.marathi;
+
+      case 'no':
+        return TranslateLanguage.norwegian;
+
+      case 'fa':
+        return TranslateLanguage.persian;
+
+      case 'pl':
+        return TranslateLanguage.polish;
+
+      case 'pt':
+        return TranslateLanguage.portuguese;
+
+      case 'ro':
+        return TranslateLanguage.romanian;
+
+      case 'ru':
+        return TranslateLanguage.russian;
+
+      case 'sk':
+        return TranslateLanguage.slovak;
+
+      case 'sl':
+        return TranslateLanguage.slovenian;
+
+      case 'es':
+        return TranslateLanguage.spanish;
+
+      case 'sw':
+        return TranslateLanguage.swahili;
+
+      case 'sv':
+        return TranslateLanguage.swedish;
+
+      case 'tl':
+      case 'fil':
+        return TranslateLanguage.tagalog;
+
+      case 'ta':
+        return TranslateLanguage.tamil;
+
+      case 'te':
+        return TranslateLanguage.telugu;
+
+      case 'th':
+        return TranslateLanguage.thai;
+
+      case 'tr':
+        return TranslateLanguage.turkish;
+
+      case 'uk':
+        return TranslateLanguage.ukrainian;
+
+      case 'ur':
+        return TranslateLanguage.urdu;
+
+      case 'vi':
+        return TranslateLanguage.vietnamese;
+
+      case 'cy':
+        return TranslateLanguage.welsh;
+
+      default:
+        return null;
+    }
   }
 }
