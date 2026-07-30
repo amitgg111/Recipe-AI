@@ -7,6 +7,10 @@ import 'package:recipe_ai/View/Auth/auth_wrapper.dart';
 import 'dart:ui' as ui;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
+import 'dart:developer';
+import 'package:recipe_ai/Service/recipe_localizer.dart';
+import 'package:recipe_ai/Service/auth_service.dart';
+import 'package:recipe_ai/Model/recipe_section_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_ai/Controllers/cookbook_controller.dart';
 import 'package:recipe_ai/Controllers/home_controller.dart';
@@ -30,11 +34,87 @@ import 'package:recipe_ai/widgets/tr_text.dart';
 /// Import complete (review) screen — matches the HTML design: photo hero with
 /// "Imported" badge, an AI-review banner, a source pill, orange meta row, and
 /// white cards for ingredients (basket rows) and instructions (numbered steps).
-class ImportCompleteScreen extends StatelessWidget {
+class ImportCompleteScreen extends StatefulWidget {
   final RecipeModel recipe;
   final String? recipeId;
 
   const ImportCompleteScreen({super.key, required this.recipe, this.recipeId});
+
+  @override
+  State<ImportCompleteScreen> createState() => _ImportCompleteScreenState();
+}
+
+class _ImportCompleteScreenState extends State<ImportCompleteScreen> {
+  LocalizedRecipe? _localized;
+  bool _isLocalizing = false;
+
+  RecipeModel get recipe => widget.recipe;
+
+  String get _displayTitle => _localized?.title ?? recipe.title;
+
+  String? get _displayPrepTime => _localized?.prepTime ?? recipe.prepTime;
+
+  String? get _displayCookTime => _localized?.cookTime ?? recipe.cookTime;
+
+  String? get _displayTotalTime => _localized?.totalTime ?? recipe.totalTime;
+
+  String? get _displayServings => _localized?.servings ?? recipe.servings;
+
+  List<String> get _displayIngredients =>
+      _localized?.ingredients ?? recipe.ingredients;
+
+  List<String> get _displayInstructions =>
+      _localized?.instructions ?? recipe.instructions;
+
+  List<IngredientSection> get _displayIngredientSections =>
+      _localized?.ingredientSections ?? recipe.ingredientSections;
+
+  List<InstructionSection> get _displayInstructionSections =>
+      _localized?.instructionSections ?? recipe.instructionSections;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLocalizedText();
+  }
+
+  Future<void> _loadLocalizedText() async {
+    if (_isLocalizing) return;
+
+    _isLocalizing = true;
+
+    try {
+      final id = widget.recipeId?.trim().isNotEmpty == true
+          ? widget.recipeId!.trim()
+          : recipe.id;
+
+      if (id.isEmpty) return;
+
+      final doc = await FirebaseFirestore.instance
+          .collection('recipes')
+          .doc(id)
+          .get();
+
+      final data = doc.data();
+
+      if (data == null) return;
+
+      final localized = await RecipeLocalizer.resolve(
+        data,
+        currentUid: AuthService.currentUser?.uid,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _localized = localized;
+      });
+    } catch (e) {
+      log('ImportComplete localize failed: $e');
+    } finally {
+      _isLocalizing = false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +148,7 @@ class ImportCompleteScreen extends StatelessWidget {
                           _reviewBanner(),
                           const SizedBox(height: 16),
                           TrText(
-                            recipe.title,
+                            _displayTitle,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 25,
                               fontWeight: FontWeight.w800,
@@ -177,49 +257,8 @@ class ImportCompleteScreen extends StatelessWidget {
   }
 
   // ─── Hero ────────────────────────────────────────────────────────────────
-
-  // Widget _hero() {
-  //   final hasImage = recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty;
-  //   return SizedBox(
-  //     height: 280,
-  //     width: double.infinity,
-  //     child: Stack(
-  //       fit: StackFit.expand,
-  //       children: [
-  //         if (hasImage)
-  //           AppNetworkImage(
-  //             recipe.imageUrl!,
-  //             fit: BoxFit.cover,
-  //             cacheWidth: 900,
-  //             // While the (often large, freshly-uploaded) image downloads, show
-  //             // an animated shimmer skeleton so it reads as "loading", not
-  //             // "missing". A failed load still falls back to the icon.
-  //             placeholder: _heroLoading(),
-  //             error: _heroFallback(),
-  //           )
-  //         else
-  //           _heroFallback(),
-  //         const DecoratedBox(
-  //           decoration: BoxDecoration(
-  //             gradient: LinearGradient(
-  //               begin: Alignment.topCenter,
-  //               end: Alignment.bottomCenter,
-  //               colors: [
-  //                 Color(0x66140F0A),
-  //                 Color(0x00140F0A),
-  //                 Color(0x00140F0A),
-  //                 AppColors.background,
-  //               ],
-  //               stops: [0.0, 0.32, 0.64, 1.0],
-  //             ),
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
   Widget _hero() {
-    final firestoreRecipeId = recipe.id;
+    final firestoreRecipeId = widget.recipe.id;
 
     return SizedBox(
       height: 280,
@@ -239,7 +278,7 @@ class ImportCompleteScreen extends StatelessWidget {
 
           // Firestore image has priority.
           // Initial recipe image is used as fallback.
-          imageUrl ??= recipe.imageUrl;
+          imageUrl ??= widget.recipe.imageUrl;
 
           final hasImage = imageUrl != null && imageUrl.isNotEmpty;
 
@@ -303,7 +342,6 @@ class ImportCompleteScreen extends StatelessWidget {
   );
 
   // ─── Review banner ─────────────────────────────────────────────────────────
-
   Widget _reviewBanner() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -336,7 +374,6 @@ class ImportCompleteScreen extends StatelessWidget {
   }
 
   // ─── Source pill ───────────────────────────────────────────────────────────
-
   Widget _sourcePill() {
     final info = _sourceInfo();
     return Container(
@@ -381,7 +418,6 @@ class ImportCompleteScreen extends StatelessWidget {
   }
 
   // ─── Meta row ──────────────────────────────────────────────────────────────
-
   Widget _metaRow() {
     final items = <Widget>[];
     void add(String iconName, String text) {
@@ -418,13 +454,13 @@ class ImportCompleteScreen extends StatelessWidget {
     // First NON-EMPTY time — imported recipes often store totalTime as ""
     // (empty, not null) while cook/prep have a value, and `??` only skips null.
     final time = [
-      recipe.totalTime,
-      recipe.cookTime,
-      recipe.prepTime,
+      _displayTotalTime,
+      _displayCookTime,
+      _displayPrepTime,
     ].firstWhere((t) => t != null && t.trim().isNotEmpty, orElse: () => null);
     if (time != null) add('clock', time.trim());
-    if (recipe.servings != null && recipe.servings!.isNotEmpty) {
-      add('user', 'servings_count'.trParams({'count': '${recipe.servings}'}));
+    if (_displayServings != null && _displayServings!.isNotEmpty) {
+      add('user', 'servings_count'.trParams({'count': _displayServings!}));
     }
 
     add('flame', _difficultyLabel());
@@ -433,12 +469,11 @@ class ImportCompleteScreen extends StatelessWidget {
   }
 
   // ─── Difficulty (estimated: import sources never provide one) ───────────────
-
   int _totalMinutes() {
     final t = [
-      recipe.totalTime,
-      recipe.cookTime,
-      recipe.prepTime,
+      _displayTotalTime,
+      _displayCookTime,
+      _displayPrepTime,
     ].firstWhere((v) => v != null && v.trim().isNotEmpty, orElse: () => null);
     if (t == null) return 0;
     final hourMatch = RegExp(r'(\d+)\s*h', caseSensitive: false).firstMatch(t);
@@ -458,8 +493,8 @@ class ImportCompleteScreen extends StatelessWidget {
   }
 
   String _difficultyLabel() {
-    final ingredients = recipe.ingredients.length;
-    final steps = recipe.instructions.length;
+    final ingredients = _displayIngredients.length;
+    final steps = _displayInstructions.length;
     final mins = _totalMinutes();
     var score = 0;
     if (ingredients >= 13) {
@@ -483,7 +518,6 @@ class ImportCompleteScreen extends StatelessWidget {
   }
 
   // ─── Ingredients card (with Units switcher — matches RecipeDetailScreen) ────
-
   Widget _ingredientsCard() {
     final grocery = Get.find<GroceryStore>();
     final settings = Get.find<SettingsController>();
@@ -491,7 +525,7 @@ class ImportCompleteScreen extends StatelessWidget {
     return Obx(() {
       final system = settings.unitSystem;
       final rows = <Widget>[];
-      final hasSections = recipe.ingredientSections.any(
+      final hasSections = _displayIngredientSections.any(
         (s) => s.items.isNotEmpty,
       );
       var count = 0;
@@ -511,7 +545,7 @@ class ImportCompleteScreen extends StatelessWidget {
       }
 
       if (hasSections) {
-        final sections = recipe.ingredientSections
+        final sections = _displayIngredientSections
             .where((s) => s.items.isNotEmpty)
             .toList();
         for (var si = 0; si < sections.length; si++) {
@@ -526,8 +560,8 @@ class ImportCompleteScreen extends StatelessWidget {
           }
         }
       } else {
-        for (var i = 0; i < recipe.ingredients.length; i++) {
-          addItem(recipe.ingredients[i], i == recipe.ingredients.length - 1);
+        for (var i = 0; i < _displayIngredients.length; i++) {
+          addItem(_displayIngredients[i], i == _displayIngredients.length - 1);
         }
       }
 
@@ -719,17 +753,15 @@ class ImportCompleteScreen extends StatelessWidget {
   }
 
   // ─── Instructions card ─────────────────────────────────────────────────────
-
   Widget _instructionsCard() {
     final rows = <Widget>[];
-    final hasSections = recipe.instructionSections.any(
+    final hasSections = _displayInstructionSections.any(
       (s) => s.steps.isNotEmpty,
     );
     var stepNum = 0;
     var total = hasSections
-        ? recipe.instructionSections.fold<int>(0, (a, s) => a + s.steps.length)
-        : recipe.instructions.length;
-
+        ? _displayInstructionSections.fold<int>(0, (a, s) => a + s.steps.length)
+        : _displayInstructions.length;
     void addStep(String text, bool last) {
       stepNum++;
       rows.add(
@@ -738,7 +770,7 @@ class ImportCompleteScreen extends StatelessWidget {
     }
 
     if (hasSections) {
-      final sections = recipe.instructionSections
+      final sections = _displayInstructionSections
           .where((s) => s.steps.isNotEmpty)
           .toList();
       for (var si = 0; si < sections.length; si++) {
@@ -752,8 +784,8 @@ class ImportCompleteScreen extends StatelessWidget {
         }
       }
     } else {
-      for (var i = 0; i < recipe.instructions.length; i++) {
-        addStep(recipe.instructions[i], i == recipe.instructions.length - 1);
+      for (var i = 0; i < _displayInstructions.length; i++) {
+        addStep(_displayInstructions[i], i == _displayInstructions.length - 1);
       }
     }
 
@@ -854,10 +886,8 @@ class ImportCompleteScreen extends StatelessWidget {
   }
 
   // ─── Nutrition card — matches RecipeDetailScreen: free users see the real
-  //     values blurred behind the "Subscribe now" teaser (NutritionLockedCard),
-  //     Plus users see the real preview. Estimated from the recipe ingredients.
   Widget _nutritionCard(BuildContext context) {
-    final n = NutritionController.to.calculateNutrition(recipe);
+    final n = NutritionController.to.calculateNutrition(widget.recipe);
     if (n.isEmpty) return const SizedBox.shrink();
     return Obx(() {
       final isPlus = SubscriptionService.instance.isPlusListenable.value;
@@ -872,14 +902,13 @@ class ImportCompleteScreen extends StatelessWidget {
         nutrition: n,
         servings: n.servings,
         onViewBreakdown: () => Get.to(
-          () => NutritionScreen(recipeName: recipe.title, nutrition: n),
+          () => NutritionScreen(recipeName: widget.recipe.title, nutrition: n),
         ),
       );
     });
   }
 
   // ─── Save / Edit buttons ───────────────────────────────────────────────────
-
   Widget _saveButton(BuildContext context) {
     return GestureDetector(
       onTap: () => _showCookbookPicker(context),
@@ -920,7 +949,7 @@ class ImportCompleteScreen extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         Get.back();
-        Get.to(() => RecipeEditorScreen(recipe: recipe));
+        Get.to(() => RecipeEditorScreen(recipe: widget.recipe));
       },
       child: Container(
         height: 50,
@@ -960,16 +989,15 @@ class ImportCompleteScreen extends StatelessWidget {
       backgroundColor: Colors.transparent,
       builder: (ctx) => CookbookPickerSheet(
         cookbookController: cookbookCtrl,
-        recipeId: recipe.id,
-        recipeImageUrl: recipe.imageUrl,
+        recipeId: widget.recipe.id,
+        recipeImageUrl: widget.recipe.imageUrl,
       ),
     );
   }
 
   // ─── Source detection ──────────────────────────────────────────────────────
-
   _SourceInfo _sourceInfo() {
-    final raw = recipe.sourceUrl;
+    final raw = widget.recipe.sourceUrl;
     final s = raw.toLowerCase();
     final handle = _handleFrom(raw);
     final suffix = handle != null

@@ -237,6 +237,7 @@ class PlannedMeal {
 /// recipes from AI. This priority is mandatory and never violated.
 
 class MealPlannerController extends GetxController {
+  final RxBool isRegenerating = false.obs;
   static MealPlannerController get to =>
       Get.isRegistered<MealPlannerController>()
       ? Get.find<MealPlannerController>()
@@ -376,6 +377,32 @@ class MealPlannerController extends GetxController {
     // Persist the generated week as a draft so it survives leaving the review
     // screen without applying (recoverable from Firebase, no longer memory-only).
     await _saveDraft();
+  }
+
+  /// Move the recipe at [fromDay]/[fromSlot] to [toDay]/[toSlot]. If the
+  /// destination already has a recipe, the two simply swap places — nothing
+  /// is replaced/regenerated, only re-ordered.
+  void reorderMeal({
+    required int fromDay,
+    required String fromSlot,
+    required int toDay,
+    required String toSlot,
+  }) {
+    if (!allowedDays.contains(fromDay) || !allowedDays.contains(toDay)) return;
+    if (fromDay == toDay && fromSlot == toSlot) return;
+
+    final fromIndex = meals.indexWhere(
+      (m) => m.day == fromDay && m.slot == fromSlot,
+    );
+    final toIndex = meals.indexWhere((m) => m.day == toDay && m.slot == toSlot);
+    if (fromIndex == -1 || toIndex == -1) return;
+
+    final fromRecipe = meals[fromIndex].recipe;
+    final toRecipe = meals[toIndex].recipe;
+
+    meals[fromIndex].recipe = toRecipe;
+    meals[toIndex].recipe = fromRecipe;
+    meals.refresh();
   }
 
   Future<void> _run(int i, {int minMs = 500}) async {
@@ -617,9 +644,20 @@ class MealPlannerController extends GetxController {
     }
   }
 
-  void shuffleWeek() {
-    balanceMeals();
-    _saveDraft(); // keep the recoverable draft in sync
+  Future<void> shuffleWeek() async {
+    if (isRegenerating.value) return;
+
+    isRegenerating.value = true;
+
+    try {
+      // Regenerate the complete week from scratch.
+      // This keeps the same selected goals, cuisine, servings and prompt.
+      await generateWeeklyPlan();
+    } catch (_) {
+      // Keep the existing plan visible if regeneration fails.
+    } finally {
+      isRegenerating.value = false;
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════════════════

@@ -1,8 +1,10 @@
 import 'dart:math' as math;
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/Controllers/cookbook_controller.dart';
+import 'package:recipe_ai/Service/recipe_localizer.dart';
 import 'package:recipe_ai/widgets/app_network_image.dart';
 import 'package:recipe_ai/Controllers/home_controller.dart';
 // hide AnimatedBuilder: cookbooks_screen defines its own class of that name,
@@ -797,14 +799,61 @@ class _RecipeList extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // Recipe list tile (matching the image row design)
 // ─────────────────────────────────────────────────────────────────────────────
-
-class _RecipeListTile extends StatelessWidget {
+class _RecipeListTile extends StatefulWidget {
   final RecipeModel recipe;
 
   const _RecipeListTile({required this.recipe});
 
   @override
+  State<_RecipeListTile> createState() => _RecipeListTileState();
+}
+
+class _RecipeListTileState extends State<_RecipeListTile> {
+  LocalizedRecipe? _localizedRecipe;
+  bool _isLocalizing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLocalizedRecipe();
+  }
+
+  Future<void> _loadLocalizedRecipe() async {
+    if (_isLocalizing) return;
+
+    _isLocalizing = true;
+
+    try {
+      final localized = await RecipeLocalizer.resolve(
+        widget.recipe.rawData,
+        currentUid: FirebaseAuth.instance.currentUser?.uid,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _localizedRecipe = localized;
+      });
+    } catch (e) {
+      debugPrint(
+        'CookbookRecipesScreen: Failed to localize recipe '
+        '${widget.recipe.id}: $e',
+      );
+    } finally {
+      _isLocalizing = false;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final recipe = widget.recipe;
+
+    // LocalizedRecipe available હોય તો localized title,
+    // નહિતર initial render માટે original title.
+    final title = _localizedRecipe?.title.isNotEmpty == true
+        ? _localizedRecipe!.title
+        : recipe.title;
+
     return GestureDetector(
       onTap: () => Get.to(() => RecipeDetailScreen(recipe: recipe)),
       behavior: HitTestBehavior.opaque,
@@ -828,16 +877,22 @@ class _RecipeListTile extends StatelessWidget {
             // Recipe image
             ClipRRect(
               borderRadius: BorderRadius.circular(14),
-              child: SizedBox(width: 74, height: 74, child: _buildImage()),
+              child: SizedBox(
+                width: 74,
+                height: 74,
+                child: _buildImage(recipe),
+              ),
             ),
+
             const SizedBox(width: 14),
+
             // Title + time
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    recipe.title,
+                    title,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
@@ -847,7 +902,9 @@ class _RecipeListTile extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
+
                   const SizedBox(height: 8),
+
                   Row(
                     children: [
                       const OnboardingLineIcon(
@@ -861,7 +918,6 @@ class _RecipeListTile extends StatelessWidget {
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-
                           color: const Color(0xFF8A7E70),
                         ),
                         maxLines: 1,
@@ -871,7 +927,9 @@ class _RecipeListTile extends StatelessWidget {
                 ],
               ),
             ),
+
             const SizedBox(width: 8),
+
             // Chevron
             const OnboardingLineIcon(
               'chevR',
@@ -884,7 +942,7 @@ class _RecipeListTile extends StatelessWidget {
     );
   }
 
-  Widget _buildImage() {
+  Widget _buildImage(RecipeModel recipe) {
     if (recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty) {
       return AppNetworkImage(
         recipe.imageUrl!,
@@ -896,6 +954,7 @@ class _RecipeListTile extends StatelessWidget {
         error: _placeholder(),
       );
     }
+
     return _placeholder();
   }
 

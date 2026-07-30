@@ -25,7 +25,6 @@ import 'package:recipe_ai/Helper/instruction_scaler.dart';
 import 'package:recipe_ai/Controllers/settings_controller.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:share_plus/share_plus.dart';
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Design constants (matched to the HTML "Public recipe (view)" design)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -109,14 +108,18 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
   int _ratingCount = 0;
   double get _avgRating => _ratingCount > 0 ? _ratingSum / _ratingCount : 0;
 
+  // LocalizedRecipe? _localized;
+  bool _localizing = true;
+  bool get isLocalizing => _localizing;
+
   DiscoverRecipe get recipe => widget.recipe;
 
   @override
   void initState() {
     super.initState();
     int parsed = 2;
-    if (recipe.servings != null) {
-      final m = RegExp(r'\d+').firstMatch(recipe.servings!);
+    if ((recipe.servings) != null) {
+      final m = RegExp(r'\d+').firstMatch((recipe.servings)!);
       if (m != null) parsed = int.tryParse(m.group(0)!) ?? 2;
     }
     _initialServings = parsed <= 0 ? 2 : parsed;
@@ -137,8 +140,10 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
         recipe.id,
       ).first;
       final d = doc.data() ?? {};
+
       if (mounted) {
         setState(() {
+          _localizing = false;
           _liked = liked;
           _saved = saved;
           _myRating = myRating;
@@ -251,8 +256,8 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                         const SizedBox(height: _P.gap),
                         _buildEngagementBar(),
                         const SizedBox(height: _P.gap),
-                        if (recipe.description != null &&
-                            recipe.description!.trim().isNotEmpty) ...[
+                        if ((recipe.description) != null &&
+                            (recipe.description)!.trim().isNotEmpty) ...[
                           _buildNoteCard(),
                           const SizedBox(height: _P.gap),
                         ],
@@ -407,7 +412,8 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
 
   // ── Meta row ──────────────────────────────────────────────────────────────
   Widget _buildMetaRow() {
-    final time = recipe.totalTime ?? recipe.cookTime ?? recipe.prepTime ?? '';
+    final time =
+        (recipe.totalTime) ?? (recipe.cookTime) ?? (recipe.prepTime) ?? '';
     final items = <Widget>[];
     if (time.isNotEmpty) {
       items.add(
@@ -594,7 +600,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            recipe.description!.trim(),
+            (recipe.description)!.trim(),
             style: _f(14, FontWeight.w400, _P.textBody, h: 1.5),
           ),
         ],
@@ -659,9 +665,9 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
   List<Widget> _buildIngredientRows(UnitSystem system) {
     final multiplier = _servings / _initialServings;
     final rows = <Widget>[];
-    for (var i = 0; i < recipe.ingredients.length; i++) {
+    for (var i = 0; i < (recipe.ingredients).length; i++) {
       final scaled = UnitConverter.scaleAndConvert(
-        recipe.ingredients[i],
+        (recipe.ingredients)[i],
         multiplier,
         system,
       );
@@ -831,7 +837,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
         children: [
           Text('instructions'.tr, style: _f(18, FontWeight.w800, _P.textDark)),
           const SizedBox(height: 6),
-          if (recipe.instructions.isEmpty)
+          if ((recipe.instructions).isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Text(
@@ -846,11 +852,11 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  for (var i = 0; i < recipe.instructions.length; i++)
+                  for (var i = 0; i < (recipe.instructions).length; i++)
                     _instructionRow(
                       i + 1,
                       InstructionScaler.scale(
-                        recipe.instructions[i],
+                        (recipe.instructions)[i],
                         multiplier,
                         system,
                       ),
@@ -1442,19 +1448,19 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
   // ── Actions (reuse existing controllers) ─────────────────────────────────────
   RecipeModel _toRecipeModel() => RecipeModel(
     id: recipe.id,
-    title: recipe.title,
-    description: recipe.description,
+    title: (recipe.title),
+    description: (recipe.description),
     imageUrl: recipe.imageUrl,
     sourceUrl: '',
-    prepTime: recipe.prepTime,
-    cookTime: recipe.cookTime,
-    totalTime: recipe.totalTime,
-    servings: recipe.servings,
-    category: recipe.category,
-    cuisine: recipe.cuisine,
+    prepTime: (recipe.prepTime),
+    cookTime: (recipe.cookTime),
+    totalTime: (recipe.totalTime),
+    servings: (recipe.servings),
+    category: (recipe.category),
+    cuisine: (recipe.cuisine),
     keywords: const [],
-    ingredients: recipe.ingredients,
-    instructions: recipe.instructions,
+    ingredients: (recipe.ingredients),
+    instructions: (recipe.instructions),
     ingredientSections: const [],
     instructionSections: const [],
     visibility: 'public',
@@ -1462,22 +1468,22 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
 
   void _share() {
     final buf = StringBuffer();
-    buf.writeln(recipe.title);
+    buf.writeln((recipe.title));
     buf.writeln();
-    if (recipe.description != null && recipe.description!.isNotEmpty) {
-      buf.writeln(recipe.description);
+    if ((recipe.description) != null && (recipe.description)!.isNotEmpty) {
+      buf.writeln((recipe.description));
       buf.writeln();
     }
     buf.writeln('INGREDIENTS');
-    for (final ing in recipe.ingredients) {
+    for (final ing in (recipe.ingredients)) {
       buf.writeln('• $ing');
     }
     buf.writeln();
     buf.writeln('INSTRUCTIONS');
-    for (var i = 0; i < recipe.instructions.length; i++) {
-      buf.writeln('${i + 1}. ${recipe.instructions[i]}');
+    for (var i = 0; i < (recipe.instructions).length; i++) {
+      buf.writeln('${i + 1}. ${(recipe.instructions)[i]}');
     }
-    Share.share(buf.toString(), subject: recipe.title);
+    Share.share(buf.toString(), subject: (recipe.title));
     RecipeSocialService.registerShare(recipe.userId, recipe.id);
   }
 
@@ -1485,7 +1491,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
     final system = _settings.unitSystem;
     final multiplier = _servings / _initialServings;
     final selectedIndices = List<bool>.generate(
-      recipe.ingredients.length,
+      (recipe.ingredients).length,
       (_) => true,
     );
 
@@ -1586,9 +1592,9 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
               );
             }
 
-            for (var i = 0; i < recipe.ingredients.length; i++) {
+            for (var i = 0; i < (recipe.ingredients).length; i++) {
               final scaled = UnitConverter.scaleAndConvert(
-                recipe.ingredients[i],
+                (recipe.ingredients)[i],
                 multiplier,
                 system,
               );
@@ -1716,13 +1722,13 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                               final toAdd = <String>[];
                               for (
                                 var i = 0;
-                                i < recipe.ingredients.length;
+                                i < (recipe.ingredients).length;
                                 i++
                               ) {
                                 if (selectedIndices[i]) {
                                   final scaledIng =
                                       IngredientScaleHelper.scaleIngredient(
-                                        recipe.ingredients[i],
+                                        (recipe.ingredients)[i],
                                         multiplier,
                                       );
                                   toAdd.add(scaledIng);

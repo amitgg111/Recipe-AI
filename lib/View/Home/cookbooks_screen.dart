@@ -2,6 +2,8 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:recipe_ai/Service/auth_service.dart';
+import 'package:recipe_ai/Service/recipe_localizer.dart';
 import 'package:recipe_ai/screens/cookbooks/sort_sheet.dart';
 import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:recipe_ai/widgets/app_network_image.dart';
@@ -1198,10 +1200,47 @@ class _CookbookCard extends StatelessWidget {
 // Recipe card
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _RecipeCard extends StatelessWidget {
+class _RecipeCard extends StatefulWidget {
   final RecipeModel recipe;
 
   const _RecipeCard({required this.recipe});
+
+  @override
+  State<_RecipeCard> createState() => _RecipeCardState();
+}
+
+class _RecipeCardState extends State<_RecipeCard> {
+  LocalizedRecipe? _localizedRecipe;
+  bool _isLocalizing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLocalizedRecipe();
+  }
+
+  Future<void> _loadLocalizedRecipe() async {
+    if (_isLocalizing) return;
+
+    _isLocalizing = true;
+
+    try {
+      final localized = await RecipeLocalizer.resolve(
+        widget.recipe.rawData,
+        currentUid: AuthService.currentUser?.uid,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _localizedRecipe = localized;
+      });
+    } catch (e) {
+      log('Cookbook recipe localization failed: $e');
+    } finally {
+      _isLocalizing = false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1209,7 +1248,9 @@ class _RecipeCard extends StatelessWidget {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => RecipeDetailScreen(recipe: recipe)),
+          MaterialPageRoute(
+            builder: (_) => RecipeDetailScreen(recipe: widget.recipe),
+          ),
         );
       },
       child: Container(
@@ -1238,8 +1279,8 @@ class _RecipeCard extends StatelessWidget {
                     child: GestureDetector(
                       onTap: () {
                         Get.find<HomeController>().toggleFavorite(
-                          recipe.id,
-                          !recipe.isFavorite,
+                          widget.recipe.id,
+                          !widget.recipe.isFavorite,
                         );
                       },
                       behavior: HitTestBehavior.opaque,
@@ -1252,7 +1293,7 @@ class _RecipeCard extends StatelessWidget {
                           shape: BoxShape.circle,
                         ),
                         child: OnboardingLineIcon(
-                          recipe.isFavorite ? 'heart' : 'heartO',
+                          widget.recipe.isFavorite ? 'heart' : 'heartO',
                           size: 18,
                           color: AppColors.pinterest,
                         ),
@@ -1263,7 +1304,7 @@ class _RecipeCard extends StatelessWidget {
                   Positioned(
                     top: 8,
                     left: 8,
-                    child: _PrivacyBadge(isPublic: recipe.isPublic),
+                    child: _PrivacyBadge(isPublic: widget.recipe.isPublic),
                   ),
                 ],
               ),
@@ -1275,7 +1316,7 @@ class _RecipeCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    recipe.title,
+                    _localizedRecipe?.title ?? widget.recipe.title,
                     style: AppTextStyles.chipLabel.copyWith(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -1295,7 +1336,10 @@ class _RecipeCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          recipe.totalTime ?? recipe.cookTime ?? '—',
+                          _localizedRecipe?.totalTime ??
+                              widget.recipe.totalTime ??
+                              widget.recipe.cookTime ??
+                              '—',
                           style: AppTextStyles.smallLabel.copyWith(
                             fontSize: 12,
                           ),
@@ -1315,7 +1359,7 @@ class _RecipeCard extends StatelessWidget {
   }
 
   Widget _buildImage() {
-    final imageUrl = recipe.imageUrl;
+    final imageUrl = widget.recipe.imageUrl;
 
     if (imageUrl == null || imageUrl.isEmpty) {
       return _imagePlaceholder();

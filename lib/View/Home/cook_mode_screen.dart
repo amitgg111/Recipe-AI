@@ -10,6 +10,10 @@ import 'package:recipe_ai/widgets/app_network_image.dart';
 import 'package:recipe_ai/Controllers/settings_controller.dart';
 import 'package:recipe_ai/Service/local_notification_service.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:recipe_ai/Service/auth_service.dart';
+import 'package:recipe_ai/Service/recipe_localizer.dart';
+import 'package:recipe_ai/Model/recipe_section_model.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -77,12 +81,66 @@ class _CookModeScreenState extends State<CookModeScreen>
   final Map<int, _StepTimer> _timers = {};
   Timer? _ticker;
 
+  LocalizedRecipe? _localized;
+  bool _localizing = true;
+  bool get isLocalizing => _localizing;
+
+  String get _displayTitle => _localized?.title ?? widget.recipe.title;
+  String get _displayTimeText {
+    final t =
+        _localized?.totalTime ??
+        _localized?.cookTime ??
+        _localized?.prepTime ??
+        widget.recipe.totalTime ??
+        widget.recipe.cookTime ??
+        widget.recipe.prepTime ??
+        '';
+    return t.isEmpty ? '' : ' · ${t.toUpperCase()}';
+  }
+
+  List<String> get _displayInstructions =>
+      _localized?.instructions ?? widget.recipe.instructions;
+  List<InstructionSection> get _displayInstructionSections =>
+      _localized?.instructionSections ?? widget.recipe.instructionSections;
+
   @override
   void initState() {
     super.initState();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     _steps = _parseSteps();
     _pageController = PageController();
+    _loadLocalizedText();
+  }
+
+  Future<void> _loadLocalizedText() async {
+    try {
+      Map<String, dynamic>? data = widget.recipe.rawData;
+      if (data.isEmpty) {
+        final doc = await FirebaseFirestore.instance
+            .collection('recipes')
+            .doc(widget.recipe.id)
+            .get();
+        data = doc.data();
+      }
+      if (data == null || data.isEmpty) {
+        if (mounted) setState(() => _localizing = false);
+        return;
+      }
+      final localized = await RecipeLocalizer.resolve(
+        data,
+        currentUid: AuthService.currentUser?.uid,
+      );
+      if (mounted) {
+        setState(() {
+          _localized = localized;
+          _localizing = false;
+          _steps.clear();
+          _steps.addAll(_parseSteps());
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _localizing = false);
+    }
   }
 
   @override
@@ -97,12 +155,12 @@ class _CookModeScreenState extends State<CookModeScreen>
 
   List<_CookStep> _parseSteps() {
     final steps = <_CookStep>[];
-    final hasSections = widget.recipe.instructionSections.any(
+    final hasSections = _displayInstructionSections.any(
       (s) => s.steps.isNotEmpty,
     );
 
     if (hasSections) {
-      for (final section in widget.recipe.instructionSections) {
+      for (final section in _displayInstructionSections) {
         for (final step in section.steps) {
           steps.add(
             _CookStep(
@@ -114,7 +172,7 @@ class _CookModeScreenState extends State<CookModeScreen>
         }
       }
     } else {
-      for (final step in widget.recipe.instructions) {
+      for (final step in _displayInstructions) {
         steps.add(
           _CookStep(
             text: step,
@@ -241,7 +299,7 @@ class _CookModeScreenState extends State<CookModeScreen>
             CustomSnackbar.show(
               title: 'timer_done_step'.trParams({'step': '${index + 1}'}),
               message: 'timer_finished_msg'.trParams({
-                'recipe': widget.recipe.title,
+                'recipe': _displayTitle,
                 'label': t.label.toLowerCase(),
               }),
               type: SnackbarType.success,
@@ -342,7 +400,7 @@ class _CookModeScreenState extends State<CookModeScreen>
       fireAt: DateTime.now().add(Duration(seconds: t.remaining)),
       title: 'timer_done_step'.trParams({'step': '${index + 1}'}),
       body: 'timer_finished_msg'.trParams({
-        'recipe': widget.recipe.title,
+        'recipe': _displayTitle,
         'label': t.label.toLowerCase(),
       }),
     );
@@ -380,6 +438,8 @@ class _CookModeScreenState extends State<CookModeScreen>
     if (_isFinished) {
       return _FinishView(
         recipe: widget.recipe,
+        displayTitle: _displayTitle,
+        displayTimeText: _displayTimeText,
         stepCount: _steps.length,
         rating: _selectedRating,
         onRate: (r) => setState(() => _selectedRating = r),
@@ -403,12 +463,23 @@ class _CookModeScreenState extends State<CookModeScreen>
                 }),
                 style: _f(13, FontWeight.w800, _C.textMed, spacing: 0.5),
               ),
+              // Expanded(
+              //   child: PageView.builder(
+              //     controller: _pageController,
+              //     physics: const NeverScrollableScrollPhysics(),
+              //     itemCount: _steps.length,
+              //     onPageChanged: (i) => setState(() => _currentPage = i),
+              //     itemBuilder: (_, i) => _stepPage(i),
+              //   ),
+              // ),
               Expanded(
                 child: PageView.builder(
                   controller: _pageController,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: _steps.length,
-                  onPageChanged: (i) => setState(() => _currentPage = i),
+                  onPageChanged: (i) {
+                    setState(() => _currentPage = i);
+                  },
                   itemBuilder: (_, i) => _stepPage(i),
                 ),
               ),
@@ -486,24 +557,35 @@ class _CookModeScreenState extends State<CookModeScreen>
     } else if (timer != null) {
       body = _timerActive(index, timer, step);
     } else {
-      // No active timer on this step: centered text (+ start/add-timer button).
+      // No active timer on this step.
+      // Step instruction is scrollable before timer starts.
       body = Column(
         children: [
           Expanded(
-            child: Center(
-              child: Text(
-                step.text,
-                textAlign: TextAlign.center,
-                style: _f(
-                  22,
-                  FontWeight.w700,
-                  _C.textDark,
-                  spacing: -0.3,
-                  height: 1.4,
+            child: Container(
+              width: double.infinity,
+              alignment: Alignment.center,
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 4,
+                  vertical: 12,
+                ),
+                child: Text(
+                  step.text,
+                  textAlign: TextAlign.start,
+                  style: _f(
+                    18,
+                    FontWeight.w700,
+                    _C.textDark,
+                    spacing: -0.3,
+                    height: 1.4,
+                  ),
                 ),
               ),
             ),
           ),
+
           if (duration != null)
             _outlineTimerButton(
               iconWidget: const OnboardingLineIcon(
@@ -526,6 +608,7 @@ class _CookModeScreenState extends State<CookModeScreen>
               label: 'add_a_timer'.tr,
               onTap: () => _openSetTimerSheet(index),
             ),
+
           const SizedBox(height: 6),
         ],
       );
@@ -571,161 +654,627 @@ class _CookModeScreenState extends State<CookModeScreen>
 
   // ─── Running / paused timer (ring + controls + step card) ───────────────────
 
+  // Widget _timerActive(int index, _StepTimer t, _CookStep step) {
+  //   final paused = !t.running;
+  //   final progress = t.total > 0 ? t.remaining / t.total : 0.0;
+  //   return Column(
+  //     children: [
+  //       Expanded(
+  //         child: Center(
+  //           child: Column(
+  //             mainAxisSize: MainAxisSize.min,
+  //             children: [
+  //               Opacity(
+  //                 opacity: paused ? 0.7 : 1,
+  //                 child: SizedBox(
+  //                   width: 248,
+  //                   height: 248,
+  //                   child: Stack(
+  //                     alignment: Alignment.center,
+  //                     children: [
+  //                       if (!paused)
+  //                         Container(
+  //                           width: 170,
+  //                           height: 170,
+  //                           decoration: BoxDecoration(
+  //                             shape: BoxShape.circle,
+  //                             gradient: RadialGradient(
+  //                               colors: [
+  //                                 _C.primary.withValues(alpha: 0.18),
+  //                                 _C.primary.withValues(alpha: 0),
+  //                               ],
+  //                               stops: const [0.0, 0.7],
+  //                             ),
+  //                           ),
+  //                         ),
+  //                       CustomPaint(
+  //                         size: const Size(248, 248),
+  //                         painter: _RingPainter(
+  //                           progress: progress.clamp(0, 1),
+  //                           color: paused ? _C.pausedRing : _C.primary,
+  //                           bg: _C.track,
+  //                           stroke: 13,
+  //                         ),
+  //                       ),
+  //                       Column(
+  //                         mainAxisSize: MainAxisSize.min,
+  //                         children: [
+  //                           if (!paused) ...[
+  //                             Row(
+  //                               mainAxisSize: MainAxisSize.min,
+  //                               children: [
+  //                                 const OnboardingLineIcon(
+  //                                   'flame',
+  //                                   size: 14,
+  //                                   color: _C.primary,
+  //                                 ),
+  //                                 const SizedBox(width: 5),
+  //                                 Text(
+  //                                   step.label.toUpperCase(),
+  //                                   style: _f(
+  //                                     11,
+  //                                     FontWeight.w800,
+  //                                     _C.primary,
+  //                                     spacing: 0.8,
+  //                                   ),
+  //                                 ),
+  //                               ],
+  //                             ),
+  //                             const SizedBox(height: 6),
+  //                           ],
+  //                           Text(
+  //                             _fmt(t.remaining),
+  //                             style: _f(
+  //                               paused ? 58 : 54,
+  //                               FontWeight.w800,
+  //                               _C.textDark,
+  //                               spacing: -1.5,
+  //                               height: 1,
+  //                             ),
+  //                           ),
+  //                           const SizedBox(height: 6),
+  //                           Text(
+  //                             paused
+  //                                 ? 'paused'.tr
+  //                                 : 'of_duration'.trParams({
+  //                                     'duration': _fmt(t.total),
+  //                                   }),
+  //                             style: _f(13, FontWeight.w700, _C.textMed),
+  //                           ),
+  //                         ],
+  //                       ),
+  //                     ],
+  //                   ),
+  //                 ),
+  //               ),
+  //               const SizedBox(height: 28),
+  //               Row(
+  //                 mainAxisSize: MainAxisSize.min,
+  //                 children: [
+  //                   _smallCtrlBtn(
+  //                     Icons.restart_alt_rounded,
+  //                     () => _reset(index),
+  //                   ),
+  //                   const SizedBox(width: 12),
+  //                   _pillBtn(
+  //                     iconWidget: OnboardingLineIcon(
+  //                       paused ? 'play' : 'pause',
+  //                       size: 20,
+  //                       color: Colors.white,
+  //                     ),
+  //                     label: paused ? 'resume'.tr : 'pause'.tr,
+  //                     onTap: () => paused ? _resume(index) : _pause(index),
+  //                   ),
+  //                   const SizedBox(width: 12),
+  //                   _plusOneBtn(() => _addMinute(index)),
+  //                 ],
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+  //       ),
+  //       _stepCard(step.text),
+  //     ],
+  //   );
+  // }
+  // Widget _timerActive(int index, _StepTimer t, _CookStep step) {
+  //   final paused = !t.running;
+  //   final progress = t.total > 0 ? t.remaining / t.total : 0.0;
+
+  //   return Column(
+  //     children: [
+  //       // Timer UI stays fixed
+  //       Column(
+  //         mainAxisAlignment: MainAxisAlignment.start,
+  //         children: [
+  //           const SizedBox(height: 10),
+  //           Opacity(
+  //             opacity: paused ? 0.7 : 1,
+  //             child: SizedBox(
+  //               width: 218,
+  //               height: 218,
+  //               child: Stack(
+  //                 alignment: Alignment.center,
+  //                 children: [
+  //                   if (!paused)
+  //                     Container(
+  //                       width: 150,
+  //                       height: 150,
+  //                       decoration: BoxDecoration(
+  //                         shape: BoxShape.circle,
+  //                         gradient: RadialGradient(
+  //                           colors: [
+  //                             _C.primary.withValues(alpha: 0.18),
+  //                             _C.primary.withValues(alpha: 0),
+  //                           ],
+  //                           stops: const [0.0, 0.7],
+  //                         ),
+  //                       ),
+  //                     ),
+
+  //                   CustomPaint(
+  //                     size: const Size(228, 228),
+  //                     painter: _RingPainter(
+  //                       progress: progress.clamp(0, 1),
+  //                       color: paused ? _C.pausedRing : _C.primary,
+  //                       bg: _C.track,
+  //                       stroke: 13,
+  //                     ),
+  //                   ),
+
+  //                   Column(
+  //                     mainAxisSize: MainAxisSize.min,
+  //                     children: [
+  //                       if (!paused) ...[
+  //                         Row(
+  //                           mainAxisSize: MainAxisSize.min,
+  //                           children: [
+  //                             const OnboardingLineIcon(
+  //                               'flame',
+  //                               size: 10,
+  //                               color: _C.primary,
+  //                             ),
+  //                             const SizedBox(width: 5),
+  //                             Text(
+  //                               step.label.toUpperCase(),
+  //                               style: _f(
+  //                                 8,
+  //                                 FontWeight.w800,
+  //                                 _C.primary,
+  //                                 spacing: 0.8,
+  //                               ),
+  //                             ),
+  //                           ],
+  //                         ),
+  //                         const SizedBox(height: 6),
+  //                       ],
+
+  //                       Text(
+  //                         _fmt(t.remaining),
+  //                         style: _f(
+  //                           paused ? 40 : 44,
+  //                           FontWeight.w800,
+  //                           _C.textDark,
+  //                           spacing: -1.5,
+  //                           height: 1,
+  //                         ),
+  //                       ),
+
+  //                       // const SizedBox(height: 6),
+  //                       Text(
+  //                         paused
+  //                             ? 'paused'.tr
+  //                             : 'of_duration'.trParams({
+  //                                 'duration': _fmt(t.total),
+  //                               }),
+  //                         style: _f(11, FontWeight.w700, _C.textMed),
+  //                       ),
+  //                     ],
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //           ),
+
+  //           const SizedBox(height: 18),
+
+  //           Row(
+  //             mainAxisSize: MainAxisSize.min,
+  //             children: [
+  //               _smallCtrlBtn(Icons.restart_alt_rounded, () => _reset(index)),
+  //               const SizedBox(width: 12),
+  //               _pillBtn(
+  //                 iconWidget: OnboardingLineIcon(
+  //                   paused ? 'play' : 'pause',
+  //                   size: 18,
+  //                   color: Colors.white,
+  //                 ),
+  //                 label: paused ? 'resume'.tr : 'pause'.tr,
+  //                 onTap: () => paused ? _resume(index) : _pause(index),
+  //               ),
+  //               const SizedBox(width: 12),
+  //               _plusOneBtn(() => _addMinute(index)),
+  //             ],
+  //           ),
+  //         ],
+  //       ),
+
+  //       // ONLY recipe step content scrolls
+  //       Expanded(
+  //         child: Padding(
+  //           padding: const EdgeInsets.only(top: 8.0),
+  //           child: Container(
+  //             constraints: const BoxConstraints(maxHeight: 120),
+  //             margin: const EdgeInsets.only(bottom: 14),
+  //             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+  //             decoration: BoxDecoration(
+  //               color: _C.surface,
+  //               borderRadius: BorderRadius.circular(18),
+  //               border: Border.all(color: _C.border),
+  //             ),
+  //             child: SingleChildScrollView(
+  //               physics: const BouncingScrollPhysics(),
+  //               child: Text(
+  //                 step.text,
+  //                 style: _f(15, FontWeight.w600, _C.textBody, height: 1.4),
+  //               ),
+  //             ),
+  //           ),
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
   Widget _timerActive(int index, _StepTimer t, _CookStep step) {
     final paused = !t.running;
     final progress = t.total > 0 ? t.remaining / t.total : 0.0;
+
     return Column(
       children: [
-        Expanded(
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Opacity(
-                  opacity: paused ? 0.7 : 1,
-                  child: SizedBox(
-                    width: 248,
-                    height: 248,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        if (!paused)
-                          Container(
-                            width: 170,
-                            height: 170,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: RadialGradient(
-                                colors: [
-                                  _C.primary.withValues(alpha: 0.18),
-                                  _C.primary.withValues(alpha: 0),
-                                ],
-                                stops: const [0.0, 0.7],
-                              ),
-                            ),
-                          ),
-                        CustomPaint(
-                          size: const Size(248, 248),
-                          painter: _RingPainter(
-                            progress: progress.clamp(0, 1),
-                            color: paused ? _C.pausedRing : _C.primary,
-                            bg: _C.track,
-                            stroke: 13,
+        // ─────────────────────────────────────────────
+        // TIMER
+        // ─────────────────────────────────────────────
+        Column(
+          children: [
+            const SizedBox(height: 8),
+
+            AnimatedOpacity(
+              duration: const Duration(milliseconds: 250),
+              opacity: paused ? 0.72 : 1,
+              child: SizedBox(
+                width: 240,
+                height: 240,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Soft glow
+                    if (!paused)
+                      Container(
+                        width: 178,
+                        height: 178,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [
+                              _C.primary.withValues(alpha: 0.16),
+                              _C.primary.withValues(alpha: 0.05),
+                              _C.primary.withValues(alpha: 0),
+                            ],
+                            stops: const [0.0, 0.55, 1.0],
                           ),
                         ),
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (!paused) ...[
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const OnboardingLineIcon(
-                                    'flame',
-                                    size: 14,
-                                    color: _C.primary,
-                                  ),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                    step.label.toUpperCase(),
-                                    style: _f(
-                                      11,
-                                      FontWeight.w800,
-                                      _C.primary,
-                                      spacing: 0.8,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                            ],
-                            Text(
-                              _fmt(t.remaining),
-                              style: _f(
-                                paused ? 58 : 54,
-                                FontWeight.w800,
-                                _C.textDark,
-                                spacing: -1.5,
-                                height: 1,
-                              ),
+                      ),
+
+                    // Outer subtle ring
+                    Container(
+                      width: 218,
+                      height: 218,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: _C.border.withValues(alpha: 0.45),
+                          width: 1,
+                        ),
+                      ),
+                    ),
+
+                    // Progress ring
+                    CustomPaint(
+                      size: const Size(228, 228),
+                      painter: _RingPainter(
+                        progress: progress.clamp(0, 1),
+                        color: paused ? _C.pausedRing : _C.primary,
+                        bg: _C.track,
+                        stroke: 12,
+                      ),
+                    ),
+
+                    // Center content
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (!paused) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
                             ),
-                            const SizedBox(height: 6),
-                            Text(
-                              paused
-                                  ? 'paused'.tr
-                                  : 'of_duration'.trParams({
-                                      'duration': _fmt(t.total),
-                                    }),
-                              style: _f(13, FontWeight.w700, _C.textMed),
+                            decoration: BoxDecoration(
+                              color: _C.primary.withValues(alpha: 0.10),
+                              borderRadius: BorderRadius.circular(20),
                             ),
-                          ],
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const OnboardingLineIcon(
+                                  'flame',
+                                  size: 11,
+                                  color: _C.primary,
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  step.label.toUpperCase(),
+                                  style: _f(
+                                    8,
+                                    FontWeight.w800,
+                                    _C.primary,
+                                    spacing: 0.9,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 9),
+                        ],
+
+                        Text(
+                          _fmt(t.remaining),
+                          style: _f(
+                            paused ? 42 : 46,
+                            FontWeight.w800,
+                            _C.textDark,
+                            spacing: -1.8,
+                            height: 1,
+                          ),
+                        ),
+
+                        const SizedBox(height: 7),
+
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _C.track.withValues(alpha: 0.55),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            paused
+                                ? 'paused'.tr
+                                : 'of_duration'.trParams({
+                                    'duration': _fmt(t.total),
+                                  }),
+                            style: _f(10, FontWeight.w700, _C.textMed),
+                          ),
                         ),
                       ],
                     ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // ─────────────────────────────────────────
+            // CONTROLS
+            // ─────────────────────────────────────────
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _timerIconButton(
+                  icon: Icons.restart_alt_rounded,
+                  onTap: () => _reset(index),
+                ),
+
+                const SizedBox(width: 10),
+
+                _timerMainButton(
+                  icon: paused ? 'play' : 'pause',
+                  label: paused ? 'resume'.tr : 'pause'.tr,
+                  onTap: () {
+                    if (paused) {
+                      _resume(index);
+                    } else {
+                      _pause(index);
+                    }
+                  },
+                ),
+
+                const SizedBox(width: 10),
+
+                _timerAddButton(onTap: () => _addMinute(index)),
+              ],
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 18),
+
+        // ─────────────────────────────────────────────
+        // STEP CONTENT
+        // ─────────────────────────────────────────────
+        Expanded(
+          child: Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(left: 2, right: 2, bottom: 12),
+            decoration: BoxDecoration(
+              color: _C.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: _C.border.withValues(alpha: 0.85)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.025),
+                  blurRadius: 14,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Step header
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 30,
+                        height: 30,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: _C.primary.withValues(alpha: 0.10),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const OnboardingLineIcon(
+                          'check',
+                          size: 14,
+                          color: _C.primary,
+                        ),
+                      ),
+
+                      const SizedBox(width: 10),
+
+                      Expanded(
+                        child: Text(
+                          step.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: _f(
+                            12,
+                            FontWeight.w800,
+                            _C.textDark,
+                            spacing: 0.2,
+                          ),
+                        ),
+                      ),
+
+                      Icon(
+                        Icons.swipe_vertical_rounded,
+                        size: 17,
+                        color: _C.textMed.withValues(alpha: 0.55),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 28),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _smallCtrlBtn(
-                      Icons.restart_alt_rounded,
-                      () => _reset(index),
+
+                Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: _C.border.withValues(alpha: 0.65),
+                ),
+
+                // Scrollable recipe instruction
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 13, 16, 16),
+                    child: Text(
+                      step.text,
+                      style: _f(14, FontWeight.w600, _C.textBody, height: 1.5),
                     ),
-                    const SizedBox(width: 12),
-                    _pillBtn(
-                      iconWidget: OnboardingLineIcon(
-                        paused ? 'play' : 'pause',
-                        size: 20,
-                        color: Colors.white,
-                      ),
-                      label: paused ? 'resume'.tr : 'pause'.tr,
-                      onTap: () => paused ? _resume(index) : _pause(index),
-                    ),
-                    const SizedBox(width: 12),
-                    _plusOneBtn(() => _addMinute(index)),
-                  ],
+                  ),
                 ),
               ],
             ),
           ),
         ),
-        _stepCard(step.text),
       ],
     );
   }
 
-  Widget _smallCtrlBtn(IconData icon, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 46,
-        height: 46,
-        decoration: BoxDecoration(
-          color: _C.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _C.borderInput),
+  Widget _timerIconButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: _C.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _C.border),
+          ),
+          child: Icon(icon, size: 21, color: _C.textDark),
         ),
-        child: Icon(icon, size: 20, color: const Color(0xFF5A5147)),
       ),
     );
   }
 
-  Widget _plusOneBtn(VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 46,
-        height: 46,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: _C.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _C.borderInput),
+  Widget _timerMainButton({
+    required String icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          height: 48,
+          padding: const EdgeInsets.symmetric(horizontal: 22),
+          decoration: BoxDecoration(
+            color: _C.primary,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: _C.primary.withValues(alpha: 0.20),
+                blurRadius: 12,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              OnboardingLineIcon(icon, size: 17, color: Colors.white),
+              const SizedBox(width: 8),
+              Text(label, style: _f(12, FontWeight.w800, Colors.white)),
+            ],
+          ),
         ),
-        child: Text(
-          '+1',
-          style: _f(13, FontWeight.w800, const Color(0xFF5A5147)),
+      ),
+    );
+  }
+
+  Widget _timerAddButton({required VoidCallback onTap}) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: _C.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _C.border),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.add_rounded, size: 18, color: _C.primary),
+              Text('1 min', style: _f(7, FontWeight.w800, _C.primary)),
+            ],
+          ),
         ),
       ),
     );
@@ -750,7 +1299,7 @@ class _CookModeScreenState extends State<CookModeScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             iconWidget,
-            const SizedBox(width: 9),
+            const SizedBox(width: 5),
             Text(label, style: _f(15, FontWeight.w600, Colors.white)),
           ],
         ),
@@ -760,108 +1309,228 @@ class _CookModeScreenState extends State<CookModeScreen>
 
   // ─── Timer done ─────────────────────────────────────────────────────────────
 
+  // Widget _timerDone(int index, _StepTimer t, _CookStep step) {
+  //   return Column(
+  //     children: [
+  //       Expanded(
+  //         child: Center(
+  //           child: Column(
+  //             mainAxisSize: MainAxisSize.min,
+  //             children: [
+  //               SizedBox(
+  //                 width: 248,
+  //                 height: 248,
+  //                 child: Stack(
+  //                   alignment: Alignment.center,
+  //                   children: [
+  //                     CustomPaint(
+  //                       size: const Size(248, 248),
+  //                       painter: _RingPainter(
+  //                         progress: 1,
+  //                         color: _C.green,
+  //                         bg: _C.green,
+  //                         stroke: 13,
+  //                       ),
+  //                     ),
+  //                     Column(
+  //                       mainAxisSize: MainAxisSize.min,
+  //                       children: [
+  //                         Container(
+  //                           width: 60,
+  //                           height: 60,
+  //                           decoration: const BoxDecoration(
+  //                             color: _C.green,
+  //                             shape: BoxShape.circle,
+  //                           ),
+  //                           child: const OnboardingLineIcon(
+  //                             'check',
+  //                             size: 32,
+  //                             color: Colors.white,
+  //                           ),
+  //                         ),
+  //                         const SizedBox(height: 10),
+  //                         Text(
+  //                           'cook_done'.tr,
+  //                           style: _f(
+  //                             30,
+  //                             FontWeight.w800,
+  //                             _C.green,
+  //                             spacing: -0.4,
+  //                           ),
+  //                         ),
+  //                         const SizedBox(height: 4),
+  //                         Text(
+  //                           '${step.label} · ${_fmt(t.total)}',
+  //                           style: _f(13, FontWeight.w700, _C.textMed),
+  //                         ),
+  //                       ],
+  //                     ),
+  //                   ],
+  //                 ),
+  //               ),
+  //               const SizedBox(height: 28),
+  //               Row(
+  //                 mainAxisSize: MainAxisSize.min,
+  //                 children: [
+  //                   GestureDetector(
+  //                     onTap: () => _addMinute(index),
+  //                     child: Container(
+  //                       height: 46,
+  //                       padding: const EdgeInsets.symmetric(horizontal: 20),
+  //                       alignment: Alignment.center,
+  //                       decoration: BoxDecoration(
+  //                         color: _C.surface,
+  //                         borderRadius: BorderRadius.circular(14),
+  //                         border: Border.all(color: _C.borderInput),
+  //                       ),
+  //                       child: Text(
+  //                         'plus_one_min'.tr,
+  //                         style: _f(
+  //                           15,
+  //                           FontWeight.w600,
+  //                           const Color(0xFF5A5147),
+  //                         ),
+  //                       ),
+  //                     ),
+  //                   ),
+  //                   const SizedBox(width: 12),
+  //                   _pillBtn(
+  //                     iconWidget: const OnboardingLineIcon(
+  //                       'check',
+  //                       size: 20,
+  //                       color: Colors.white,
+  //                     ),
+  //                     label: 'dismiss'.tr,
+  //                     color: _C.green,
+  //                     onTap: () => _dismiss(index),
+  //                   ),
+  //                 ],
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+  //       ),
+  //       _stepCard(step.text),
+  //     ],
+  //   );
+  // }
   Widget _timerDone(int index, _StepTimer t, _CookStep step) {
     return Column(
       children: [
+        // Fixed timer done UI
         Expanded(
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  width: 248,
-                  height: 248,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      CustomPaint(
-                        size: const Size(248, 248),
-                        painter: _RingPainter(
-                          progress: 1,
-                          color: _C.green,
-                          bg: _C.green,
-                          stroke: 13,
-                        ),
-                      ),
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 60,
-                            height: 60,
-                            decoration: const BoxDecoration(
-                              color: _C.green,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const OnboardingLineIcon(
-                              'check',
-                              size: 32,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            'cook_done'.tr,
-                            style: _f(
-                              30,
-                              FontWeight.w800,
-                              _C.green,
-                              spacing: -0.4,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${step.label} · ${_fmt(t.total)}',
-                            style: _f(13, FontWeight.w700, _C.textMed),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 28),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 248,
+                height: 248,
+                child: Stack(
+                  alignment: Alignment.center,
                   children: [
-                    GestureDetector(
-                      onTap: () => _addMinute(index),
-                      child: Container(
-                        height: 46,
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: _C.surface,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: _C.borderInput),
-                        ),
-                        child: Text(
-                          'plus_one_min'.tr,
-                          style: _f(
-                            15,
-                            FontWeight.w600,
-                            const Color(0xFF5A5147),
-                          ),
-                        ),
+                    CustomPaint(
+                      size: const Size(248, 248),
+                      painter: _RingPainter(
+                        progress: 1,
+                        color: _C.green,
+                        bg: _C.green,
+                        stroke: 13,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    _pillBtn(
-                      iconWidget: const OnboardingLineIcon(
-                        'check',
-                        size: 20,
-                        color: Colors.white,
-                      ),
-                      label: 'dismiss'.tr,
-                      color: _C.green,
-                      onTap: () => _dismiss(index),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 60,
+                          height: 60,
+                          decoration: const BoxDecoration(
+                            color: _C.green,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const OnboardingLineIcon(
+                            'check',
+                            size: 32,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'cook_done'.tr,
+                          style: _f(
+                            30,
+                            FontWeight.w800,
+                            _C.green,
+                            spacing: -0.4,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${step.label} · ${_fmt(t.total)}',
+                          style: _f(13, FontWeight.w700, _C.textMed),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
+
+              const SizedBox(height: 28),
+
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  GestureDetector(
+                    onTap: () => _addMinute(index),
+                    child: Container(
+                      height: 46,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: _C.surface,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: _C.borderInput),
+                      ),
+                      child: Text(
+                        'plus_one_min'.tr,
+                        style: _f(15, FontWeight.w600, const Color(0xFF5A5147)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  _pillBtn(
+                    iconWidget: const OnboardingLineIcon(
+                      'check',
+                      size: 20,
+                      color: Colors.white,
+                    ),
+                    label: 'dismiss'.tr,
+                    color: _C.green,
+                    onTap: () => _dismiss(index),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        // ONLY step text scrolls
+        Container(
+          constraints: const BoxConstraints(maxHeight: 120),
+          margin: const EdgeInsets.only(bottom: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: _C.surface,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: _C.border),
+          ),
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Text(
+              step.text,
+              style: _f(15, FontWeight.w600, _C.textBody, height: 1.4),
             ),
           ),
         ),
-        _stepCard(step.text),
       ],
     );
   }
@@ -869,6 +1538,7 @@ class _CookModeScreenState extends State<CookModeScreen>
   Widget _stepCard(String text) {
     return Container(
       width: double.infinity,
+      constraints: const BoxConstraints(maxHeight: 120),
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
@@ -876,9 +1546,12 @@ class _CookModeScreenState extends State<CookModeScreen>
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: _C.border),
       ),
-      child: Text(
-        text,
-        style: _f(15, FontWeight.w600, _C.textBody, height: 1.4),
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Text(
+          text,
+          style: _f(15, FontWeight.w600, _C.textBody, height: 1.4),
+        ),
       ),
     );
   }
@@ -1139,6 +1812,8 @@ class _CookModeScreenState extends State<CookModeScreen>
 
 class _FinishView extends StatefulWidget {
   final RecipeModel recipe;
+  final String displayTitle;
+  final String displayTimeText;
   final int stepCount;
   final int rating;
   final ValueChanged<int> onRate;
@@ -1146,6 +1821,8 @@ class _FinishView extends StatefulWidget {
 
   const _FinishView({
     required this.recipe,
+    required this.displayTitle,
+    required this.displayTimeText,
     required this.stepCount,
     required this.rating,
     required this.onRate,
@@ -1175,11 +1852,7 @@ class _FinishViewState extends State<_FinishView>
     super.dispose();
   }
 
-  String get _timeText {
-    final r = widget.recipe;
-    final t = r.totalTime ?? r.cookTime ?? r.prepTime ?? '';
-    return t.isEmpty ? '' : ' · ${t.toUpperCase()}';
-  }
+  String get _timeText => widget.displayTimeText;
 
   @override
   Widget build(BuildContext context) {

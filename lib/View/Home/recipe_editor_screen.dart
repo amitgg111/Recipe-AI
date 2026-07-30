@@ -1,9 +1,14 @@
+import 'dart:developer';
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/Controllers/home_controller.dart';
+
+import 'package:recipe_ai/Service/auth_service.dart';
+import 'package:recipe_ai/Service/recipe_localizer.dart';
 import 'package:recipe_ai/widgets/app_network_image.dart';
 import 'package:recipe_ai/Controllers/recipe_editor_controller.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
@@ -66,20 +71,69 @@ class RecipeEditorScreen extends StatefulWidget {
 class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   final _formKey = GlobalKey<FormState>();
 
+  LocalizedRecipe? _localized;
+  bool _localizing = false;
+
+  late final RecipeEditorController _controller;
+
   @override
-  Widget build(BuildContext context) {
-    final controller = Get.put(
+  void initState() {
+    super.initState();
+    _controller = Get.put(
       RecipeEditorController(recipe: widget.recipe),
       tag: widget.recipe?.id ?? 'new_recipe',
     );
-    final isEdit = widget.recipe != null;
+    if (widget.recipe != null) {
+      _loadLocalizedText();
+    }
+  }
 
+  Future<void> _loadLocalizedText() async {
+    if (_localizing || widget.recipe == null) return;
+
+    _localizing = true;
+
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('recipes')
+          .doc(widget.recipe!.id)
+          .get();
+
+      final data = doc.data();
+
+      if (data == null) return;
+
+      final localized = await RecipeLocalizer.resolve(
+        data,
+        currentUid: AuthService.currentUser?.uid,
+      );
+      _controller.applyLocalizedRecipe(localized);
+      if (!mounted) return;
+
+      setState(() {
+        _localized = localized;
+      });
+
+      _controller.applyLocalizedRecipe(localized);
+    } catch (e) {
+      log('Localize editor recipe failed: $e');
+    } finally {
+      _localizing = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isEdit = widget.recipe != null;
+    if (widget.recipe != null && _localizing && _localized == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
     return Scaffold(
       backgroundColor: _E.bg,
       body: SafeArea(
         child: Column(
           children: [
-            _buildTopBar(context, controller, isEdit),
+            _buildTopBar(context, _controller, isEdit),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
@@ -89,11 +143,11 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _PhotoBasicsCard(controller: controller),
+                      _PhotoBasicsCard(controller: _controller),
                       const SizedBox(height: 16),
-                      _IngredientsEditor(controller: controller),
+                      _IngredientsEditor(controller: _controller),
                       const SizedBox(height: 14),
-                      _InstructionsEditor(controller: controller),
+                      _InstructionsEditor(controller: _controller),
                       const SizedBox(height: 16),
                       if (isEdit) _DeleteButton(recipe: widget.recipe!),
                     ],
@@ -192,7 +246,7 @@ class _PhotoBasicsCard extends StatelessWidget {
   const _PhotoBasicsCard({required this.controller});
 
   @override
-  Widget build(BuildContext context) {  
+  Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),

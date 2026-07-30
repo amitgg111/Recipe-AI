@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -8,6 +9,8 @@ import 'package:recipe_ai/Controllers/grocery_store_controller.dart';
 import 'package:recipe_ai/Controllers/home_controller.dart';
 import 'package:recipe_ai/Controllers/settings_controller.dart';
 import 'package:recipe_ai/Helper/unit_converter.dart';
+import 'package:recipe_ai/Service/auth_service.dart';
+import 'package:recipe_ai/Service/recipe_localizer.dart';
 import 'package:recipe_ai/utils/validation_helper.dart';
 import 'package:recipe_ai/View/Home/home_screen.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
@@ -82,11 +85,18 @@ class _MergedItem {
   const _MergedItem(this.name, this.aisle, this.parts);
 }
 
-class GroceriesScreen extends StatelessWidget {
+class GroceriesScreen extends StatefulWidget {
   GroceriesScreen({super.key});
 
+  @override
+  State<GroceriesScreen> createState() => _GroceriesScreenState();
+}
+
+class _GroceriesScreenState extends State<GroceriesScreen> {
   final GroceryStore store = Get.find<GroceryStore>();
+
   final HomeController homeController = Get.find<HomeController>();
+
   final SettingsController settings = Get.find<SettingsController>();
 
   // true = group by meal/recipe, false = group by category/aisle
@@ -94,6 +104,186 @@ class GroceriesScreen extends StatelessWidget {
 
   // Which merged "By category" rows are expanded (key = "aisle::name").
   final RxSet<String> _expandedKeys = <String>{}.obs;
+
+  final Map<String, LocalizedRecipe> _localizedRecipes = {};
+  final Set<String> _localizingRecipeIds = {};
+  Future<void> _loadLocalizedRecipe(RecipeModel recipe) async {
+    if (_localizedRecipes.containsKey(recipe.id) ||
+        _localizingRecipeIds.contains(recipe.id)) {
+      return;
+    }
+
+    _localizingRecipeIds.add(recipe.id);
+
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('recipes')
+          .doc(recipe.id)
+          .get();
+
+      if (!doc.exists) return;
+
+      final data = doc.data();
+
+      if (data == null) return;
+
+      final localized = await RecipeLocalizer.resolve(
+        Map<String, dynamic>.from(data),
+        currentUid: AuthService.currentUser?.uid,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _localizedRecipes[recipe.id] = localized;
+      });
+    } catch (e) {
+      debugPrint('Failed to localize grocery recipe ${recipe.id}: $e');
+    } finally {
+      _localizingRecipeIds.remove(recipe.id);
+    }
+  }
+
+  String _displayIngredientName(GroceryItem item) {
+    if (item.recipeId.isEmpty) {
+      return GroceryStore().trName(item.name);
+    }
+
+    final recipe = _recipeById(item.recipeId);
+
+    if (recipe == null) {
+      return GroceryStore().trName(item.name);
+    }
+
+    final localized = _localizedRecipes[recipe.id];
+
+    if (localized == null) {
+      return GroceryStore().trName(item.name);
+    }
+
+    final index = _findIngredientIndex(item.name, recipe.ingredients);
+
+    if (index >= 0 && index < localized.ingredients.length) {
+      return _removeIngredientQuantity(localized.ingredients[index]);
+    }
+
+    return GroceryStore().trName(item.name);
+  }
+
+  String _removeIngredientQuantity(String value) {
+    var text = value.trim();
+
+    text = text.replaceFirst(
+      RegExp(
+        r'^\s*[\d./½⅓⅔¼¾⅛⅜⅝⅞]+'
+        r'(?:\s*[-–]\s*[\d./½⅓⅔¼¾⅛⅜⅝⅞]+)?\s*'
+        r'(cups?|tbsp|tbs|tablespoons?|tsp|teaspoons?|'
+        r'oz|ounces?|lb|lbs|pounds?|g|kg|grams?|kilograms?|'
+        r'ml|l|liters?|litres?)?\s*',
+        caseSensitive: false,
+      ),
+      '',
+    );
+
+    return text.trim();
+  }
+
+  int _findIngredientIndex(String groceryName, List<String> ingredients) {
+    final grocery = _normalizeIngredient(groceryName);
+
+    if (grocery.isEmpty) return -1;
+
+    // Exact match
+    for (int i = 0; i < ingredients.length; i++) {
+      final ingredient = _normalizeIngredient(ingredients[i]);
+
+      if (ingredient == grocery) {
+        return i;
+      }
+    }
+
+    // Grocery name inside recipe ingredient
+    for (int i = 0; i < ingredients.length; i++) {
+      final ingredient = _normalizeIngredient(ingredients[i]);
+
+      if (ingredient.contains(grocery)) {
+        return i;
+      }
+    }
+
+    // Recipe ingredient inside grocery name
+    for (int i = 0; i < ingredients.length; i++) {
+      final ingredient = _normalizeIngredient(ingredients[i]);
+
+      if (grocery.contains(ingredient)) {
+        return i;
+      }
+    }
+
+    // Word matching
+    final groceryWords = grocery
+        .split(' ')
+        .where((word) => word.length > 2)
+        .toSet();
+
+    int bestIndex = -1;
+    int bestScore = 0;
+
+    for (int i = 0; i < ingredients.length; i++) {
+      final ingredient = _normalizeIngredient(ingredients[i]);
+
+      final ingredientWords = ingredient
+          .split(' ')
+          .where((word) => word.length > 2)
+          .toSet();
+
+      final score = groceryWords.intersection(ingredientWords).length;
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestIndex = i;
+      }
+    }
+
+    return bestScore > 0 ? bestIndex : -1;
+  }
+
+  String _normalizeIngredient(String value) {
+    var text = value.trim().toLowerCase();
+
+    // Remove quantity
+    text = text.replaceFirst(
+      RegExp(
+        r'^\s*[\d./½⅓⅔¼¾⅛⅜⅝⅞]+\s*'
+        r'(cups?|tbsp|tbs|tablespoons?|tsp|teaspoons?|'
+        r'oz|ounces?|lb|lbs|pounds?|g|kg|grams?|kilograms?|'
+        r'ml|l|liters?|litres?)?\s*',
+        caseSensitive: false,
+      ),
+      '',
+    );
+
+    // Remove preparation words
+    text = text.replaceAll(
+      RegExp(
+        r'\b(chopped|diced|minced|sliced|fresh|frozen|'
+        r'finely|roughly|thinly|freshly|ground|grated)\b',
+        caseSensitive: false,
+      ),
+      '',
+    );
+
+    // Remove parentheses
+    text = text.replaceAll(RegExp(r'\([^)]*\)'), '');
+
+    // Normalize punctuation
+    text = text.replaceAll(RegExp(r'[,;:]'), ' ');
+
+    // Normalize spaces
+    text = text.replaceAll(RegExp(r'\s+'), ' ').trim();
+
+    return text;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -646,6 +836,10 @@ class GroceriesScreen extends StatelessWidget {
       homeController.recipes.firstWhereOrNull((r) => r.id == id);
 
   Widget _recipeHeader(RecipeModel recipe, int count) {
+    _loadLocalizedRecipe(recipe);
+
+    final localized = _localizedRecipes[recipe.id];
+    final displayTitle = localized?.title ?? recipe.title;
     return Padding(
       padding: const EdgeInsets.only(bottom: 9),
       child: Row(
@@ -674,7 +868,7 @@ class GroceriesScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  recipe.title,
+                  displayTitle,
                   style: _G.f(14, FontWeight.w800, _G.textDark),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -806,6 +1000,55 @@ class GroceriesScreen extends StatelessWidget {
     );
   }
 
+  // String _localizedMergedIngredientName(_MergedItem item) {
+  //   for (final part in item.parts) {
+  //     if (part.recipeId.isEmpty) continue;
+
+  //     final recipe = _recipeById(part.recipeId);
+  //     if (recipe == null) continue;
+
+  //     _loadLocalizedRecipe(recipe);
+
+  //     final localized = _localizedRecipes[recipe.id];
+  //     if (localized == null) continue;
+
+  //     final index = recipe.ingredients.indexWhere(
+  //       (ingredient) =>
+  //           ingredient.trim().toLowerCase() == part.name.trim().toLowerCase(),
+  //     );
+
+  //     if (index >= 0 && index < localized.ingredients.length) {
+  //       return localized.ingredients[index];
+  //     }
+  //   }
+
+  //   return GroceryStore().trName(item.name);
+  // }
+  String _localizedMergedIngredientName(_MergedItem item) {
+    for (final part in item.parts) {
+      if (part.recipeId.isEmpty) continue;
+
+      final recipe = _recipeById(part.recipeId);
+      if (recipe == null) continue;
+
+      _loadLocalizedRecipe(recipe);
+
+      final localized = _localizedRecipes[recipe.id];
+      if (localized == null) continue;
+
+      final index = recipe.ingredients.indexWhere(
+        (ingredient) =>
+            ingredient.trim().toLowerCase() == part.name.trim().toLowerCase(),
+      );
+
+      if (index >= 0 && index < localized.ingredients.length) {
+        return localized.ingredients[index];
+      }
+    }
+
+    return GroceryStore().trName(item.name);
+  }
+
   Widget _mergedMultiRow(
     BuildContext context,
     _MergedItem m,
@@ -849,7 +1092,7 @@ class GroceriesScreen extends StatelessWidget {
                           children: [
                             Flexible(
                               child: Text(
-                                GroceryStore().trName(m.name),
+                                _localizedMergedIngredientName(m),
                                 style: _G
                                     .f(
                                       14,
@@ -955,7 +1198,14 @@ class GroceriesScreen extends StatelessWidget {
 
   Widget _subRecipeRow(String recipeId, List<GroceryItem> parts) {
     final recipe = _recipeById(recipeId);
-    final name = recipe?.title ?? 'recipe'.tr;
+
+    if (recipe != null) {
+      _loadLocalizedRecipe(recipe);
+    }
+
+    final localized = recipe == null ? null : _localizedRecipes[recipe.id];
+
+    final name = localized?.title ?? recipe?.title ?? 'recipe'.tr;
     final qty = _mergedQty(parts, parts.first.name);
     return Padding(
       padding: const EdgeInsets.fromLTRB(47, 0, 14, 9),
@@ -1005,11 +1255,48 @@ class GroceriesScreen extends StatelessWidget {
     );
   }
 
+  // String _localizedIngredientName(GroceryItem item) {
+  //   if (item.recipeId.isEmpty) {
+  //     return GroceryStore().trName(item.name);
+  //   }
+
+  //   final localized = _localizedRecipes[item.recipeId];
+
+  //   if (localized == null) {
+  //     return GroceryStore().trName(item.name);
+  //   }
+
+  //   final recipe = _recipeById(item.recipeId);
+
+  //   if (recipe == null) {
+  //     return GroceryStore().trName(item.name);
+  //   }
+
+  //   final originalIndex = recipe.ingredients.indexWhere(
+  //     (ingredient) =>
+  //         ingredient.trim().toLowerCase() == item.name.trim().toLowerCase(),
+  //   );
+
+  //   if (originalIndex >= 0 && originalIndex < localized.ingredients.length) {
+  //     return localized.ingredients[originalIndex];
+  //   }
+
+  //   return GroceryStore().trName(item.name);
+  // }
+
   Widget _itemRow(
     BuildContext context,
     GroceryItem item, {
     required bool last,
   }) {
+    if (item.recipeId.isNotEmpty) {
+      final recipe = _recipeById(item.recipeId);
+
+      if (recipe != null) {
+        _loadLocalizedRecipe(recipe);
+      }
+    }
+
     final checked = item.checked;
 
     final quantity = UnitConverter.applySystemQuantity(
@@ -1079,7 +1366,7 @@ class GroceriesScreen extends StatelessWidget {
                     ],
 
                     TextSpan(
-                      text: GroceryStore().trName(item.name),
+                      text: _displayIngredientName(item),
                       style: nameStyle,
                     ),
                   ],

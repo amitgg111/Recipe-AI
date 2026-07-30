@@ -46,6 +46,7 @@ class RecipeModel {
   /// This is NOT stored in Firestore; only `isPublic` is persisted.
   final String visibility;
   final bool isDeleted;
+  final Map<String, dynamic> rawData;
 
   /// The owner favourited this recipe (heart on the card). Surfaces it in the
   /// Favorites list.
@@ -97,6 +98,7 @@ class RecipeModel {
     this.originalRecipeId,
     this.savedFromOwnerId,
     this.isFavorite = false,
+    this.rawData = const {},
   });
 
   bool get isPublic => visibility == 'public';
@@ -147,6 +149,7 @@ class RecipeModel {
       originalRecipeId: originalRecipeId,
       savedFromOwnerId: savedFromOwnerId,
       isFavorite: isFavorite,
+      rawData: rawData,
     );
   }
 
@@ -191,6 +194,7 @@ class RecipeModel {
           (data['originalRecipeId'] ?? data['savedFromRecipeId']) as String?,
       savedFromOwnerId: data['savedFromOwnerId'] as String?,
       isFavorite: data['isFavorite'] == true,
+      rawData: data,
     );
   }
   // double get servingCount {

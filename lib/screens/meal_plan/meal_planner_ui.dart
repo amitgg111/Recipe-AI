@@ -468,94 +468,283 @@ class GeneratingStepCard extends StatelessWidget {
 }
 
 /// One meal row inside a day card (thumbnail · name · source badge · swap).
+// class MealRowTile extends StatelessWidget {
+//   final PlannedMeal meal;
+
+//   final VoidCallback onSwap;
+//   const MealRowTile({super.key, required this.meal, required this.onSwap});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return TapScale(
+//       child: Padding(
+//         padding: const EdgeInsets.symmetric(vertical: 7),
+//         child: Row(
+//           children: [
+//             Container(
+//               width: 7,
+//               height: 7,
+//               decoration: BoxDecoration(
+//                 color: Mp.slotColor(meal.slot),
+//                 shape: BoxShape.circle,
+//               ),
+//             ),
+//             const SizedBox(width: 10),
+//             ClipRRect(
+//               borderRadius: BorderRadius.circular(9),
+//               child: SizedBox(
+//                 width: 38,
+//                 height: 38,
+//                 child: (meal.recipe.imageUrl ?? '').startsWith('http')
+//                     ? AppNetworkImage(meal.recipe.imageUrl!, fit: BoxFit.cover)
+//                     : Container(
+//                         color: Mp.bg,
+//                         child: const Icon(
+//                           Icons.restaurant_rounded,
+//                           size: 18,
+//                           color: Mp.muted,
+//                         ),
+//                       ),
+//               ),
+//             ),
+//             const SizedBox(width: 11),
+//             Expanded(
+//               child: Text(
+//                 meal.recipe.title,
+//                 maxLines: 1,
+//                 overflow: TextOverflow.ellipsis,
+//                 style: Mp.f(14, FontWeight.w700, Mp.ink),
+//               ),
+//             ),
+//             const SizedBox(width: 8),
+//             SourceBadge(meal.recipe.source),
+//             const SizedBox(width: 6),
+//             GestureDetector(
+//               onTap: onSwap,
+//               behavior: HitTestBehavior.opaque,
+//               child: Padding(
+//                 padding: const EdgeInsets.all(4),
+//                 child: Icon(
+//                   Icons.autorenew_rounded,
+//                   size: 18,
+//                   color: Mp.muted.withValues(alpha: 0.9),
+//                 ),
+//               ),
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+// }
+/// One meal row inside a day card (thumbnail · name · source badge · swap).
+/// Also acts as a drag source AND drop target so meals can be reordered
+/// by long-press-dragging one onto another (day/slot swap).
 class MealRowTile extends StatelessWidget {
   final PlannedMeal meal;
-  final VoidCallback onTap;
-  final VoidCallback onSwap;
-  const MealRowTile({
-    super.key,
-    required this.meal,
-    required this.onTap,
-    required this.onSwap,
-  });
+
+  final void Function(PlannedMeal from, PlannedMeal to)? onDropMeal;
+
+  const MealRowTile({super.key, required this.meal, this.onDropMeal});
 
   @override
   Widget build(BuildContext context) {
-    return TapScale(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 7),
-        child: Row(
-          children: [
-            Container(
-              width: 7,
-              height: 7,
-              decoration: BoxDecoration(
-                color: Mp.slotColor(meal.slot),
-                shape: BoxShape.circle,
-              ),
+    final row = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 7),
+      child: Row(
+        children: [
+          Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(
+              color: Mp.slotColor(meal.slot),
+              shape: BoxShape.circle,
             ),
-            const SizedBox(width: 10),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(9),
-              child: SizedBox(
-                width: 38,
-                height: 38,
-                child: (meal.recipe.imageUrl ?? '').startsWith('http')
-                    ? AppNetworkImage(meal.recipe.imageUrl!, fit: BoxFit.cover)
-                    : Container(
-                        color: Mp.bg,
-                        child: const Icon(
-                          Icons.restaurant_rounded,
-                          size: 18,
-                          color: Mp.muted,
-                        ),
+          ),
+          const SizedBox(width: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(9),
+            child: SizedBox(
+              width: 38,
+              height: 38,
+              child: (meal.recipe.imageUrl ?? '').startsWith('http')
+                  ? AppNetworkImage(meal.recipe.imageUrl!, fit: BoxFit.cover)
+                  : Container(
+                      color: Mp.bg,
+                      child: const Icon(
+                        Icons.restaurant_rounded,
+                        size: 18,
+                        color: Mp.muted,
                       ),
-              ),
+                    ),
             ),
-            const SizedBox(width: 11),
-            Expanded(
-              child: Text(
-                meal.recipe.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Mp.f(14, FontWeight.w700, Mp.ink),
-              ),
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Text(
+              meal.recipe.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Mp.f(14, FontWeight.w700, Mp.ink),
             ),
-            const SizedBox(width: 8),
-            SourceBadge(meal.recipe.source),
-            const SizedBox(width: 6),
-            GestureDetector(
-              onTap: onSwap,
-              behavior: HitTestBehavior.opaque,
-              child: Padding(
-                padding: const EdgeInsets.all(4),
-                child: Icon(
-                  Icons.autorenew_rounded,
-                  size: 18,
-                  color: Mp.muted.withValues(alpha: 0.9),
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 8),
+          SourceBadge(meal.recipe.source),
+          const SizedBox(width: 6),
+          Icon(
+            Icons.autorenew_rounded,
+            size: 18,
+            color: Mp.muted.withValues(alpha: 0.7),
+          ),
+          const SizedBox(width: 2),
+          // GestureDetector(
+          //   onTap: onSwap,
+          //   behavior: HitTestBehavior.opaque,
+          //   child: Padding(
+          //     padding: const EdgeInsets.all(4),
+          //     child: Icon(
+          //       Icons.autorenew_rounded,
+          //       size: 18,
+          //       color: Mp.muted.withValues(alpha: 0.9),
+          //     ),
+          //   ),
+          // ),
+        ],
       ),
+    );
+
+    if (onDropMeal == null) return row;
+
+    return DragTarget<PlannedMeal>(
+      onWillAcceptWithDetails: (details) =>
+          details.data.day != meal.day || details.data.slot != meal.slot,
+      onAcceptWithDetails: (details) => onDropMeal!(details.data, meal),
+      builder: (context, candidates, rejects) {
+        final hovering = candidates.isNotEmpty;
+        return LongPressDraggable<PlannedMeal>(
+          data: meal,
+          dragAnchorStrategy: pointerDragAnchorStrategy,
+          feedback: Material(
+            color: Colors.transparent,
+            child: Container(
+              width: 260,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: Mp.card,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Mp.purple, width: 1.6),
+                boxShadow: [
+                  BoxShadow(
+                    color: Mp.purple.withValues(alpha: 0.25),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: SizedBox(
+                      width: 32,
+                      height: 32,
+                      child: (meal.recipe.imageUrl ?? '').startsWith('http')
+                          ? AppNetworkImage(
+                              meal.recipe.imageUrl!,
+                              fit: BoxFit.cover,
+                            )
+                          : Container(color: Mp.bg),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Flexible(
+                    child: Text(
+                      meal.recipe.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Mp.f(13.5, FontWeight.w800, Mp.ink),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          childWhenDragging: Opacity(opacity: 0.3, child: row),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 140),
+            decoration: BoxDecoration(
+              color: hovering ? Mp.purpleBg : Colors.transparent,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: hovering ? Mp.purpleBorder : Colors.transparent,
+              ),
+            ),
+            child: row,
+          ),
+        );
+      },
     );
   }
 }
 
 /// A rounded day card grouping that day's meals.
+// class MealDayCard extends StatelessWidget {
+//   final String title;
+//   final List<PlannedMeal> meals;
+
+//   final void Function(PlannedMeal) onSwapMeal;
+//   const MealDayCard({
+//     super.key,
+//     required this.title,
+//     required this.meals,
+
+//     required this.onSwapMeal,
+//   });
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container(
+//       decoration: BoxDecoration(
+//         color: Mp.card,
+//         borderRadius: BorderRadius.circular(18),
+//         border: Border.all(color: Mp.border),
+//         boxShadow: [
+//           BoxShadow(
+//             color: const Color(0xFF2A211B).withValues(alpha: 0.04),
+//             blurRadius: 20,
+//             offset: const Offset(0, 10),
+//             spreadRadius: -10,
+//           ),
+//         ],
+//       ),
+//       padding: const EdgeInsets.fromLTRB(14, 13, 12, 13),
+//       child: Column(
+//         crossAxisAlignment: CrossAxisAlignment.start,
+//         children: [
+//           Text(title, style: Mp.f(14.5, FontWeight.w800, Mp.ink)),
+//           const SizedBox(height: 6),
+//           for (var i = 0; i < meals.length; i++) ...[
+//             if (i > 0) const Divider(height: 1, color: Mp.divider),
+//             MealRowTile(meal: meals[i], onSwap: () => onSwapMeal(meals[i])),
+//           ],
+//         ],
+//       ),
+//     );
+//   }
+// }
 class MealDayCard extends StatelessWidget {
   final String title;
   final List<PlannedMeal> meals;
-  final void Function(PlannedMeal) onTapMeal;
-  final void Function(PlannedMeal) onSwapMeal;
+
+  final void Function(PlannedMeal from, PlannedMeal to)? onDropMeal;
+
   const MealDayCard({
     super.key,
     required this.title,
     required this.meals,
-    required this.onTapMeal,
-    required this.onSwapMeal,
+
+    this.onDropMeal,
   });
 
   @override
@@ -582,11 +771,7 @@ class MealDayCard extends StatelessWidget {
           const SizedBox(height: 6),
           for (var i = 0; i < meals.length; i++) ...[
             if (i > 0) const Divider(height: 1, color: Mp.divider),
-            MealRowTile(
-              meal: meals[i],
-              onTap: () => onTapMeal(meals[i]),
-              onSwap: () => onSwapMeal(meals[i]),
-            ),
+            MealRowTile(meal: meals[i], onDropMeal: onDropMeal),
           ],
         ],
       ),
