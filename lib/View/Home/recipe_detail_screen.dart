@@ -444,7 +444,16 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 const Spacer(),
                 _floatingBtn(
                   'pencil',
-                  () => Get.to(() => RecipeEditorScreen(recipe: recipe)),
+                  // The editor prefills its text fields from this model and
+                  // writes them straight back to Firestore. `recipe` here is
+                  // the TRANSLATED display copy, so passing it would overwrite
+                  // the English source of truth with Hindi the first time the
+                  // user saves. Always hand the editor the English original.
+                  () => Get.to(
+                    () => RecipeEditorScreen(
+                      recipe: _home.englishRecipe(recipe.id) ?? recipe,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 9),
                 _floatingBtn('dots', _showRecipeMenuPopup, active: _menuOpen),
@@ -1945,8 +1954,12 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
   Widget _buildCookButton() {
     return GestureDetector(
+      // Hand cook mode the ENGLISH original: it parses step text for timer
+      // durations ("20 minutes") and chip verbs against English patterns, then
+      // translates for display itself. Passing the translated copy silently
+      // disables every step timer.
       onTap: () => Get.to(
-        () => CookModeScreen(recipe: recipe),
+        () => CookModeScreen(recipe: _home.englishRecipe(recipe.id) ?? recipe),
         transition: Transition.downToUp,
       ),
       child: Container(
@@ -2597,16 +2610,27 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                               Navigator.pop(ctx);
                               final groceryController =
                                   Get.find<GroceryStore>();
+                              // Write ENGLISH ingredient lines. GroceryStore
+                              // runs detectAisle/emojiForIngredient against
+                              // English keyword dictionaries and merges
+                              // quantities by name, so storing translated text
+                              // would drop every item into "Other 📦" with no
+                              // emoji and break de-duplication.
+                              final source =
+                                  _home
+                                      .englishRecipe(recipe.id)
+                                      ?.ingredients ??
+                                  recipe.ingredients;
                               final toAdd = <String>[];
                               for (
                                 var i = 0;
-                                i < recipe.ingredients.length;
+                                i < source.length && i < selectedIndices.length;
                                 i++
                               ) {
                                 if (selectedIndices[i]) {
                                   final scaledIng =
                                       IngredientScaleHelper.scaleIngredient(
-                                        recipe.ingredients[i],
+                                        source[i],
                                         multiplier,
                                       );
                                   toAdd.add(scaledIng);

@@ -12,6 +12,7 @@ import 'package:recipe_ai/View/Home/public_recipe_view_screen.dart';
 import 'package:recipe_ai/View/Home/social/follow_list_screen.dart';
 import 'package:recipe_ai/View/Home/social/social_widgets.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
+import 'package:recipe_ai/widgets/tr_text.dart';
 
 /// A public creator profile: photo, name, @username, bio, stats, follow button,
 /// and their PUBLIC recipes only.
@@ -283,8 +284,11 @@ class CreatorProfileScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      // Raw English straight off Firestore — UserService's
+                      // mapper never translates — so this needs TrText.
+                      TrText(
                         r.title,
+                        key: ValueKey('tr_${r.id}'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: _f(14, FontWeight.w700, AppColors.textDark),

@@ -37,10 +37,17 @@ class DiscoverRecipe {
   // matching are defined in English, so they read these — null falls back to the
   // main field, which for an untranslated recipe already IS English.
   final String? enTitle;
+  final String? enDescription;
   final String? enCategory;
   final String? enCuisine;
 
   String get filterTitle => enTitle ?? title;
+
+  /// English original of [description]. Null-safe on every path: the feed sets
+  /// it when it translates, and an untranslated model's description already IS
+  /// English. Detail screens translate from this so a already-translated
+  /// description can never be fed back through ML Kit a second time.
+  String? get filterDescription => enDescription ?? description;
   String get filterCategory => enCategory ?? category ?? '';
   String get filterCuisine => enCuisine ?? cuisine ?? '';
 
@@ -66,6 +73,7 @@ class DiscoverRecipe {
     this.sharesCount = 0,
     this.savesCount = 0,
     this.enTitle,
+    this.enDescription,
     this.enCategory,
     this.enCuisine,
   });
@@ -78,6 +86,7 @@ class DiscoverRecipe {
     List<String>? ingredients,
     List<String>? instructions,
     String? enTitle,
+    String? enDescription,
     String? enCategory,
     String? enCuisine,
   }) {
@@ -103,6 +112,7 @@ class DiscoverRecipe {
       sharesCount: sharesCount,
       savesCount: savesCount,
       enTitle: enTitle ?? this.enTitle,
+      enDescription: enDescription ?? this.enDescription,
       enCategory: enCategory ?? this.enCategory,
       enCuisine: enCuisine ?? this.enCuisine,
     );
@@ -173,44 +183,45 @@ class DiscoverController extends GetxController {
 
   /// Translate the CARD fields (title/description/category/cuisine) of every
   /// feed recipe into the current language, keeping the English originals for
-  /// chip filtering. Ingredients/instructions are left English here and
-  /// translated lazily by [translateForDetail] when a recipe is opened — so the
-  /// feed stays fast even with a couple hundred recipes. No-op for English.
+  /// chip filtering. Ingredients/instructions stay English here — the detail
+  /// screen translates them for display as it renders, so opening a recipe
+  /// never blocks on translation. No-op for English.
   Future<List<DiscoverRecipe>> _translateForFeed(
     List<DiscoverRecipe> list,
   ) async {
     if (list.isEmpty || !AiTranslationService.isTranslating) return list;
-    await AiTranslationService.ensureReady();
-    return Future.wait(
-      list.map((r) async {
-        return r.copyWith(
-          title: await AiTranslationService.translate(r.title),
-          description: r.description == null
-              ? null
-              : await AiTranslationService.translate(r.description),
-          category: r.category == null
-              ? null
-              : await AiTranslationService.translate(r.category),
-          cuisine: r.cuisine == null
-              ? null
-              : await AiTranslationService.translate(r.cuisine),
-          enTitle: r.title,
-          enCategory: r.category,
-          enCuisine: r.cuisine,
-        );
-      }),
-    );
-  }
 
-  /// Translate a single recipe's ingredients + steps for the detail screen.
-  /// Called on card tap so the (potentially long) lists are only translated for
-  /// the one recipe actually opened.
-  Future<DiscoverRecipe> translateForDetail(DiscoverRecipe r) async {
-    if (!AiTranslationService.isTranslating) return r;
-    return r.copyWith(
-      ingredients: await AiTranslationService.translateList(r.ingredients),
-      instructions: await AiTranslationService.translateList(r.instructions),
-    );
+    // ONE batched call for the whole page instead of up to 80 individual
+    // translate() calls. translateList de-duplicates (20 recipes share a
+    // handful of categories and cuisines) and writes the cache to disk once,
+    // rather than every single call doing its own full-box rewrite. This is
+    // what the Discover loading spinner was waiting on.
+    final texts = <String>[];
+    for (final r in list) {
+      texts.add(r.title);
+      if (r.description != null) texts.add(r.description!);
+      if (r.category != null) texts.add(r.category!);
+      if (r.cuisine != null) texts.add(r.cuisine!);
+    }
+    await AiTranslationService.translateList(texts);
+
+    String? tr(String? s) =>
+        s == null ? null : AiTranslationService.cachedOrSelf(s);
+
+    return list
+        .map(
+          (r) => r.copyWith(
+            title: AiTranslationService.cachedOrSelf(r.title),
+            description: tr(r.description),
+            category: tr(r.category),
+            cuisine: tr(r.cuisine),
+            enTitle: r.title,
+            enDescription: r.description,
+            enCategory: r.category,
+            enCuisine: r.cuisine,
+          ),
+        )
+        .toList();
   }
 
   /// Re-translate the loaded feed after the app language changes.

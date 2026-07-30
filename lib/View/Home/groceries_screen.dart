@@ -12,6 +12,7 @@ import 'package:recipe_ai/utils/validation_helper.dart';
 import 'package:recipe_ai/View/Home/home_screen.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
+import 'package:recipe_ai/widgets/tr_text.dart';
 import 'package:share_plus/share_plus.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -754,7 +755,9 @@ class GroceriesScreen extends StatelessWidget {
             children: [
               Text(_G.emoji(aisle), style: const TextStyle(fontSize: 18)),
               const SizedBox(width: 8),
-              Text(aisle, style: _G.f(14, FontWeight.w800, _G.textDark)),
+              // Aisle names come from the English _aisleMap, so they need
+              // display translation like any other dynamic string.
+              TrText(aisle, style: _G.f(14, FontWeight.w800, _G.textDark)),
               const SizedBox(width: 6),
               Text(
                 '· ${list.length}',
@@ -1975,7 +1978,7 @@ class GroceriesScreen extends StatelessWidget {
                           ),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: Text(
+                            child: TrText(
                               cat,
                               style: _G.f(15, FontWeight.w600, _G.textDark),
                             ),
@@ -2333,7 +2336,7 @@ class _ItemFormSheetState extends State<_ItemFormSheet> {
                                   ),
                                   const SizedBox(width: 8),
                                   Expanded(
-                                    child: Text(
+                                    child: TrText(
                                       cat,
                                       style: _G.f(
                                         13,

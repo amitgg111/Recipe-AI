@@ -241,21 +241,33 @@ class AiTranslationService {
 
       try {
         const batchSize = 8;
+        var failures = 0;
         for (int i = 0; i < missing.length; i += batchSize) {
           final batch = missing.skip(i).take(batchSize).toList();
           final results = await Future.wait(
             batch.map((text) async {
               try {
-                final result = (await translator.translateText(text)).trim();
-                return MapEntry(text, result.isEmpty ? text : result);
+                return MapEntry(text, (await translator.translateText(text)).trim());
               } catch (_) {
-                return MapEntry(text, text);
+                // Empty marks a failure. Caching the English source here would
+                // be permanent: the `missing` check is `!cache.containsKey`,
+                // so a dropped connection mid-prewarm would silently pin the
+                // whole recipe library to English forever, and every later
+                // launch would report the cache warm and do nothing.
+                return MapEntry(text, '');
               }
             }),
           );
           for (final entry in results) {
+            if (entry.value.isEmpty) {
+              failures++;
+              continue; // leave absent so a later run retries it
+            }
             cache[entry.key] = entry.value;
           }
+        }
+        if (failures > 0) {
+          log('⚠️ Prewarm[$code]: $failures string(s) failed, will retry next launch');
         }
         await _saveCache();
       } finally {
@@ -535,21 +547,29 @@ class AiTranslationService {
           try {
             final result = await _translator!.translateText(text);
 
-            final translated = result.trim();
-
-            return MapEntry(text, translated.isEmpty ? text : translated);
+            return MapEntry(text, result.trim());
           } catch (_) {
-            return MapEntry(text, text);
+            // Empty marks a failure. Never cache the English source as if it
+            // were the translation: the miss check above is
+            // `!cache.containsKey(text)`, so doing that would pin the string
+            // to English permanently, with no retry, ever. One flaky moment
+            // would leave a single line stubbornly untranslated inside an
+            // otherwise-Hindi recipe.
+            return MapEntry(text, '');
           }
         }),
       );
 
       for (final entry in results) {
+        if (entry.value.isEmpty) continue; // failed — retry on a later open
         cache[entry.key] = entry.value;
       }
-
-      await _saveCache();
     }
+
+    // One write per call instead of one per batch of 8. GetStorage stores
+    // `_cache` by reference and serializes at flush time, so every
+    // intermediate write was doing the whole box again for nothing.
+    await _saveCache();
 
     return items.map((text) {
       final key = text.trim();

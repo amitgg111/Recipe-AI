@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 import 'package:recipe_ai/Controllers/home_controller.dart';
 import 'package:recipe_ai/widgets/app_network_image.dart';
 import 'package:recipe_ai/Controllers/settings_controller.dart';
+import 'package:recipe_ai/Service/ai_translation_service.dart';
 import 'package:recipe_ai/Service/local_notification_service.dart';
 import 'package:recipe_ai/Widget/custom_snackbar.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
@@ -76,6 +77,47 @@ class _CookModeScreenState extends State<CookModeScreen>
   /// Active timers keyed by their step index. Supports several running at once.
   final Map<int, _StepTimer> _timers = {};
   Timer? _ticker;
+
+  // ── Display-only translation ──────────────────────────────────────────────
+  // _CookStep.text stays ENGLISH: `_labelFor` matches 17 English verbs and
+  // `_extractDuration` matches English time words, so translating the stored
+  // text would silently kill every step timer and collapse every chip to
+  // "Timer". Only the rendered string goes through _display(), which reads the
+  // cache synchronously and batches misses into one post-frame translateList.
+  final Set<String> _trRequested = {};
+  List<String>? _trPending;
+  bool _trFlushing = false;
+
+  String _display(String text) {
+    final src = text.trim();
+    if (src.isEmpty) return text;
+    final shown = AiTranslationService.cachedOrSelf(src);
+    if (shown == src &&
+        AiTranslationService.isTranslating &&
+        _trRequested.add(src)) {
+      (_trPending ??= <String>[]).add(src);
+      if (_trPending!.length == 1) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _flushTranslations());
+      }
+    }
+    return shown;
+  }
+
+  Future<void> _flushTranslations() async {
+    if (_trFlushing) return;
+    _trFlushing = true;
+    try {
+      while (_trPending != null && _trPending!.isNotEmpty) {
+        final batch = _trPending!;
+        _trPending = null;
+        await AiTranslationService.translateList(batch);
+        if (!mounted) return;
+        setState(() {});
+      }
+    } finally {
+      _trFlushing = false;
+    }
+  }
 
   @override
   void initState() {
@@ -492,7 +534,7 @@ class _CookModeScreenState extends State<CookModeScreen>
           Expanded(
             child: Center(
               child: Text(
-                step.text,
+                _display(step.text),
                 textAlign: TextAlign.center,
                 style: _f(
                   22,
@@ -690,7 +732,7 @@ class _CookModeScreenState extends State<CookModeScreen>
             ),
           ),
         ),
-        _stepCard(step.text),
+        _stepCard(_display(step.text)),
       ],
     );
   }
@@ -861,7 +903,7 @@ class _CookModeScreenState extends State<CookModeScreen>
             ),
           ),
         ),
-        _stepCard(step.text),
+        _stepCard(_display(step.text)),
       ],
     );
   }

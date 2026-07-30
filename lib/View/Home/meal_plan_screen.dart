@@ -3417,7 +3417,9 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
             ),
             const SizedBox(width: 8),
             Text(
-              mealType.toUpperCase(),
+              // Keys 'breakfast'/'lunch'/'dinner'/'snack' already exist
+              // in app_translations for all 26 languages.
+              mealType.toLowerCase().tr.toUpperCase(),
               style: _S.f(13, FontWeight.w800, color),
             ),
           ],
@@ -4017,7 +4019,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    meal.mealType.toUpperCase(),
+                    meal.mealType.toLowerCase().tr.toUpperCase(),
                     style: _S.f(10, FontWeight.w800, color),
                   ),
                   const SizedBox(height: 2),
@@ -4116,7 +4118,14 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
       );
       return;
     }
-    Get.find<GroceryStore>().addFromRecipe(meal.recipeId, recipe.ingredients);
+    // Write ENGLISH ingredient lines — GroceryStore's aisle detection, emoji
+    // lookup and quantity merging all key off English keywords, so translated
+    // text would drop everything into "Other 📦" and break de-duplication.
+    Get.find<GroceryStore>().addFromRecipe(
+      meal.recipeId,
+      homeController.englishRecipe(meal.recipeId)?.ingredients ??
+          recipe.ingredients,
+    );
     CustomSnackbar.show(
       title: 'added_to_groceries'.tr,
       message: 'ingredients_from'.trParams({

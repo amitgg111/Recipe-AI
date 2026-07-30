@@ -487,11 +487,13 @@ class _RecipeCardState extends State<_RecipeCard> {
     return 'just now';
   }
 
-  Future<void> _open() async {
-    // Translate this recipe's ingredients + steps for the current language just
-    // before opening it (the feed only translates card fields, for speed).
-    final full = await _disc.translateForDetail(recipe);
-    Get.to(() => PublicRecipeViewScreen(recipe: full));
+  void _open() {
+    // Push on the tap frame. PublicRecipeViewScreen renders from the
+    // translation cache on its first frame and batches whatever is missing
+    // afterwards, so nothing runs between the tap and the transition. This
+    // used to await the whole body translation first, which froze the feed
+    // for a second or more with no spinner and not even a ripple.
+    Get.to(() => PublicRecipeViewScreen(recipe: recipe));
   }
 
   void _openAuthor() {

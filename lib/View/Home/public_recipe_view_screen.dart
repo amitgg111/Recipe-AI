@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:recipe_ai/Controllers/discover_controller.dart';
 import 'package:recipe_ai/Model/user_model.dart';
+import 'package:recipe_ai/Service/ai_translation_service.dart';
 import 'package:recipe_ai/Service/recipe_social_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_ai/widgets/comments_sheet.dart';
@@ -110,6 +111,55 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
   double get _avgRating => _ratingCount > 0 ? _ratingSum / _ratingCount : 0;
 
   DiscoverRecipe get recipe => widget.recipe;
+
+  // ── Display-only translation ──────────────────────────────────────────────
+  // Firestore stores English and every logic/write path below keeps reading
+  // `recipe` verbatim — saving a copy, cook mode, the grocery list and the
+  // ingredient-emoji lookup all still get English. Only what the user READS
+  // goes through _display().
+  //
+  // cachedOrSelf() is a synchronous map lookup, so the first frame costs
+  // nothing and the screen pushes instantly. Anything not already cached is
+  // collected and translated in ONE batch after the frame, landing as a single
+  // setState. The Set gates each string to one request, so this cannot loop.
+  final Set<String> _trRequested = {};
+  List<String>? _trPending;
+  bool _trFlushing = false;
+
+  String _display(String? english) {
+    final src = english?.trim() ?? '';
+    if (src.isEmpty) return '';
+    final shown = AiTranslationService.cachedOrSelf(src);
+    if (shown == src &&
+        AiTranslationService.isTranslating &&
+        _trRequested.add(src)) {
+      (_trPending ??= <String>[]).add(src);
+      if (_trPending!.length == 1) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _flushTranslations());
+      }
+    }
+    return shown;
+  }
+
+  Future<void> _flushTranslations() async {
+    // Coalesce: a rebuild during the await (the servings stepper, say) queues
+    // more strings and schedules another flush. Without this guard those runs
+    // overlap, each firing its own ML Kit batches and its own full-cache disk
+    // write. The loop below drains whatever accumulated instead.
+    if (_trFlushing) return;
+    _trFlushing = true;
+    try {
+      while (_trPending != null && _trPending!.isNotEmpty) {
+        final batch = _trPending!;
+        _trPending = null;
+        await AiTranslationService.translateList(batch);
+        if (!mounted) return;
+        setState(() {});
+      }
+    } finally {
+      _trFlushing = false;
+    }
+  }
 
   @override
   void initState() {
@@ -235,7 +285,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          recipe.title,
+                          _display(recipe.filterTitle),
                           style: _f(
                             26,
                             FontWeight.w800,
@@ -251,8 +301,8 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                         const SizedBox(height: _P.gap),
                         _buildEngagementBar(),
                         const SizedBox(height: _P.gap),
-                        if (recipe.description != null &&
-                            recipe.description!.trim().isNotEmpty) ...[
+                        if (recipe.filterDescription != null &&
+                            recipe.filterDescription!.trim().isNotEmpty) ...[
                           _buildNoteCard(),
                           const SizedBox(height: _P.gap),
                         ],
@@ -594,7 +644,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            recipe.description!.trim(),
+            _display(recipe.filterDescription),
             style: _f(14, FontWeight.w400, _P.textBody, h: 1.5),
           ),
         ],
@@ -660,12 +710,18 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
     final multiplier = _servings / _initialServings;
     final rows = <Widget>[];
     for (var i = 0; i < recipe.ingredients.length; i++) {
+      // Scale, convert and split on the ENGLISH original — UnitConverter and
+      // the quantity regex both parse English unit words — then translate ONLY
+      // the ingredient name. The name does not change with servings, so its
+      // cache key is stable: tapping the stepper re-scales the number without
+      // re-translating anything or flashing English.
       final scaled = UnitConverter.scaleAndConvert(
         recipe.ingredients[i],
         multiplier,
         system,
       );
-      rows.add(_ingredientRow(scaled, i));
+      final parts = _parseIngredient(scaled);
+      rows.add(_ingredientRow(parts.$1, _display(parts.$2), i));
     }
     if (rows.isEmpty) {
       rows.add(
@@ -743,18 +799,25 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
   /// by DiscoverController and match on that. Falls back to [displayName] when
   /// no English original is loaded (e.g. opened outside the feed).
   String _ingredientEmoji(int index, String displayName) {
-    if (Get.isRegistered<DiscoverController>()) {
-      final en = Get.find<DiscoverController>().englishById(recipe.id);
-      if (en != null && index >= 0 && index < en.ingredients.length) {
-        return _grocery.emojiForIngredient(en.ingredients[index]);
-      }
+    // `recipe.ingredients` is always the English original — this screen
+    // translates for display only and never mutates the model — so the
+    // English keyword dictionary always gets English to match against. This
+    // used to route through DiscoverController.englishById, which returned
+    // null when the recipe was opened from a creator profile rather than the
+    // feed, silently losing the emoji on that path.
+    if (index >= 0 && index < recipe.ingredients.length) {
+      return _grocery.emojiForIngredient(recipe.ingredients[index]);
     }
     return _grocery.emojiForIngredient(displayName);
   }
 
-  Widget _ingredientRow(String text, int index) {
+  /// [quantity] stays verbatim English/numeric (it is re-scaled on every
+  /// servings change); [name] is the translated ingredient name. Splitting
+  /// them means the translation cache is keyed on the servings-INDEPENDENT
+  /// name, so tapping the stepper never re-translates or flashes English.
+  Widget _ingredientRow(String? quantity, String name, int index) {
     final checked = _checked.contains(index);
-    final parts = _parseIngredient(text);
+    final parts = (quantity, name);
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 9),
       decoration: const BoxDecoration(
@@ -849,10 +912,14 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                   for (var i = 0; i < recipe.instructions.length; i++)
                     _instructionRow(
                       i + 1,
-                      InstructionScaler.scale(
-                        recipe.instructions[i],
-                        multiplier,
-                        system,
+                      // Scale on the English original (the scaler parses
+                      // English units), then translate for display only.
+                      _display(
+                        InstructionScaler.scale(
+                          recipe.instructions[i],
+                          multiplier,
+                          system,
+                        ),
                       ),
                     ),
                 ],
@@ -1592,7 +1659,15 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                 multiplier,
                 system,
               );
-              widgets.add(selectionRow(scaled, i));
+              // Show the translated name (the list this sheet mirrors is
+              // translated), but the grocery WRITE below still uses the
+              // English `recipe.ingredients` so aisle detection and emoji
+              // matching keep working.
+              final parts = _parseIngredient(scaled);
+              final shown = parts.$1 == null
+                  ? _display(parts.$2)
+                  : '${parts.$1} ${_display(parts.$2)}';
+              widgets.add(selectionRow(shown, i));
             }
 
             final allChecked = selectedIndices.every((c) => c);

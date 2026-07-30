@@ -197,17 +197,23 @@ class RecipeSocialService {
         .get();
     if (existing.docs.isNotEmpty) return existing.docs.first.id;
 
+    // Write the ENGLISH originals. A feed model arrives here with
+    // title/description/category/cuisine already REPLACED by their translated
+    // display values, so using them directly would put Hindi into Firestore —
+    // breaking the English-only source of truth, the Discover category chips
+    // and every English-keyed parser downstream. The filter* getters fall back
+    // to the raw field, so an untranslated model is unaffected.
     final doc = await col.add({
-      'title': r.title,
-      'description': r.description,
+      'title': r.filterTitle,
+      'description': r.filterDescription,
       'imageUrl': r.imageUrl,
       'sourceUrl': '',
       'prepTime': r.prepTime,
       'cookTime': r.cookTime,
       'totalTime': r.totalTime,
       'servings': r.servings,
-      'category': r.category,
-      'cuisine': r.cuisine,
+      'category': r.filterCategory.isEmpty ? null : r.filterCategory,
+      'cuisine': r.filterCuisine.isEmpty ? null : r.filterCuisine,
       'keywords': <String>[],
       'ingredients': r.ingredients,
       'instructions': r.instructions,
