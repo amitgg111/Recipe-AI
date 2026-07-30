@@ -1212,12 +1212,15 @@ class GroceriesScreen extends StatelessWidget {
                       color: _G.primary,
                     ),
                     const SizedBox(width: 7),
-                    Expanded(
-                      child: Text(
-                        'add_item_manually'.tr,
-                        style: _G.f(13.5, FontWeight.w700, _G.textDark),
-                      ),
+                    // Expanded(
+                    // child:
+                    Text(
+                      'add_item_manually'.tr,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                      style: _G.f(13.5, FontWeight.w700, _G.textDark),
                     ),
+                    // ),
                   ],
                 ),
               ),
@@ -1362,6 +1365,7 @@ class GroceriesScreen extends StatelessWidget {
                   child: Container(
                     width: 32,
                     height: 32,
+                    padding: const EdgeInsets.all(5),
                     decoration: const BoxDecoration(
                       color: Color(0xFFF4F1EA),
                       shape: BoxShape.circle,
@@ -2082,7 +2086,7 @@ class _MoreMenuButton extends StatelessWidget {
   }
 
   Widget _menuDivider() {
-    return Divider(height: 1, thickness: 1, color: _G.chipBorder);
+    return const Divider(height: 1, thickness: 1, color: _G.chipBorder);
   }
 }
 

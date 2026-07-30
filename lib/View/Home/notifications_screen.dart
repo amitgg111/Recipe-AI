@@ -28,7 +28,12 @@ class _N {
 }
 
 TextStyle _f(double s, FontWeight w, Color c, {double? h}) =>
-    GoogleFonts.plusJakartaSans(fontSize: s, fontWeight: w, color: c, height: h);
+    GoogleFonts.plusJakartaSans(
+      fontSize: s,
+      fontWeight: w,
+      color: c,
+      height: h,
+    );
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -57,8 +62,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   void _onScroll() {
     // Load the next page as the user nears the bottom.
-    if (_scroll.position.pixels >=
-        _scroll.position.maxScrollExtent - 400) {
+    if (_scroll.position.pixels >= _scroll.position.maxScrollExtent - 400) {
       _c.loadMore();
     }
   }
@@ -78,16 +82,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               children: [
                 _iconButton('back', () => Get.back()),
                 const SizedBox(width: 4),
-                Text('notifications'.tr,
-                    style: _f(19, FontWeight.w800, _N.textDark)),
+                Text(
+                  'notifications'.tr,
+                  style: _f(19, FontWeight.w800, _N.textDark),
+                ),
                 const Spacer(),
-                Obx(() => _c.unreadCount.value > 0
-                    ? TextButton(
-                        onPressed: _c.markAllRead,
-                        child: Text('mark_all_read'.tr,
-                            style: _f(13, FontWeight.w700, _N.primary)),
-                      )
-                    : const SizedBox.shrink()),
+                Obx(
+                  () => _c.unreadCount.value > 0
+                      ? TextButton(
+                          onPressed: _c.markAllRead,
+                          child: Text(
+                            'mark_all_read'.tr,
+                            style: _f(13, FontWeight.w700, _N.primary),
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
               ],
             ),
           ),
@@ -95,7 +105,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             child: Obx(() {
               if (_c.isLoading.value && _c.items.isEmpty) {
                 return const Center(
-                    child: CircularProgressIndicator(color: _N.primary));
+                  child: CircularProgressIndicator(color: _N.primary),
+                );
               }
               final items = _c.items;
               return RefreshIndicator(
@@ -107,8 +118,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         physics: const AlwaysScrollableScrollPhysics(),
                         children: [
                           SizedBox(
-                              height:
-                                  MediaQuery.of(context).size.height * 0.24),
+                            height: MediaQuery.of(context).size.height * 0.24,
+                          ),
                           _empty(),
                         ],
                       )
@@ -136,30 +147,37 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          OnboardingLineIcon('bell',
-              size: 46, color: _N.textHint.withValues(alpha: 0.5)),
+          OnboardingLineIcon(
+            'bell',
+            size: 46,
+            color: _N.textHint.withValues(alpha: 0.5),
+          ),
           const SizedBox(height: 14),
-          Text('no_notifications_yet'.tr,
-              style: _f(16, FontWeight.w800, _N.textBody)),
+          Text(
+            'no_notifications_yet'.tr,
+            style: _f(16, FontWeight.w800, _N.textBody),
+          ),
           const SizedBox(height: 4),
-          Text('notifications_empty_subtitle'.tr,
-              style: _f(13, FontWeight.w500, _N.textHint)),
+          Text(
+            'notifications_empty_subtitle'.tr,
+            textAlign: TextAlign.center,
+            style: _f(13, FontWeight.w500, _N.textHint),
+          ),
         ],
       ),
     );
   }
 
   Widget _loadingMore() => const Padding(
-        padding: EdgeInsets.symmetric(vertical: 16),
-        child: Center(
-          child: SizedBox(
-            width: 22,
-            height: 22,
-            child:
-                CircularProgressIndicator(strokeWidth: 2, color: _N.primary),
-          ),
-        ),
-      );
+    padding: EdgeInsets.symmetric(vertical: 16),
+    child: Center(
+      child: SizedBox(
+        width: 22,
+        height: 22,
+        child: CircularProgressIndicator(strokeWidth: 2, color: _N.primary),
+      ),
+    ),
+  );
 
   Widget _tile(AppNotification n) {
     // Swipe-to-delete (endToStart) over a modern card. The unread → read
@@ -242,17 +260,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final color = n.isFollow
         ? _N.green
         : n.isComment
-            ? const Color(0xFF3B82F6)
-            : n.isSave
-                ? const Color(0xFF8B5CF6)
-                : _N.primary;
+        ? const Color(0xFF3B82F6)
+        : n.isSave
+        ? const Color(0xFF8B5CF6)
+        : _N.primary;
     final icon = n.isFollow
         ? 'user'
         : n.isComment
-            ? 'comment'
-            : n.isSave
-                ? 'bookmarkF'
-                : 'heart';
+        ? 'comment'
+        : n.isSave
+        ? 'bookmarkF'
+        : 'heart';
     return Container(
       width: 22,
       height: 22,
@@ -287,15 +305,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         const SizedBox(height: 4),
         Row(
           children: [
-            Text(_relativeTime(n.createdAt),
-                style: _f(11.5, FontWeight.w600, _N.textHint)),
+            Text(
+              _relativeTime(n.createdAt),
+              style: _f(11.5, FontWeight.w600, _N.textHint),
+            ),
             if (!n.isRead) ...[
               const SizedBox(width: 7),
               Container(
                 width: 6,
                 height: 6,
                 decoration: const BoxDecoration(
-                    color: _N.primary, shape: BoxShape.circle),
+                  color: _N.primary,
+                  shape: BoxShape.circle,
+                ),
               ),
             ],
           ],
@@ -328,8 +350,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return CircleAvatar(
       radius: 24,
       backgroundColor: _N.avatarBg,
-      backgroundImage:
-          url.isNotEmpty ? CachedNetworkImageProvider(url) : null,
+      backgroundImage: url.isNotEmpty ? CachedNetworkImageProvider(url) : null,
       child: url.isEmpty
           ? Text(
               n.senderName.isNotEmpty ? n.senderName[0].toUpperCase() : '?',
@@ -358,17 +379,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final icon = n == null
         ? 'bowl'
         : n.isFollow
-            ? 'user'
-            : n.isComment
-                ? 'comment'
-                : n.isSave
-                    ? 'bookmarkF'
-                    : 'heart';
+        ? 'user'
+        : n.isComment
+        ? 'comment'
+        : n.isSave
+        ? 'bookmarkF'
+        : 'heart';
     final color = (n?.isFollow ?? false)
         ? _N.green
         : (n?.isSave ?? false)
-            ? const Color(0xFF8B5CF6)
-            : _N.primary;
+        ? const Color(0xFF8B5CF6)
+        : _N.primary;
     return Container(
       width: 48,
       height: 48,
@@ -396,11 +417,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   // Tapping the avatar always opens the sender's profile.
   void _openProfile(AppNotification n) {
     _c.markAsRead(n);
-    Get.to(() => CreatorProfileScreen(
-          userId: n.senderUserId,
-          fallbackName: n.senderName,
-          fallbackAvatar: n.senderPhoto,
-        ));
+    Get.to(
+      () => CreatorProfileScreen(
+        userId: n.senderUserId,
+        fallbackName: n.senderName,
+        fallbackAvatar: n.senderPhoto,
+      ),
+    );
   }
 
   Future<void> _open(AppNotification n) async {
@@ -409,11 +432,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     _c.markAsRead(n); // fire-and-forget; UI updates via the stream
     try {
       if (n.isFollow) {
-        Get.to(() => CreatorProfileScreen(
-              userId: n.senderUserId,
-              fallbackName: n.senderName,
-              fallbackAvatar: n.senderPhoto,
-            ));
+        Get.to(
+          () => CreatorProfileScreen(
+            userId: n.senderUserId,
+            fallbackName: n.senderName,
+            fallbackAvatar: n.senderPhoto,
+          ),
+        );
         return;
       }
       // Like / comment → the recipe is the receiver's OWN recipe.
@@ -426,10 +451,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         );
         return;
       }
-      Get.to(() => RecipeDetailScreen(
-            recipe: recipe,
-            focusCommentId: n.isComment ? n.commentId : null,
-          ));
+      Get.to(
+        () => RecipeDetailScreen(
+          recipe: recipe,
+          focusCommentId: n.isComment ? n.commentId : null,
+        ),
+      );
     } finally {
       _opening = false;
     }
@@ -467,8 +494,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       return 'n_days_ago'.trParams({'count': '${diff.inDays}'});
     }
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${months[dt.month - 1]} ${dt.day}';
   }

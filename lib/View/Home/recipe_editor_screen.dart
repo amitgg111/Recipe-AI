@@ -192,7 +192,7 @@ class _PhotoBasicsCard extends StatelessWidget {
   const _PhotoBasicsCard({required this.controller});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) {  
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),

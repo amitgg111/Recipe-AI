@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/gestures.dart';
 import 'package:recipe_ai/Service/language_service.dart';
 import 'package:recipe_ai/widgets/app_wordmark.dart';

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:recipe_ai/theme/app_colors.dart';
 
 enum SnackbarType { success, error, warning, info }
 
@@ -128,7 +129,10 @@ class CustomSnackbar {
 
       // User login nathi hoy
       if (user == null) {
-        return const _SnackbarConfig(color: Colors.orange, icon: Icons.info);
+        return const _SnackbarConfig(
+          color: AppColors.primary,
+          icon: Icons.info,
+        );
       }
 
       final userDocument = await FirebaseFirestore.instance
@@ -141,13 +145,10 @@ class CustomSnackbar {
       final bool isPlusUser = data?['isPlus'] == true;
 
       if (isPlusUser) {
-        return const _SnackbarConfig(
-          color: Color(0xFF6155F5),
-          icon: Icons.info,
-        );
+        return const _SnackbarConfig(color: AppColors.purple, icon: Icons.info);
       }
 
-      return const _SnackbarConfig(color: Colors.orange, icon: Icons.info);
+      return const _SnackbarConfig(color: AppColors.primary, icon: Icons.info);
     } catch (e) {
       // Firebase error hoy to normal user color
       return const _SnackbarConfig(color: Colors.orange, icon: Icons.info);
