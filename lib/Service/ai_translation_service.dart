@@ -220,8 +220,9 @@ class AiTranslationService {
           'totalTime',
         ]) {
           final value = data[key];
-          if (value is String && value.trim().isNotEmpty)
+          if (value is String && value.trim().isNotEmpty) {
             texts.add(value.trim());
+          }
         }
         for (final key in const ['ingredients', 'instructions']) {
           final list = data[key] as List?;
@@ -256,14 +257,20 @@ class AiTranslationService {
           final results = await Future.wait(
             batch.map((text) async {
               try {
-                final result = (await translator.translateText(text)).trim();
-                return MapEntry(text, result.isEmpty ? text : result);
+                return MapEntry(
+                  text,
+                  (await translator.translateText(text)).trim(),
+                );
               } catch (_) {
-                return MapEntry(text, text);
+                // Empty marks a failure — see translateList. Caching the
+                // English source here would be permanent, and a connection
+                // drop mid-prewarm would pin the whole library to English.
+                return MapEntry(text, '');
               }
             }),
           );
           for (final entry in results) {
+            if (entry.value.isEmpty) continue; // retry on a later run
             cache[entry.key] = entry.value;
           }
         }
@@ -496,8 +503,23 @@ class AiTranslationService {
     }
   }
 
-  static Future<void> _saveCache() async {
-    await _storage.write(_cacheKey, _cache);
+  static Future<void>? _savePending;
+
+  /// Persist the cache, coalescing bursts into a single write.
+  ///
+  /// Every cache miss used to trigger its own full rewrite of the entire
+  /// multi-language blob, on the UI isolate. A screen with 20 [TrText] rows
+  /// therefore re-encoded and re-wrote the whole cache 20 times in one frame,
+  /// which is the bulk of the "translation is slow / janky" symptom.
+  ///
+  /// GetStorage holds `_cache` BY REFERENCE and serializes at flush time, so a
+  /// write already queued in this microtask turn will include anything added
+  /// before it runs — riding on it is not just cheaper, it is equivalent.
+  static Future<void> _saveCache() {
+    return _savePending ??= Future.microtask(() async {
+      _savePending = null;
+      await _storage.write(_cacheKey, _cache);
+    });
   }
 
   /// FAST BATCH TRANSLATION
@@ -545,21 +567,30 @@ class AiTranslationService {
           try {
             final result = await _translator!.translateText(text);
 
-            final translated = result.trim();
-
-            return MapEntry(text, translated.isEmpty ? text : translated);
+            return MapEntry(text, result.trim());
           } catch (_) {
-            return MapEntry(text, text);
+            // Empty marks a failure. Never cache the English source as though
+            // it were the translation: the miss check above is
+            // `!cache.containsKey(text)`, so doing that pins the string to
+            // English permanently with no retry. One flaky moment would leave
+            // a single line stubbornly English inside a translated recipe —
+            // exactly the "some texts don't translate" symptom.
+            return MapEntry(text, '');
           }
         }),
       );
 
       for (final entry in results) {
+        if (entry.value.isEmpty) continue; // failed — retry on a later render
         cache[entry.key] = entry.value;
       }
-
-      await _saveCache();
     }
+
+    // ONE disk write per call instead of one per batch of 8. GetStorage holds
+    // `_cache` by reference and serializes at flush time, so every
+    // intermediate write was re-encoding the entire multi-language blob for
+    // nothing — on the UI isolate.
+    await _saveCache();
 
     return items.map((text) {
       final key = text.trim();

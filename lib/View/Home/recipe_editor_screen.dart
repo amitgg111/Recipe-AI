@@ -107,18 +107,25 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
         data,
         currentUid: AuthService.currentUser?.uid,
       );
+      // Once — this was applied twice, rebuilding every text controller and
+      // clobbering anything the user had already typed while it loaded.
       _controller.applyLocalizedRecipe(localized);
       if (!mounted) return;
 
       setState(() {
         _localized = localized;
       });
-
-      _controller.applyLocalizedRecipe(localized);
     } catch (e) {
       log('Localize editor recipe failed: $e');
     } finally {
       _localizing = false;
+      // MUST rebuild. build() gates the loading spinner on `_localizing`, so
+      // clearing the flag without a setState leaves the last painted frame —
+      // the spinner — on screen forever. The success path happened to escape
+      // because it setStates `_localized` first, but the early `return` on a
+      // null doc and the catch above did not: an offline read, a deleted
+      // recipe or any ML Kit throw bricked the editor permanently.
+      if (mounted) setState(() {});
     }
   }
 

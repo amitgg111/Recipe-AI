@@ -172,7 +172,16 @@ class RecipeEditorController extends GetxController {
     prepTimeController.text = localized.prepTime ?? '';
     cookTimeController.text = localized.cookTime ?? '';
 
-    final totalTime = localized.totalTime ?? '';
+    // Parse the number and the unit from the ENGLISH canonical, never the
+    // display string. Both parsers below are English-only: `\d+` does not
+    // match Devanagari numerals, and `contains('hour')` never matches "घंटे"
+    // or Gujarati "કલાક". Reading the localized text made the unit silently
+    // fall back to 'minutes', so opening and saving a 2-hour recipe in Hindi
+    // stored it as 2 MINUTES. Falls back to the display value only when no
+    // English canonical exists.
+    final totalTime = localized.enTotalTime?.trim().isNotEmpty == true
+        ? localized.enTotalTime!
+        : (localized.totalTime ?? '');
     final match = RegExp(r'\d+').firstMatch(totalTime);
 
     totalTimeController.text = match?.group(0) ?? '';

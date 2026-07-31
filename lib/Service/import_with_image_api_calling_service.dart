@@ -161,6 +161,8 @@ class RecipeImportService {
       '${(originalBytes.length / 1024 / 1024).toStringAsFixed(2)} MB',
     );
 
+    // Same 1020px cap as the stored image — fewer vision tiles, so lower token
+    // cost per import.
     final compressedBytes = await _compressImageBytes(originalBytes);
 
     if (compressedBytes == null || compressedBytes.isEmpty) {
@@ -1554,7 +1556,23 @@ class RecipeImportService {
     return recipeData;
   }
 
-  static Future<Uint8List?> _compressImageBytes(Uint8List originalBytes) async {
+  /// Downscale + JPEG-encode an image. Used for BOTH the Storage upload and
+  /// the Gemini vision call.
+  ///
+  /// 1020px @ q80 lands around 150KB, versus roughly 475KB average (up to
+  /// 1.4MB) at the previous 1600/85. Recipe cards are ~1000px wide on a phone,
+  /// so there is nothing visible to gain above this — and on a mobile
+  /// connection those extra bytes were most of a second per image, which is
+  /// what made the Discover feed feel slow.
+  ///
+  /// It also cuts Gemini cost: vision input is billed per 768x768 tile, so a
+  /// 1600px photo is ~6 tiles where a 1020px one is ~2 — roughly a third of
+  /// the image tokens per import.
+  static Future<Uint8List?> _compressImageBytes(
+    Uint8List originalBytes, {
+    int maxWidth = 1020,
+    int quality = 80,
+  }) async {
     try {
       final decodedImage = img.decodeImage(originalBytes);
 
@@ -1563,11 +1581,11 @@ class RecipeImportService {
         return null;
       }
 
-      final resizedImage = decodedImage.width > 1600
-          ? img.copyResize(decodedImage, width: 1600)
+      final resizedImage = decodedImage.width > maxWidth
+          ? img.copyResize(decodedImage, width: maxWidth)
           : decodedImage;
 
-      final compressed = img.encodeJpg(resizedImage, quality: 85);
+      final compressed = img.encodeJpg(resizedImage, quality: quality);
 
       final compressedBytes = Uint8List.fromList(compressed);
 

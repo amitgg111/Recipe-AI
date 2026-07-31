@@ -12,6 +12,7 @@ import 'package:recipe_ai/View/Home/public_recipe_view_screen.dart';
 import 'package:recipe_ai/View/Home/social/follow_list_screen.dart';
 import 'package:recipe_ai/View/Home/social/social_widgets.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
+import 'package:recipe_ai/widgets/tr_text.dart';
 
 /// A public creator profile: photo, name, @username, bio, stats, follow button,
 /// and their PUBLIC recipes only.
@@ -159,6 +160,13 @@ class CreatorProfileScreen extends StatelessWidget {
         ),
         if (user.bio.isNotEmpty) ...[
           const SizedBox(height: 8),
+          // NOT translated, deliberately. A bio is free text the owner wrote
+          // in their OWN language, but AiTranslationService is hardcoded to
+          // translate FROM English (_source = TranslateLanguage.english). A
+          // Gujarati bio fed to an en->hi model produces garbage, and
+          // translate() would then cache that garbage permanently against the
+          // original string. Recipe content is safe to translate because
+          // Firestore stores it in English; a bio is not.
           Text(
             user.bio,
             textAlign: TextAlign.center,
@@ -283,8 +291,11 @@ class CreatorProfileScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      // Titles arrive raw from UserService.publicRecipesStream
+                      // (_toDiscover never translates), so they need TrText.
+                      TrText(
                         r.title,
+                        key: ValueKey('tr_${r.id}'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: _f(14, FontWeight.w700, AppColors.textDark),

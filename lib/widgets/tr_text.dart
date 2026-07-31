@@ -42,7 +42,11 @@ class _TrTextState extends State<TrText> {
   @override
   void initState() {
     super.initState();
-    _load();
+    // _text was already seeded from the cache above. Only go to ML Kit when
+    // that was a real miss (it handed back the English source), so a list of
+    // already-cached rows costs nothing but map lookups instead of one live
+    // translate() — and one full cache disk write — per row.
+    if (_text == widget.data.trim()) _load();
   }
 
   @override
@@ -50,7 +54,7 @@ class _TrTextState extends State<TrText> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.data != widget.data) {
       _text = AiTranslationService.cachedOrSelf(widget.data);
-      _load();
+      if (_text == widget.data.trim()) _load();
     }
   }
 
