@@ -26,40 +26,68 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   bool _isLoading = false;
 
   Future<void> _onGoogleContinue() async {
-    if (_isLoading) return; // prevent duplicate login requests
+    if (_isLoading) return;
+
     setState(() => _isLoading = true);
+
     try {
       final userCred = await AuthService.signInWithGoogle();
-      if (userCred == null) return; // user cancelled the picker — stay silent
+
+      if (userCred == null) {
+        return;
+      }
+
       await _routeAfterAuth();
     } catch (e) {
+      if (!mounted) return;
+
       CustomSnackbar.show(
         title: 'google_sign_in_failed'.tr,
         message: AuthErrorMapper.message(e),
         type: SnackbarType.error,
       );
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   Future<void> _onAppleContinue() async {
-    if (_isLoading) return; // prevent duplicate login requests
+    if (_isLoading) return;
+
     setState(() => _isLoading = true);
+
     try {
       final result = await AuthService.signInWithApple();
-      if (result.cancelled) return; // user backed out — stay silent
+
+      if (result.cancelled) {
+        return;
+      }
+
       if (result.success) {
         await _routeAfterAuth();
       } else {
+        if (!mounted) return;
+
         CustomSnackbar.show(
           title: 'sign_in_failed'.tr,
           message: result.errorMessage ?? 'could_not_sign_in_with_apple'.tr,
           type: SnackbarType.error,
         );
       }
+    } catch (e) {
+      if (!mounted) return;
+
+      CustomSnackbar.show(
+        title: 'sign_in_failed'.tr,
+        message: AuthErrorMapper.message(e),
+        type: SnackbarType.error,
+      );
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -176,7 +204,11 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                         fontWeight: FontWeight.w700,
                         color: const Color(0xFFF2623E),
                       ),
-                      recognizer: TapGestureRecognizer()..onTap = _onLogIn,
+
+                      // recognizer: TapGestureRecognizer()..onTap = _onLogIn,
+                      recognizer: _isLoading
+                          ? null
+                          : (TapGestureRecognizer()..onTap = _onLogIn),
                     ),
                   ],
                 ),
@@ -189,6 +221,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               _OutlinedAuthButton(
                 label: 'continue_with_google'.tr,
                 onTap: _isLoading ? null : _onGoogleContinue,
+                isLoading: _isLoading,
                 leading: Container(
                   width: 24,
                   height: 24,
@@ -214,10 +247,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               if (!Platform.isAndroid) ...[
                 const SizedBox(height: 13),
 
-                // Continue with Apple button
                 _OutlinedAuthButton(
                   label: 'continue_with_apple'.tr,
                   onTap: _isLoading ? null : _onAppleContinue,
+                  isLoading: _isLoading,
                   leading: const Icon(
                     Icons.apple,
                     size: 20,
@@ -232,6 +265,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               _OutlinedAuthButton(
                 label: 'other_options'.tr,
                 onTap: _onOtherOptions,
+                isLoading: false,
               ),
 
               const Expanded(child: SizedBox()),
@@ -283,38 +317,68 @@ class _OutlinedAuthButton extends StatelessWidget {
   final String label;
   final VoidCallback? onTap;
   final Widget? leading;
+  final bool isLoading;
 
   const _OutlinedAuthButton({
     required this.label,
     required this.onTap,
     this.leading,
+    this.isLoading = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isDisabled = onTap == null || isLoading;
+
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
+      onTap: isDisabled ? null : onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
         width: double.infinity,
         height: 50,
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFEAE0CF)),
+          border: Border.all(
+            color: isDisabled
+                ? const Color(0xFFEAE0CF).withValues(alpha: 0.6)
+                : const Color(0xFFEAE0CF),
+          ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (leading != null) ...[leading!, const SizedBox(width: 11)],
-            Text(
-              label,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF2A211B),
-              ),
-            ),
-          ],
+        child: Center(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            child: isLoading
+                ? const SizedBox(
+                    key: ValueKey('loading'),
+                    width: 21,
+                    height: 21,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.primary,
+                      ),
+                    ),
+                  )
+                : Row(
+                    key: const ValueKey('content'),
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (leading != null) ...[
+                        leading!,
+                        const SizedBox(width: 11),
+                      ],
+                      Text(
+                        label,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF2A211B),
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
         ),
       ),
     );
