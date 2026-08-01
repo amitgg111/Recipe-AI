@@ -145,6 +145,9 @@ class _AllCuisinesScreenState extends State<AllCuisinesScreen> {
                         child: TextField(
                           controller: _searchC,
                           style: GoogleFonts.plusJakartaSans(fontSize: 14),
+                          onTapOutside: (_) {
+                            FocusManager.instance.primaryFocus?.unfocus();
+                          },
                           decoration: InputDecoration(
                             hintText: 'Search Cuisines'.tr,
                             hintStyle: GoogleFonts.plusJakartaSans(

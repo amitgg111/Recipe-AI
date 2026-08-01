@@ -115,6 +115,7 @@ flutter:
     - assets/fonts/Lato-Regular.ttf
     - assets/fonts/Lato-Bold.ttf
     - assets/fonts/Lato-Italic.ttf
+    - assets/welcome/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

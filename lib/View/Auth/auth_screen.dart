@@ -177,7 +177,9 @@ class _AuthScreenState extends State<AuthScreen>
                             children: [
                               // ── Title ──────────────────────────────
                               CustomText(
-                                isLogin ? 'welcome_back'.tr : 'create_account'.tr,
+                                isLogin
+                                    ? 'welcome_back'.tr
+                                    : 'create_account'.tr,
 
                                 fontSize: 26,
                                 fontWeight: FontWeight.w800,
@@ -594,6 +596,9 @@ class _AuthField extends StatelessWidget {
     return TextField(
       controller: controller,
       obscureText: obscure,
+      onTapOutside: (_) {
+        FocusManager.instance.primaryFocus?.unfocus();
+      },
       keyboardType: keyboardType,
       textInputAction: TextInputAction.next,
       style: TextStyle(

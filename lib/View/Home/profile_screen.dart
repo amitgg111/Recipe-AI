@@ -89,7 +89,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Obx(
               () => Stack(
                 children: [
-                
                   ClipOval(
                     child: CachedNetworkImage(
                       imageUrl: profileController.imagePath.value.isNotEmpty
@@ -148,6 +147,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             TextField(
               controller: nameController,
+              onTapOutside: (_) {
+                FocusManager.instance.primaryFocus?.unfocus();
+              },
               decoration: InputDecoration(
                 labelText: "name".tr,
                 prefixIcon: const Icon(Icons.person),

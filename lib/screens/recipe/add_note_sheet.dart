@@ -91,6 +91,9 @@ class _AddNoteSheetState extends State<AddNoteSheet> {
               child: TextField(
                 controller: _controller,
                 maxLines: 5,
+                onTapOutside: (_) {
+                  FocusManager.instance.primaryFocus?.unfocus();
+                },
                 maxLength: _maxLength,
                 onChanged: (_) => setState(() {}),
                 style: GoogleFonts.plusJakartaSans(

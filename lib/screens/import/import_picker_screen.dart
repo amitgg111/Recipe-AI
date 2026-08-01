@@ -156,7 +156,7 @@ class ImportPickerScreen extends StatelessWidget {
                             title: 'write_from_scratch'.tr,
                             subtitle: 'create_your_own'.tr,
                             onTap: () {
-                              // Get.back();
+
                               Get.to(() => const RecipeEditorScreen());
                               HapticFeedback.heavyImpact();
                             },

@@ -472,6 +472,9 @@ class _AutoFillGoalSheetState extends State<AutoFillGoalSheet> {
                             Expanded(
                               child: TextField(
                                 controller: _promptCtrl,
+                                onTapOutside: (_) {
+                                  FocusManager.instance.primaryFocus?.unfocus();
+                                },
                                 style: Mp.f(13.5, FontWeight.w600, Mp.ink),
                                 cursorColor: Mp.purple,
                                 decoration: InputDecoration(
@@ -488,8 +491,7 @@ class _AutoFillGoalSheetState extends State<AutoFillGoalSheet> {
                                   contentPadding: const EdgeInsets.symmetric(
                                     vertical: 14,
                                   ),
-                                  hintText:
-                                      'goal_prompt_hint'.tr,
+                                  hintText: 'goal_prompt_hint'.tr,
                                   hintStyle: Mp.f(
                                     13.5,
                                     FontWeight.w500,
@@ -509,9 +511,9 @@ class _AutoFillGoalSheetState extends State<AutoFillGoalSheet> {
                 padding: const EdgeInsets.fromLTRB(18, 8, 18, 14),
                 child: GradientButton(
                   label: _selectedGoals.length > 1
-                      ? 'generate_my_week_count'.trParams(
-                          {'count': '${_selectedGoals.length}'},
-                        )
+                      ? 'generate_my_week_count'.trParams({
+                          'count': '${_selectedGoals.length}',
+                        })
                       : 'generate_my_week'.tr,
                   icon: Icons.auto_awesome,
                   onTap: _generate,

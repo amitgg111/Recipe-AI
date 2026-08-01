@@ -115,6 +115,9 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
           Expanded(
             child: TextField(
               onChanged: (v) => setState(() => _query = v.trim()),
+              onTapOutside: (_) {
+                FocusManager.instance.primaryFocus?.unfocus();
+              },
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,

@@ -948,7 +948,6 @@ class _ImportCompleteScreenState extends State<ImportCompleteScreen> {
   Widget _editButton(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        Get.back();
         Get.to(() => RecipeEditorScreen(recipe: widget.recipe));
       },
       child: Container(

@@ -236,7 +236,7 @@ class DiscoverController extends GetxController {
   // (by engagement), Quick & Easy (short time), Vegan (plant-based) — then the
   // common meal/course categories.
   final List<String> categories = [
-    'Trending',
+    'All',
     'Quick & Easy',
     'Vegan',
     'Desserts',
@@ -252,7 +252,7 @@ class DiscoverController extends GetxController {
   void onInit() {
     super.onInit();
 
-    selectedCategory.value = 'Trending';
+    selectedCategory.value = 'All';
 
     _authSub = AuthService.authStateChanges.listen((user) {
       if (user != null) {
@@ -479,7 +479,7 @@ class DiscoverController extends GetxController {
     final sel = selectedCategory.value;
 
     switch (sel) {
-      case 'Trending':
+      case 'All':
         // Most engaged first (likes + comments + saves + shares).
         list.sort((a, b) => _engagement(b).compareTo(_engagement(a)));
         break;

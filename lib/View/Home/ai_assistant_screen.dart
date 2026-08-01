@@ -104,7 +104,10 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     final name = _ctrl.nameOf(line);
     setState(() {
       _messages.add(
-        _Msg(user: true, text: 'ai_out_of_ingredient_msg'.trParams({'name': name})),
+        _Msg(
+          user: true,
+          text: 'ai_out_of_ingredient_msg'.trParams({'name': name}),
+        ),
       );
       _busy = true;
     });
@@ -114,9 +117,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     setState(() {
       _busy = false;
       if (options.isEmpty) {
-        _messages.add(
-          _Msg(text: 'ai_swap_none_found'.tr),
-        );
+        _messages.add(_Msg(text: 'ai_swap_none_found'.tr));
       } else {
         _messages.add(
           _Msg(
@@ -933,6 +934,9 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
               alignment: Alignment.center,
               child: TextField(
                 controller: _input,
+                onTapOutside: (_) {
+                  FocusManager.instance.primaryFocus?.unfocus();
+                },
                 cursorColor: const Color(0xFF8B5CF6),
                 onSubmitted: (_) => _send(),
                 style: _f(14, FontWeight.w500, _ink),

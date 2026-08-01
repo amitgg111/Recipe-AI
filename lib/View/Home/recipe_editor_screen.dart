@@ -9,6 +9,7 @@ import 'package:recipe_ai/Controllers/home_controller.dart';
 
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/Service/recipe_localizer.dart';
+import 'package:recipe_ai/View/Home/recipe_detail_screen.dart';
 import 'package:recipe_ai/widgets/app_network_image.dart';
 import 'package:recipe_ai/Controllers/recipe_editor_controller.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
@@ -122,40 +123,64 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     }
   }
 
+  void _goToRecipeDetail() {
+    final recipe = widget.recipe;
+
+    if (recipe == null) {
+      Get.back();
+      return;
+    }
+
+    Get.off(() => RecipeDetailScreen(recipe: recipe));
+  }
+
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.recipe != null;
     if (widget.recipe != null && _localizing && _localized == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-    return Scaffold(
-      backgroundColor: _E.bg,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildTopBar(context, _controller, isEdit),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
-                child: Form(
-                  key: _formKey,
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _PhotoBasicsCard(controller: _controller),
-                      const SizedBox(height: 16),
-                      _IngredientsEditor(controller: _controller),
-                      const SizedBox(height: 14),
-                      _InstructionsEditor(controller: _controller),
-                      const SizedBox(height: 16),
-                      if (isEdit) _DeleteButton(recipe: widget.recipe!),
-                    ],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _goToRecipeDetail();
+      },
+      child: Scaffold(
+        backgroundColor: _E.bg,
+        body: SafeArea(
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () {
+              FocusManager.instance.primaryFocus?.unfocus();
+            },
+            child: Column(
+              children: [
+                _buildTopBar(context, _controller, isEdit),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
+                    child: Form(
+                      key: _formKey,
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _PhotoBasicsCard(controller: _controller),
+                          const SizedBox(height: 16),
+                          _IngredientsEditor(controller: _controller),
+                          const SizedBox(height: 14),
+                          _InstructionsEditor(controller: _controller),
+                          const SizedBox(height: 16),
+                          if (isEdit) _DeleteButton(recipe: widget.recipe!),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -175,7 +200,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             GestureDetector(
-              onTap: () => Get.back(),
+              onTap: _goToRecipeDetail,
               child: Container(
                 width: 40,
                 height: 40,

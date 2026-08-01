@@ -54,7 +54,17 @@ class _LoginScreenState extends State<LoginScreen> {
   final _signupPasswordFocus = FocusNode();
 
   bool _obscurePassword = true;
-  bool _isLoading = false;
+
+  bool _isLoginLoading = false;
+  bool _isSignupLoading = false;
+  bool _isGoogleLoading = false;
+  bool _isAppleLoading = false;
+
+  bool get _isAnyAuthLoading =>
+      _isLoginLoading ||
+      _isSignupLoading ||
+      _isGoogleLoading ||
+      _isAppleLoading;
   // Terms & Privacy agreement checkbox on the sign-up form — checked (on) by
   // default; the user can uncheck it to disable account creation.
   bool _agreedToTerms = true;
@@ -161,12 +171,13 @@ class _LoginScreenState extends State<LoginScreen> {
   // ── Business logic ────────────────────────────────────────────────────────
 
   Future<void> _onLogin() async {
-    if (_isLoading) return; // prevent duplicate requests / double taps
-    FocusScope.of(context).unfocus(); // dismiss the keyboard on submit
+    if (_isAnyAuthLoading) return;
 
-    // Validate everything (incl. required) before any Firebase call.
+    FocusScope.of(context).unfocus();
+
     final emailErr = Validators.email(_loginEmailController.text);
     final passErr = Validators.loginPassword(_loginPasswordController.text);
+
     if (emailErr != null || passErr != null) {
       setState(() {
         _loginEmailError = emailErr;
@@ -175,32 +186,39 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() => _isLoginLoading = true);
+
     try {
-      // AuthService trims the email internally; passwords are never logged.
       await AuthService.signIn(
         email: _loginEmailController.text,
         password: _loginPasswordController.text,
       );
+
       await _routeAfterAuth();
     } catch (e) {
+      if (!mounted) return;
+
       CustomSnackbar.show(
         title: 'login_failed'.tr,
         message: AuthErrorMapper.message(e),
         type: SnackbarType.error,
       );
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoginLoading = false);
+      }
     }
   }
 
   Future<void> _onCreateAccount() async {
-    if (_isLoading) return; // prevent duplicate account creation / double taps
+    if (_isAnyAuthLoading) return;
+
     FocusScope.of(context).unfocus();
 
     final nameErr = Validators.name(_signupNameController.text);
     final emailErr = Validators.email(_signupEmailController.text);
     final passErr = Validators.password(_signupPasswordController.text);
+
     if (nameErr != null || emailErr != null || passErr != null) {
       setState(() {
         _signupNameError = nameErr;
@@ -210,67 +228,105 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    setState(() => _isLoading = true);
+    if (!_agreedToTerms) return;
+
+    setState(() => _isSignupLoading = true);
+
     try {
       await AuthService.signUp(
         name: _signupNameController.text,
         email: _signupEmailController.text,
         password: _signupPasswordController.text,
       );
+
+      if (!mounted) return;
+
       CustomSnackbar.show(
         title: 'welcome_exclaim'.tr,
         message: 'account_created_message'.tr,
         type: SnackbarType.success,
       );
+
       await _routeAfterAuth();
     } catch (e) {
+      if (!mounted) return;
+
       CustomSnackbar.show(
         title: 'sign_up_failed'.tr,
         message: AuthErrorMapper.message(e),
         type: SnackbarType.error,
       );
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isSignupLoading = false);
+      }
     }
   }
 
   Future<void> _onGoogleSignIn() async {
-    if (_isLoading) return; // prevent duplicate login requests
+    if (_isAnyAuthLoading) return;
+
     FocusScope.of(context).unfocus();
-    setState(() => _isLoading = true);
+
+    setState(() => _isGoogleLoading = true);
+
     try {
       final userCred = await AuthService.signInWithGoogle();
-      if (userCred == null) return; // user cancelled the picker — stay silent
+
+      // User cancelled Google account picker.
+      if (userCred == null) return;
+
       await _routeAfterAuth();
     } catch (e) {
+      if (!mounted) return;
+
       CustomSnackbar.show(
         title: 'google_sign_in_failed'.tr,
         message: AuthErrorMapper.message(e),
         type: SnackbarType.error,
       );
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isGoogleLoading = false);
+      }
     }
   }
 
   Future<void> _onAppleSignIn() async {
-    if (_isLoading) return; // prevent duplicate login requests
+    if (_isAnyAuthLoading) return;
+
     FocusScope.of(context).unfocus();
-    setState(() => _isLoading = true);
+
+    setState(() => _isAppleLoading = true);
+
     try {
       final result = await AuthService.signInWithApple();
-      if (result.cancelled) return; // user backed out — stay silent
+
+      if (result.cancelled) return;
+
       if (result.success) {
         await _routeAfterAuth();
       } else {
+        if (!mounted) return;
+
         CustomSnackbar.show(
           title: 'apple_sign_in_failed'.tr,
           message: result.errorMessage ?? 'could_not_sign_in_with_apple'.tr,
           type: SnackbarType.error,
         );
       }
+    } catch (e) {
+      if (!mounted) return;
+
+      CustomSnackbar.show(
+        title: 'apple_sign_in_failed'.tr,
+        message: AuthErrorMapper.message(e),
+        type: SnackbarType.error,
+      );
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isAppleLoading = false);
+      }
     }
   }
 
@@ -279,16 +335,20 @@ class _LoginScreenState extends State<LoginScreen> {
     if (user == null) return;
 
     try {
-      // Save device country/languages AFTER authentication.
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-        'countryCode': LanguageService.deviceCountryCode,
-        'countryLanguages': LanguageService.deviceLanguages,
-      }, SetOptions(merge: true));
-
-      final snap = await FirebaseFirestore.instance
+      final userRef = FirebaseFirestore.instance
           .collection('users')
-          .doc(user.uid)
-          .get();
+          .doc(user.uid);
+
+      // Background update — navigation માટે wait નહીં કરે.
+      userRef
+          .set({
+            'countryCode': LanguageService.deviceCountryCode,
+            'countryLanguages': LanguageService.deviceLanguages,
+          }, SetOptions(merge: true))
+          .catchError((_) {});
+
+      // Only required Firestore read.
+      final snap = await userRef.get();
 
       final needsTrialChooser = snap.data()?['trialChooserCompleted'] == false;
 
@@ -493,6 +553,7 @@ class _LoginScreenState extends State<LoginScreen> {
         const SizedBox(height: 6),
         _buildTextField(
           controller: _loginEmailController,
+
           focusNode: _loginEmailFocus,
           hint: 'enter_the_email'.tr,
           prefixIconName: 'mail',
@@ -541,8 +602,8 @@ class _LoginScreenState extends State<LoginScreen> {
         const SizedBox(height: 16),
         _PrimaryActionButton(
           label: 'login'.tr,
-          isLoading: _isLoading,
-          enabled: _isLoginValid,
+          isLoading: _isLoginLoading,
+          enabled: _isLoginValid && !_isAnyAuthLoading,
           onTap: _onLogin,
         ),
         const SizedBox(height: 14),
@@ -680,8 +741,8 @@ class _LoginScreenState extends State<LoginScreen> {
         const SizedBox(height: 12),
         _PrimaryActionButton(
           label: 'create_account'.tr,
-          isLoading: _isLoading,
-          enabled: _isSignupValid && _agreedToTerms,
+          isLoading: _isSignupLoading,
+          enabled: _isSignupValid && _agreedToTerms && !_isAnyAuthLoading,
           onTap: _onCreateAccount,
         ),
 
@@ -729,7 +790,8 @@ class _LoginScreenState extends State<LoginScreen> {
         Expanded(
           child: _SocialButton(
             label: 'google'.tr,
-            onTap: _isLoading ? null : _onGoogleSignIn,
+            isLoading: _isGoogleLoading,
+            onTap: _isAnyAuthLoading ? null : _onGoogleSignIn,
             leading: Container(
               width: 20,
               height: 20,
@@ -749,13 +811,14 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         ),
-        const SizedBox(width: 10),
+
         if (!Platform.isAndroid) ...[
           const SizedBox(width: 10),
           Expanded(
             child: _SocialButton(
               label: 'apple'.tr,
-              onTap: _isLoading ? null : _onAppleSignIn,
+              isLoading: _isAppleLoading,
+              onTap: _isAnyAuthLoading ? null : _onAppleSignIn,
             ),
           ),
         ],
@@ -832,6 +895,9 @@ class _LoginScreenState extends State<LoginScreen> {
             controller: controller,
             focusNode: focusNode,
             obscureText: obscure,
+            onTapOutside: (_) {
+              FocusManager.instance.primaryFocus?.unfocus();
+            },
             keyboardType: keyboardType,
             textInputAction: textInputAction,
             onChanged: onChanged,
@@ -904,11 +970,11 @@ class _AppLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return const Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const AppLogo(size: 30),
-        const SizedBox(width: 8),
+        AppLogo(size: 30),
+        SizedBox(width: 8),
         AppWordmark(fontSize: 16, fontWeight: FontWeight.w700),
       ],
     );
@@ -999,33 +1065,60 @@ class _SocialButton extends StatelessWidget {
   final String label;
   final VoidCallback? onTap;
   final Widget? leading;
+  final bool isLoading;
 
-  const _SocialButton({required this.label, required this.onTap, this.leading});
+  const _SocialButton({
+    required this.label,
+    required this.onTap,
+    this.leading,
+    this.isLoading = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final disabled = onTap == null || isLoading;
+
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 46,
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(11),
-          border: Border.all(color: const Color(0xFFEAE0CF)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (leading != null) ...[leading!, const SizedBox(width: 8)],
-            Text(
-              label,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF2A211B),
-              ),
-            ),
-          ],
+      onTap: disabled ? null : onTap,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 150),
+        opacity: disabled ? 0.55 : 1.0,
+        child: Container(
+          height: 46,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(11),
+            border: Border.all(color: const Color(0xFFEAE0CF)),
+          ),
+          child: Center(
+            child: isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.2,
+                      color: AppColors.primary,
+                    ),
+                  )
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (leading != null) ...[
+                        leading!,
+                        const SizedBox(width: 8),
+                      ],
+                      Text(
+                        label,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF2A211B),
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
         ),
       ),
     );

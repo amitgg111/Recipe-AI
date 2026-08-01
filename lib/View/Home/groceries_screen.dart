@@ -1393,13 +1393,137 @@ class _GroceriesScreenState extends State<GroceriesScreen> {
   }
 
   // ── "By meal" empty state — prompt to add recipes to the meal plan ──────────
+  // Widget _buildMealEmpty(BuildContext context) {
+  //   return Center(
+  //     child: Padding(
+  //       padding: const EdgeInsets.fromLTRB(40, 0, 40, 40),
+  //       child: Column(
+  //         mainAxisSize: MainAxisSize.min,
+
+  //         children: [
+  //           Container(
+  //             width: 84,
+  //             height: 84,
+  //             padding: const EdgeInsets.all(15),
+  //             decoration: BoxDecoration(
+  //               color: _G.card,
+  //               borderRadius: BorderRadius.circular(26),
+  //               border: Border.all(color: _G.border),
+  //               boxShadow: [
+  //                 BoxShadow(
+  //                   color: const Color(0xFF2A211B).withValues(alpha: 0.25),
+  //                   blurRadius: 32,
+  //                   offset: const Offset(0, 16),
+  //                   spreadRadius: -18,
+  //                 ),
+  //               ],
+  //             ),
+  //             child: const OnboardingLineIcon(
+  //               'cal',
+  //               size: 28,
+  //               color: _G.primary,
+  //             ),
+  //           ),
+  //           const SizedBox(height: 20),
+  //           Text(
+  //             'no_meal_ingredients_yet'.tr,
+  //             style: _G.f(20, FontWeight.w800, _G.textDark, ls: -0.4),
+  //           ),
+  //           const SizedBox(height: 8),
+  //           Text(
+  //             'meal_ingredients_hint'.tr,
+  //             textAlign: TextAlign.center,
+  //             style: _G.f(14, FontWeight.w500, _G.textMed, h: 1.5),
+  //           ),
+  //           const SizedBox(height: 20),
+  //           GestureDetector(
+  //             onTap: () {
+  //               Get.offUntil(
+  //                 MaterialPageRoute(
+  //                   builder: (_) => const HomeScreen(initialIndex: 2),
+  //                 ),
+  //                 (r) => r.isFirst,
+  //               );
+  //             },
+  //             child: Container(
+  //               height: 48,
+  //               padding: const EdgeInsets.symmetric(horizontal: 22),
+  //               alignment: Alignment.center,
+  //               decoration: BoxDecoration(
+  //                 color: _G.primary,
+  //                 borderRadius: BorderRadius.circular(13),
+  //               ),
+  //               child: Row(
+  //                 mainAxisSize: MainAxisSize.min,
+  //                 children: [
+  //                   const OnboardingLineIcon(
+  //                     'cal',
+  //                     size: 17,
+  //                     color: Colors.white,
+  //                   ),
+  //                   const SizedBox(width: 8),
+  //                   Text(
+  //                     'go_to_meal_plan'.tr,
+  //                     style: _G.f(14, FontWeight.w700, Colors.white),
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //           ),
+  //           const SizedBox(height: 18),
+  //           Text(
+  //             'just_need_a_few'.tr,
+  //             style: _G.f(12, FontWeight.w600, _G.textHint),
+  //           ),
+  //           const SizedBox(height: 8),
+  //           GestureDetector(
+  //             onTap: () => _showAddItemSheet(context),
+  //             child: Container(
+  //               padding: const EdgeInsets.symmetric(
+  //                 horizontal: 20,
+  //                 vertical: 8,
+  //               ),
+  //               alignment: Alignment.center,
+  //               decoration: BoxDecoration(
+  //                 color: _G.card,
+  //                 borderRadius: BorderRadius.circular(12),
+  //                 border: Border.all(color: _G.fieldBorder),
+  //               ),
+  //               child: Row(
+  //                 mainAxisAlignment: MainAxisAlignment.center,
+  //                 mainAxisSize: MainAxisSize.min,
+  //                 children: [
+  //                   const OnboardingLineIcon(
+  //                     'plus',
+  //                     size: 17,
+  //                     color: _G.primary,
+  //                   ),
+  //                   const SizedBox(width: 7),
+  //                   // Expanded(
+  //                   // child:
+  //                   Text(
+  //                     'add_item_manually'.tr,
+  //                     overflow: TextOverflow.ellipsis,
+  //                     maxLines: 2,
+  //                     style: _G.f(13.5, FontWeight.w700, _G.textDark),
+  //                   ),
+  //                   // ),
+  //                 ],
+  //               ),
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
   Widget _buildMealEmpty(BuildContext context) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(40, 0, 40, 40),
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(40, 16, 40, 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-
           children: [
             Container(
               width: 84,
@@ -1424,18 +1548,25 @@ class _GroceriesScreenState extends State<GroceriesScreen> {
                 color: _G.primary,
               ),
             ),
-            const SizedBox(height: 20),
+
+            const SizedBox(height: 18),
+
             Text(
               'no_meal_ingredients_yet'.tr,
+              textAlign: TextAlign.center,
               style: _G.f(20, FontWeight.w800, _G.textDark, ls: -0.4),
             ),
-            const SizedBox(height: 8),
+
+            const SizedBox(height: 6),
+
             Text(
               'meal_ingredients_hint'.tr,
               textAlign: TextAlign.center,
               style: _G.f(14, FontWeight.w500, _G.textMed, h: 1.5),
             ),
-            const SizedBox(height: 20),
+
+            const SizedBox(height: 16),
+
             GestureDetector(
               onTap: () {
                 Get.offUntil(
@@ -1462,23 +1593,34 @@ class _GroceriesScreenState extends State<GroceriesScreen> {
                       color: Colors.white,
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      'go_to_meal_plan'.tr,
-                      style: _G.f(14, FontWeight.w700, Colors.white),
+                    Flexible(
+                      child: Text(
+                        'go_to_meal_plan'.tr,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: _G.f(14, FontWeight.w700, Colors.white),
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 18),
+
+            const SizedBox(height: 14),
+
             Text(
               'just_need_a_few'.tr,
+              textAlign: TextAlign.center,
               style: _G.f(12, FontWeight.w600, _G.textHint),
             ),
-            const SizedBox(height: 8),
+
+            const SizedBox(height: 6),
+
             GestureDetector(
               onTap: () => _showAddItemSheet(context),
               child: Container(
+                constraints: const BoxConstraints(minHeight: 40),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
                   vertical: 8,
@@ -1490,8 +1632,8 @@ class _GroceriesScreenState extends State<GroceriesScreen> {
                   border: Border.all(color: _G.fieldBorder),
                 ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const OnboardingLineIcon(
                       'plus',
@@ -1499,15 +1641,15 @@ class _GroceriesScreenState extends State<GroceriesScreen> {
                       color: _G.primary,
                     ),
                     const SizedBox(width: 7),
-                    // Expanded(
-                    // child:
-                    Text(
-                      'add_item_manually'.tr,
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 2,
-                      style: _G.f(13.5, FontWeight.w700, _G.textDark),
+                    Flexible(
+                      child: Text(
+                        'add_item_manually'.tr,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: _G.f(13.5, FontWeight.w700, _G.textDark),
+                      ),
                     ),
-                    // ),
                   ],
                 ),
               ),
@@ -1522,7 +1664,7 @@ class _GroceriesScreenState extends State<GroceriesScreen> {
   Widget _buildEmpty(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(40),
+        padding: const EdgeInsets.symmetric(horizontal: 40),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

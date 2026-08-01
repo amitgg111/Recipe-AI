@@ -9,11 +9,7 @@ class DeleteCookbookDialog extends StatelessWidget {
   final VoidCallback? onDelete;
   final VoidCallback? onCancel;
 
-  const DeleteCookbookDialog({
-    super.key,
-    this.onDelete,
-    this.onCancel,
-  });
+  const DeleteCookbookDialog({super.key, this.onDelete, this.onCancel});
 
   static Future<bool?> show(BuildContext context) {
     return showDialog<bool>(
@@ -43,11 +39,13 @@ class DeleteCookbookDialog extends StatelessWidget {
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // Trash icon
             Container(
               width: 64,
               height: 64,
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: AppColors.redBg,
                 borderRadius: BorderRadius.circular(AppDimensions.radiusXl),
@@ -63,6 +61,7 @@ class DeleteCookbookDialog extends StatelessWidget {
             Text(
               'delete_this_cookbook'.tr,
               style: AppTextStyles.cardTitle.copyWith(fontSize: 21),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.md),
             // Description with bold "not"
@@ -74,16 +73,12 @@ class DeleteCookbookDialog extends StatelessWidget {
                   height: 1.5,
                 ),
                 children: [
-                  TextSpan(
-                    text: 'delete_cookbook_note_prefix'.tr,
-                  ),
+                  TextSpan(text: 'delete_cookbook_note_prefix'.tr),
                   TextSpan(
                     text: 'delete_cookbook_note_not'.tr,
                     style: const TextStyle(fontWeight: FontWeight.w800),
                   ),
-                  TextSpan(
-                    text: 'delete_cookbook_note_suffix'.tr,
-                  ),
+                  TextSpan(text: 'delete_cookbook_note_suffix'.tr),
                 ],
               ),
             ),

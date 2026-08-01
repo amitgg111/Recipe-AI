@@ -21,6 +21,9 @@ class ForgotPasswordScreen extends StatelessWidget {
           children: [
             TextField(
               controller: emailController,
+              onTapOutside: (_) {
+                FocusManager.instance.primaryFocus?.unfocus();
+              },
               decoration: InputDecoration(hintText: "enter_email".tr),
             ),
 

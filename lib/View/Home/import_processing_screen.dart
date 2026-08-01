@@ -143,11 +143,11 @@ class ImportProcessingScreenState extends State<ImportProcessingScreen>
                   padding: const EdgeInsets.fromLTRB(28, 14, 28, 28),
                   child: Column(
                     children: [
-                      Row(
+                      const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const AppLogo(size: 34),
-                          const SizedBox(width: 9),
+                          AppLogo(size: 34),
+                          SizedBox(width: 9),
                           AppWordmark(
                             fontSize: 18,
                             fontWeight: FontWeight.w800,

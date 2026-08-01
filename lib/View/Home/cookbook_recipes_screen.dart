@@ -285,6 +285,7 @@ class CookbookRecipesScreen extends StatelessWidget {
                 Container(
                   width: 56,
                   height: 56,
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFEE2E2),
                     borderRadius: BorderRadius.circular(16),
@@ -303,6 +304,7 @@ class CookbookRecipesScreen extends StatelessWidget {
                     fontWeight: FontWeight.w800,
                     color: AppColors.textDark,
                   ),
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 10),
                 Text(
@@ -1091,6 +1093,9 @@ class _RenameCookbookSheetState extends State<_RenameCookbookSheet> {
               child: TextField(
                 controller: _nameController,
                 autofocus: true,
+                onTapOutside: (_) {
+                  FocusManager.instance.primaryFocus?.unfocus();
+                },
                 cursorColor: const Color(0xFFF2623E),
 
                 style: GoogleFonts.plusJakartaSans(

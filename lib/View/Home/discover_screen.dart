@@ -93,8 +93,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   // (used for filtering in DiscoverController) is left untouched.
   String _catLabel(String cat) {
     switch (cat) {
-      case 'Trending':
-        return 'trending'.tr;
+      case 'All':
+        return 'All';
       case 'Quick & Easy':
         return 'quick_easy'.tr;
       case 'Vegan':
@@ -334,27 +334,98 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     });
   }
 
+  // Widget _emptyState() {
+  //   return Center(
+  //     child: Column(
+  //       mainAxisSize: MainAxisSize.min,
+  //       children: [
+  //         OnboardingLineIcon(
+  //           'compass',
+  //           size: 56,
+  //           color: _D.textHint.withValues(alpha: 0.4),
+  //         ),
+  //         const SizedBox(height: 12),
+  //         Text(
+  //           'no_recipes_found'.tr,
+  //           style: _f(16, FontWeight.w600, AppColors.textMedium),
+  //         ),
+  //         const SizedBox(height: 4),
+  //         Text(
+  //           'try_different_category_or_search'.tr,
+  //           style: _f(13, FontWeight.w400, _D.textHint),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
   Widget _emptyState() {
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          OnboardingLineIcon(
-            'compass',
-            size: 56,
-            color: _D.textHint.withValues(alpha: 0.4),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'no_recipes_found'.tr,
-            style: _f(16, FontWeight.w600, AppColors.textMedium),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'try_different_category_or_search'.tr,
-            style: _f(13, FontWeight.w400, _D.textHint),
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Soft illustration container
+            Container(
+              width: 92,
+              height: 92,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Container(
+                  width: 68,
+                  height: 68,
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.12),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: OnboardingLineIcon(
+                      'search',
+                      size: 30,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            Text(
+              'no_recipes_found'.tr,
+              textAlign: TextAlign.center,
+              style: _f(18, FontWeight.w700, AppColors.textDark),
+            ),
+
+            const SizedBox(height: 8),
+
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 280),
+              child: Text(
+                'try_different_category_or_search'.tr,
+                textAlign: TextAlign.center,
+                style: _f(
+                  13,
+                  FontWeight.w400,
+                  _D.textHint,
+                ).copyWith(height: 1.5),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -386,6 +457,9 @@ class _SearchField extends StatelessWidget {
             child: TextField(
               onChanged: (v) => controller.searchQuery.value = v.trim(),
               cursorColor: _D.primary,
+              onTapOutside: (_) {
+                FocusManager.instance.primaryFocus?.unfocus();
+              },
               style: _f(14, FontWeight.w500, _D.textDark),
               decoration: InputDecoration(
                 hintText: 'search_community_recipes'.tr,

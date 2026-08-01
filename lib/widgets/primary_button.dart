@@ -11,7 +11,10 @@ class PrimaryButton extends StatefulWidget {
   final VoidCallback? onPressed;
   final Widget? leadingIcon;
   final PrimaryButtonVariant variant;
+
+  /// Shows the animated white gloss sweep.
   final bool enableSheen;
+
   final bool enableBob;
   final bool isLoading;
   final double? width;
@@ -50,29 +53,76 @@ class _PrimaryButtonState extends State<PrimaryButton>
     with TickerProviderStateMixin {
   AnimationController? _sheenController;
   AnimationController? _bobController;
+
   Animation<double>? _sheenAnimation;
   Animation<double>? _bobAnimation;
 
   @override
   void initState() {
     super.initState();
+    _setupAnimations();
+  }
+
+  void _setupAnimations() {
     if (widget.enableSheen) {
       _sheenController = AnimationController(
-        duration: const Duration(milliseconds: 1800),
         vsync: this,
-      )..repeat(period: const Duration(milliseconds: 2500));
+        // Slower sweep
+        duration: const Duration(milliseconds: 2600),
+      );
+
       _sheenAnimation = Tween<double>(begin: -1.0, end: 2.0).animate(
         CurvedAnimation(parent: _sheenController!, curve: Curves.easeInOut),
       );
+
+      _startSheen();
     }
+
     if (widget.enableBob) {
       _bobController = AnimationController(
         duration: const Duration(milliseconds: 1200),
         vsync: this,
       )..repeat(reverse: true);
+
       _bobAnimation = Tween<double>(begin: 0, end: -5).animate(
         CurvedAnimation(parent: _bobController!, curve: Curves.easeInOut),
       );
+    }
+  }
+
+  Future<void> _startSheen() async {
+    while (mounted && widget.enableSheen) {
+      await _sheenController?.forward(from: 0);
+
+      if (!mounted || !widget.enableSheen) return;
+
+      // Pause before next sweep
+      await Future.delayed(const Duration(milliseconds: 1000));
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant PrimaryButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.enableSheen != widget.enableSheen) {
+      _sheenController?.dispose();
+      _sheenController = null;
+      _sheenAnimation = null;
+
+      if (widget.enableSheen) {
+        _sheenController = AnimationController(
+          vsync: this,
+          // IMPORTANT: same slow duration here too
+          duration: const Duration(milliseconds: 2600),
+        );
+
+        _sheenAnimation = Tween<double>(begin: -1.0, end: 2.0).animate(
+          CurvedAnimation(parent: _sheenController!, curve: Curves.easeInOut),
+        );
+
+        _startSheen();
+      }
     }
   }
 
@@ -121,7 +171,9 @@ class _PrimaryButtonState extends State<PrimaryButton>
           child: ClipRRect(
             borderRadius: BorderRadius.circular(AppDimensions.radiusButton),
             child: Stack(
+              fit: StackFit.expand,
               children: [
+                // Button content
                 Center(
                   child: widget.isLoading
                       ? const SizedBox(
@@ -146,33 +198,44 @@ class _PrimaryButtonState extends State<PrimaryButton>
                           ],
                         ),
                 ),
+
+                // Animated white gloss sweep
                 if (widget.enableSheen && _sheenAnimation != null)
-                  _AnimatedBuilder(
-                    animation: _sheenAnimation!,
-                    builder: (context, child) {
-                      return Positioned.fill(
-                        child: ShaderMask(
-                          shaderCallback: (bounds) {
-                            return LinearGradient(
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                              colors: [
-                                Colors.white.withValues(alpha: 0),
-                                Colors.white.withValues(alpha: 0.15),
-                                Colors.white.withValues(alpha: 0),
-                              ],
-                              stops: [
-                                _sheenAnimation!.value - 0.3,
-                                _sheenAnimation!.value,
-                                _sheenAnimation!.value + 0.3,
-                              ].map((s) => s.clamp(0.0, 1.0)).toList(),
-                            ).createShader(bounds);
-                          },
-                          blendMode: BlendMode.srcATop,
-                          child: Container(color: Colors.white),
-                        ),
-                      );
-                    },
+                  IgnorePointer(
+                    child: AnimatedBuilder(
+                      animation: _sheenAnimation!,
+                      builder: (context, child) {
+                        final position = _sheenAnimation!.value;
+
+                        return FractionalTranslation(
+                          translation: Offset(position, 0),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: FractionallySizedBox(
+                              widthFactor: 0.35,
+                              heightFactor: 1.4,
+                              child: Transform.rotate(
+                                angle: 0.0,
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.centerLeft,
+                                      end: Alignment.centerRight,
+                                      colors: [
+                                        Colors.white.withValues(alpha: 0),
+                                        Colors.white.withValues(alpha: 0.22),
+                                        Colors.white.withValues(alpha: 0),
+                                      ],
+                                      stops: const [0.0, 0.5, 1.0],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
               ],
             ),
@@ -182,7 +245,7 @@ class _PrimaryButtonState extends State<PrimaryButton>
     );
 
     if (widget.enableBob && _bobAnimation != null) {
-      button = _AnimatedBuilder(
+      button = AnimatedBuilder(
         animation: _bobAnimation!,
         builder: (context, child) {
           return Transform.translate(
@@ -195,21 +258,5 @@ class _PrimaryButtonState extends State<PrimaryButton>
     }
 
     return button;
-  }
-}
-
-class _AnimatedBuilder extends AnimatedWidget {
-  final Widget Function(BuildContext context, Widget? child) builder;
-  final Widget? child;
-
-  const _AnimatedBuilder({
-    required Animation<double> animation,
-    required this.builder,
-    this.child,
-  }) : super(listenable: animation);
-
-  @override
-  Widget build(BuildContext context) {
-    return builder(context, child);
   }
 }

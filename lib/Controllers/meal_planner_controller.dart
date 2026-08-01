@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:math' as math;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -303,80 +304,238 @@ class MealPlannerController extends GetxController {
   }
 
   Future<void> generateWeeklyPlan() async {
-    aiUsed.value = false;
-    _pool.clear();
-    meals.clear();
-    final planCtrl = Get.find<MealPlanController>();
-    final weekStart = planCtrl.selectedWeekStart.value;
-    allowedDays = _allowedDayIndices(weekStart);
-    if (allowedDays.isEmpty) {
-      // Entire visible week is already in the past — nothing to generate.
-      meals.value = [];
-      steps.value = [
-        GenStep('Nothing left to plan this week', MpStepState.done),
-      ];
-      return;
-    }
+    final totalWatch = Stopwatch()..start();
 
-    // Steps are revealed progressively; the AI step only appears if used.
-    steps.value = [
-      GenStep('Reading your preferences'),
-      GenStep('Searching your Cookbook'),
-      GenStep('Searching Community Recipes'),
-      GenStep('Building your weekly meal plan'),
-    ];
-
-    // Step 1 — preferences.
-    await _run(0, minMs: 500);
-
-    // Step 2 — Cookbook (Priority 1). Never touch the network yet.
-    steps[1].state = MpStepState.active;
-    steps.refresh();
-    final cookbook = searchCookbook();
-    _pool.addAll(cookbook);
-    await _settle(600);
-    steps[1].state = MpStepState.done;
-    steps.refresh();
-
-    // Step 3 — Community (Priority 2). Only if the Cookbook isn't enough.
-    steps[2].state = MpStepState.active;
-    steps.refresh();
-    if (_pool.length < target) {
-      final community = await searchCommunityRecipes();
-      mergeInto(_pool, community);
-    }
-    await _settle(600);
-    steps[2].state = MpStepState.done;
-    steps.refresh();
-
-    // Step 4 — AI (Priority 3, LAST resort). Only the missing recipes.
-    if (_pool.length < target) {
-      aiUsed.value = true;
-      // Insert the AI step before "Building…".
-      steps.insert(
-        3,
-        GenStep('Generating missing recipes', MpStepState.active),
+    void logStep(String step, Stopwatch watch) {
+      log(
+        '⏱️ [WeeklyPlan] $step: '
+        '${watch.elapsedMilliseconds} ms '
+        '(${(watch.elapsedMilliseconds / 1000).toStringAsFixed(2)} sec)',
       );
-      steps.refresh();
-      final missing = target - _pool.length;
-      final generated = await generateMissingRecipes(missing);
-      mergeInto(_pool, generated);
-      steps[3].state = MpStepState.done;
-      steps.refresh();
     }
 
-    // Final step — build & balance the week (always succeeds).
-    final buildIdx = steps.length - 1;
-    steps[buildIdx].state = MpStepState.active;
-    steps.refresh();
-    balanceMeals();
-    await _settle(700);
-    steps[buildIdx].state = MpStepState.done;
-    steps.refresh();
+    log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    log('🚀 [WeeklyPlan] generateWeeklyPlan START');
+    log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-    // Persist the generated week as a draft so it survives leaving the review
-    // screen without applying (recoverable from Firebase, no longer memory-only).
-    await _saveDraft();
+    try {
+      aiUsed.value = false;
+      _pool.clear();
+      meals.clear();
+
+      final planCtrl = Get.find<MealPlanController>();
+      final weekStart = planCtrl.selectedWeekStart.value;
+
+      log('📅 [WeeklyPlan] Week start: $weekStart');
+
+      allowedDays = _allowedDayIndices(weekStart);
+
+      log('📆 [WeeklyPlan] Allowed days: $allowedDays');
+
+      if (allowedDays.isEmpty) {
+        meals.value = [];
+        steps.value = [
+          GenStep('Nothing left to plan this week', MpStepState.done),
+        ];
+
+        totalWatch.stop();
+
+        log(
+          '⚠️ [WeeklyPlan] Nothing to generate. '
+          'Total: ${totalWatch.elapsedMilliseconds} ms',
+        );
+        return;
+      }
+
+      steps.value = [
+        GenStep('Reading your preferences'),
+        GenStep('Searching your Cookbook'),
+        GenStep('Searching Community Recipes'),
+        GenStep('Building your weekly meal plan'),
+      ];
+
+      // ---------------------------------------------------------
+      // STEP 1 — Preferences
+      // ---------------------------------------------------------
+      final step1Watch = Stopwatch()..start();
+
+      log('▶️ [WeeklyPlan] STEP 1 START: Reading preferences');
+
+      await _run(0, minMs: 500);
+
+      step1Watch.stop();
+      logStep('STEP 1 - Reading preferences', step1Watch);
+
+      // ---------------------------------------------------------
+      // STEP 2 — Cookbook
+      // ---------------------------------------------------------
+      final step2Watch = Stopwatch()..start();
+
+      log('▶️ [WeeklyPlan] STEP 2 START: Searching Cookbook');
+
+      steps[1].state = MpStepState.active;
+      steps.refresh();
+
+      final cookbook = searchCookbook();
+
+      log('📚 [WeeklyPlan] Cookbook recipes found: ${cookbook.length}');
+
+      _pool.addAll(cookbook);
+
+      log('📦 [WeeklyPlan] Pool after Cookbook: ${_pool.length}/$target');
+
+      await _settle(600);
+
+      steps[1].state = MpStepState.done;
+      steps.refresh();
+
+      step2Watch.stop();
+      logStep('STEP 2 - Searching Cookbook', step2Watch);
+
+      // ---------------------------------------------------------
+      // STEP 3 — Community
+      // ---------------------------------------------------------
+      final step3Watch = Stopwatch()..start();
+
+      log('▶️ [WeeklyPlan] STEP 3 START: Searching Community');
+
+      steps[2].state = MpStepState.active;
+      steps.refresh();
+
+      if (_pool.length < target) {
+        final needed = target - _pool.length;
+
+        log(
+          '🌐 [WeeklyPlan] Cookbook insufficient. '
+          'Need $needed more recipes.',
+        );
+
+        final community = await searchCommunityRecipes();
+
+        log('🌐 [WeeklyPlan] Community recipes found: ${community.length}');
+
+        mergeInto(_pool, community);
+
+        log(
+          '📦 [WeeklyPlan] Pool after Community: '
+          '${_pool.length}/$target',
+        );
+      } else {
+        log(
+          '✅ [WeeklyPlan] Cookbook already has enough recipes. '
+          'Skipping Community search.',
+        );
+      }
+
+      await _settle(600);
+
+      steps[2].state = MpStepState.done;
+      steps.refresh();
+
+      step3Watch.stop();
+      logStep('STEP 3 - Searching Community', step3Watch);
+
+      // ---------------------------------------------------------
+      // STEP 4 — AI LAST RESORT
+      // ---------------------------------------------------------
+      if (_pool.length < target) {
+        final aiWatch = Stopwatch()..start();
+
+        aiUsed.value = true;
+
+        final missing = target - _pool.length;
+
+        log('🤖 [WeeklyPlan] STEP 4 START: AI Generation');
+        log('🤖 [WeeklyPlan] AI needs to generate: $missing recipes');
+
+        steps.insert(
+          3,
+          GenStep('Generating missing recipes', MpStepState.active),
+        );
+        steps.refresh();
+
+        final generated = await generateMissingRecipes(missing);
+
+        log('🤖 [WeeklyPlan] AI generated: ${generated.length} recipes');
+
+        mergeInto(_pool, generated);
+
+        log('📦 [WeeklyPlan] Pool after AI: ${_pool.length}/$target');
+
+        steps[3].state = MpStepState.done;
+        steps.refresh();
+
+        aiWatch.stop();
+        logStep('STEP 4 - AI Generation', aiWatch);
+      } else {
+        log('✅ [WeeklyPlan] Enough recipes found. AI generation skipped.');
+      }
+
+      // ---------------------------------------------------------
+      // FINAL STEP — Build & Balance
+      // ---------------------------------------------------------
+      final buildWatch = Stopwatch()..start();
+
+      log('▶️ [WeeklyPlan] FINAL STEP START: Build & Balance');
+
+      final buildIdx = steps.length - 1;
+
+      steps[buildIdx].state = MpStepState.active;
+      steps.refresh();
+
+      balanceMeals();
+
+      log('🍽️ [WeeklyPlan] Meals after balance: ${meals.length}');
+
+      await _settle(700);
+
+      steps[buildIdx].state = MpStepState.done;
+      steps.refresh();
+
+      buildWatch.stop();
+      logStep('FINAL STEP - Build & Balance', buildWatch);
+
+      // ---------------------------------------------------------
+      // SAVE DRAFT
+      // ---------------------------------------------------------
+      final saveWatch = Stopwatch()..start();
+
+      log('💾 [WeeklyPlan] Saving draft...');
+
+      await _saveDraft();
+
+      saveWatch.stop();
+      logStep('Save Draft', saveWatch);
+
+      // ---------------------------------------------------------
+      // TOTAL TIME
+      // ---------------------------------------------------------
+      totalWatch.stop();
+
+      log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      log('✅ [WeeklyPlan] generateWeeklyPlan COMPLETED');
+      log('📦 [WeeklyPlan] Final pool: ${_pool.length}/$target');
+      log('🍽️ [WeeklyPlan] Final meals: ${meals.length}');
+      log('🤖 [WeeklyPlan] AI used: ${aiUsed.value}');
+      log(
+        '⏱️ [WeeklyPlan] TOTAL TIME: '
+        '${totalWatch.elapsedMilliseconds} ms '
+        '(${(totalWatch.elapsedMilliseconds / 1000).toStringAsFixed(2)} sec)',
+      );
+      log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    } catch (e, stackTrace) {
+      totalWatch.stop();
+
+      log('❌ [WeeklyPlan] ERROR: $e');
+      log(
+        '⏱️ [WeeklyPlan] Failed after: '
+        '${totalWatch.elapsedMilliseconds} ms '
+        '(${(totalWatch.elapsedMilliseconds / 1000).toStringAsFixed(2)} sec)',
+      );
+      log('📍 [WeeklyPlan] StackTrace: $stackTrace');
+
+      rethrow;
+    }
   }
 
   /// Move the recipe at [fromDay]/[fromSlot] to [toDay]/[toSlot]. If the
@@ -478,20 +637,86 @@ class MealPlannerController extends GetxController {
   /// biased to the selected goal(s) + custom prompt. Cycles through every
   /// selected goal's bias so each goal gets fair representation. Never
   /// regenerates what we already have.
+  // Future<List<PlanRecipe>> generateMissingRecipes(int count) async {
+  //   final n = math.min(count, _aiCap);
+  //   final out = <PlanRecipe>[];
+
+  //   final selectedGoals = goals.isNotEmpty ? goals : [goal.value];
+  //   final extra = customPrompt.trim();
+  //   final cuisine = selectedCuisine.trim();
+
+  //   final slotCycle = ['breakfast', 'lunch', 'dinner'];
+
+  //   for (var i = 0; i < n; i++) {
+  //     final meal = slotCycle[i % slotCycle.length];
+
+  //     // Rotate through selected goals
+  //     final bias = selectedGoals[i % selectedGoals.length].aiBias;
+
+  //     final name = [
+  //       bias,
+  //       if (cuisine.isNotEmpty) cuisine,
+  //       if (extra.isNotEmpty) extra,
+  //       meal,
+  //       'recipe idea ${i + 1}',
+  //     ].join(' ');
+
+  //     try {
+  //       final recipe = await RecipeImportService.getRecipeFromName(name);
+
+  //       final pr = PlanRecipe.fromMap(
+  //         'ai_${DateTime.now().microsecondsSinceEpoch}_$i',
+  //         recipe,
+  //         PlanSource.ai,
+  //       );
+
+  //       if (pr.title.trim().isNotEmpty) {
+  //         out.add(pr);
+  //       }
+  //     } catch (_) {
+  //       // Skip failed generation; plan continues
+  //     }
+  //   }
+
+  //   return out;
+  // }
+
   Future<List<PlanRecipe>> generateMissingRecipes(int count) async {
+    final totalWatch = Stopwatch()..start();
+
     final n = math.min(count, _aiCap);
     final out = <PlanRecipe>[];
+
+    if (n <= 0) {
+      log('🤖 [AI] Nothing to generate.');
+      return out;
+    }
 
     final selectedGoals = goals.isNotEmpty ? goals : [goal.value];
     final extra = customPrompt.trim();
     final cuisine = selectedCuisine.trim();
 
-    final slotCycle = ['breakfast', 'lunch', 'dinner'];
+    const slotCycle = ['breakfast', 'lunch', 'dinner'];
+
+    // Keep this at 3 to avoid hitting API/backend rate limits.
+    const batchSize = 3;
+
+    log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    log('🤖 [AI] GENERATION START');
+    log('🤖 [AI] Requested: $count');
+    log('🤖 [AI] Actual generation count: $n');
+    log('🤖 [AI] Batch size: $batchSize');
+    log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+    // ---------------------------------------------------------
+    // Build all recipe requests first
+    // ---------------------------------------------------------
+
+    final requests = <Future<PlanRecipe?>>[];
 
     for (var i = 0; i < n; i++) {
       final meal = slotCycle[i % slotCycle.length];
 
-      // Rotate through selected goals
       final bias = selectedGoals[i % selectedGoals.length].aiBias;
 
       final name = [
@@ -502,24 +727,112 @@ class MealPlannerController extends GetxController {
         'recipe idea ${i + 1}',
       ].join(' ');
 
-      try {
-        final recipe = await RecipeImportService.getRecipeFromName(name);
+      log('📝 [AI] Request ${i + 1}/$n: $name');
 
-        final pr = PlanRecipe.fromMap(
-          'ai_${DateTime.now().microsecondsSinceEpoch}_$i',
-          recipe,
-          PlanSource.ai,
-        );
-
-        if (pr.title.trim().isNotEmpty) {
-          out.add(pr);
-        }
-      } catch (_) {
-        // Skip failed generation; plan continues
-      }
+      requests.add(_generateSingleRecipe(name: name, index: i));
     }
 
+    // ---------------------------------------------------------
+    // Execute in parallel batches
+    // ---------------------------------------------------------
+
+    for (var start = 0; start < requests.length; start += batchSize) {
+      final end = math.min(start + batchSize, requests.length);
+
+      final batch = requests.sublist(start, end);
+
+      final batchNumber = (start ~/ batchSize) + 1;
+
+      final batchWatch = Stopwatch()..start();
+
+      log(
+        '🚀 [AI] Batch $batchNumber START '
+        '(${batch.length} parallel requests)',
+      );
+
+      final results = await Future.wait(batch, eagerError: false);
+
+      batchWatch.stop();
+
+      for (final recipe in results) {
+        if (recipe != null) {
+          out.add(recipe);
+        }
+      }
+
+      log(
+        '✅ [AI] Batch $batchNumber DONE: '
+        '${batchWatch.elapsedMilliseconds} ms '
+        '(${(batchWatch.elapsedMilliseconds / 1000).toStringAsFixed(2)} sec)',
+      );
+
+      log(
+        '📦 [AI] Successful recipes so far: '
+        '${out.length}/$n',
+      );
+    }
+
+    totalWatch.stop();
+
+    log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    log('🤖 [AI] GENERATION COMPLETE');
+    log('🤖 [AI] Successful: ${out.length}/$n');
+    log(
+      '⏱️ [AI] Total generation time: '
+      '${totalWatch.elapsedMilliseconds} ms '
+      '(${(totalWatch.elapsedMilliseconds / 1000).toStringAsFixed(2)} sec)',
+    );
+    log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
     return out;
+  }
+
+  Future<PlanRecipe?> _generateSingleRecipe({
+    required String name,
+    required int index,
+  }) async {
+    final watch = Stopwatch()..start();
+
+    try {
+      log('🤖 [AI] Recipe ${index + 1} START');
+
+      final recipe = await RecipeImportService.getRecipeFromName(name);
+
+      final pr = PlanRecipe.fromMap(
+        'ai_${DateTime.now().microsecondsSinceEpoch}_$index',
+        recipe,
+        PlanSource.ai,
+      );
+
+      watch.stop();
+
+      if (pr.title.trim().isEmpty) {
+        log(
+          '⚠️ [AI] Recipe ${index + 1} returned empty title '
+          'after ${watch.elapsedMilliseconds} ms',
+        );
+        return null;
+      }
+
+      log(
+        '✅ [AI] Recipe ${index + 1} DONE: '
+        '"${pr.title}" '
+        '${watch.elapsedMilliseconds} ms '
+        '(${(watch.elapsedMilliseconds / 1000).toStringAsFixed(2)} sec)',
+      );
+
+      return pr;
+    } catch (e) {
+      watch.stop();
+
+      log(
+        '❌ [AI] Recipe ${index + 1} FAILED after '
+        '${watch.elapsedMilliseconds} ms '
+        '(${(watch.elapsedMilliseconds / 1000).toStringAsFixed(2)} sec): $e',
+      );
+
+      return null;
+    }
   }
 
   /// Merge [incoming] into [pool], removing duplicates by title.

@@ -16,7 +16,7 @@ class DiscoverFeedScreen extends StatefulWidget {
 class _DiscoverFeedScreenState extends State<DiscoverFeedScreen> {
   int _selectedFilter = 0;
 
-  final _filters = ['Trending', 'Quick & Easy', 'Vegan', 'Desserts', 'Breakfast'];
+  final _filters = ['All', 'Quick & Easy', 'Vegan', 'Desserts', 'Breakfast'];
 
   final _posts = const [
     _PostData(
@@ -90,10 +90,7 @@ class _DiscoverFeedScreenState extends State<DiscoverFeedScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: AppBottomNav(
-        currentIndex: 1,
-        onTap: (i) {},
-      ),
+      bottomNavigationBar: AppBottomNav(currentIndex: 1, onTap: (i) {}),
     );
   }
 
@@ -102,7 +99,11 @@ class _DiscoverFeedScreenState extends State<DiscoverFeedScreen> {
       padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
       child: Row(
         children: [
-          const Icon(Icons.restaurant_rounded, color: AppColors.primary, size: 22),
+          const Icon(
+            Icons.restaurant_rounded,
+            color: AppColors.primary,
+            size: 22,
+          ),
           const SizedBox(width: 8),
           AppWordmark(fontSize: 18),
           const Spacer(),
@@ -267,7 +268,11 @@ class _DiscoverFeedScreenState extends State<DiscoverFeedScreen> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.schedule, size: 13, color: AppColors.textMedium),
+                          const Icon(
+                            Icons.schedule,
+                            size: 13,
+                            color: AppColors.textMedium,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             post.cookTime,
@@ -325,7 +330,11 @@ class _DiscoverFeedScreenState extends State<DiscoverFeedScreen> {
                   ),
                 ),
                 const SizedBox(width: 18),
-                const Icon(Icons.chat_bubble_outline, size: 20, color: AppColors.textMedium),
+                const Icon(
+                  Icons.chat_bubble_outline,
+                  size: 20,
+                  color: AppColors.textMedium,
+                ),
                 const SizedBox(width: 5),
                 Text(
                   '${post.comments}',
@@ -334,9 +343,17 @@ class _DiscoverFeedScreenState extends State<DiscoverFeedScreen> {
                   ),
                 ),
                 const SizedBox(width: 18),
-                const Icon(Icons.send_outlined, size: 20, color: AppColors.textMedium),
+                const Icon(
+                  Icons.send_outlined,
+                  size: 20,
+                  color: AppColors.textMedium,
+                ),
                 const Spacer(),
-                const Icon(Icons.bookmark_border, size: 22, color: AppColors.textMedium),
+                const Icon(
+                  Icons.bookmark_border,
+                  size: 22,
+                  color: AppColors.textMedium,
+                ),
               ],
             ),
           ),

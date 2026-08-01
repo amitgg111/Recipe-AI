@@ -255,6 +255,9 @@ class _AppSearchBarState extends State<AppSearchBar> {
                         keyboardType: widget.keyboardType,
                         textInputAction: widget.textInputAction,
                         inputFormatters: widget.inputFormatters,
+                        onTapOutside: (_) {
+                          _focusNode.unfocus();
+                        },
                         cursorColor: widget.cursorColor ?? AppColors.primary,
                         cursorRadius: const Radius.circular(2),
                         style: widget.textStyle ?? defaultTextStyle,

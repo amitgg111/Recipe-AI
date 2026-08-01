@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:recipe_ai/screens/onboarding/cuisine_preference.dart';
 import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../theme/app_colors.dart';
 import '../../widgets/app_logo.dart';
@@ -15,7 +14,6 @@ import '../../widgets/button_shine_effect.dart';
 import '../../Controllers/onboarding_controller.dart';
 import '../../Service/notification_service.dart';
 
-import '../auth/login_screen.dart';
 import 'welcome_screen.dart';
 import 'social_proof_screen.dart';
 import 'goals_screen.dart';
@@ -176,7 +174,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
   Widget _bodyFor(int page) {
     switch (page) {
       case 0:
-        return const WelcomeBody();
+        return const WelcomeScreen();
       case 1:
         return const SocialProofBody();
       case 2:
@@ -213,7 +211,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
   String _ctaLabelFor(int page) {
     switch (page) {
       case 0:
-        return 'get_started'.tr;
+        return "Get Started — it's free";
       case 6:
         return 'help_me_stay_on_track'.tr;
       case 9:
@@ -224,55 +222,56 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
   }
 
   /// Optional widget rendered just below the fixed CTA (kept minimal).
-  Widget? _footerFor(int page) {
-    if (page == 0) {
-      // Welcome: "Already have an account? Log in"
-      return Padding(
-        padding: const EdgeInsets.only(top: 16),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              '${'already_have_account'.tr} ',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textMedium,
-              ),
-            ),
-            GestureDetector(
-              onTap: () => Get.to(
-                () => const LoginScreen(),
-                transition: Transition.noTransition,
-              ),
-              child: Text(
-                'login'.tr,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textDark,
-                  decoration: TextDecoration.underline,
-                  decorationThickness: 1.5,
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-    return null;
-  }
+  // Widget? _footerFor(int page) {
+  //   if (page == 0) {
+  //     // Welcome: "Already have an account? Log in"
+  //     return Padding(
+  //       padding: const EdgeInsets.only(top: 16),
+  //       child: Row(
+  //         mainAxisAlignment: MainAxisAlignment.center,
+  //         children: [
+  //           Text(
+  //             '${'already_have_account'.tr} ',
+  //             style: GoogleFonts.plusJakartaSans(
+  //               fontSize: 14,
+  //               fontWeight: FontWeight.w500,
+  //               color: AppColors.textMedium,
+  //             ),
+  //           ),
+  //           GestureDetector(
+  //             onTap: () => Get.to(
+  //               () => const LoginScreen(),
+  //               transition: Transition.noTransition,
+  //             ),
+  //             child: Text(
+  //               'login'.tr,
+  //               style: GoogleFonts.plusJakartaSans(
+  //                 fontSize: 14,
+  //                 fontWeight: FontWeight.w700,
+  //                 color: AppColors.textDark,
+  //                 decoration: TextDecoration.underline,
+  //                 decorationThickness: 1.5,
+  //               ),
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     );
+  //   }
+  //   return null;
+  // }
 
   // ---- Build ---------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
-    final footer = _footerFor(_page);
+    // final footer = _footerFor(_page);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: _page == 0 ? Colors.transparent : AppColors.background,
       body: SafeArea(
         top: false,
+        bottom: false,
         child: Column(
           children: [
             // Fixed top: app name, then back button + animated progress
@@ -303,59 +302,38 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
                 child: _bodyFor(_page),
               ),
             ),
+
             // Fixed bottom: CTA (+ optional footer).
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Only the button rebuilds when selection validity changes.
-                  ValueListenableBuilder<bool>(
-                    valueListenable: _canContinue,
-                    builder: (context, canContinue, _) {
-                      // The notifications step's positive CTA ("Help me stay on
-                      // track") opts the user in: request the permission, save,
-                      // then advance. Every other step just continues.
-                      final isNotifPage = _page == _notificationsPage;
-                      final busy = isNotifPage && _notifBusy;
-                      // The "preparing" step keeps the button in place (so the
-                      // layout doesn't shift) but hidden + untappable until the
-                      // 3s delay elapses, then fades it in.
-                      final hideForSetup =
-                          _page == _settingUpPage && !_settingUpReady;
-                      final VoidCallback? onPressed =
-                          !canContinue || busy || hideForSetup
-                          ? null
-                          : (isNotifPage
-                                ? () => _completeNotifications(optIn: true)
-                                : _onContinue);
-                      return AnimatedOpacity(
-                        duration: const Duration(milliseconds: 300),
-                        opacity: hideForSetup
-                            ? 0.0
-                            : (canContinue ? 1.0 : 0.45),
-                        // Premium white gloss sweep — shown ONLY on the Welcome
-                        // screen's "Get Started" button (page 0). Overlays the
-                        // button without changing its logic.
-                        child: ButtonShineEffect(
-                          enabled: _page == 0,
-                          sweepDuration: const Duration(milliseconds: 1600),
-                          pauseDuration: const Duration(milliseconds: 2500),
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.radiusButton,
-                          ),
-                          child: PrimaryButton(
-                            label: _ctaLabelFor(_page),
-                            height: 54,
-                            isLoading: busy,
-                            onPressed: onPressed,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  if (footer != null) footer,
-                ],
+              padding: const EdgeInsets.fromLTRB(20, 8, 24, 20),
+              child: ValueListenableBuilder<bool>(
+                valueListenable: _canContinue,
+                builder: (context, canContinue, _) {
+                  final isNotifPage = _page == _notificationsPage;
+                  final busy = isNotifPage && _notifBusy;
+
+                  final hideForSetup =
+                      _page == _settingUpPage && !_settingUpReady;
+
+                  final VoidCallback? onPressed =
+                      !canContinue || busy || hideForSetup
+                      ? null
+                      : (isNotifPage
+                            ? () => _completeNotifications(optIn: true)
+                            : _onContinue);
+
+                  return AnimatedOpacity(
+                    duration: const Duration(milliseconds: 300),
+                    opacity: hideForSetup ? 0.0 : (canContinue ? 1.0 : 0.45),
+                    child: PrimaryButton(
+                      label: _ctaLabelFor(_page),
+                      height: 54,
+                      isLoading: busy,
+                      onPressed: onPressed,
+                      enableSheen: _page == 0,
+                    ),
+                  );
+                },
               ),
             ),
           ],

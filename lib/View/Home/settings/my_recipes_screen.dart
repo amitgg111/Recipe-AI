@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/Controllers/home_controller.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/Service/recipe_localizer.dart';
@@ -182,6 +183,9 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
           Expanded(
             child: TextField(
               onChanged: (v) => setState(() => _query = v.trim()),
+              onTapOutside: (_) {
+                FocusManager.instance.primaryFocus?.unfocus();
+              },
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -347,12 +351,6 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
         ? localized!.title
         : recipe.title;
 
-    final category = localized?.category?.isNotEmpty == true
-        ? localized!.category!
-        : (recipe.category?.isNotEmpty == true
-              ? recipe.category!
-              : 'recipe'.tr);
-
     return Column(
       children: [
         InkWell(
@@ -369,23 +367,12 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
                     children: [
                       Text(
                         title,
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textDark,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        category,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textMedium,
                         ),
                       ),
                     ],
@@ -542,25 +529,72 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
   }
 
   Widget _empty() {
+    final isSearching = _query.trim().isNotEmpty;
+
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const OnboardingLineIcon(
-            'book',
-            size: 40,
-            color: AppColors.iconLight,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            _query.isNotEmpty ? 'no_matches'.tr : 'no_recipes_here_yet'.tr,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textDark,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 96,
+              height: 96,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.primary.withValues(alpha: 0.07),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.10),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.08),
+                    blurRadius: 24,
+                    spreadRadius: 2,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.surfaceBorderLight,
+                      width: 1,
+                    ),
+                  ),
+                  child: const Center(
+                    child: OnboardingLineIcon(
+                      'heartO',
+                      size: 30,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+              ),
             ),
-          ),
-        ],
+
+            const SizedBox(height: 20),
+
+            Text(
+              isSearching ? 'no_matches'.tr : 'no_recipes_here_yet'.tr,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textDark,
+                height: 1.3,
+              ),
+            ),
+
+            const SizedBox(height: 7),
+          ],
+        ),
       ),
     );
   }

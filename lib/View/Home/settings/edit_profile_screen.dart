@@ -148,137 +148,143 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Form(
-          autovalidateMode: AutovalidateMode.onUserInteraction,
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
-            children: [
-              // Header: close · title · Save
-              SizedBox(
-                height: 44,
-                child: Row(
-                  children: [
-                    SettingsUi.squareIconButton(
-                      icon: Icons.close_rounded,
-                      onTap: () => Get.back(),
-                    ),
-                    Expanded(
-                      child: Center(
-                        child: Text(
-                          'edit_profile'.tr,
-                          style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textDark,
-                          ),
-                        ),
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () {
+            FocusScope.of(context).unfocus();
+          },
+          child: Form(
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
+              children: [
+                // Header: close · title · Save
+                SizedBox(
+                  height: 44,
+                  child: Row(
+                    children: [
+                      SettingsUi.squareIconButton(
+                        icon: Icons.close_rounded,
+                        onTap: () => Get.back(),
                       ),
-                    ),
-                    _saveButton(),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 18),
-
-              // Avatar + change photo
-              Center(
-                child: Column(
-                  children: [
-                    Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 3),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.textDark.withValues(
-                                  alpha: 0.25,
-                                ),
-                                blurRadius: 18,
-                                offset: const Offset(0, 10),
-                              ),
-                            ],
-                          ),
-                          child: const ProfileAvatar(size: 90),
-                        ),
-                        Positioned(
-                          right: -2,
-                          bottom: -2,
-                          child: GestureDetector(
-                            onTap: _profile.pickImage,
-                            child: Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: AppColors.primary,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: AppColors.background,
-                                  width: 3,
-                                ),
-                              ),
-                              child: const OnboardingLineIcon(
-                                'camera',
-                                size: 15,
-                                color: Colors.white,
-                              ),
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            'edit_profile'.tr,
+                            style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textDark,
                             ),
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    GestureDetector(
-                      onTap: _profile.pickImage,
-                      child: Text(
-                        'change_photo'.tr,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primary,
+                      ),
+                      _saveButton(),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+
+                // Avatar + change photo
+                Center(
+                  child: Column(
+                    children: [
+                      Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 3),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.textDark.withValues(
+                                    alpha: 0.25,
+                                  ),
+                                  blurRadius: 18,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ],
+                            ),
+                            child: const ProfileAvatar(size: 90),
+                          ),
+                          Positioned(
+                            right: -2,
+                            bottom: -2,
+                            child: GestureDetector(
+                              onTap: _profile.pickImage,
+                              child: Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: AppColors.background,
+                                    width: 3,
+                                  ),
+                                ),
+                                child: const OnboardingLineIcon(
+                                  'camera',
+                                  size: 15,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      GestureDetector(
+                        onTap: _profile.pickImage,
+                        child: Text(
+                          'change_photo'.tr,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 22),
+                const SizedBox(height: 22),
 
-              _label('field_label_name'.tr),
-              _field(
-                controller: _nameController,
-                focused: true,
-                keyboardType: TextInputType.name,
+                _label('field_label_name'.tr),
+                _field(
+                  controller: _nameController,
+                  focused: true,
+                  keyboardType: TextInputType.name,
 
-                errorText: _nameError,
-              ),
-              const SizedBox(height: 13),
+                  errorText: _nameError,
+                ),
+                const SizedBox(height: 13),
 
-              _label('field_label_email'.tr),
-              _readOnlyField(user?.email ?? ''),
-              const SizedBox(height: 13),
+                _label('field_label_email'.tr),
+                _readOnlyField(user?.email ?? ''),
+                const SizedBox(height: 13),
 
-              _label('field_label_contact'.tr),
-              _field(
-                controller: _contactController,
-                keyboardType: TextInputType.phone,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                hint: 'add_phone_number'.tr,
-                errorText: _contactError,
-              ),
-              const SizedBox(height: 13),
+                _label('field_label_contact'.tr),
+                _field(
+                  controller: _contactController,
+                  keyboardType: TextInputType.phone,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  hint: 'add_phone_number'.tr,
+                  errorText: _contactError,
+                ),
+                const SizedBox(height: 13),
 
-              _label('field_label_bio'.tr),
-              _field(
-                controller: _bioController,
-                maxLines: 3,
-                hint: 'bio_hint'.tr,
-                keyboardType: TextInputType.multiline,
-                errorText: _bioError,
-              ),
-            ],
+                _label('field_label_bio'.tr),
+                _field(
+                  controller: _bioController,
+                  maxLines: 3,
+                  hint: 'bio_hint'.tr,
+                  keyboardType: TextInputType.multiline,
+                  errorText: _bioError,
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -49,7 +49,6 @@ class CreatorProfileScreen extends StatelessWidget {
                 snap.data ??
                 UserModel(
                   uid: userId,
-
                   bio: '',
                   photoUrl: fallbackAvatar ?? '',
                   email: '',

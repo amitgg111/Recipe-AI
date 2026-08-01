@@ -113,7 +113,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  AppWordmark(fontSize: 16, fontWeight: FontWeight.w700),
+                  const AppWordmark(fontSize: 16, fontWeight: FontWeight.w700),
                 ],
               ),
               const SizedBox(height: 12),

@@ -115,6 +115,9 @@ class _EditCookbookSheetState extends State<EditCookbookSheet> {
                     child: TextField(
                       controller: _controller,
                       maxLength: _maxChars,
+                      onTapOutside: (_) {
+                        FocusManager.instance.primaryFocus?.unfocus();
+                      },
                       style: AppTextStyles.bodyLarge,
                       decoration: InputDecoration(
                         filled: false,

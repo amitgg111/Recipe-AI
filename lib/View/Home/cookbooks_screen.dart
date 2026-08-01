@@ -368,24 +368,27 @@ class _CookbooksScreenState extends State<CookbooksScreen>
       final cookbooks = _sortCookbooks(
         _filterCookbooks(cookbookController.cookbooks),
       );
+      // if (cookbooks.isEmpty) {
+      //   return Padding(
+      //     padding: const EdgeInsets.symmetric(
+      //       horizontal: AppSpacing.xl,
+      //       vertical: 40,
+      //     ),
+      //     child: Center(
+      //       child: Text(
+      //         _searchQuery.isEmpty
+      //             ? 'no_cookbooks_yet'.tr
+      //             : 'no_cookbooks_match'.trParams({'query': _searchQuery}),
+      //         textAlign: TextAlign.center,
+      //         style: AppTextStyles.bodyMedium.copyWith(
+      //           color: AppColors.textMedium,
+      //         ),
+      //       ),
+      //     ),
+      //   );
+      // }
       if (cookbooks.isEmpty) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.xl,
-            vertical: 40,
-          ),
-          child: Center(
-            child: Text(
-              _searchQuery.isEmpty
-                  ? 'no_cookbooks_yet'.tr
-                  : 'no_cookbooks_match'.trParams({'query': _searchQuery}),
-              textAlign: TextAlign.center,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textMedium,
-              ),
-            ),
-          ),
-        );
+        return _buildEmptyCookbooksState();
       }
 
       return Padding(
@@ -416,6 +419,56 @@ class _CookbooksScreenState extends State<CookbooksScreen>
         ),
       );
     });
+  }
+
+  Widget _buildEmptyCookbooksState() {
+    final isSearching = _searchQuery.trim().isNotEmpty;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xl,
+        vertical: 32,
+      ),
+      child: Center(
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+
+            // Illustration
+            Container(
+              width: 132,
+              height: 132,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+              child: const Center(
+                child: OnboardingLineIcon(
+                  'book',
+                  size: 54,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 26),
+
+            // Title
+            Text(
+              isSearching ? 'No Cookbooks Found' : 'Your Cookbooks Are Empty',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 21,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textDark,
+              ),
+            ),
+
+            const SizedBox(height: 10),
+          ],
+        ),
+      ),
+    );
   }
 
   List<RecipeModel> _filterRecipes(List<RecipeModel> recipes) {
@@ -497,24 +550,27 @@ class _CookbooksScreenState extends State<CookbooksScreen>
   Widget _buildRecipesGrid(HomeController controller) {
     return Obx(() {
       final recipes = _sortRecipes(_filterRecipes(controller.recipes));
+      // if (recipes.isEmpty) {
+      //   return Padding(
+      //     padding: const EdgeInsets.symmetric(
+      //       horizontal: AppSpacing.xl,
+      //       vertical: 40,
+      //     ),
+      //     child: Center(
+      //       child: Text(
+      //         _searchQuery.isEmpty
+      //             ? 'no_recipes_yet_add_one'.tr
+      //             : 'no_recipes_match'.trParams({'query': _searchQuery}),
+      //         textAlign: TextAlign.center,
+      //         style: AppTextStyles.bodyMedium.copyWith(
+      //           color: AppColors.textMedium,
+      //         ),
+      //       ),
+      //     ),
+      //   );
+      // }
       if (recipes.isEmpty) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.xl,
-            vertical: 40,
-          ),
-          child: Center(
-            child: Text(
-              _searchQuery.isEmpty
-                  ? 'no_recipes_yet_add_one'.tr
-                  : 'no_recipes_match'.trParams({'query': _searchQuery}),
-              textAlign: TextAlign.center,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textMedium,
-              ),
-            ),
-          ),
-        );
+        return _buildEmptyRecipesState();
       }
 
       return Padding(
@@ -535,6 +591,48 @@ class _CookbooksScreenState extends State<CookbooksScreen>
         ),
       );
     });
+  }
+
+  Widget _buildEmptyRecipesState() {
+    final isSearching = _searchQuery.isNotEmpty;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xl,
+        vertical: 36,
+      ),
+      child: Center(
+        child: Column(
+          children: [
+            // Illustration
+            Container(
+              width: 150,
+              height: 150,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+              child: const Center(child: EmptyPlateIllustration()),
+            ),
+
+            const SizedBox(height: 28),
+
+            // Title
+            Text(
+              isSearching ? 'No Recipes Found' : 'Your Recipe Is Empty',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 21,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textDark,
+              ),
+            ),
+
+            const SizedBox(height: 10),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildFAB() {
