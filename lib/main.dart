@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:recipe_ai/Service/ai_translation_service.dart';
 import 'package:recipe_ai/Service/language_service.dart';
 import 'package:recipe_ai/Service/recipe_auto_translate_service.dart';
 import 'package:recipe_ai/translations/app_translations.dart';
@@ -98,12 +99,11 @@ void main() async {
   // Restore the saved language before the first frame so the app opens already
   // localized (defaults to English when nothing is saved).
   await LanguageService.init();
+  runApp(const MyApp());
   // Work out which country the user is in, so the Language screen offers the
   // right options and splash knows which model to pre-download. Resolved here
   // (not in splash) because both of those read it, and it must not race them.
   await LanguageService.detectCountry();
-
-  runApp(const MyApp());
 
   Get.put(ThemeController(), permanent: true);
   Get.put(HomeController(), permanent: true);
@@ -138,7 +138,6 @@ void main() async {
   // the user's preferences + scheduled reminders bound to the signed-in user.
   await NotificationService.instance.init();
   await LocalNotificationService.instance.init();
-  _bindNotificationsToAuth();
 }
 
 /// Links push/local notifications to the auth session: on sign-in the OneSignal
@@ -154,6 +153,8 @@ void _bindNotificationsToAuth() {
       await settings.bindUser(user.uid);
       await subscription.bindUser(user.uid);
       await RevenueCatService.instance.loginUser(user.uid);
+      unawaited(AiTranslationService.prepareAllSupportedLanguages());
+      unawaited(AiTranslationService.prepareAlternateLanguages());
     } else {
       await settings.onLogout();
       subscription.onLogout();

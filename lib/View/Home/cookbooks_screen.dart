@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
+import 'package:recipe_ai/Service/language_service.dart';
 import 'package:recipe_ai/Service/recipe_localizer.dart';
 import 'package:recipe_ai/screens/cookbooks/sort_sheet.dart';
 import 'package:recipe_ai/widgets/app_wordmark.dart';
@@ -1310,11 +1312,21 @@ class _RecipeCard extends StatefulWidget {
 class _RecipeCardState extends State<_RecipeCard> {
   LocalizedRecipe? _localizedRecipe;
   bool _isLocalizing = false;
+  StreamSubscription<int>? _langSub;
 
   @override
   void initState() {
     super.initState();
     _loadLocalizedRecipe();
+    _langSub = LanguageService.languageVersion.listen((_) {
+      _loadLocalizedRecipe();
+    });
+  }
+
+  @override
+  void dispose() {
+    _langSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadLocalizedRecipe() async {

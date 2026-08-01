@@ -1,5 +1,5 @@
 import 'dart:developer';
-
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -23,6 +23,66 @@ class AiTranslationService {
 
   static const String _cacheKey = 'ai_translation_cache';
   static final RxBool isPreparing = false.obs;
+  // Tracks which languages (by bcp code) have EVERY current recipe cached,
+  // so a manual switch can go straight to cache instead of live-translating.
+  static final Set<String> _fullyPrewarmedBcp = {};
+  static final Map<String, Completer<void>> _prewarmCompleters = {};
+
+  // Serializes downloadModel() calls per bcp code. Without this, the live
+  // _prepare() (triggered by a manual language switch) and the background
+  // prewarmLanguage() sweep can both call downloadModel() for the SAME
+  // language at the same instant — ML Kit's native side doesn't handle that
+  // cleanly and one call throws, silently leaving _translator null forever
+  // with no retry. Every caller now shares the same in-flight download.
+  // Serializes downloadModel() calls per bcp. Without this, two callers
+  // racing on the SAME language (e.g. splash's background sweep + a
+  // manual switch, or two overlapping sweeps) both call downloadModel()
+  // for it at once — ML Kit's native side doesn't handle that cleanly,
+  // one call errors, and the live translator's _prepare() can get stuck
+  // with no automatic recovery.
+  static final Map<String, Future<void>> _modelDownloadLocks = {};
+
+  static Future<void> _ensureModelDownloaded(String bcp) {
+    final existing = _modelDownloadLocks[bcp];
+    if (existing != null) return existing;
+
+    final future = () async {
+      final manager = OnDeviceTranslatorModelManager();
+      if (!await manager.isModelDownloaded(bcp)) {
+        await manager.downloadModel(bcp, isWifiRequired: false);
+      }
+    }();
+
+    _modelDownloadLocks[bcp] = future;
+    future.whenComplete(() => _modelDownloadLocks.remove(bcp));
+    return future;
+  }
+
+  /// True once prewarm has finished caching every recipe for this language.
+  /// English / unsupported codes are always "ready" (nothing to translate).
+  static bool isPrewarmed(String code) {
+    final target = _mlKitFor(code);
+    if (target == null) return true;
+    return _fullyPrewarmedBcp.contains(target.bcpCode);
+  }
+
+  /// Resolves immediately if already prewarmed; otherwise waits for the
+  /// in-flight splash-time prewarm to finish. Call this right before a
+  /// manual switch so the UI can show a brief spinner instead of falling
+  /// back to a screen full of live translateText() calls.
+  static Future<void> waitUntilPrewarmed(String code) {
+    final target = _mlKitFor(code);
+    if (target == null) return Future.value();
+    final bcp = target.bcpCode;
+    if (_fullyPrewarmedBcp.contains(bcp)) return Future.value();
+    return (_prewarmCompleters[bcp] ??= Completer<void>()).future;
+  }
+
+  static void _markPrewarmed(String bcp) {
+    _fullyPrewarmedBcp.add(bcp);
+    final c = _prewarmCompleters.remove(bcp);
+    if (c != null && !c.isCompleted) c.complete();
+  }
 
   static bool get isTranslating =>
       _mlKitFor(LanguageService.currentCode) != null;
@@ -165,34 +225,36 @@ class AiTranslationService {
   /// Capped so a large library can't turn app start into a long CPU burn.
   static Future<void> prewarmLanguage(
     String code, {
-    int maxRecipes = 40,
+    int? maxRecipes,
+    User? knownUser,
   }) async {
     final target = _mlKitFor(code);
     if (target == null) return; // English, or a language ML Kit can't do
 
+    // Only prewarm the language(s) this user's COUNTRY is actually rolled out
+    // to (e.g. India -> hi). Any other language — even if passed in by a
+    // caller that loops over all 26 supported languages — is skipped outright,
+    // so no model ever downloads and no recipe text ever gets translated for
+    // it. This makes the guard live at the single choke point every prewarm
+    // path goes through, instead of depending on every caller filtering first.
+    if (!LanguageService.preloadLanguages.contains(code)) {
+      log(
+        '⏭️ Prewarm[$code]: not this country\'s alternate language — skipped',
+      );
+      return;
+    }
+
     final bcp = target.bcpCode;
 
     try {
-      final manager = OnDeviceTranslatorModelManager();
-      if (!await manager.isModelDownloaded(bcp)) {
-        log('⬇️ Prewarm: downloading model for $code ($bcp)');
-        await manager.downloadModel(bcp, isWifiRequired: false);
-      }
+      await _ensureModelDownloaded(
+        bcp,
+      ); // <-- shared lock thi download, direct manager call nahi
     } catch (e) {
       log('❌ Prewarm: model download failed [$code]: $e');
-      return; // no model, nothing else to do
+      return;
     }
-
-    // On a cold start Firebase restores the session asynchronously, so
-    // `currentUser` is usually still null at splash time. The model download
-    // above doesn't care, but pre-translating the user's recipes does — so
-    // give auth a moment to settle rather than silently skipping the cache.
-    final user =
-        FirebaseAuth.instance.currentUser ??
-        await FirebaseAuth.instance
-            .authStateChanges()
-            .firstWhere((u) => u != null)
-            .timeout(const Duration(seconds: 8), onTimeout: () => null);
+    final user = knownUser ?? FirebaseAuth.instance.currentUser;
 
     if (user == null) {
       log('⏭️ Prewarm[$code]: signed out — model ready, no text to cache');
@@ -202,14 +264,11 @@ class AiTranslationService {
     final cache = _cacheFor(bcp);
 
     try {
-      final snap = await FirebaseFirestore.instance
+      var query = FirebaseFirestore.instance
           .collection('recipes')
-          .where('ownerId', isEqualTo: user.uid)
-          .limit(maxRecipes)
-          .get();
-
-      // Collect every translatable string once, then drop the ones already
-      // cached from a previous run.
+          .where('ownerId', isEqualTo: user.uid);
+      if (maxRecipes != null) query = query.limit(maxRecipes);
+      final snap = await query.get();
       final texts = <String>{};
       for (final doc in snap.docs) {
         final data = doc.data();
@@ -241,10 +300,6 @@ class AiTranslationService {
         '${texts.length} string(s), ${missing.length} to translate',
       );
 
-      if (missing.isEmpty) return;
-
-      // A dedicated translator so we never disturb the live one, which may be
-      // pointed at a different language (usually English = null).
       final translator = OnDeviceTranslator(
         sourceLanguage: _source,
         targetLanguage: target,
@@ -262,15 +317,12 @@ class AiTranslationService {
                   (await translator.translateText(text)).trim(),
                 );
               } catch (_) {
-                // Empty marks a failure — see translateList. Caching the
-                // English source here would be permanent, and a connection
-                // drop mid-prewarm would pin the whole library to English.
                 return MapEntry(text, '');
               }
             }),
           );
           for (final entry in results) {
-            if (entry.value.isEmpty) continue; // retry on a later run
+            if (entry.value.isEmpty) continue;
             cache[entry.key] = entry.value;
           }
         }
@@ -278,12 +330,141 @@ class AiTranslationService {
       } finally {
         await translator.close();
       }
+      if (missing.isEmpty) {
+        _markPrewarmed(bcp);
+        return;
+      }
 
       log('✅ Prewarm[$code]: cache warm, ${cache.length} entries');
+      _markPrewarmed(bcp);
     } catch (e) {
       log('❌ Prewarm[$code] failed: $e');
     }
   }
+
+  // static Future<void> prewarmLanguage(
+  //   String code, {
+  //   int? maxRecipes,
+  //   User? knownUser,
+  // }) async {
+  //   final target = _mlKitFor(code);
+  //   if (target == null) return; // English, or a language ML Kit can't do
+
+  //   final bcp = target.bcpCode;
+
+  //   try {
+  //     await _ensureModelDownloaded(
+  //       bcp,
+  //     ); // <-- shared lock thi download, direct manager call nahi
+  //   } catch (e) {
+  //     log('❌ Prewarm: model download failed [$code]: $e');
+  //     return;
+  //   }
+  //   final user = knownUser ?? FirebaseAuth.instance.currentUser;
+
+  //   // On a cold start Firebase restores the session asynchronously, so
+  //   // `currentUser` is usually still null at splash time. The model download
+  //   // above doesn't care, but pre-translating the user's recipes does — so
+  //   // give auth a moment to settle rather than silently skipping the cache.
+  //   // final user =
+  //   //     FirebaseAuth.instance.currentUser ??
+  //   //     await FirebaseAuth.instance
+  //   //         .authStateChanges()
+  //   //         .firstWhere((u) => u != null)
+  //   //         .timeout(const Duration(seconds: 8), onTimeout: () => null);
+
+  //   if (user == null) {
+  //     log('⏭️ Prewarm[$code]: signed out — model ready, no text to cache');
+  //     return;
+  //   }
+
+  //   final cache = _cacheFor(bcp);
+
+  //   try {
+  //     var query = FirebaseFirestore.instance
+  //         .collection('recipes')
+  //         .where('ownerId', isEqualTo: user.uid);
+  //     if (maxRecipes != null) query = query.limit(maxRecipes);
+  //     final snap = await query.get();
+  //     // Collect every translatable string once, then drop the ones already
+  //     // cached from a previous run.
+  //     final texts = <String>{};
+  //     for (final doc in snap.docs) {
+  //       final data = doc.data();
+  //       for (final key in const [
+  //         'title',
+  //         'description',
+  //         'prepTime',
+  //         'totalTime',
+  //       ]) {
+  //         final value = data[key];
+  //         if (value is String && value.trim().isNotEmpty) {
+  //           texts.add(value.trim());
+  //         }
+  //       }
+  //       for (final key in const ['ingredients', 'instructions']) {
+  //         final list = data[key] as List?;
+  //         if (list == null) continue;
+  //         for (final item in list) {
+  //           final text = item.toString().trim();
+  //           if (text.isNotEmpty) texts.add(text);
+  //         }
+  //       }
+  //     }
+
+  //     final missing = texts.where((t) => !cache.containsKey(t)).toList();
+
+  //     log(
+  //       '🌐 Prewarm[$code]: ${snap.docs.length} recipe(s), '
+  //       '${texts.length} string(s), ${missing.length} to translate',
+  //     );
+
+  //     // A dedicated translator so we never disturb the live one, which may be
+  //     // pointed at a different language (usually English = null).
+  //     final translator = OnDeviceTranslator(
+  //       sourceLanguage: _source,
+  //       targetLanguage: target,
+  //     );
+
+  //     try {
+  //       const batchSize = 8;
+  //       for (int i = 0; i < missing.length; i += batchSize) {
+  //         final batch = missing.skip(i).take(batchSize).toList();
+  //         final results = await Future.wait(
+  //           batch.map((text) async {
+  //             try {
+  //               return MapEntry(
+  //                 text,
+  //                 (await translator.translateText(text)).trim(),
+  //               );
+  //             } catch (_) {
+  //               // Empty marks a failure — see translateList. Caching the
+  //               // English source here would be permanent, and a connection
+  //               // drop mid-prewarm would pin the whole library to English.
+  //               return MapEntry(text, '');
+  //             }
+  //           }),
+  //         );
+  //         for (final entry in results) {
+  //           if (entry.value.isEmpty) continue; // retry on a later run
+  //           cache[entry.key] = entry.value;
+  //         }
+  //       }
+  //       await _saveCache();
+  //     } finally {
+  //       await translator.close();
+  //     }
+  //     if (missing.isEmpty) {
+  //       _markPrewarmed(bcp);
+  //       return;
+  //     }
+
+  //     log('✅ Prewarm[$code]: cache warm, ${cache.length} entries');
+  //     _markPrewarmed(bcp);
+  //   } catch (e) {
+  //     log('❌ Prewarm[$code] failed: $e');
+  //   }
+  // }
 
   /// Download models and warm the cache for every language this user could
   /// switch to. Fire-and-forget from splash.
@@ -293,8 +474,29 @@ class AiTranslationService {
     log('🌍 Country: ${LanguageService.resolvedCountryCode}');
     log('🌐 Alternate languages to prepare: $languages');
 
+    if (languages.isEmpty) {
+      log(
+        '✅ No alternate languages for this country/rollout — nothing to prepare',
+      );
+      return;
+    }
+
+    // Resolve auth ONCE for the whole batch instead of per language.
+    final user =
+        FirebaseAuth.instance.currentUser ??
+        await FirebaseAuth.instance
+            .authStateChanges()
+            .firstWhere((u) => u != null)
+            .timeout(const Duration(seconds: 10), onTimeout: () => null);
+
+    if (user == null) {
+      log(
+        '⏭️ Prewarm: no signed-in user yet — models will still download, recipe cache skipped',
+      );
+    }
+
     for (final language in languages) {
-      await prewarmLanguage(language);
+      await prewarmLanguage(language, knownUser: user);
     }
 
     log('✅ Alternate language preparation completed');
@@ -314,31 +516,52 @@ class AiTranslationService {
     return _preparing ??= _prepare(target, bcp);
   }
 
+  // static Future<bool> _prepare(TranslateLanguage target, String bcp) async {
+  //   isPreparing.value = true;
+
+  //   try {
+  //     final manager = OnDeviceTranslatorModelManager();
+
+  //     final downloaded = await manager.isModelDownloaded(bcp);
+
+  //     if (!downloaded) {
+  //       await manager.downloadModel(bcp, isWifiRequired: false);
+  //     }
+
+  //     await _translator?.close();
+
+  //     _translator = OnDeviceTranslator(
+  //       sourceLanguage: _source,
+  //       targetLanguage: target,
+  //     );
+
+  //     _readyBcp = bcp;
+
+  //     _cacheFor(bcp);
+
+  //     return true;
+  //   } catch (_) {
+  //     return false;
+  //   } finally {
+  //     isPreparing.value = false;
+  //     _preparing = null;
+  //   }
+  // }
   static Future<bool> _prepare(TranslateLanguage target, String bcp) async {
     isPreparing.value = true;
-
     try {
-      final manager = OnDeviceTranslatorModelManager();
-
-      final downloaded = await manager.isModelDownloaded(bcp);
-
-      if (!downloaded) {
-        await manager.downloadModel(bcp, isWifiRequired: false);
-      }
+      await _ensureModelDownloaded(bcp);
 
       await _translator?.close();
-
       _translator = OnDeviceTranslator(
         sourceLanguage: _source,
         targetLanguage: target,
       );
-
       _readyBcp = bcp;
-
       _cacheFor(bcp);
-
       return true;
-    } catch (_) {
+    } catch (e) {
+      log('❌ _prepare failed for $bcp: $e');
       return false;
     } finally {
       isPreparing.value = false;
@@ -406,7 +629,7 @@ class AiTranslationService {
 
     try {
       final manager = OnDeviceTranslatorModelManager();
-
+      await _ensureModelDownloaded(bcp);
       final downloaded = await manager.isModelDownloaded(bcp);
 
       log('🌐 Preload check: $code ($bcp) downloaded=$downloaded');
@@ -821,6 +1044,13 @@ class AiTranslationService {
     }
   }
 
+  /// One sequence, called exactly once, that covers everything
+  /// AiTranslationService needs to do at startup:
+  /// 1. Download + fully cache every alternate language this user's country
+  ///    is rolled out to (e.g. India -> Hindi) — no recipe-count cap.
+  /// 2. Top up the cache for whatever language is ALREADY active (covers the
+  ///    case where a returning user's saved language isn't English).
+
   static TranslateLanguage? _sourceLanguageFor(String code) {
     switch (code.toLowerCase()) {
       case 'af':
@@ -1004,5 +1234,74 @@ class AiTranslationService {
       default:
         return null;
     }
+  }
+
+  /// Every supported language (26, minus English) — NOT gated by country.
+  /// Used so background prewarm covers any language the user could ever
+  /// pick from the Language screen, regardless of rollout.
+  static Future<void> prepareAllSupportedLanguages() async {
+    final languages = LanguageService.supportedLocales
+        .map((l) => l.languageCode)
+        .where((c) => c != 'en')
+        .toSet()
+        .toList();
+
+    log('🌐 Preparing ALL supported languages: $languages');
+
+    // Resolve auth ONCE — not per language. A guest (onboarding, not signed
+    // in yet) was making every single prewarmLanguage() call independently
+    // wait up to 8s for a user that may never arrive, turning a 25-language
+    // loop into minutes of dead time.
+    final user =
+        FirebaseAuth.instance.currentUser ??
+        await FirebaseAuth.instance
+            .authStateChanges()
+            .firstWhere((u) => u != null)
+            .timeout(const Duration(seconds: 8), onTimeout: () => null);
+
+    if (user == null) {
+      log(
+        '⏭️ No signed-in user yet — downloading models only, skipping recipe cache',
+      );
+    }
+
+    // Bounded parallelism: 4 languages at a time instead of fully sequential.
+    // Model downloads + translateText calls are network/IO bound, so this cuts
+    // wall-clock time roughly 4x without hammering the device.
+    const concurrency = 4;
+    for (var i = 0; i < languages.length; i += concurrency) {
+      final batch = languages.skip(i).take(concurrency);
+      await Future.wait(
+        batch.map((lang) => prewarmLanguage(lang, knownUser: user)),
+      );
+    }
+
+    log('✅ All supported languages prepared');
+  }
+
+  /// Single entry point, called ONCE from Splash's initState:
+  /// 1. Download + fully cache EVERY supported language's model + recipe
+  ///    translations (not just the country's rollout language) — so
+  ///    switching to ANY language from the Language screen is instant.
+  /// 2. Top up the cache for whatever language is already active right now.
+  /// Single entry point, called ONCE from Splash's initState:
+  /// 1. If this user's country has an alternate language (e.g. India -> Hindi),
+  ///    fire its model download + recipe-cache warm-up immediately, unawaited —
+  ///    that's the language they're actually likely to switch to, so it must
+  ///    not sit behind the full 26-language sweep below.
+  /// 2. Top up the cache for whatever language is already active right now.
+  /// 3. Only after that, sweep every other supported language so switching to
+  ///    ANY language from the Language screen is eventually instant too.
+  static Future<void> prepareTranslationsInBackground() async {
+    final alternates = LanguageService.preloadLanguages;
+    if (alternates.isNotEmpty) {
+      log(
+        '🌐 Alternate language(s) for this country: $alternates — prioritizing',
+      );
+      unawaited(prepareAlternateLanguages());
+    }
+
+    await prewarmExistingRecipesTranslation();
+    await prepareAllSupportedLanguages();
   }
 }

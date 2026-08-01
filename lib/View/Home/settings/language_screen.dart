@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/Controllers/settings_controller.dart';
@@ -29,7 +31,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
     // for India, Hindi. See LanguageService.enabledCountries.
     final options = LanguageService.selectableLanguages;
     // A search box over two rows is just noise.
-    final showSearch = options.length > 4;
+
     final filtered = options.where((l) {
       if (q.isEmpty) return true;
       return l.native.toLowerCase().contains(q) ||
@@ -47,13 +49,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
               child: SettingsUi.header('language'.tr),
             ),
             const SizedBox(height: 16),
-            if (showSearch) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18),
-                child: _searchBar(),
-              ),
-              const SizedBox(height: 16),
-            ],
+
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(18, 0, 18, 28),
@@ -80,10 +76,17 @@ class _LanguageScreenState extends State<LanguageScreen> {
   /// re-translate the Firebase content that's already loaded, so the switch is
   /// live rather than "next launch". The model itself was downloaded in the
   /// background at splash, so this is normally cache-fast.
-  Future<void> _applyContentLanguage() async {
+  Future<void> _applyContentLanguage(String code) async {
     try {
       // Language model should already be downloaded during
       // splash/login background preparation.
+
+      log("$code");
+      if (!AiTranslationService.isPrewarmed(code)) {
+        await AiTranslationService.waitUntilPrewarmed(
+          code,
+        ).timeout(const Duration(seconds: 6), onTimeout: () {});
+      }
       await AiTranslationService.onLanguageChanged();
 
       // Refresh all Firebase-backed content in parallel.
@@ -100,61 +103,13 @@ class _LanguageScreenState extends State<LanguageScreen> {
         if (Get.isRegistered<MealPlanController>())
           Get.find<MealPlanController>().refreshLanguage(),
       ]);
-    } catch (_) {
+
+      log("Done $code — refreshed  controller(s)   ---------------LANGUAGE");
+    } catch (e) {
+      log('❌ _applyContentLanguage failed for $code: $e');
+
       // Language change should never crash/block the app.
     }
-  }
-
-  Widget _searchBar() {
-    return Container(
-      height: 46,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.surfaceBorderLight),
-      ),
-      child: Row(
-        children: [
-          const OnboardingLineIcon(
-            'search',
-            size: 20,
-            color: AppColors.textHint,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: TextField(
-              onChanged: (v) => setState(() => _query = v.trim()),
-              onTapOutside: (_) {
-                FocusManager.instance.primaryFocus?.unfocus();
-              },
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textDark,
-              ),
-              decoration: InputDecoration(
-                isDense: true,
-                filled: false,
-                hintText: 'search_languages'.tr,
-                hintStyle: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textHint,
-                ),
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                errorBorder: InputBorder.none,
-                disabledBorder: InputBorder.none,
-                focusedErrorBorder: InputBorder.none,
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _languageRow({required AppLanguage lang, required bool selected}) {
@@ -171,7 +126,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
         // Re-point the on-device translator and re-render the Firebase-backed
         // CONTENT (recipes, discover, groceries, meal plan). Without this the
         // chrome switches to Hindi but every recipe stays in English.
-        await _applyContentLanguage();
+        await _applyContentLanguage(lang.code);
       },
       child: Padding(
         padding: const EdgeInsets.all(15),

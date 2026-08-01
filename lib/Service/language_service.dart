@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:get/get.dart';
@@ -19,6 +21,7 @@ class LanguageService {
   LanguageService._();
 
   static const String _prefKey = 'app_language_code';
+  static final RxInt languageVersion = 0.obs;
 
   /// The full set of selectable languages. The `code` here is the same key used
   /// in the translation maps AND the [Locale] language code, so the three stay
@@ -167,6 +170,8 @@ class LanguageService {
       // Last known country, so the very first frame already has the right
       // language options even before [detectCountry] finishes.
       _resolvedCountry = prefs.getString(_countryPrefKey) ?? '';
+
+      log(_countryPrefKey);
     } catch (_) {
       _current = 'en';
     }
@@ -208,7 +213,7 @@ class LanguageService {
         // Not persisting just means we re-detect next launch — harmless.
       }
     }
-
+    log(_resolvedCountry);
     return _resolvedCountry;
   }
 
@@ -281,6 +286,7 @@ class LanguageService {
     if (!_isSupported(code)) return;
     _current = code;
     Get.updateLocale(Locale(code));
+    languageVersion.value++;
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_prefKey, code);

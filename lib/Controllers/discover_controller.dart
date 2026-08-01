@@ -190,7 +190,31 @@ class DiscoverController extends GetxController {
     List<DiscoverRecipe> list,
   ) async {
     if (list.isEmpty || !AiTranslationService.isTranslating) return list;
-    await AiTranslationService.ensureReady();
+
+    // First attempt — normally instant, since onLanguageChanged() already ran
+    // right before this in _applyContentLanguage.
+    var ready = await AiTranslationService.ensureReady().timeout(
+      const Duration(seconds: 5),
+      onTimeout: () => false,
+    );
+
+    if (!ready) {
+      // A slow model download can still be finishing in the background
+      // (ensureReady()'s `_preparing` future keeps running past our timeout —
+      // only the wait gave up, not the download). Give it one more, longer
+      // window instead of permanently falling back to English with no retry.
+      log('⚠️ Discover: translator not ready in 5s, retrying once (10s)…');
+      ready = await AiTranslationService.ensureReady().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => false,
+      );
+    }
+
+    if (!ready) {
+      log('❌ Discover: translator still not ready — showing English for now');
+      return list;
+    }
+
     return Future.wait(
       list.map((r) async {
         return r.copyWith(
