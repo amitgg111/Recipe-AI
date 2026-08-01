@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:recipe_ai/Controllers/discover_controller.dart';
 import 'package:recipe_ai/Model/user_model.dart';
+import 'package:recipe_ai/Service/ai_translation_service.dart';
 import 'package:recipe_ai/Service/recipe_social_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_ai/widgets/comments_sheet.dart';
@@ -108,11 +109,61 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
   int _ratingCount = 0;
   double get _avgRating => _ratingCount > 0 ? _ratingSum / _ratingCount : 0;
 
-  // LocalizedRecipe? _localized;
-  bool _localizing = true;
-  bool get isLocalizing => _localizing;
-
   DiscoverRecipe get recipe => widget.recipe;
+
+  // ── Display-only translation ──────────────────────────────────────────────
+  // This screen shows OTHER people's public recipes, so per RecipeLocalizer's
+  // rule the viewer is a non-owner and sees the canonical English translated
+  // into their own app language.
+  //
+  // Firestore stays English and every logic/write path below keeps reading
+  // `recipe` verbatim — cook mode, saving a copy, the grocery write, sharing
+  // and the ingredient-emoji lookup all still get English. Only what the user
+  // READS goes through _display().
+  //
+  // cachedOrSelf() is a synchronous map lookup, so the first frame costs
+  // nothing and the screen opens instantly. Misses are collected and
+  // translated in ONE batch after the frame, landing as a single setState.
+  // The Set gates each string to one request, so this cannot loop.
+  final Set<String> _trRequested = {};
+  List<String>? _trPending;
+  bool _trFlushing = false;
+
+  String _display(String? english) {
+    final src = english?.trim() ?? '';
+    if (src.isEmpty) return '';
+    final shown = AiTranslationService.cachedOrSelf(src);
+    if (shown == src &&
+        AiTranslationService.isTranslating &&
+        _trRequested.add(src)) {
+      (_trPending ??= <String>[]).add(src);
+      if (_trPending!.length == 1) {
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => _flushTranslations(),
+        );
+      }
+    }
+    return shown;
+  }
+
+  Future<void> _flushTranslations() async {
+    // Coalesce: a rebuild during the await (the servings stepper) queues more
+    // strings and schedules another flush. Without this guard those runs
+    // overlap, each firing its own ML Kit batches. The loop drains instead.
+    if (_trFlushing) return;
+    _trFlushing = true;
+    try {
+      while (_trPending != null && _trPending!.isNotEmpty) {
+        final batch = _trPending!;
+        _trPending = null;
+        await AiTranslationService.translateList(batch);
+        if (!mounted) return;
+        setState(() {});
+      }
+    } finally {
+      _trFlushing = false;
+    }
+  }
 
   @override
   void initState() {
@@ -143,7 +194,6 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
 
       if (mounted) {
         setState(() {
-          _localizing = false;
           _liked = liked;
           _saved = saved;
           _myRating = myRating;
@@ -240,7 +290,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          recipe.title,
+                          _display(recipe.filterTitle),
                           style: _f(
                             26,
                             FontWeight.w800,
@@ -256,8 +306,8 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                         const SizedBox(height: _P.gap),
                         _buildEngagementBar(),
                         const SizedBox(height: _P.gap),
-                        if ((recipe.description) != null &&
-                            (recipe.description)!.trim().isNotEmpty) ...[
+                        if ((recipe.filterDescription) != null &&
+                            (recipe.filterDescription)!.trim().isNotEmpty) ...[
                           _buildNoteCard(),
                           const SizedBox(height: _P.gap),
                         ],
@@ -600,7 +650,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            (recipe.description)!.trim(),
+            _display(recipe.filterDescription),
             style: _f(14, FontWeight.w400, _P.textBody, h: 1.5),
           ),
         ],
@@ -666,12 +716,18 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
     final multiplier = _servings / _initialServings;
     final rows = <Widget>[];
     for (var i = 0; i < (recipe.ingredients).length; i++) {
+      // Scale, convert and split on the ENGLISH original — UnitConverter and
+      // the quantity regex both parse English unit words — then translate ONLY
+      // the ingredient name. The name does not change with servings, so its
+      // cache key stays stable: tapping the stepper re-scales the number
+      // without re-translating anything or flashing English.
       final scaled = UnitConverter.scaleAndConvert(
         (recipe.ingredients)[i],
         multiplier,
         system,
       );
-      rows.add(_ingredientRow(scaled, i));
+      final parts = _parseIngredient(scaled);
+      rows.add(_ingredientRow(parts.$1, _display(parts.$2), i));
     }
     if (rows.isEmpty) {
       rows.add(
@@ -749,18 +805,26 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
   /// by DiscoverController and match on that. Falls back to [displayName] when
   /// no English original is loaded (e.g. opened outside the feed).
   String _ingredientEmoji(int index, String displayName) {
-    if (Get.isRegistered<DiscoverController>()) {
-      final en = Get.find<DiscoverController>().englishById(recipe.id);
-      if (en != null && index >= 0 && index < en.ingredients.length) {
-        return _grocery.emojiForIngredient(en.ingredients[index]);
-      }
+    // `recipe.ingredients` is ALWAYS the English original — this screen
+    // translates for display only and never mutates the model — and
+    // emojiForIngredient matches against an English keyword dictionary.
+    //
+    // Two bugs this fixes: the caller now passes the TRANSLATED name, so
+    // falling through to `displayName` produced the generic emoji AND made it
+    // visibly change on the frame the translation landed; and the old
+    // englishById() lookup returned null whenever the recipe was opened from a
+    // creator profile rather than the feed, silently losing the emoji there.
+    if (index >= 0 && index < recipe.ingredients.length) {
+      return _grocery.emojiForIngredient(recipe.ingredients[index]);
     }
     return _grocery.emojiForIngredient(displayName);
   }
 
-  Widget _ingredientRow(String text, int index) {
+  /// [quantity] stays verbatim English/numeric (re-scaled on every servings
+  /// change); [name] is the translated ingredient name.
+  Widget _ingredientRow(String? quantity, String name, int index) {
     final checked = _checked.contains(index);
-    final parts = _parseIngredient(text);
+    final parts = (quantity, name);
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 9),
       decoration: const BoxDecoration(
@@ -855,10 +919,14 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                   for (var i = 0; i < (recipe.instructions).length; i++)
                     _instructionRow(
                       i + 1,
-                      InstructionScaler.scale(
-                        (recipe.instructions)[i],
-                        multiplier,
-                        system,
+                      // Scale on the English original (the scaler parses
+                      // English units), then translate for display only.
+                      _display(
+                        InstructionScaler.scale(
+                          (recipe.instructions)[i],
+                          multiplier,
+                          system,
+                        ),
                       ),
                     ),
                 ],

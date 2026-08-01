@@ -22,6 +22,15 @@ class LocalizedRecipe {
   /// True when this is the OWNER's own original-language text (no
   /// translation applied) rather than the English copy translated into the
   /// viewer's selected app language.
+  /// The ENGLISH canonical `totalTime` exactly as Firestore stores it,
+  /// regardless of which branch produced this projection.
+  ///
+  /// The editor derives a NUMBER and a hours/minutes UNIT from the total time,
+  /// and both parsers are English-only (`RegExp(r'\d+')`, `contains('hour')`).
+  /// Running them on the display string means Hindi "2 घंटे" yields unit
+  /// 'minutes' — a 2-hour recipe saves as 2 minutes. Parse from this instead.
+  final String? enTotalTime;
+
   final bool isOriginalLanguage;
 
   LocalizedRecipe({
@@ -38,6 +47,7 @@ class LocalizedRecipe {
     required this.instructions,
     required this.ingredientSections,
     required this.instructionSections,
+    required this.enTotalTime,
     required this.isOriginalLanguage,
   });
 }
@@ -104,6 +114,7 @@ class RecipeLocalizer {
         instructionSections: _instructionSectionsFrom(
           original['instructionSections'],
         ),
+        enTotalTime: _str(data['totalTime']),
         isOriginalLanguage: true,
       );
     }
@@ -112,43 +123,88 @@ class RecipeLocalizer {
     // canonical English copy into the viewer's currently selected app
     // language. AiTranslationService.translate/translateList already no-op
     // when that language IS English and serve from cache when available.
-    final title = await AiTranslationService.translate(_str(data['title']));
-    final description = await AiTranslationService.translate(
-      _str(data['description']),
-    );
-    final prepTime = await AiTranslationService.translate(
-      _str(data['prepTime']),
-    );
-    final cookTime = await AiTranslationService.translate(
-      _str(data['cookTime']),
-    );
-    final totalTime = await AiTranslationService.translate(
-      _str(data['totalTime']),
-    );
-    final servings = await AiTranslationService.translate(
-      _str(data['servings']),
-    );
-    final category = await AiTranslationService.translate(
-      _str(data['category']),
-    );
-    final cuisine = await AiTranslationService.translate(_str(data['cuisine']));
+    // ONE batched pass over every string this recipe needs.
+    //
+    // This used to be eight sequential `await translate()` calls followed by
+    // three `translateList()` calls and two more for the sections — thirteen
+    // round trips in series, each cache miss also rewriting the whole cache
+    // blob to disk. On a cold cache that is the second or two the user sees
+    // before a screen finally settles. Collected up front and translated in a
+    // single batch, it is one round trip; afterwards every lookup below is a
+    // synchronous cache read.
+    const scalarKeys = [
+      'title',
+      'description',
+      'prepTime',
+      'cookTime',
+      'totalTime',
+      'servings',
+      'category',
+      'cuisine',
+    ];
+    const listKeys = ['keywords', 'ingredients', 'instructions'];
 
-    final keywords = await AiTranslationService.translateList(
-      _strList(data['keywords']),
+    final ingredientSectionsEn = _ingredientSectionsFrom(
+      data['ingredientSections'],
     );
-    final ingredients = await AiTranslationService.translateList(
-      _strList(data['ingredients']),
-    );
-    final instructions = await AiTranslationService.translateList(
-      _strList(data['instructions']),
+    final instructionSectionsEn = _instructionSectionsFrom(
+      data['instructionSections'],
     );
 
-    final ingredientSections = await _translateIngredientSections(
-      _ingredientSectionsFrom(data['ingredientSections']),
-    );
-    final instructionSections = await _translateInstructionSections(
-      _instructionSectionsFrom(data['instructionSections']),
-    );
+    final pending = <String>[];
+    for (final k in scalarKeys) {
+      final v = _str(data[k]);
+      if (v != null && v.trim().isNotEmpty) pending.add(v);
+    }
+    for (final k in listKeys) {
+      pending.addAll(_strList(data[k]));
+    }
+    for (final s in ingredientSectionsEn) {
+      if (s.name != null && s.name!.trim().isNotEmpty) pending.add(s.name!);
+      pending.addAll(s.items);
+    }
+    for (final s in instructionSectionsEn) {
+      if (s.name != null && s.name!.trim().isNotEmpty) pending.add(s.name!);
+      pending.addAll(s.steps);
+    }
+
+    // Warms the cache for everything at once; translateList de-duplicates.
+    await AiTranslationService.translateList(pending);
+
+    // Now every read is a synchronous cache lookup.
+    String tr(String? s) => AiTranslationService.cachedOrSelf(s);
+    List<String> trList(List<String> xs) =>
+        xs.map(AiTranslationService.cachedOrSelf).toList();
+
+    final title = tr(_str(data['title']));
+    final description = tr(_str(data['description']));
+    final prepTime = tr(_str(data['prepTime']));
+    final cookTime = tr(_str(data['cookTime']));
+    final totalTime = tr(_str(data['totalTime']));
+    final servings = tr(_str(data['servings']));
+    final category = tr(_str(data['category']));
+    final cuisine = tr(_str(data['cuisine']));
+
+    final keywords = trList(_strList(data['keywords']));
+    final ingredients = trList(_strList(data['ingredients']));
+    final instructions = trList(_strList(data['instructions']));
+
+    final ingredientSections = ingredientSectionsEn
+        .map(
+          (s) => IngredientSection(
+            name: s.name == null ? null : tr(s.name),
+            items: trList(s.items),
+          ),
+        )
+        .toList();
+    final instructionSections = instructionSectionsEn
+        .map(
+          (s) => InstructionSection(
+            name: s.name == null ? null : tr(s.name),
+            steps: trList(s.steps),
+          ),
+        )
+        .toList();
 
     return LocalizedRecipe(
       title: title.isEmpty ? (_str(data['title']) ?? '') : title,
@@ -164,6 +220,7 @@ class RecipeLocalizer {
       instructions: instructions,
       ingredientSections: ingredientSections,
       instructionSections: instructionSections,
+      enTotalTime: _str(data['totalTime']),
       isOriginalLanguage: false,
     );
   }
@@ -198,33 +255,7 @@ class RecipeLocalizer {
         .toList();
   }
 
-  static Future<List<IngredientSection>> _translateIngredientSections(
-    List<IngredientSection> sections,
-  ) async {
-    final result = <IngredientSection>[];
-    for (final section in sections) {
-      final name = section.name == null || section.name!.isEmpty
-          ? section.name
-          : await AiTranslationService.translate(section.name);
-      final items = await AiTranslationService.translateList(section.items);
-      result.add(IngredientSection(name: name, items: items));
-    }
-    return result;
-  }
 
-  static Future<List<InstructionSection>> _translateInstructionSections(
-    List<InstructionSection> sections,
-  ) async {
-    final result = <InstructionSection>[];
-    for (final section in sections) {
-      final name = section.name == null || section.name!.isEmpty
-          ? section.name
-          : await AiTranslationService.translate(section.name);
-      final steps = await AiTranslationService.translateList(section.steps);
-      result.add(InstructionSection(name: name, steps: steps));
-    }
-    return result;
-  }
 
   // ── Misc helpers ───────────────────────────────────────────────────────────
 

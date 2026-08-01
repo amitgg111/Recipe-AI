@@ -37,10 +37,17 @@ class DiscoverRecipe {
   // matching are defined in English, so they read these — null falls back to the
   // main field, which for an untranslated recipe already IS English.
   final String? enTitle;
+  final String? enDescription;
   final String? enCategory;
   final String? enCuisine;
 
   String get filterTitle => enTitle ?? title;
+
+  /// English original of [description]. The feed sets it when it translates;
+  /// an untranslated model's description already IS English. Detail screens
+  /// translate from this so a translated description can never be fed back
+  /// through ML Kit a second time.
+  String? get filterDescription => enDescription ?? description;
   String get filterCategory => enCategory ?? category ?? '';
   String get filterCuisine => enCuisine ?? cuisine ?? '';
 
@@ -66,6 +73,7 @@ class DiscoverRecipe {
     this.sharesCount = 0,
     this.savesCount = 0,
     this.enTitle,
+    this.enDescription,
     this.enCategory,
     this.enCuisine,
   });
@@ -78,6 +86,7 @@ class DiscoverRecipe {
     List<String>? ingredients,
     List<String>? instructions,
     String? enTitle,
+    String? enDescription,
     String? enCategory,
     String? enCuisine,
   }) {
@@ -103,6 +112,7 @@ class DiscoverRecipe {
       sharesCount: sharesCount,
       savesCount: savesCount,
       enTitle: enTitle ?? this.enTitle,
+      enDescription: enDescription ?? this.enDescription,
       enCategory: enCategory ?? this.enCategory,
       enCuisine: enCuisine ?? this.enCuisine,
     );
@@ -195,6 +205,7 @@ class DiscoverController extends GetxController {
               ? null
               : await AiTranslationService.translate(r.cuisine),
           enTitle: r.title,
+          enDescription: r.description,
           enCategory: r.category,
           enCuisine: r.cuisine,
         );
@@ -216,6 +227,9 @@ class DiscoverController extends GetxController {
   /// Re-translate the loaded feed after the app language changes.
   Future<void> refreshLanguage() async {
     recipes.assignAll(await _translateForFeed(_english));
+    // The new language starts with an empty cache for the detail strings too,
+    // so warm them again in the background.
+    unawaited(_prewarmDetails(_english));
   }
 
   final RxString selectedCategory = ''.obs;
@@ -458,6 +472,10 @@ class DiscoverController extends GetxController {
 
       // Load social states only for this page.
       await _loadSocialStates(newRecipes);
+
+      // Warm the DETAIL strings for this page in the background, so tapping a
+      // card opens an already-translated screen instead of flashing English.
+      unawaited(_prewarmDetails(newRecipes));
     } catch (e, stack) {
       log('Discover pagination fetch failed: $e');
       log(stack.toString());
@@ -465,6 +483,40 @@ class DiscoverController extends GetxController {
       isLoading.value = false;
       _fetching = false;
       _isLoadingMore = false;
+    }
+  }
+
+  /// Pre-translate what the DETAIL screen will need for [list], in the
+  /// background, right after a feed page lands.
+  ///
+  /// The feed itself only translates card fields (title/description/category/
+  /// cuisine). Ingredients and instructions are left English, so opening a
+  /// recipe used to hit a cold cache and render English for a beat before
+  /// filling in. Splash-time prewarming cannot help either: it queries
+  /// `ownerId == uid` while the feed is `isPublic == true` — disjoint sets, so
+  /// public recipes were never warmed by anything.
+  ///
+  /// Runs unawaited and strictly after the page is on screen, so it never
+  /// delays the feed. translateList de-duplicates and writes the cache once.
+  Future<void> _prewarmDetails(List<DiscoverRecipe> list) async {
+    if (list.isEmpty || !AiTranslationService.isTranslating) return;
+    try {
+      final texts = <String>[];
+      for (final r in list) {
+        texts.addAll(r.ingredients);
+        texts.addAll(r.instructions);
+        final t = r.prepTime;
+        if (t != null && t.trim().isNotEmpty) texts.add(t);
+        final c = r.cookTime;
+        if (c != null && c.trim().isNotEmpty) texts.add(c);
+        final o = r.totalTime;
+        if (o != null && o.trim().isNotEmpty) texts.add(o);
+      }
+      if (texts.isEmpty) return;
+      await AiTranslationService.translateList(texts);
+      log('🔥 Discover: prewarmed ${texts.length} detail string(s)');
+    } catch (e) {
+      log('Discover detail prewarm failed: $e');
     }
   }
 

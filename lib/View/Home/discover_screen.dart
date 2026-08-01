@@ -68,10 +68,41 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     profileController = Get.find<ProfileController>();
 
     feedScrollController.addListener(_onFeedScroll);
+
+    // Start downloading every loaded card's photo as soon as the feed data
+    // arrives, rather than waiting for each card to scroll near the viewport.
+    // cacheExtent alone only helps once a card is close to being built; this
+    // gets all the requests in flight up front, so a fast scroll finds them
+    // already decoded instead of blank.
+    _precacheSub = ever<List<DiscoverRecipe>>(controller.recipes, (list) {
+      if (!mounted) return;
+      _precacheFeedImages(list);
+    });
+  }
+
+  Worker? _precacheSub;
+  final Set<String> _precached = {};
+
+  void _precacheFeedImages(List<DiscoverRecipe> list) {
+    // Post-frame so this never competes with the frame that shows the feed.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      for (final r in list) {
+        final url = r.imageUrl;
+        if (url == null || url.isEmpty) continue;
+        if (!_precached.add(url)) continue; // already requested
+        precacheImage(
+          CachedNetworkImageProvider(url, maxWidth: 700),
+          context,
+          onError: (_, __) {}, // a broken image must not throw here
+        );
+      }
+    });
   }
 
   @override
   void dispose() {
+    _precacheSub?.dispose();
     feedScrollController.removeListener(_onFeedScroll);
     feedScrollController.dispose();
     categoryScrollController.dispose();
@@ -258,6 +289,16 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
                   child: ListView.separated(
                     controller: feedScrollController,
+
+                    // Build ~5 cards beyond the viewport instead of Flutter's
+                    // default 250px (barely half a card here, since each is
+                    // ~400px tall). CachedNetworkImage starts its download when
+                    // the card BUILDS, so with the default the photo only
+                    // begins loading as it scrolls into view — which is why
+                    // images appear late while scrolling. This gives each image
+                    // a head start and costs a few hundred KB of decoded
+                    // bitmaps, bounded by memCacheWidth: 700.
+                    cacheExtent: 2000,
 
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
 
@@ -561,11 +602,16 @@ class _RecipeCardState extends State<_RecipeCard> {
     return 'just now';
   }
 
-  Future<void> _open() async {
-    // Translate this recipe's ingredients + steps for the current language just
-    // before opening it (the feed only translates card fields, for speed).
-    final full = await _disc.translateForDetail(recipe);
-    Get.to(() => PublicRecipeViewScreen(recipe: full));
+  void _open() {
+    // Push on the tap frame. PublicRecipeViewScreen reads the translation
+    // cache synchronously as it builds and batches whatever is missing after
+    // the first frame, so nothing runs between the tap and the transition.
+    //
+    // This used to await translateForDetail() — roughly 22 live ML Kit calls
+    // for a typical recipe, plus a full cache disk write per batch of 8 —
+    // before pushing the route. The feed froze for a second or more with no
+    // spinner and not even a ripple, which is the redirect delay.
+    Get.to(() => PublicRecipeViewScreen(recipe: recipe));
   }
 
   void _openAuthor() {
