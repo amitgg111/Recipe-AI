@@ -4,7 +4,7 @@ import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
-import 'package:recipe_ai/Widget/custom_snackbar.dart';
+import 'package:recipe_ai/widgets/custom_snackbar.dart';
 
 class CookbookModel {
   final String id;

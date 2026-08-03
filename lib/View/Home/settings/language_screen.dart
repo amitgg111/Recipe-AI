@@ -22,7 +22,7 @@ class LanguageScreen extends StatefulWidget {
 
 class _LanguageScreenState extends State<LanguageScreen> {
   final _settings = Get.find<SettingsController>();
-  String _query = '';
+  final String _query = '';
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +81,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
       // Language model should already be downloaded during
       // splash/login background preparation.
 
-      log("$code");
+      log(code);
       if (!AiTranslationService.isPrewarmed(code)) {
         await AiTranslationService.waitUntilPrewarmed(
           code,

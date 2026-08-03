@@ -105,7 +105,7 @@ class _DiscoverFeedScreenState extends State<DiscoverFeedScreen> {
             size: 22,
           ),
           const SizedBox(width: 8),
-          AppWordmark(fontSize: 18),
+          const AppWordmark(fontSize: 18),
           const Spacer(),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),

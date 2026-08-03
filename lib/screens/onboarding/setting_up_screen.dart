@@ -208,7 +208,7 @@ class _SettingUpScreenState extends State<SettingUpScreen>
                     ),
                   ),
                   const SizedBox(width: 8),
-                  AppWordmark(fontSize: 16, fontWeight: FontWeight.w700),
+                  const AppWordmark(fontSize: 16, fontWeight: FontWeight.w700),
                 ],
               ),
               // Title

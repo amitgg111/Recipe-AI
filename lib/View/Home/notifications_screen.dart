@@ -11,7 +11,7 @@ import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/Service/follow_service.dart';
 import 'package:recipe_ai/View/Home/recipe_detail_screen.dart';
 import 'package:recipe_ai/View/Home/social/creator_profile_screen.dart';
-import 'package:recipe_ai/Widget/custom_snackbar.dart';
+import 'package:recipe_ai/widgets/custom_snackbar.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 
 class _N {

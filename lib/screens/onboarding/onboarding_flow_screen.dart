@@ -7,10 +7,10 @@ import 'package:get/get.dart';
 
 import '../../theme/app_colors.dart';
 import '../../widgets/app_logo.dart';
-import '../../theme/app_dimensions.dart';
+
 import '../../widgets/primary_button.dart';
 import '../../widgets/onboarding_progress_bar.dart';
-import '../../widgets/button_shine_effect.dart';
+
 import '../../Controllers/onboarding_controller.dart';
 import '../../Service/notification_service.dart';
 
@@ -268,7 +268,9 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
     // final footer = _footerFor(_page);
 
     return Scaffold(
-      backgroundColor: _page == 0 ? Colors.transparent : AppColors.background,
+      backgroundColor: _page == 0
+          ? const Color(0xFF1B1310)
+          : AppColors.background,
       body: SafeArea(
         top: false,
         bottom: false,

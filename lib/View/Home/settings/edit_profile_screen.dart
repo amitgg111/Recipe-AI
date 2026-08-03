@@ -6,7 +6,7 @@ import 'package:get/get.dart';
 import 'package:recipe_ai/Controllers/profile_controller.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/View/Home/settings/settings_common.dart';
-import 'package:recipe_ai/Widget/custom_snackbar.dart';
+import 'package:recipe_ai/widgets/custom_snackbar.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/utils/validation_helper.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
@@ -342,76 +342,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  // Widget _field({
-  //   required TextEditingController controller,
-  //   bool focused = false,
-  //   int maxLines = 1,
-  //   String? hint,
-  //   String? prefixText,
-  //   TextInputType? keyboardType,
-  //   String? Function(String?)? validator,
-  //   List<TextInputFormatter>? inputFormatters,
-  // }) {
-  //   return Container(
-  //     width: double.infinity,
-  //     decoration: BoxDecoration(
-  //       color: AppColors.surfaceLight,
-  //       borderRadius: BorderRadius.circular(12),
-  //       border: Border.all(
-  //         color: focused ? AppColors.primary : AppColors.unselectedBorder,
-  //         width: focused ? 1.5 : 1,
-  //       ),
-  //       boxShadow: focused
-  //           ? [
-  //               BoxShadow(
-  //                 color: AppColors.primary.withValues(alpha: 0.1),
-  //                 blurRadius: 0,
-  //                 spreadRadius: 3,
-  //               ),
-  //             ]
-  //           : null,
-  //     ),
-  //     padding: EdgeInsets.symmetric(
-  //       horizontal: 14,
-  //       vertical: maxLines > 1 ? 12 : 0,
-  //     ),
-  //     child: TextFormField(
-  //       controller: controller,
-  //       maxLines: maxLines,
-  //       keyboardType: keyboardType,
-  //       validator: validator,
-  //       inputFormatters: inputFormatters,
-  //       style: const TextStyle(
-  //         fontSize: 16,
-  //         fontWeight: FontWeight.w600,
-  //         color: AppColors.textDark,
-  //       ),
-  //       decoration: InputDecoration(
-  //         isDense: true,
-  //         filled: false,
-  //         prefixText: prefixText,
-  //         prefixStyle: const TextStyle(
-  //           fontSize: 16,
-  //           fontWeight: FontWeight.w700,
-  //           color: AppColors.textMedium,
-  //         ),
-  //         hintText: hint,
-  //         hintStyle: const TextStyle(
-  //           fontSize: 15,
-  //           fontWeight: FontWeight.w500,
-  //           color: AppColors.textHint,
-  //         ),
-  //         border: InputBorder.none,
-  //         enabledBorder: InputBorder.none,
-  //         focusedBorder: InputBorder.none,
-  //         errorBorder: InputBorder.none,
-  //         disabledBorder: InputBorder.none,
-  //         focusedErrorBorder: InputBorder.none,
-  //         contentPadding: EdgeInsets.symmetric(vertical: maxLines > 1 ? 0 : 15),
-  //       ),
-  //     ),
-  //   );
-  // }
 
   Widget _field({
     required TextEditingController controller,

@@ -3,8 +3,8 @@ import 'package:get/get.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/utils/auth_error_mapper.dart';
 
-import 'package:recipe_ai/Widget/custom_snackbar.dart';
-import 'package:recipe_ai/Widget/custom_text.dart';
+import 'package:recipe_ai/widgets/custom_snackbar.dart';
+import 'package:recipe_ai/widgets/custom_text.dart';
 
 class ForgotPasswordScreen extends StatelessWidget {
   ForgotPasswordScreen({super.key});

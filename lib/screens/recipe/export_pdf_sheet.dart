@@ -6,7 +6,7 @@ import 'package:printing/printing.dart';
 import 'package:recipe_ai/Controllers/home_controller.dart';
 import 'package:recipe_ai/Controllers/nutrition_controller.dart';
 import 'package:recipe_ai/Service/recipe_pdf_service.dart';
-import 'package:recipe_ai/Widget/custom_snackbar.dart';
+import 'package:recipe_ai/widgets/custom_snackbar.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/app_network_image.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';

@@ -284,8 +284,9 @@ class UnitConverter {
     double v,
     String from,
   ) {
-    if (!_imperialVolumeUnits.contains(from))
+    if (!_imperialVolumeUnits.contains(from)) {
       return (value: v, unit: from); // already metric
+    }
     final ml = convert(value: v, fromUnit: from, toUnit: 'ml')!;
     return ml >= 1000 ? (value: ml / 1000, unit: 'l') : (value: ml, unit: 'ml');
   }
@@ -294,8 +295,9 @@ class UnitConverter {
     double v,
     String from,
   ) {
-    if (_imperialVolumeUnits.contains(from))
+    if (_imperialVolumeUnits.contains(from)) {
       return (value: v, unit: from); // already imperial
+    }
     final ml = convert(value: v, fromUnit: from, toUnit: 'ml')!;
     if (ml >= 236.588) return (value: ml / 236.588, unit: 'cup');
     if (ml >= 14.7868) return (value: ml / 14.7868, unit: 'tbsp');
@@ -303,8 +305,9 @@ class UnitConverter {
   }
 
   static ({double value, String unit}) _bestMetricMass(double v, String from) {
-    if (!_imperialMassUnits.contains(from))
+    if (!_imperialMassUnits.contains(from)) {
       return (value: v, unit: from); // already metric
+    }
     final g = convert(value: v, fromUnit: from, toUnit: 'g')!;
     return g >= 1000 ? (value: g / 1000, unit: 'kg') : (value: g, unit: 'g');
   }
@@ -313,8 +316,9 @@ class UnitConverter {
     double v,
     String from,
   ) {
-    if (_imperialMassUnits.contains(from))
+    if (_imperialMassUnits.contains(from)) {
       return (value: v, unit: from); // already imperial
+    }
     final g = convert(value: v, fromUnit: from, toUnit: 'g')!;
     return g >= 453.592
         ? (value: g / 453.592, unit: 'lb')

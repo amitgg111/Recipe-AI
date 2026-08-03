@@ -10,7 +10,7 @@ import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/Service/recipe_localizer.dart';
 import 'package:recipe_ai/View/Home/recipe_detail_screen.dart';
 import 'package:recipe_ai/widgets/sliding_segmented.dart';
-import 'package:recipe_ai/Widget/custom_snackbar.dart';
+import 'package:recipe_ai/widgets/custom_snackbar.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/Service/subscription_service.dart';
 import 'package:recipe_ai/widgets/premium_lock_overlay.dart';

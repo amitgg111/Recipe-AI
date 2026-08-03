@@ -160,7 +160,7 @@ class PremiumLockOverlay extends StatelessWidget {
             width: 42,
             height: 42,
             alignment: Alignment.center,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppColors.purpleBg,
               shape: BoxShape.circle,
             ),

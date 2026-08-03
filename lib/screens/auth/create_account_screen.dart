@@ -7,7 +7,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/utils/auth_error_mapper.dart';
-import 'package:recipe_ai/Widget/custom_snackbar.dart';
+import 'package:recipe_ai/widgets/custom_snackbar.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/app_logo.dart';
 import 'package:recipe_ai/screens/auth/login_screen.dart';
@@ -23,12 +23,12 @@ class CreateAccountScreen extends StatefulWidget {
 }
 
 class _CreateAccountScreenState extends State<CreateAccountScreen> {
-  bool _isLoading = false;
+  bool _isGoogleLoading = false;
+  bool _isAppleLoading = false;
 
   Future<void> _onGoogleContinue() async {
-    if (_isLoading) return;
-
-    setState(() => _isLoading = true);
+    if (_isGoogleLoading || _isAppleLoading) return;
+    setState(() => _isGoogleLoading = true);
 
     try {
       final userCred = await AuthService.signInWithGoogle();
@@ -48,15 +48,14 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
       );
     } finally {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() => _isGoogleLoading = false);
       }
     }
   }
 
   Future<void> _onAppleContinue() async {
-    if (_isLoading) return;
-
-    setState(() => _isLoading = true);
+    if (_isGoogleLoading || _isAppleLoading) return;
+    setState(() => _isAppleLoading = true);
 
     try {
       final result = await AuthService.signInWithApple();
@@ -86,7 +85,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
       );
     } finally {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() => _isAppleLoading = false);
       }
     }
   }
@@ -206,7 +205,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                       ),
 
                       // recognizer: TapGestureRecognizer()..onTap = _onLogIn,
-                      recognizer: _isLoading
+                      recognizer: (_isGoogleLoading || _isAppleLoading)
                           ? null
                           : (TapGestureRecognizer()..onTap = _onLogIn),
                     ),
@@ -220,8 +219,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               // Continue with Google button
               _OutlinedAuthButton(
                 label: 'continue_with_google'.tr,
-                onTap: _isLoading ? null : _onGoogleContinue,
-                isLoading: _isLoading,
+                onTap: (_isGoogleLoading || _isAppleLoading)
+                    ? null
+                    : _onGoogleContinue,
+                isLoading: _isGoogleLoading,
                 leading: Container(
                   width: 24,
                   height: 24,
@@ -249,8 +250,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
                 _OutlinedAuthButton(
                   label: 'continue_with_apple'.tr,
-                  onTap: _isLoading ? null : _onAppleContinue,
-                  isLoading: _isLoading,
+                  onTap: (_isGoogleLoading || _isAppleLoading)
+                      ? null
+                      : _onAppleContinue,
+                  isLoading: _isAppleLoading,
                   leading: const Icon(
                     Icons.apple,
                     size: 20,

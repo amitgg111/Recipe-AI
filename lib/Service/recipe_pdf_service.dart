@@ -863,8 +863,9 @@ class RecipePdfService {
     final hourMatch = RegExp(r'(\d+)\s*h', caseSensitive: false).firstMatch(t);
     final minMatch = RegExp(r'(\d+)\s*m', caseSensitive: false).firstMatch(t);
     var total = 0;
-    if (hourMatch != null)
+    if (hourMatch != null) {
       total += (int.tryParse(hourMatch.group(1)!) ?? 0) * 60;
+    }
     if (minMatch != null) total += int.tryParse(minMatch.group(1)!) ?? 0;
     if (total == 0) {
       final bare = RegExp(r'\d+').firstMatch(t);
@@ -895,8 +896,9 @@ class RecipePdfService {
 
   static String? _sourceHost(String url) {
     if (url.isEmpty || !url.startsWith('http')) return null;
-    if (url.contains('gemini_image') || url.contains('recipe_name'))
+    if (url.contains('gemini_image') || url.contains('recipe_name')) {
       return null;
+    }
     try {
       return Uri.parse(url).host.replaceFirst('www.', '');
     } catch (_) {

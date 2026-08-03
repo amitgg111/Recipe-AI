@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:recipe_ai/Model/meal_plan_model.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/Service/ai_translation_service.dart';
-import 'package:recipe_ai/Widget/custom_snackbar.dart';
+import 'package:recipe_ai/widgets/custom_snackbar.dart';
 import 'dart:async';
 import 'dart:developer';
 

@@ -27,7 +27,7 @@ import 'package:recipe_ai/Helper/unit_converter.dart';
 import 'package:recipe_ai/Helper/instruction_scaler.dart';
 import 'package:recipe_ai/Helper/premium_gate.dart';
 import 'package:recipe_ai/Controllers/settings_controller.dart';
-import 'package:recipe_ai/Widget/custom_snackbar.dart';
+import 'package:recipe_ai/widgets/custom_snackbar.dart';
 import 'package:recipe_ai/Service/subscription_service.dart';
 import 'package:recipe_ai/Service/recipe_localizer.dart';
 import 'package:recipe_ai/widgets/premium_lock_overlay.dart';
@@ -1019,8 +1019,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     final hourMatch = RegExp(r'(\d+)\s*h', caseSensitive: false).firstMatch(t);
     final minMatch = RegExp(r'(\d+)\s*m', caseSensitive: false).firstMatch(t);
     var total = 0;
-    if (hourMatch != null)
+    if (hourMatch != null) {
       total += (int.tryParse(hourMatch.group(1)!) ?? 0) * 60;
+    }
     if (minMatch != null) total += int.tryParse(minMatch.group(1)!) ?? 0;
     if (total == 0) {
       final bare = RegExp(r'\d+').firstMatch(t);
@@ -2154,7 +2155,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                         _shareInfoItem(
                           icon: Icons.people_outline,
                           title: 'Servings',
-                          value: '${_displayServings ?? '-'}',
+                          value: _displayServings ?? '-',
                         ),
                         const SizedBox(width: 24),
                         _shareInfoItem(

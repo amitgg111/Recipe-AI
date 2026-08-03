@@ -591,7 +591,7 @@ class _ImportCompleteScreenState extends State<ImportCompleteScreen> {
       ),
       child: Row(
         children: [
-          OnboardingLineIcon('ruler', size: 16, color: AppColors.purple),
+          const OnboardingLineIcon('ruler', size: 16, color: AppColors.purple),
           const SizedBox(width: 9),
           Expanded(
             child: Text(
@@ -775,8 +775,9 @@ class _ImportCompleteScreenState extends State<ImportCompleteScreen> {
           .toList();
       for (var si = 0; si < sections.length; si++) {
         final s = sections[si];
-        if (s.name != null && s.name!.isNotEmpty)
+        if (s.name != null && s.name!.isNotEmpty) {
           rows.add(_groupHeader(s.name!));
+        }
         for (var i = 0; i < s.steps.length; i++) {
           final isLastOverall =
               si == sections.length - 1 && i == s.steps.length - 1;

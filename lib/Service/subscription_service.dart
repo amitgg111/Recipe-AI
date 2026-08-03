@@ -66,22 +66,6 @@ class SubscriptionService extends GetxController {
       _box.write(_kCredits, credits);
     });
   }
-  // Future<void> bindUser(String uid) async {
-  //   _uid = uid;
-  //   try {
-  //     final snap = await _ref!.get();
-  //     final data = snap.data() ?? const {};
-  //     final plus = data['isPlus'] == true;
-  //     // If user doesn't have freeCredits yet (e.g. old user), default to 5
-  //     final credits = (data['freeCredits'] as num?)?.toInt() ?? kInitialFreeCredits;
-  //     _isPlus.value = plus;
-  //     _freeCredits.value = credits;
-  //     _box.write(_kPlus, plus);
-  //     _box.write(_kCredits, credits);
-  //   } catch (_) {
-  //     // Offline / permission error — keep cached values.
-  //   }
-  // }
 
   void onLogout() {
     _uid = null;

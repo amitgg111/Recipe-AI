@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
-import 'package:recipe_ai/Widget/custom_snackbar.dart';
+import 'package:recipe_ai/widgets/custom_snackbar.dart';
 import 'package:recipe_ai/utils/validators.dart';
 import 'package:recipe_ai/utils/validation_helper.dart';
 import 'package:recipe_ai/utils/auth_error_mapper.dart';

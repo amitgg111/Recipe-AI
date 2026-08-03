@@ -24,8 +24,9 @@ import 'package:recipe_ai/Helper/ingredient_scale_helper.dart';
 import 'package:recipe_ai/Helper/unit_converter.dart';
 import 'package:recipe_ai/Helper/instruction_scaler.dart';
 import 'package:recipe_ai/Controllers/settings_controller.dart';
-import 'package:recipe_ai/Widget/custom_snackbar.dart';
+import 'package:recipe_ai/widgets/custom_snackbar.dart';
 import 'package:share_plus/share_plus.dart';
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Design constants (matched to the HTML "Public recipe (view)" design)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -861,6 +862,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
               ),
             ),
           ],
+          const SizedBox(width: 5),
           Expanded(
             child: Text(
               parts.$2,

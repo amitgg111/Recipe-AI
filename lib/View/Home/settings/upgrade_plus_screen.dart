@@ -5,7 +5,7 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 
 import 'package:recipe_ai/Service/subscription_service.dart';
 import 'package:recipe_ai/Service/revenuecat_service.dart';
-import 'package:recipe_ai/Widget/custom_snackbar.dart';
+import 'package:recipe_ai/widgets/custom_snackbar.dart';
 import 'package:recipe_ai/widgets/app_logo.dart';
 
 /// Upgrade to Plus paywall — a pixel port of design screens

@@ -992,8 +992,9 @@ class MealPlannerController extends GetxController {
     final idCache = <String, String?>{}; // dedupeKey → resolved recipeId
     for (final m in meals) {
       final date = weekDays[m.day];
-      if (_dateOnly(date).isBefore(today))
+      if (_dateOnly(date).isBefore(today)) {
         continue; // hard guard: skip past dates
+      }
 
       final key = m.recipe.dedupeKey;
       String? recipeId;

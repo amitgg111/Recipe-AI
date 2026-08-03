@@ -29,7 +29,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen>
   final HomeController _home = Get.find<HomeController>();
   String _bio = '';
   String _contact = '';
-  String _username = '';
+  final String _username = '';
   int _followers = 0;
   int _following = 0;
 

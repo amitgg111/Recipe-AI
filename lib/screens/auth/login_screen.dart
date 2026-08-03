@@ -12,7 +12,7 @@ import 'package:recipe_ai/utils/validators.dart';
 import 'package:recipe_ai/utils/auth_error_mapper.dart';
 import 'package:recipe_ai/View/Home/home_screen.dart';
 import 'package:recipe_ai/screens/onboarding/trial_chooser_screen.dart';
-import 'package:recipe_ai/Widget/custom_snackbar.dart';
+import 'package:recipe_ai/widgets/custom_snackbar.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/app_logo.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';

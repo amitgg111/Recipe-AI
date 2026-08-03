@@ -8,7 +8,7 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:recipe_ai/Service/ai_translation_service.dart';
 import 'package:recipe_ai/Service/recipe_localizer.dart';
-import 'package:recipe_ai/Widget/custom_snackbar.dart';
+import 'package:recipe_ai/widgets/custom_snackbar.dart';
 import 'package:recipe_ai/utils/validation_helper.dart';
 import 'package:recipe_ai/Helper/recipe_publish_policy.dart';
 

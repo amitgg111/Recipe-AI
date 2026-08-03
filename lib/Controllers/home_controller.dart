@@ -14,7 +14,7 @@ import 'package:recipe_ai/Service/recipe_social_service.dart';
 import 'package:recipe_ai/Helper/recipe_response_parser.dart';
 import 'package:recipe_ai/Helper/recipe_publish_policy.dart';
 import 'package:recipe_ai/Model/recipe_section_model.dart';
-import 'package:recipe_ai/Widget/custom_snackbar.dart';
+import 'package:recipe_ai/widgets/custom_snackbar.dart';
 
 class RecipeModel {
   final String id;

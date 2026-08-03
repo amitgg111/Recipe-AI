@@ -3,8 +3,8 @@ import 'package:recipe_ai/View/Auth/forget_password_screen.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
-import 'package:recipe_ai/Widget/custom_snackbar.dart';
-import 'package:recipe_ai/Widget/custom_text.dart';
+import 'package:recipe_ai/widgets/custom_snackbar.dart';
+import 'package:recipe_ai/widgets/custom_text.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});

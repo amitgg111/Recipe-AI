@@ -73,12 +73,12 @@ class ProfileController extends GetxController {
 
       final firestoreImage = (data['photoUrl'] ?? '').toString().trim();
 
-     if (firestoreImage.startsWith('http') &&
-    !isLocalPreview.value &&
-    !isUploadingImage.value) {
-  imagePath.value = firestoreImage;
-  await box.write(imageKey, firestoreImage);
-}
+      if (firestoreImage.startsWith('http') &&
+          !isLocalPreview.value &&
+          !isUploadingImage.value) {
+        imagePath.value = firestoreImage;
+        await box.write(imageKey, firestoreImage);
+      }
     } catch (_) {
       // Cached data remains available offline.
     }
@@ -126,43 +126,6 @@ class ProfileController extends GetxController {
 
     unawaited(_uploadProfileImage(userId: userId, file: file));
   }
-
-  // Future<void> pickImage() async {
-  //   final XFile? pickedFile = await ImagePicker().pickImage(
-  //     source: ImageSource.gallery,
-  //     imageQuality: 70,
-  //     maxWidth: 600,
-  //     maxHeight: 600,
-  //   );
-
-  //   if (pickedFile == null) return;
-
-  //   final file = File(pickedFile.path);
-  //   final userId = uid;
-
-  //   if (userId.isEmpty) return;
-
-  //   // ----------------------------------------------------------
-  //   // 1. INSTANT LOCAL PREVIEW
-  //   // ----------------------------------------------------------
-
-  //   // New image immediately screen par show thase.
-  //   imagePath.value = file.path;
-
-  //   // Local path cache ma save.
-  //   await box.write(imageKey, file.path);
-
-  //   // Loader ON.
-  //   isUploadingImage.value = true;
-
-  //   // ----------------------------------------------------------
-  //   // 2. UPLOAD BACKGROUND
-  //   // ----------------------------------------------------------
-
-  //   // Await na karo.
-  //   // UI local image immediately show karto rahe.
-  //   unawaited(_uploadProfileImage(userId: userId, file: file));
-  // }
 
   // ------------------------------------------------------------
   // UPLOAD PROFILE IMAGE
@@ -213,68 +176,6 @@ class ProfileController extends GetxController {
       isUploadingImage.value = false;
     }
   }
-
-  // Future<void> _uploadProfileImage({
-  //   required String userId,
-  //   required File file,
-  // }) async {
-  //   try {
-  //     final fileName = 'avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
-
-  //     final ref = FirebaseStorage.instance.ref().child(
-  //       'users/$userId/profile/$fileName',
-  //     );
-
-  //     // Upload.
-  //     await ref.putFile(
-  //       file,
-  //       SettableMetadata(
-  //         contentType: 'image/jpeg',
-  //         cacheControl: 'public,max-age=31536000',
-  //       ),
-  //     );
-
-  //     // Download URL.
-  //     final url = await ref.getDownloadURL();
-
-  //     // --------------------------------------------------------
-  //     // Update Firestore
-  //     // --------------------------------------------------------
-
-  //     await _firestore.collection('users').doc(userId).set({
-  //       'photoUrl': url,
-  //       'updatedAt': FieldValue.serverTimestamp(),
-  //     }, SetOptions(merge: true));
-
-  //     // --------------------------------------------------------
-  //     // Update Firebase Auth
-  //     // --------------------------------------------------------
-
-  //     await _auth.currentUser?.updatePhotoURL(url);
-
-  //     // --------------------------------------------------------
-  //     // Save final URL
-  //     // --------------------------------------------------------
-
-  //     await box.write(imageKey, url);
-
-  //     // IMPORTANT:
-  //     // Local file already showing.
-  //     // Network URL par immediately switch karvani jarur nathi.
-  //     //
-  //     // Ahiya URL set kariye to CachedNetworkImage fari network
-  //     // request/check kari shake.
-  //     //
-  //     // Etle local image ne screen par j rehva do.
-  //     //
-  //     // Next app/profile load ma cached URL use thase.
-  //   } catch (_) {
-  //     // Upload fail thay to local selected image screen par
-  //     // visible rehse.
-  //   } finally {
-  //     isUploadingImage.value = false;
-  //   }
-  // }
 
   // ------------------------------------------------------------
   // UPDATE NAME

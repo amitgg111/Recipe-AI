@@ -11,7 +11,7 @@ import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:recipe_ai/Service/local_notification_service.dart';
 import 'package:recipe_ai/Service/revenuecat_service.dart';
-import 'package:recipe_ai/Widget/custom_snackbar.dart';
+import 'package:recipe_ai/widgets/custom_snackbar.dart';
 import 'package:get_storage/get_storage.dart';
 
 class TrialChooserScreen extends StatefulWidget {

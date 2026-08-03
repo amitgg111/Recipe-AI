@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/Core/Theme/app_theme.dart';
 import 'package:recipe_ai/View/Home/import_complete_screen.dart';
-import 'package:recipe_ai/Widget/custom_text.dart';
-import 'package:recipe_ai/Widget/custom_snackbar.dart';
+import 'package:recipe_ai/widgets/custom_text.dart';
+import 'package:recipe_ai/widgets/custom_snackbar.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 
 import 'package:webview_flutter/webview_flutter.dart';

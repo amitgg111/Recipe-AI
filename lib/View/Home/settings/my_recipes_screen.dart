@@ -7,7 +7,7 @@ import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/Service/recipe_localizer.dart';
 import 'package:recipe_ai/View/Home/recipe_detail_screen.dart';
 import 'package:recipe_ai/View/Home/settings/settings_common.dart';
-import 'package:recipe_ai/Widget/custom_snackbar.dart';
+import 'package:recipe_ai/widgets/custom_snackbar.dart';
 import 'package:recipe_ai/widgets/cannot_publish_dialog.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
@@ -252,89 +252,6 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
     );
   }
 
-  // Widget _recipeRow(RecipeModel recipe, bool showDivider) {
-  //   final localized = _localizedRecipes[recipe.id];
-
-  //   // Start localization once.
-  //   if (localized == null && !_localizingRecipeIds.contains(recipe.id)) {
-  //     WidgetsBinding.instance.addPostFrameCallback((_) {
-  //       if (mounted) {
-  //         _getLocalizedRecipe(recipe);
-  //       }
-  //     });
-  //   }
-
-  //   final title = localized?.title.isNotEmpty == true
-  //       ? localized!.title
-  //       : recipe.title;
-
-  //   final category = localized?.category?.isNotEmpty == true
-  //       ? localized!.category!
-  //       : (recipe.category?.isNotEmpty == true
-  //             ? recipe.category!
-  //             : 'recipe'.tr);
-  //   return Column(
-  //     children: [
-  //       InkWell(
-  //         onTap: () => Get.to(() => RecipeDetailScreen(recipe: recipe)),
-  //         child: Padding(
-  //           padding: const EdgeInsets.symmetric(vertical: 11),
-  //           child: Row(
-  //             children: [
-  //               _thumb(recipe.imageUrl),
-  //               const SizedBox(width: 12),
-  //               Expanded(
-  //                 child: Column(
-  //                   crossAxisAlignment: CrossAxisAlignment.start,
-  //                   children: [
-  //                     Text(
-  //                       recipe.title,
-  //                       maxLines: 1,
-  //                       overflow: TextOverflow.ellipsis,
-  //                       style: const TextStyle(
-  //                         fontSize: 14,
-  //                         fontWeight: FontWeight.w700,
-  //                         color: AppColors.textDark,
-  //                       ),
-  //                     ),
-  //                     const SizedBox(height: 3),
-  //                     Text(
-  //                       recipe.category?.isNotEmpty == true
-  //                           ? recipe.category!
-  //                           : 'recipe'.tr,
-  //                       maxLines: 1,
-  //                       overflow: TextOverflow.ellipsis,
-  //                       style: const TextStyle(
-  //                         fontSize: 12,
-  //                         fontWeight: FontWeight.w600,
-  //                         color: AppColors.textMedium,
-  //                       ),
-  //                     ),
-  //                   ],
-  //                 ),
-  //               ),
-  //               const SizedBox(width: 8),
-  //               if (_filter == 0) _visibilityBadge(recipe.isPublic),
-  //               GestureDetector(
-  //                 onTap: () => _showOptions(recipe),
-  //                 child: const Padding(
-  //                   padding: EdgeInsets.only(left: 2),
-  //                   child: OnboardingLineIcon(
-  //                     'dots',
-  //                     size: 20,
-  //                     color: AppColors.iconLight,
-  //                   ),
-  //                 ),
-  //               ),
-  //             ],
-  //           ),
-  //         ),
-  //       ),
-  //       if (showDivider)
-  //         const Divider(height: 1, thickness: 1, color: AppColors.divider),
-  //     ],
-  //   );
-  // }
   Widget _recipeRow(RecipeModel recipe, bool showDivider) {
     final localized = _localizedRecipes[recipe.id];
 

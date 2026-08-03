@@ -42,7 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
     const CookbooksScreen(),
     const DiscoverScreen(),
     const MealPlanScreen(),
-    GroceriesScreen(),
+    const GroceriesScreen(),
     const SettingsScreen(),
   ];
 

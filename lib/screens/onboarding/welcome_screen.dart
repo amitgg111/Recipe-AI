@@ -257,30 +257,32 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
                     const SizedBox(height: 14),
 
-                    // Title — "Every recipe. One beautiful kitchen."
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 28),
                       child: _animatedFadeSlide(
                         _titleFade,
                         _titleSlide,
-                        RichText(
-                          textAlign: TextAlign.start,
-                          text: TextSpan(
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 32,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                              height: 1.1,
-                              letterSpacing: -1.0,
-                            ),
-                            children: [
-                              TextSpan(text: 'Every recipe.\nOne '.tr),
-                              TextSpan(
-                                text: 'beautiful'.tr,
-                                style: const TextStyle(color: AppColors.gold),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: RichText(
+                            textAlign: TextAlign.left,
+                            text: TextSpan(
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 32,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                height: 1.1,
+                                letterSpacing: -1.0,
                               ),
-                              TextSpan(text: '\nkitchen.'.tr),
-                            ],
+                              children: [
+                                TextSpan(text: 'Every recipe.\nOne '.tr),
+                                TextSpan(
+                                  text: 'beautiful'.tr,
+                                  style: const TextStyle(color: AppColors.gold),
+                                ),
+                                TextSpan(text: '\nkitchen.'.tr),
+                              ],
+                            ),
                           ),
                         ),
                       ),

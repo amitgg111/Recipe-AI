@@ -5,7 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:recipe_ai/Controllers/discover_controller.dart';
 import 'package:recipe_ai/Controllers/cookbook_controller.dart';
 import 'package:recipe_ai/Controllers/profile_controller.dart';
-import 'package:recipe_ai/Widget/custom_snackbar.dart';
+import 'package:recipe_ai/widgets/custom_snackbar.dart';
 import 'package:recipe_ai/Service/recipe_social_service.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/Service/subscription_service.dart';
@@ -375,30 +375,6 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     });
   }
 
-  // Widget _emptyState() {
-  //   return Center(
-  //     child: Column(
-  //       mainAxisSize: MainAxisSize.min,
-  //       children: [
-  //         OnboardingLineIcon(
-  //           'compass',
-  //           size: 56,
-  //           color: _D.textHint.withValues(alpha: 0.4),
-  //         ),
-  //         const SizedBox(height: 12),
-  //         Text(
-  //           'no_recipes_found'.tr,
-  //           style: _f(16, FontWeight.w600, AppColors.textMedium),
-  //         ),
-  //         const SizedBox(height: 4),
-  //         Text(
-  //           'try_different_category_or_search'.tr,
-  //           style: _f(13, FontWeight.w400, _D.textHint),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
   Widget _emptyState() {
     return Center(
       child: Padding(
@@ -918,6 +894,26 @@ class _RecipeCardState extends State<_RecipeCard> {
                             ),
                           ),
                         ),
+                        if (recipe.cuisine != null)
+                          Positioned(
+                            top: 12,
+                            left: 12,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.72),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                '#${recipe.cuisine!.trim().replaceAll(' ', '')}',
+                                style: _f(6.5, FontWeight.w800, _D.textDark),
+                              ),
+                            ),
+                          ),
+
                         if (_time.isNotEmpty)
                           Positioned(
                             top: 12,

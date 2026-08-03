@@ -8,7 +8,7 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/View/Home/settings/settings_common.dart';
-import 'package:recipe_ai/Widget/custom_snackbar.dart';
+import 'package:recipe_ai/widgets/custom_snackbar.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/utils/validation_helper.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
