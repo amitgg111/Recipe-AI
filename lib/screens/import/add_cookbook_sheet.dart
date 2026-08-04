@@ -15,6 +15,7 @@ class AddCookbookSheet extends StatefulWidget {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+
       backgroundColor: Colors.transparent,
       builder: (_) => const AddCookbookSheet(),
     );

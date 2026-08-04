@@ -476,7 +476,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen>
   Widget _recipeRow(RecipeModel recipe, bool showDivider) {
     return Column(
       children: [
-        InkWell(
+        GestureDetector(
           onTap: () => Get.to(() => RecipeDetailScreen(recipe: recipe)),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 11),
@@ -499,18 +499,18 @@ class _ProfileViewScreenState extends State<ProfileViewScreen>
                         ),
                       ),
                       const SizedBox(height: 3),
-                      Text(
-                        recipe.category?.isNotEmpty == true
-                            ? recipe.category!
-                            : 'recipe'.tr,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textMedium,
-                        ),
-                      ),
+                      // Text(
+                      //   recipe.category?.isNotEmpty == true
+                      //       ? recipe.category!
+                      //       : 'recipe'.tr,
+                      //   maxLines: 1,
+                      //   overflow: TextOverflow.ellipsis,
+                      //   style: const TextStyle(
+                      //     fontSize: 12,
+                      //     fontWeight: FontWeight.w600,
+                      //     color: AppColors.textMedium,
+                      //   ),
+                      // ),
                     ],
                   ),
                 ),

@@ -26,9 +26,7 @@ class _CuisinesBodyState extends State<CuisinesBody> {
   void initState() {
     super.initState();
     _selectedCuisines = Set<String>.from(_c.cuisines);
-    if (_cuisineC.categories.isEmpty) {
-      _cuisineC.fetchCuisines();
-    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       widget.onValidityChanged?.call(_selectedCuisines.isNotEmpty);
     });

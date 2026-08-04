@@ -188,6 +188,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
               // ── Foreground content ───────────────────────────────────────
               SafeArea(
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     // Logo row, over the photo.
                     const Padding(
