@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -514,20 +516,26 @@ class _RecipeCard extends StatefulWidget {
 class _RecipeCardState extends State<_RecipeCard> {
   DiscoverRecipe get recipe => widget.recipe;
   ProfileController get _profile => Get.find<ProfileController>();
-  late int _likes = recipe.likesCount;
-  late int _shares = recipe.sharesCount;
-  late int _saves = recipe.savesCount;
-  late int _comments = recipe.commentsCount;
+
   bool _busyLike = false;
   bool _busySave = false;
 
+  bool _isLiked = false;
+  bool _isSaved = false;
   DiscoverController get _disc => Get.find<DiscoverController>();
-  bool get _saved => _disc.savedOriginalIds.contains(recipe.id);
-  bool get _liked => _disc.likedOriginalIds.contains(recipe.id);
   // NOTE: liked/saved status is no longer fetched per-card here.
   // DiscoverController batch-loads likedOriginalIds/savedOriginalIds ONCE for
   // the whole feed (in fetchDiscoverRecipes), so opening Discover no longer
   // fires 2 Firestore reads per visible card — that was the load/lag source.
+  @override
+  void initState() {
+    super.initState();
+
+    final disc = Get.find<DiscoverController>();
+
+    _isLiked = disc.likedOriginalIds.contains(recipe.id);
+    _isSaved = disc.savedOriginalIds.contains(recipe.id);
+  }
 
   String get _time =>
       recipe.totalTime ?? recipe.cookTime ?? recipe.prepTime ?? '';
@@ -587,7 +595,30 @@ class _RecipeCardState extends State<_RecipeCard> {
     // for a typical recipe, plus a full cache disk write per batch of 8 —
     // before pushing the route. The feed froze for a second or more with no
     // spinner and not even a ripple, which is the redirect delay.
-    Get.to(() => PublicRecipeViewScreen(recipe: recipe));
+
+    Get.to(
+      () => PublicRecipeViewScreen(
+        recipe: recipe,
+
+        onSocialChanged:
+            ({
+              int? likes,
+              int? saves,
+              int? comments,
+              bool? liked,
+              bool? saved,
+            }) {
+              _disc.updateRecipeSocial(
+                recipe.id,
+                likes: likes,
+                saves: saves,
+                comments: comments,
+                liked: liked,
+                saved: saved,
+              );
+            },
+      ),
+    );
   }
 
   void _openAuthor() {
@@ -603,31 +634,49 @@ class _RecipeCardState extends State<_RecipeCard> {
 
   Future<void> _toggleLike() async {
     if (_busyLike) return;
+
+    final disc = _disc;
+    final previous = _isLiked;
+    final target = !previous;
+
+    // Instant UI update
+    if (mounted) {
+      setState(() {
+        _isLiked = target;
+      });
+    }
+
+    // Update shared state immediately
+    if (target) {
+      disc.likedOriginalIds.add(recipe.id);
+    } else {
+      disc.likedOriginalIds.remove(recipe.id);
+    }
+
+    disc.likedOriginalIds.refresh();
+
     _busyLike = true;
-    final target = !_liked;
-    // Optimistic: update the UI instantly (shared set + local count), then
-    // persist in the background.
-    setState(() {
-      if (target) {
-        _disc.likedOriginalIds.add(recipe.id);
-      } else {
-        _disc.likedOriginalIds.remove(recipe.id);
-      }
-      _likes += target ? 1 : -1;
-    });
+
     try {
       await RecipeSocialService.setLike(recipe.userId, recipe.id, target);
-    } catch (_) {
+    } catch (e) {
+      // Rollback UI
       if (mounted) {
         setState(() {
-          if (target) {
-            _disc.likedOriginalIds.remove(recipe.id);
-          } else {
-            _disc.likedOriginalIds.add(recipe.id);
-          }
-          _likes += target ? -1 : 1;
+          _isLiked = previous;
         });
       }
+
+      // Rollback shared state
+      if (previous) {
+        disc.likedOriginalIds.add(recipe.id);
+      } else {
+        disc.likedOriginalIds.remove(recipe.id);
+      }
+
+      disc.likedOriginalIds.refresh();
+
+      debugPrint('[_toggleLike] Error: $e');
     } finally {
       _busyLike = false;
     }
@@ -638,13 +687,65 @@ class _RecipeCardState extends State<_RecipeCard> {
   // sheet's Done button. A copy is created up-front so the picker has something
   // to file, but if the user dismisses the sheet (or taps Done without picking
   // a cookbook) the copy is rolled back out — nothing is left in My Recipes.
+  // Future<void> _openSaveSheet() async {
+  //   if (_busySave) return;
+  //   _busySave = true;
+  //   try {
+  //     final copyId = await RecipeSocialService.saveCopyToMyRecipes(recipe);
+  //     if (copyId == null || !mounted) return;
+
+  //     final result = await showModalBottomSheet<int>(
+  //       context: context,
+  //       isScrollControlled: true,
+  //       backgroundColor: Colors.transparent,
+  //       builder: (_) => CookbookPickerSheet(
+  //         cookbookController: Get.find<CookbookController>(),
+  //         recipeId: copyId,
+  //         recipeImageUrl: recipe.imageUrl,
+  //       ),
+  //     );
+
+  //     // Saved only if the user tapped Done with at least one cookbook selected
+  //     // (the sheet pops the selected-cookbook count; a dismiss returns null).
+  //     final confirmed = result != null && result > 0;
+  //     if (!confirmed) {
+  //       // Roll the copy back out so the discover-save "counts" only on Done.
+  //       final deletedIds = await RecipeSocialService.removeSavedCopy(recipe);
+  //       if (deletedIds.isNotEmpty && Get.isRegistered<CookbookController>()) {
+  //         final cookbooks = Get.find<CookbookController>();
+  //         for (final id in deletedIds) {
+  //           await cookbooks.removeRecipeFromAllCookbooks(id);
+  //         }
+  //       }
+  //       return;
+  //     }
+
+  //     // Filed into a cookbook → mark as saved (shared set drives every bookmark
+  //     // for this recipe).
+  //     if (mounted && !_saved) {
+  //       _disc.savedOriginalIds.add(recipe.id);
+  //       _disc.savedOriginalIds.refresh();
+  //       // setState(() => _saves += 1);
+  //     }
+  //     RecipeSocialService.setSave(recipe.userId, recipe.id, true);
+  //   } finally {
+  //     _busySave = false;
+  //   }
+  // }
   Future<void> _openSaveSheet() async {
     if (_busySave) return;
-    _busySave = true;
-    try {
-      final copyId = await RecipeSocialService.saveCopyToMyRecipes(recipe);
-      if (copyId == null || !mounted) return;
 
+    _busySave = true;
+
+    try {
+      // 1. First create a temporary saved copy.
+      final copyId = await RecipeSocialService.saveCopyToMyRecipes(recipe);
+
+      if (copyId == null || !mounted) {
+        return;
+      }
+
+      // 2. Open cookbook picker.
       final result = await showModalBottomSheet<int>(
         context: context,
         isScrollControlled: true,
@@ -656,86 +757,188 @@ class _RecipeCardState extends State<_RecipeCard> {
         ),
       );
 
-      // Saved only if the user tapped Done with at least one cookbook selected
-      // (the sheet pops the selected-cookbook count; a dismiss returns null).
+      // 3. User must select at least one cookbook and press Done.
       final confirmed = result != null && result > 0;
+
+      // 4. If cancelled/dismissed/no cookbook selected,
+      //    delete the temporary copy.
       if (!confirmed) {
-        // Roll the copy back out so the discover-save "counts" only on Done.
         final deletedIds = await RecipeSocialService.removeSavedCopy(recipe);
+
         if (deletedIds.isNotEmpty && Get.isRegistered<CookbookController>()) {
           final cookbooks = Get.find<CookbookController>();
+
           for (final id in deletedIds) {
             await cookbooks.removeRecipeFromAllCookbooks(id);
           }
         }
+
         return;
       }
 
-      // Filed into a cookbook → mark as saved (shared set drives every bookmark
-      // for this recipe).
-      if (mounted && !_saved) {
-        _disc.savedOriginalIds.add(recipe.id);
-        setState(() => _saves += 1);
+      // 5. Successfully saved.
+      if (mounted) {
+        setState(() {
+          _isSaved = true;
+        });
       }
-      RecipeSocialService.setSave(recipe.userId, recipe.id, true);
+
+      _disc.savedOriginalIds.add(recipe.id);
+      _disc.savedOriginalIds.refresh();
+
+      // 6. Update Firestore/social save state.
+      await RecipeSocialService.setSave(recipe.userId, recipe.id, true);
+    } catch (e) {
+      debugPrint('[_openSaveSheet] Error: $e');
     } finally {
       _busySave = false;
     }
   }
 
-  // Tapping the bookmark toggles: save (copy in) when unsaved, or permanently
-  // remove the saved copy when already saved.
   Future<void> _toggleSave() async {
-    if (_saved) {
+    if (_busySave) return;
+
+    // If already saved → remove it.
+    // if (_disc.savedOriginalIds.contains(recipe.id)) {
+    //   await _unsave();
+    //   return;
+    // }
+    if (_isSaved) {
       await _unsave();
     } else {
       await _openSaveSheet();
     }
+    // If not saved → open cookbook picker.
+    // await _openSaveSheet();
   }
+
+  // Tapping the bookmark toggles: save (copy in) when unsaved, or permanently
+  // remove the saved copy when already saved.
+  // Future<void> _toggleSave() async {
+  //   if (_busySave) return;
+
+  //   if (_disc.savedOriginalIds.contains(recipe.id)) {
+  //     await _unsave();
+  //   } else {
+  //     await _openSaveSheet();
+  //   }
+  // }
+
+  // Future<void> _toggleSave() async {
+  //   if (_saved) {
+  //     await _unsave();
+  //   } else {
+  //     await _openSaveSheet();
+  //   }
+  // }
 
   // Un-save → permanently delete the saved copy from the user's recipes (and
   // any cookbooks it was filed into), then flip the bookmark back to empty.
+  // Future<void> _unsave() async {
+  //   if (_busySave) return;
+  //   _busySave = true;
+  //   try {
+  //     final deletedIds = await RecipeSocialService.removeSavedCopy(recipe);
+  //     if (deletedIds.isNotEmpty && Get.isRegistered<CookbookController>()) {
+  //       final cookbooks = Get.find<CookbookController>();
+  //       for (final id in deletedIds) {
+  //         await cookbooks.removeRecipeFromAllCookbooks(id);
+  //       }
+  //     }
+  //     RecipeSocialService.setSave(recipe.userId, recipe.id, false);
+  //     _disc.savedOriginalIds.remove(recipe.id);
+  //     _disc.savedOriginalIds.refresh();
+  //     // if (mounted) {
+  //     //   setState(() {
+  //     //     if (_saves > 0) _saves -= 1;
+  //     //   });
+  //     // }
+  //     CustomSnackbar.show(
+  //       title: 'removed'.tr,
+  //       message: 'recipe_removed_from_saved'.tr,
+  //       type: SnackbarType.info,
+  //     );
+  //   } finally {
+  //     _busySave = false;
+  //   }
+  // }
   Future<void> _unsave() async {
     if (_busySave) return;
+
     _busySave = true;
+
     try {
+      // 1. Remove saved recipe copy.
       final deletedIds = await RecipeSocialService.removeSavedCopy(recipe);
+
+      // 2. Remove deleted recipe from all cookbooks.
       if (deletedIds.isNotEmpty && Get.isRegistered<CookbookController>()) {
         final cookbooks = Get.find<CookbookController>();
+
         for (final id in deletedIds) {
           await cookbooks.removeRecipeFromAllCookbooks(id);
         }
       }
-      RecipeSocialService.setSave(recipe.userId, recipe.id, false);
+
+      // 3. Update Firestore.
+      await RecipeSocialService.setSave(recipe.userId, recipe.id, false);
+
+      // 4. Immediately update UI.
       _disc.savedOriginalIds.remove(recipe.id);
+      _disc.savedOriginalIds.refresh();
+
       if (mounted) {
         setState(() {
-          if (_saves > 0) _saves -= 1;
+          _isSaved = false;
         });
       }
-      CustomSnackbar.show(
-        title: 'removed'.tr,
-        message: 'recipe_removed_from_saved'.tr,
-        type: SnackbarType.info,
-      );
+
+      // 5. Snackbar.
+      if (mounted) {
+        CustomSnackbar.show(
+          title: 'removed'.tr,
+          message: 'recipe_removed_from_saved'.tr,
+          type: SnackbarType.info,
+        );
+      }
+    } catch (e) {
+      debugPrint('[_unsave] Error: $e');
     } finally {
       _busySave = false;
     }
   }
 
-  void _share() {
+  // void _share() {
+  //   final buf = StringBuffer()
+  //     ..writeln(recipe.title)
+  //     ..writeln();
+  //   if (recipe.ingredients.isNotEmpty) {
+  //     buf.writeln('INGREDIENTS');
+  //     for (final i in recipe.ingredients) {
+  //       buf.writeln('• $i');
+  //     }
+  //   }
+  //   Share.share(buf.toString(), subject: recipe.title);
+  //   unawaited(RecipeSocialService.registerShare(recipe.userId, recipe.id));
+  //   // RecipeSocialService.registerShare(recipe.userId, recipe.id);
+  //   // if (mounted) setState(() => _shares += 1);
+  // }
+  Future<void> _share() async {
     final buf = StringBuffer()
       ..writeln(recipe.title)
       ..writeln();
+
     if (recipe.ingredients.isNotEmpty) {
       buf.writeln('INGREDIENTS');
+
       for (final i in recipe.ingredients) {
         buf.writeln('• $i');
       }
     }
-    Share.share(buf.toString(), subject: recipe.title);
-    RecipeSocialService.registerShare(recipe.userId, recipe.id);
-    if (mounted) setState(() => _shares += 1);
+
+    await Share.share(buf.toString(), subject: recipe.title);
+
+    unawaited(RecipeSocialService.registerShare(recipe.userId, recipe.id));
   }
 
   @override
@@ -746,8 +949,24 @@ class _RecipeCardState extends State<_RecipeCard> {
       // Wrapped in Obx so this card rebuilds when the shared liked/saved sets
       // change (batch load completing, or another card/screen mutating them)
       // without each card doing its own network fetch.
-      final liked = _liked;
-      final saved = _saved;
+
+      // final liked = _disc.likedOriginalIds.contains(recipe.id);
+      // final saved = _disc.savedOriginalIds.contains(recipe.id);
+      // final liked = _liked;
+      // final saved = _saved;
+      final sharedLiked = _disc.likedOriginalIds.contains(recipe.id);
+      final sharedSaved = _disc.savedOriginalIds.contains(recipe.id);
+      if (sharedLiked != _isLiked && !_busyLike) {
+        _isLiked = sharedLiked;
+      }
+
+      if (sharedSaved != _isSaved && !_busySave) {
+        _isSaved = sharedSaved;
+      }
+
+      final liked = _isLiked;
+      final saved = _isSaved;
+
       return Container(
         decoration: BoxDecoration(
           color: _D.card,
@@ -984,11 +1203,16 @@ class _RecipeCardState extends State<_RecipeCard> {
                 children: [
                   _action(
                     iconWidget: OnboardingLineIcon(
+                      // key: ValueKey('heart_${recipe.id}_$liked'),
+                      key: ValueKey(
+                        'heart_${recipe.id}_${liked ? 'liked' : 'unliked'}',
+                      ),
                       liked ? 'heart' : 'heartO',
                       size: 22,
                       color: liked ? _D.primary : _D.textDark,
                     ),
-                    count: _likes,
+                    // count: _likes,
+                    count: recipe.likesCount,
                     onTap: _toggleLike,
                   ),
                   const SizedBox(width: 4),
@@ -998,13 +1222,14 @@ class _RecipeCardState extends State<_RecipeCard> {
                       size: 22,
                       color: _D.textDark,
                     ),
-                    count: _comments,
+                    // count: _comments,
+                    count: recipe.commentsCount,
                     onTap: () => CommentsSheet.show(
                       context,
                       ownerId: recipe.userId,
                       recipeId: recipe.id,
                       onCommentAdded: () {
-                        if (mounted) setState(() => _comments += 1);
+                        // if (mounted) setState(() => _comments += 1);
                       },
                     ),
                   ),
@@ -1015,18 +1240,25 @@ class _RecipeCardState extends State<_RecipeCard> {
                       size: 22,
                       color: _D.textDark,
                     ),
-                    count: _shares,
+                    // count: _shares,
+                    count: recipe.sharesCount,
                     showCount: false,
                     onTap: _share,
                   ),
                   const Spacer(),
                   _action(
                     iconWidget: OnboardingLineIcon(
+                      // key: ValueKey('bookmark_${recipe.id}_$saved'),
+                      key: ValueKey(
+                        'bookmark_${recipe.id}_${saved ? 'saved' : 'unsaved'}',
+                      ),
                       saved ? 'bookmarkF' : 'bookmark',
                       size: 22,
                       color: saved ? _D.primary : _D.textDark,
                     ),
-                    count: _saves,
+
+                    // count: _saves,
+                    count: recipe.savesCount,
                     showCount: false,
                     onTap: _toggleSave,
                   ),

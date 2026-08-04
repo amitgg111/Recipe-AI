@@ -7,6 +7,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/Service/ai_translation_service.dart';
 import 'package:recipe_ai/Service/recipe_social_service.dart';
+// `IngredientSection` (named group of ingredients, e.g. "For the batter")
+// is the app's existing model — reused here rather than redeclared, so this
+// file stays compatible with HomeController / RecipeEditorController /
+// RecipeDetailScreen, which all import this same class from here. Declaring
+// a second class with the same name in this file previously caused an
+// "ambiguous import" error in every file that imported both this file and
+// recipe_section_model.dart (HomeController does).
+import 'package:recipe_ai/Model/recipe_section_model.dart';
 
 class DiscoverRecipe {
   final String id;
@@ -20,6 +28,13 @@ class DiscoverRecipe {
   final String? totalTime;
   final String? servings;
   final List<String> ingredients;
+
+  /// Optional grouped view of [ingredients] (e.g. "For the batter" / "For
+  /// the tempering"). Empty when the recipe was authored/imported with a
+  /// flat ingredient list only — callers should fall back to [ingredients]
+  /// in that case.
+  final List<IngredientSection> ingredientSections;
+
   final List<String> instructions;
   final String userId;
   final String userName;
@@ -64,6 +79,7 @@ class DiscoverRecipe {
     this.totalTime,
     this.servings,
     this.ingredients = const [],
+    this.ingredientSections = const [],
     this.instructions = const [],
     required this.userId,
     required this.userName,
@@ -82,10 +98,26 @@ class DiscoverRecipe {
   DiscoverRecipe copyWith({
     String? title,
     String? description,
+    String? imageUrl,
     String? category,
     String? cuisine,
+    String? prepTime,
+    String? cookTime,
+    String? totalTime,
+    String? servings,
     List<String>? ingredients,
+    List<IngredientSection>? ingredientSections,
     List<String>? instructions,
+    String? userId,
+    String? userName,
+    String? userAvatar,
+    DateTime? createdAt,
+
+    int? likesCount,
+    int? commentsCount,
+    int? sharesCount,
+    int? savesCount,
+
     String? enTitle,
     String? enDescription,
     String? enCategory,
@@ -93,25 +125,33 @@ class DiscoverRecipe {
   }) {
     return DiscoverRecipe(
       id: id,
+
       title: title ?? this.title,
       description: description ?? this.description,
-      imageUrl: imageUrl,
+      imageUrl: imageUrl ?? this.imageUrl,
       category: category ?? this.category,
       cuisine: cuisine ?? this.cuisine,
-      prepTime: prepTime,
-      cookTime: cookTime,
-      totalTime: totalTime,
-      servings: servings,
+
+      prepTime: prepTime ?? this.prepTime,
+      cookTime: cookTime ?? this.cookTime,
+      totalTime: totalTime ?? this.totalTime,
+      servings: servings ?? this.servings,
+
       ingredients: ingredients ?? this.ingredients,
+      ingredientSections: ingredientSections ?? this.ingredientSections,
       instructions: instructions ?? this.instructions,
-      userId: userId,
-      userName: userName,
-      userAvatar: userAvatar,
-      createdAt: createdAt,
-      likesCount: likesCount,
-      commentsCount: commentsCount,
-      sharesCount: sharesCount,
-      savesCount: savesCount,
+
+      userId: userId ?? this.userId,
+      userName: userName ?? this.userName,
+      userAvatar: userAvatar ?? this.userAvatar,
+      createdAt: createdAt ?? this.createdAt,
+
+      // ⭐ IMPORTANT
+      likesCount: likesCount ?? this.likesCount,
+      commentsCount: commentsCount ?? this.commentsCount,
+      sharesCount: sharesCount ?? this.sharesCount,
+      savesCount: savesCount ?? this.savesCount,
+
       enTitle: enTitle ?? this.enTitle,
       enDescription: enDescription ?? this.enDescription,
       enCategory: enCategory ?? this.enCategory,
@@ -232,6 +272,78 @@ class DiscoverController extends GetxController {
         .join(' ');
   }
 
+  // void updateRecipeSocial(
+  //   String recipeId, {
+  //   int? likes,
+  //   int? saves,
+  //   int? comments,
+  //   bool? liked,
+  //   bool? saved,
+  // }) {
+  //   final index = recipes.indexWhere((r) => r.id == recipeId);
+
+  //   if (index == -1) return;
+
+  //   final old = recipes[index];
+
+  //   recipes[index] = old.copyWith(
+  //     likesCount: likes ?? old.likesCount,
+  //     savesCount: saves ?? old.savesCount,
+  //     commentsCount: comments ?? old.commentsCount,
+  //   );
+
+  //   recipes.refresh();
+  // }
+  
+
+void updateRecipeSocial(
+  String recipeId, {
+  int? likes,
+  int? saves,
+  int? comments,
+  bool? liked,
+  bool? saved,
+}) {
+  final index = recipes.indexWhere((r) => r.id == recipeId);
+
+  if (index != -1) {
+    final old = recipes[index];
+
+    recipes[index] = old.copyWith(
+      likesCount: likes ?? old.likesCount,
+      savesCount: saves ?? old.savesCount,
+      commentsCount: comments ?? old.commentsCount,
+    );
+
+    recipes.refresh();
+  }
+
+  // IMPORTANT:
+  // PublicRecipeViewScreen -> DiscoverScreen
+  // like state must also update the shared RxSet.
+  if (liked != null) {
+    if (liked) {
+      likedOriginalIds.add(recipeId);
+    } else {
+      likedOriginalIds.remove(recipeId);
+    }
+
+    likedOriginalIds.refresh();
+  }
+
+  // Same for save/bookmark state.
+  if (saved != null) {
+    if (saved) {
+      savedOriginalIds.add(recipeId);
+    } else {
+      savedOriginalIds.remove(recipeId);
+    }
+
+    savedOriginalIds.refresh();
+  }
+}
+
+
   bool _isPreferredCuisine(DiscoverRecipe recipe) {
     final prefs = preferredCuisines
         .map(_normalizeCuisine)
@@ -324,12 +436,38 @@ class DiscoverController extends GetxController {
 
   /// Translate a single recipe's ingredients + steps for the detail screen.
   /// Called on card tap so the (potentially long) lists are only translated
-  /// for the one recipe actually opened.
+  /// for the one recipe actually opened. Also translates [ingredientSections]
+  /// (both the group name and each item) when present.
   Future<DiscoverRecipe> translateForDetail(DiscoverRecipe r) async {
     if (!AiTranslationService.isTranslating) return r;
+
+    final translatedIngredients = await AiTranslationService.translateList(
+      r.ingredients,
+    );
+    final translatedInstructions = await AiTranslationService.translateList(
+      r.instructions,
+    );
+
+    var translatedSections = r.ingredientSections;
+
+    if (r.ingredientSections.isNotEmpty) {
+      translatedSections = await Future.wait(
+        r.ingredientSections.map((section) async {
+          final sectionName = section.name?.trim();
+
+          final name = sectionName == null || sectionName.isEmpty
+              ? section.name
+              : await AiTranslationService.translate(sectionName);
+          final items = await AiTranslationService.translateList(section.items);
+          return section.copyWith(name: name, items: items);
+        }),
+      );
+    }
+
     return r.copyWith(
-      ingredients: await AiTranslationService.translateList(r.ingredients),
-      instructions: await AiTranslationService.translateList(r.instructions),
+      ingredients: translatedIngredients,
+      instructions: translatedInstructions,
+      ingredientSections: translatedSections,
     );
   }
 
@@ -371,7 +509,8 @@ class DiscoverController extends GetxController {
   ];
 
   StreamSubscription? _authSub;
-
+  final Map<String, StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>>
+  _socialCountSubscriptions = {};
   @override
   void onInit() {
     super.onInit();
@@ -384,6 +523,11 @@ class DiscoverController extends GetxController {
       } else {
         recipes.clear();
         _english.clear();
+        for (final subscription in _socialCountSubscriptions.values) {
+          subscription.cancel();
+        }
+
+        _socialCountSubscriptions.clear();
         likedOriginalIds.clear();
         savedOriginalIds.clear();
 
@@ -400,6 +544,13 @@ class DiscoverController extends GetxController {
   @override
   void onClose() {
     _authSub?.cancel();
+
+    for (final subscription in _socialCountSubscriptions.values) {
+      subscription.cancel();
+    }
+
+    _socialCountSubscriptions.clear();
+
     super.onClose();
   }
 
@@ -407,9 +558,69 @@ class DiscoverController extends GetxController {
   // fire on startup) so the feed isn't queried twice at once.
   bool _fetching = false;
 
+  void _listenToRecipeSocialCounts(List<DiscoverRecipe> loadedRecipes) {
+    for (final recipe in loadedRecipes) {
+      if (_socialCountSubscriptions.containsKey(recipe.id)) {
+        continue;
+      }
+
+      final subscription = FirebaseFirestore.instance
+          .collection('recipes')
+          .doc(recipe.id)
+          .snapshots()
+          .listen(
+            (snapshot) {
+              if (!snapshot.exists) return;
+
+              final data = snapshot.data();
+              if (data == null) return;
+
+              final index = recipes.indexWhere((r) => r.id == recipe.id);
+
+              if (index == -1) return;
+
+              final old = recipes[index];
+
+              final updated = old.copyWith(
+                likesCount: (data['likesCount'] as num?)?.toInt() ?? 0,
+                commentsCount: (data['commentsCount'] as num?)?.toInt() ?? 0,
+                sharesCount: (data['sharesCount'] as num?)?.toInt() ?? 0,
+                savesCount: (data['savesCount'] as num?)?.toInt() ?? 0,
+              );
+
+              recipes[index] = updated;
+              recipes.refresh();
+
+              // Keep English copy in sync too.
+              final englishIndex = _english.indexWhere(
+                (r) => r.id == recipe.id,
+              );
+
+              if (englishIndex != -1) {
+                _english[englishIndex] = _english[englishIndex].copyWith(
+                  likesCount: updated.likesCount,
+                  commentsCount: updated.commentsCount,
+                  sharesCount: updated.sharesCount,
+                  savesCount: updated.savesCount,
+                );
+              }
+            },
+            onError: (error) {
+              log(
+                '❌ Realtime social count listener failed '
+                'for ${recipe.id}: $error',
+              );
+            },
+          );
+
+      _socialCountSubscriptions[recipe.id] = subscription;
+    }
+  }
+
   /// Batch-loads which of [loaded] recipes the current user has
   /// liked/saved — ONE Firestore query each for the whole feed, instead of
   /// every _RecipeCard firing its own isLiked/isSaved read on build.
+
   Future<void> _loadSocialStates(List<DiscoverRecipe> loaded) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
 
@@ -439,9 +650,18 @@ class DiscoverController extends GetxController {
   /// translating.
   Future<void> _processAndAppend(List<DiscoverRecipe> chunk) async {
     if (chunk.isEmpty) return;
+
     final translated = await _translateForFeed(chunk);
+
     recipes.addAll(translated);
+
+    // Existing batch load for liked/saved state.
     await _loadSocialStates(chunk);
+
+    // ⭐ NEW:
+    // Realtime likes/comments/shares/saves counts.
+    _listenToRecipeSocialCounts(chunk);
+
     unawaited(_prewarmDetails(chunk));
   }
 
@@ -761,6 +981,20 @@ class DiscoverController extends GetxController {
 
       final ownerData = userProfiles[ownerId] ?? {};
 
+      // ingredientSections: array of { name: string, items: string[] }.
+      // Stored alongside the flat `ingredients` array — not every recipe
+      // has it (older/imported recipes only have the flat list), so this
+      // safely falls back to an empty list when absent or malformed.
+      List<IngredientSection> sections = const [];
+      final rawSections = data['ingredientSections'];
+      if (rawSections is List) {
+        sections = rawSections
+            .whereType<Map>()
+            .map((e) => IngredientSection.fromMap(Map<String, dynamic>.from(e)))
+            .where((s) => s.items.isNotEmpty)
+            .toList();
+      }
+
       result.add(
         DiscoverRecipe(
           id: recipeDoc.id,
@@ -774,6 +1008,8 @@ class DiscoverController extends GetxController {
           totalTime: data['totalTime']?.toString(),
           servings: data['servings']?.toString(),
           ingredients: List<String>.from(data['ingredients'] ?? const []),
+          ingredientSections: sections,
+
           instructions: List<String>.from(data['instructions'] ?? const []),
           userId: ownerId,
           userName: ownerData['name']?.toString() ?? 'Chef',
@@ -820,6 +1056,9 @@ class DiscoverController extends GetxController {
   /// queries ownerId == uid while the feed is isPublic == true — disjoint
   /// sets, so public recipes were never warmed by anything.
   ///
+  /// Also prewarms ingredientSections (group names + items) so grouped
+  /// ingredient cards don't show a beat of English either.
+  ///
   /// Runs unawaited and strictly after the page is on screen, so it never
   /// delays the feed. translateList de-duplicates and writes the cache once.
   Future<void> _prewarmDetails(List<DiscoverRecipe> list) async {
@@ -829,6 +1068,14 @@ class DiscoverController extends GetxController {
       for (final r in list) {
         texts.addAll(r.ingredients);
         texts.addAll(r.instructions);
+        for (final section in r.ingredientSections) {
+          final sectionName = section.name?.trim();
+
+          if (sectionName != null && sectionName.isNotEmpty) {
+            texts.add(sectionName);
+          }
+          texts.addAll(section.items);
+        }
         final t = r.prepTime;
         if (t != null && t.trim().isNotEmpty) texts.add(t);
         final c = r.cookTime;

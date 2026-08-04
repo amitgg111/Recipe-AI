@@ -257,7 +257,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
 
   Widget _buildViewToggle() {
     return SlidingSegmented.standard(
-      labels: ['day'.tr, 'month'.tr],
+      labels: ['Week'.tr, 'month'.tr],
       selectedIndex: _viewIndex,
       onChanged: (index) {
         setState(() => _viewIndex = index);

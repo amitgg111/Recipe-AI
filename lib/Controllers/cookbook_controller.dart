@@ -26,12 +26,20 @@ class CookbookModel {
   factory CookbookModel.fromDocument(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
 
+    DateTime? createdAt;
+    final createdAtValue = data['createdAt'];
+    if (createdAtValue is Timestamp) {
+      createdAt = createdAtValue.toDate();
+    } else if (createdAtValue is DateTime) {
+      createdAt = createdAtValue;
+    }
     return CookbookModel(
       id: doc.id,
       name: data['name'] ?? '',
       imageUrl: data['imageUrl'],
       recipeCount: data['recipeCount'] ?? 0,
       recipeIds: List<String>.from(data['recipeIds'] ?? []),
+      createdAt: createdAt, // ✅ IMPORTANT
     );
   }
 }
@@ -100,11 +108,11 @@ class CookbookController extends GetxController {
             "createdAt": FieldValue.serverTimestamp(),
           });
 
-      CustomSnackbar.show(
-        title: 'Created',
-        message: '"$name" cookbook created',
-        type: SnackbarType.success,
-      );
+      // CustomSnackbar.show(
+      //   title: 'Created',
+      //   message: '"$name" cookbook created',
+      //   type: SnackbarType.success,
+      // );
     } catch (e) {
       log("Create cookbook error => $e");
       CustomSnackbar.show(
@@ -127,11 +135,11 @@ class CookbookController extends GetxController {
           .doc(cookbookId)
           .update({"name": newName});
 
-      CustomSnackbar.show(
-        title: 'Updated',
-        message: 'Cookbook renamed to "$newName"',
-        type: SnackbarType.success,
-      );
+      // CustomSnackbar.show(
+      //   title: 'Updated',
+      //   message: 'Cookbook renamed to "$newName"',
+      //   type: SnackbarType.success,
+      // );
     } catch (e) {
       log("Update cookbook error => $e");
       CustomSnackbar.show(
@@ -154,11 +162,11 @@ class CookbookController extends GetxController {
           .doc(cookbookId)
           .delete();
 
-      CustomSnackbar.show(
-        title: 'Deleted',
-        message: 'Cookbook deleted',
-        type: SnackbarType.success,
-      );
+      // CustomSnackbar.show(
+      //   title: 'Deleted',
+      //   message: 'Cookbook deleted',
+      //   type: SnackbarType.success,
+      // );
     } catch (e) {
       log("Delete cookbook error => $e");
       CustomSnackbar.show(

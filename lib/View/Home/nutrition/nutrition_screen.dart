@@ -347,7 +347,7 @@ class _NutritionScreenState extends State<NutritionScreen> {
                             : 'nutrition_kcal_serves'.trParams({
                                 'servings': '${n.servings}',
                               }),
-                        valueFontSize: _perServing ? 42 : 38,
+                        valueFontSize: _perServing ? 30 : 30,
                       ),
                     ),
                   ],

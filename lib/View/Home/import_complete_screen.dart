@@ -48,8 +48,9 @@ class _ImportCompleteScreenState extends State<ImportCompleteScreen> {
   LocalizedRecipe? _localized;
   bool _isLocalizing = false;
 
-  RecipeModel get recipe => widget.recipe;
+  late RecipeModel _currentRecipe;
 
+  RecipeModel get recipe => _currentRecipe;
   String get _displayTitle => _localized?.title ?? recipe.title;
 
   String? get _displayPrepTime => _localized?.prepTime ?? recipe.prepTime;
@@ -75,6 +76,7 @@ class _ImportCompleteScreenState extends State<ImportCompleteScreen> {
   @override
   void initState() {
     super.initState();
+    _currentRecipe = widget.recipe;
     _loadLocalizedText();
   }
 
@@ -948,8 +950,20 @@ class _ImportCompleteScreenState extends State<ImportCompleteScreen> {
 
   Widget _editButton(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        Get.to(() => RecipeEditorScreen(recipe: widget.recipe));
+      onTap: () async {
+        final updatedRecipe = await Get.to<RecipeModel>(
+          () => RecipeEditorScreen(recipe: _currentRecipe),
+        );
+
+        if (!mounted || updatedRecipe == null) return;
+
+        setState(() {
+          _currentRecipe = updatedRecipe;
+          _localized = null;
+        });
+
+        // Re-resolve translated/display data from the updated recipe.
+        await _loadLocalizedText();
       },
       child: Container(
         height: 50,

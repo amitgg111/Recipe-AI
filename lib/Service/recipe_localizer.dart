@@ -108,11 +108,13 @@ class RecipeLocalizer {
         keywords: _strList(original['keywords']),
         ingredients: _strList(original['ingredients']),
         instructions: _strList(original['instructions']),
-        ingredientSections: _ingredientSectionsFrom(
+        ingredientSections: _ingredientsWithFallback(
           original['ingredientSections'],
+          original['ingredients'],
         ),
-        instructionSections: _instructionSectionsFrom(
+        instructionSections: _instructionsWithFallback(
           original['instructionSections'],
+          original['instructions'],
         ),
         enTotalTime: _str(data['totalTime']),
         isOriginalLanguage: true,
@@ -144,11 +146,14 @@ class RecipeLocalizer {
     ];
     const listKeys = ['keywords', 'ingredients', 'instructions'];
 
-    final ingredientSectionsEn = _ingredientSectionsFrom(
+    final ingredientSectionsEn = _ingredientsWithFallback(
       data['ingredientSections'],
+      data['ingredients'],
     );
-    final instructionSectionsEn = _instructionSectionsFrom(
+
+    final instructionSectionsEn = _instructionsWithFallback(
       data['instructionSections'],
+      data['instructions'],
     );
 
     final pending = <String>[];
@@ -255,8 +260,6 @@ class RecipeLocalizer {
         .toList();
   }
 
-
-
   // ── Misc helpers ───────────────────────────────────────────────────────────
 
   static String? _str(dynamic value) {
@@ -270,5 +273,45 @@ class RecipeLocalizer {
         .map((e) => e.toString().trim())
         .where((e) => e.isNotEmpty)
         .toList();
+  }
+
+  static List<IngredientSection> _ingredientsWithFallback(
+    dynamic sectionsValue,
+    dynamic ingredientsValue,
+  ) {
+    final sections = _ingredientSectionsFrom(sectionsValue);
+
+    // Proper sections available → use them.
+    if (sections.any((s) => s.items.isNotEmpty)) {
+      return sections;
+    }
+
+    // Old/discover recipe may only have flat ingredients.
+    final ingredients = _strList(ingredientsValue);
+
+    if (ingredients.isEmpty) {
+      return const [];
+    }
+
+    return [IngredientSection(items: List<String>.from(ingredients))];
+  }
+
+  static List<InstructionSection> _instructionsWithFallback(
+    dynamic sectionsValue,
+    dynamic instructionsValue,
+  ) {
+    final sections = _instructionSectionsFrom(sectionsValue);
+
+    if (sections.any((s) => s.steps.isNotEmpty)) {
+      return sections;
+    }
+
+    final instructions = _strList(instructionsValue);
+
+    if (instructions.isEmpty) {
+      return const [];
+    }
+
+    return [InstructionSection(steps: List<String>.from(instructions))];
   }
 }

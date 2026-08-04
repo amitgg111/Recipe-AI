@@ -79,9 +79,20 @@ BoxDecoration _cardDeco() => BoxDecoration(
 );
 
 class PublicRecipeViewScreen extends StatefulWidget {
-  final DiscoverRecipe recipe;
-  const PublicRecipeViewScreen({super.key, required this.recipe});
-
+  final DiscoverRecipe recipe; // ADD THIS
+  final void Function({
+    int? likes,
+    int? saves,
+    int? comments,
+    bool? liked,
+    bool? saved,
+  })?
+  onSocialChanged;
+  const PublicRecipeViewScreen({
+    super.key,
+    required this.recipe,
+    this.onSocialChanged,
+  });
   @override
   State<PublicRecipeViewScreen> createState() => _PublicRecipeViewScreenState();
 }
@@ -94,23 +105,48 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
   final GroceryStore _grocery = Get.find<GroceryStore>();
 
   // Optimistic social state (instant UI; persisted in the background).
-  late int _likes = recipe.likesCount;
-  late int _saves = recipe.savesCount;
-  bool _liked = false;
-  bool _saved = false;
+  late final ValueNotifier<int> _likes;
+  late final ValueNotifier<int> _saves;
+
+  late final ValueNotifier<bool> _liked;
+  late final ValueNotifier<bool> _saved;
+
+  late final ValueNotifier<int> _myRating;
+  late final ValueNotifier<int> _ratingSum;
+  late final ValueNotifier<int> _ratingCount;
+
+  late final ValueNotifier<int> _commentsCount;
+
   bool _busyLike = false;
   bool _busySave = false;
 
-  // Live comment count (loaded from the recipe doc, bumped on post).
-  int _commentsCount = 0;
-
-  // Ratings: the current user's rating + the aggregate (sum / count).
-  int _myRating = 0;
-  int _ratingSum = 0;
-  int _ratingCount = 0;
-  double get _avgRating => _ratingCount > 0 ? _ratingSum / _ratingCount : 0;
-
   DiscoverRecipe get recipe => widget.recipe;
+
+  // ── Flat ingredient list used everywhere index/order-based logic needs a
+  // single list (checkbox state, emoji lookup, the groceries sheet, cook
+  // mode, share text): the section items in document order when
+  // ingredientSections is populated, otherwise the plain ingredients list.
+  // Computed once and cached — this used to be recomputed (a fresh O(n)
+  // list build) on every single emoji lookup, i.e. once per row per
+  // rebuild, which is what made the ingredients card noticeably slow to
+  // settle whenever a translation batch or the servings stepper triggered
+  // a rebuild. Cached here it's O(n) once for the life of the screen.
+  List<String>? _effectiveIngredientsCache;
+
+  List<String> get _effectiveIngredients {
+    return _effectiveIngredientsCache ??= _computeEffectiveIngredients();
+  }
+
+  List<String> _computeEffectiveIngredients() {
+    if (recipe.ingredientSections.isNotEmpty) {
+      final flat = <String>[];
+      for (final section in recipe.ingredientSections) {
+        flat.addAll(section.items);
+      }
+      if (flat.isNotEmpty) return flat;
+    }
+    return recipe.ingredients;
+  }
 
   // ── Display-only translation ──────────────────────────────────────────────
   // This screen shows OTHER people's public recipes, so per RecipeLocalizer's
@@ -169,91 +205,144 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
   @override
   void initState() {
     super.initState();
+
     int parsed = 2;
-    if ((recipe.servings) != null) {
-      final m = RegExp(r'\d+').firstMatch((recipe.servings)!);
-      if (m != null) parsed = int.tryParse(m.group(0)!) ?? 2;
+
+    if (recipe.servings != null) {
+      final m = RegExp(r'\d+').firstMatch(recipe.servings!);
+      if (m != null) {
+        parsed = int.tryParse(m.group(0)!) ?? 2;
+      }
     }
+
     _initialServings = parsed <= 0 ? 2 : parsed;
     _servings = _initialServings;
+
+    _likes = ValueNotifier<int>(recipe.likesCount);
+    _saves = ValueNotifier<int>(recipe.savesCount);
+
+    _liked = ValueNotifier<bool>(false);
+    _saved = ValueNotifier<bool>(false);
+
+    _myRating = ValueNotifier<int>(0);
+    _ratingSum = ValueNotifier<int>(0);
+    _ratingCount = ValueNotifier<int>(0);
+
+    _commentsCount = ValueNotifier<int>(0);
+
     _loadSocial();
+  }
+
+  @override
+  void dispose() {
+    _likes.dispose();
+    _saves.dispose();
+
+    _liked.dispose();
+    _saved.dispose();
+
+    _myRating.dispose();
+    _ratingSum.dispose();
+    _ratingCount.dispose();
+
+    _commentsCount.dispose();
+
+    super.dispose();
   }
 
   Future<void> _loadSocial() async {
     try {
-      final liked = await RecipeSocialService.isLiked(recipe.userId, recipe.id);
-      final saved = await RecipeSocialService.isSaved(recipe.userId, recipe.id);
-      final myRating = await RecipeSocialService.getMyRating(
-        recipe.userId,
-        recipe.id,
-      );
-      final doc = await RecipeSocialService.recipeStream(
-        recipe.userId,
-        recipe.id,
-      ).first;
+      final results = await Future.wait([
+        RecipeSocialService.isLiked(recipe.userId, recipe.id),
+        RecipeSocialService.isSaved(recipe.userId, recipe.id),
+        RecipeSocialService.getMyRating(recipe.userId, recipe.id),
+        RecipeSocialService.recipeStream(recipe.userId, recipe.id).first,
+      ]);
+
+      final liked = results[0] as bool;
+      final saved = results[1] as bool;
+      final myRating = results[2] as int;
+
+      final doc = results[3] as DocumentSnapshot<Map<String, dynamic>>;
+
       final d = doc.data() ?? {};
 
-      if (mounted) {
-        setState(() {
-          _liked = liked;
-          _saved = saved;
-          _myRating = myRating;
-          _likes = (d['likesCount'] as num?)?.toInt() ?? _likes;
-          _saves = (d['savesCount'] as num?)?.toInt() ?? _saves;
-          _commentsCount =
-              (d['commentsCount'] as num?)?.toInt() ?? _commentsCount;
-          _ratingSum = (d['ratingSum'] as num?)?.toInt() ?? 0;
-          _ratingCount = (d['ratingCount'] as num?)?.toInt() ?? 0;
-        });
-      }
-    } catch (_) {}
+      if (!mounted) return;
+
+      _liked.value = liked;
+      _saved.value = saved;
+      _myRating.value = myRating;
+
+      _likes.value = (d['likesCount'] as num?)?.toInt() ?? _likes.value;
+
+      _saves.value = (d['savesCount'] as num?)?.toInt() ?? _saves.value;
+
+      _commentsCount.value = (d['commentsCount'] as num?)?.toInt() ?? 0;
+
+      _ratingSum.value = (d['ratingSum'] as num?)?.toInt() ?? 0;
+
+      _ratingCount.value = (d['ratingCount'] as num?)?.toInt() ?? 0;
+    } catch (e) {
+      debugPrint('Social load error: $e');
+    }
   }
 
   Future<void> _setRating(int r) async {
-    final old = _myRating;
-    if (old == r) return;
-    setState(() {
-      if (old == 0) {
-        _ratingCount += 1;
-        _ratingSum += r;
-      } else {
-        _ratingSum += (r - old);
-      }
-      _myRating = r;
-    });
+    final oldRating = _myRating.value;
+
+    if (oldRating == r) return;
+
+    final oldSum = _ratingSum.value;
+    final oldCount = _ratingCount.value;
+
+    // ⚡ Optimistic update
+    if (oldRating == 0) {
+      _ratingCount.value = oldCount + 1;
+      _ratingSum.value = oldSum + r;
+    } else {
+      _ratingSum.value = oldSum + (r - oldRating);
+    }
+
+    _myRating.value = r;
+
     try {
       await RecipeSocialService.setRating(recipe.userId, recipe.id, r);
     } catch (_) {
-      if (mounted) {
-        setState(() {
-          if (old == 0) {
-            _ratingCount -= 1;
-            _ratingSum -= r;
-          } else {
-            _ratingSum -= (r - old);
-          }
-          _myRating = old;
-        });
-      }
+      if (!mounted) return;
+
+      _ratingSum.value = oldSum;
+      _ratingCount.value = oldCount;
+      _myRating.value = oldRating;
     }
   }
 
   Future<void> _toggleLike() async {
     if (_busyLike) return;
+
     _busyLike = true;
-    final target = !_liked;
-    setState(() {
-      _liked = target;
-      _likes += target ? 1 : -1;
-    });
+
+    final oldLiked = _liked.value;
+    final oldLikes = _likes.value;
+
+    final target = !oldLiked;
+    final newLikes = oldLikes + (target ? 1 : -1);
+
+    // Optimistic UI
+    _liked.value = target;
+    _likes.value = newLikes;
+
+    // Update Discover screen immediately
+    widget.onSocialChanged?.call(likes: newLikes, liked: target);
+
     try {
       await RecipeSocialService.setLike(recipe.userId, recipe.id, target);
     } catch (_) {
       if (mounted) {
-        setState(() {
-          _liked = !target;
-          _likes += target ? -1 : 1;
-        });
+        _liked.value = oldLiked;
+        _likes.value = oldLikes;
+
+        // Rollback Discover
+        widget.onSocialChanged?.call(likes: oldLikes, liked: oldLiked);
       }
     } finally {
       _busyLike = false;
@@ -277,7 +366,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHero(heroH),
+                RepaintBoundary(child: _buildHero(heroH)),
                 Transform.translate(
                   offset: const Offset(0, -10),
                   child: Padding(
@@ -303,26 +392,26 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                         const SizedBox(height: 12),
                         _buildMetaRow(),
                         const SizedBox(height: 16),
-                        _buildAuthorCard(),
+                        RepaintBoundary(child: _buildAuthorCard()),
                         const SizedBox(height: _P.gap),
-                        _buildEngagementBar(),
+                        RepaintBoundary(child: _buildEngagementBar()),
                         const SizedBox(height: _P.gap),
                         if ((recipe.filterDescription) != null &&
                             (recipe.filterDescription)!.trim().isNotEmpty) ...[
-                          _buildNoteCard(),
+                          RepaintBoundary(child: _buildNoteCard()),
                           const SizedBox(height: _P.gap),
                         ],
-                        _buildIngredientsCard(),
+                        RepaintBoundary(child: _buildIngredientsCard()),
                         const SizedBox(height: _P.gap),
-                        _buildInstructionsCard(),
+                        RepaintBoundary(child: _buildInstructionsCard()),
                         const SizedBox(height: _P.gap),
                         _buildCookButton(),
                         const SizedBox(height: _P.gap),
-                        _buildNutritionCard(),
+                        RepaintBoundary(child: _buildNutritionCard()),
                         const SizedBox(height: _P.gap),
-                        _buildRateCard(),
+                        RepaintBoundary(child: _buildRateCard()),
                         const SizedBox(height: _P.gap),
-                        _buildCommentsCard(),
+                        RepaintBoundary(child: _buildCommentsCard()),
                         const SizedBox(height: _P.gap),
                         _buildSaveButton(),
                       ],
@@ -679,12 +768,13 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          Obx(
-            () => Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: _buildIngredientRows(_settings.unitSystem),
-            ),
+          // Obx(
+          // () =>
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: _buildIngredientRows(_settings.unitSystem),
           ),
+          // ),
           const SizedBox(height: 14),
           GestureDetector(
             onTap: _showGrocerySelectionSheet,
@@ -713,23 +803,49 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
     );
   }
 
+  /// Builds the ingredient rows. When the recipe has [DiscoverRecipe.
+  /// ingredientSections] populated, groups are rendered with a header per
+  /// section (e.g. "For the batter"); otherwise falls back to the plain
+  /// flat list — same as before. Either way, rows index into
+  /// [_effectiveIngredients] so checkbox state and emoji lookup stay
+  /// consistent between the two layouts.
   List<Widget> _buildIngredientRows(UnitSystem system) {
     final multiplier = _servings / _initialServings;
     final rows = <Widget>[];
-    for (var i = 0; i < (recipe.ingredients).length; i++) {
-      // Scale, convert and split on the ENGLISH original — UnitConverter and
-      // the quantity regex both parse English unit words — then translate ONLY
-      // the ingredient name. The name does not change with servings, so its
-      // cache key stays stable: tapping the stepper re-scales the number
-      // without re-translating anything or flashing English.
-      final scaled = UnitConverter.scaleAndConvert(
-        (recipe.ingredients)[i],
-        multiplier,
-        system,
-      );
-      final parts = _parseIngredient(scaled);
-      rows.add(_ingredientRow(parts.$1, _display(parts.$2), i));
+
+    if (recipe.ingredientSections.isNotEmpty) {
+      var index = 0;
+      for (final section in recipe.ingredientSections) {
+        if (section.items.isEmpty) continue;
+
+        final sectionName = section.name?.trim();
+
+        if (sectionName != null && sectionName.isNotEmpty) {
+          rows.add(_sectionHeader(sectionName));
+        }
+
+        for (final raw in section.items) {
+          // Scale, convert and split on the ENGLISH original — UnitConverter
+          // and the quantity regex both parse English unit words — then
+          // translate ONLY the ingredient name.
+          final scaled = UnitConverter.scaleAndConvert(raw, multiplier, system);
+          final parts = _parseIngredient(scaled);
+          rows.add(_ingredientRow(parts.$1, _display(parts.$2), index));
+          index++;
+        }
+      }
+    } else {
+      for (var i = 0; i < (recipe.ingredients).length; i++) {
+        final scaled = UnitConverter.scaleAndConvert(
+          (recipe.ingredients)[i],
+          multiplier,
+          system,
+        );
+        final parts = _parseIngredient(scaled);
+        rows.add(_ingredientRow(parts.$1, _display(parts.$2), i));
+      }
     }
+
     if (rows.isEmpty) {
       rows.add(
         Padding(
@@ -742,6 +858,16 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
       );
     }
     return rows;
+  }
+
+  Widget _sectionHeader(String name) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 10, bottom: 4),
+      child: Text(
+        _display(name),
+        style: _f(13, FontWeight.w800, _P.primary, ls: 0.3),
+      ),
+    );
   }
 
   Widget _buildStepper() {
@@ -799,24 +925,17 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
     );
   }
 
-  /// Emoji for the ingredient at flat [index], matched on its ENGLISH original.
-  /// [emojiForIngredient] is an English-keyword dictionary, so a translated name
-  /// misses and falls back to a generic category emoji. Public-recipe
-  /// ingredients are translated for display, so we pull the English source kept
-  /// by DiscoverController and match on that. Falls back to [displayName] when
-  /// no English original is loaded (e.g. opened outside the feed).
+  /// Emoji for the ingredient at flat [index], matched on its ENGLISH
+  /// original. [emojiForIngredient] is an English-keyword dictionary, so a
+  /// translated name misses and falls back to a generic category emoji.
+  /// [index] refers into [_effectiveIngredients] (section items flattened
+  /// in order when sections are present, otherwise the plain list), which
+  /// keeps this correct for both layouts. Falls back to [displayName] when
+  /// out of range.
   String _ingredientEmoji(int index, String displayName) {
-    // `recipe.ingredients` is ALWAYS the English original — this screen
-    // translates for display only and never mutates the model — and
-    // emojiForIngredient matches against an English keyword dictionary.
-    //
-    // Two bugs this fixes: the caller now passes the TRANSLATED name, so
-    // falling through to `displayName` produced the generic emoji AND made it
-    // visibly change on the frame the translation landed; and the old
-    // englishById() lookup returned null whenever the recipe was opened from a
-    // creator profile rather than the feed, silently losing the emoji there.
-    if (index >= 0 && index < recipe.ingredients.length) {
-      return _grocery.emojiForIngredient(recipe.ingredients[index]);
+    final source = _effectiveIngredients;
+    if (index >= 0 && index < source.length) {
+      return _grocery.emojiForIngredient(source[index]);
     }
     return _grocery.emojiForIngredient(displayName);
   }
@@ -1067,63 +1186,70 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
             ),
           ),
           const SizedBox(height: 18),
-          ImageFiltered(
-            imageFilter: ui.ImageFilter.blur(sigmaX: 3, sigmaY: 3),
-            child: Opacity(
-              opacity: 0.85,
-              child: Row(
-                children: [
-                  Container(
-                    width: 104,
-                    height: 104,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: SweepGradient(
-                        colors: [
-                          Color(0xFFF2A24C),
-                          Color(0xFFF2A24C),
-                          Color(0xFFF08FB0),
-                          Color(0xFFF08FB0),
-                          Color(0xFF7FD0A8),
-                          Color(0xFF7FD0A8),
-                        ],
-                        stops: [0.0, 0.46, 0.46, 0.72, 0.72, 1.0],
-                      ),
-                    ),
-                    child: Center(
-                      child: Container(
-                        width: 74,
-                        height: 74,
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
+          // Static placeholder visual (fixed 520 kcal + gauge) — blurred and
+          // wrapped in RepaintBoundary since ImageFilter.blur is one of the
+          // more expensive things Flutter can repaint; isolating it here
+          // means it never repaints just because a sibling card's
+          // translation landed.
+          RepaintBoundary(
+            child: ImageFiltered(
+              imageFilter: ui.ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+              child: Opacity(
+                opacity: 0.85,
+                child: Row(
+                  children: [
+                    Container(
+                      width: 104,
+                      height: 104,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: SweepGradient(
+                          colors: [
+                            Color(0xFFF2A24C),
+                            Color(0xFFF2A24C),
+                            Color(0xFFF08FB0),
+                            Color(0xFFF08FB0),
+                            Color(0xFF7FD0A8),
+                            Color(0xFF7FD0A8),
+                          ],
+                          stops: [0.0, 0.46, 0.46, 0.72, 0.72, 1.0],
                         ),
-                        child: Center(
-                          child: Text(
-                            '520',
-                            style: _f(
-                              18,
-                              FontWeight.w800,
-                              const Color(0xFF9A938A),
+                      ),
+                      child: Center(
+                        child: Container(
+                          width: 74,
+                          height: 74,
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              '520',
+                              style: _f(
+                                18,
+                                FontWeight.w800,
+                                const Color(0xFF9A938A),
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 22),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        _nutriBar(const Color(0xFFF08FB0)),
-                        const SizedBox(height: 14),
-                        _nutriBar(const Color(0xFFF2A24C)),
-                        const SizedBox(height: 14),
-                        _nutriBar(const Color(0xFF7FD0A8)),
-                      ],
+                    const SizedBox(width: 22),
+                    Expanded(
+                      child: Column(
+                        children: [
+                          _nutriBar(const Color(0xFFF08FB0)),
+                          const SizedBox(height: 14),
+                          _nutriBar(const Color(0xFFF2A24C)),
+                          const SizedBox(height: 14),
+                          _nutriBar(const Color(0xFF7FD0A8)),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -1176,99 +1302,167 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(_P.cardPad),
       decoration: _cardDeco(),
-      child: Column(
-        children: [
-          Text(
-            'cooked_it_rate'.tr,
-            style: _f(16, FontWeight.w800, _P.textDark),
-          ),
-          if (_ratingCount > 0) ...[
-            const SizedBox(height: 6),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const OnboardingLineIcon('starF', size: 15, color: _P.star),
-                const SizedBox(width: 5),
-                Text(
-                  '${_avgRating.toStringAsFixed(1)}  ·  '
-                  '${_ratingCount == 1 ? '1_rating'.tr : 'n_ratings'.trParams({'count': '$_ratingCount'})}',
-                  style: _f(12.5, FontWeight.w700, _P.textBody),
-                ),
-              ],
-            ),
-          ],
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(5, (i) {
-              final filled = i < _myRating;
-              return GestureDetector(
-                onTap: () => _setRating(i + 1),
-                behavior: HitTestBehavior.opaque,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 5),
-                  child: OnboardingLineIcon(
-                    filled ? 'starF' : 'starO',
-                    size: 32,
-                    color: filled ? _P.star : const Color(0xFFE2D8C7),
-                  ),
-                ),
+      child: ValueListenableBuilder<int>(
+        valueListenable: _myRating,
+        builder: (_, myRating, __) {
+          return ValueListenableBuilder<int>(
+            valueListenable: _ratingCount,
+            builder: (_, ratingCount, __) {
+              return ValueListenableBuilder<int>(
+                valueListenable: _ratingSum,
+                builder: (_, ratingSum, __) {
+                  final avg = ratingCount > 0 ? ratingSum / ratingCount : 0;
+
+                  return Column(
+                    children: [
+                      Text(
+                        'cooked_it_rate'.tr,
+                        style: _f(16, FontWeight.w800, _P.textDark),
+                      ),
+
+                      if (ratingCount > 0) ...[
+                        const SizedBox(height: 6),
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const OnboardingLineIcon(
+                              'starF',
+                              size: 15,
+                              color: _P.star,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              '${avg.toStringAsFixed(1)}  ·  '
+                              '${ratingCount == 1 ? '1_rating'.tr : 'n_ratings'.trParams({'count': '$ratingCount'})}',
+                              style: _f(12.5, FontWeight.w700, _P.textBody),
+                            ),
+                          ],
+                        ),
+                      ],
+
+                      const SizedBox(height: 12),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(5, (i) {
+                          final filled = i < myRating;
+
+                          return GestureDetector(
+                            onTap: () => _setRating(i + 1),
+                            behavior: HitTestBehavior.opaque,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 5,
+                              ),
+                              child: OnboardingLineIcon(
+                                filled ? 'starF' : 'starO',
+                                size: 32,
+                                color: filled
+                                    ? _P.star
+                                    : const Color(0xFFE2D8C7),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+
+                      const SizedBox(height: 9),
+
+                      Text(
+                        myRating == 0
+                            ? 'tap_a_star_to_rate'.tr
+                            : 'you_rated_n'.trParams({'rating': '$myRating'}),
+                        style: _f(12, FontWeight.w600, const Color(0xFF9A938A)),
+                      ),
+                    ],
+                  );
+                },
               );
-            }),
-          ),
-          const SizedBox(height: 9),
-          Text(
-            _myRating == 0
-                ? 'tap_a_star_to_rate'.tr
-                : 'you_rated_n'.trParams({'rating': '$_myRating'}),
-            style: _f(12, FontWeight.w600, const Color(0xFF9A938A)),
-          ),
-        ],
+            },
+          );
+        },
       ),
     );
   }
 
   // ── Engagement row — 3 stat cards (Likes / Saves / Ratings), like the HTML ──
   Widget _buildEngagementBar() {
-    final ratingLabel = _ratingCount == 0
-        ? 'ratings'.tr
-        : (_ratingCount == 1
-              ? '1_rating'.tr
-              : 'n_ratings'.trParams({'count': '$_ratingCount'}));
     return Row(
       children: [
         Expanded(
-          child: _statCard(
-            icon: OnboardingLineIcon(
-              _liked ? 'heart' : 'heartO',
-              size: 22,
-              color: _P.primary,
-            ),
-            value: '$_likes',
-            label: 'likes'.tr,
-            onTap: _toggleLike,
+          child: ValueListenableBuilder<bool>(
+            valueListenable: _liked,
+            builder: (_, liked, __) {
+              return ValueListenableBuilder<int>(
+                valueListenable: _likes,
+                builder: (_, likes, __) {
+                  return _statCard(
+                    icon: OnboardingLineIcon(
+                      liked ? 'heart' : 'heartO',
+                      size: 22,
+                      color: _P.primary,
+                    ),
+                    value: '$likes',
+                    label: 'likes'.tr,
+                    onTap: _toggleLike,
+                  );
+                },
+              );
+            },
           ),
         ),
+
         const SizedBox(width: 10),
+
         Expanded(
-          child: _statCard(
-            icon: const OnboardingLineIcon(
-              'bookmark',
-              size: 22,
-              color: _P.green,
-            ),
-            value: '$_saves',
-            label: 'saves'.tr,
-            onTap: _saveToCookbook,
+          child: ValueListenableBuilder<int>(
+            valueListenable: _saves,
+            builder: (_, saves, __) {
+              return _statCard(
+                icon: const OnboardingLineIcon(
+                  'bookmark',
+                  size: 22,
+                  color: _P.green,
+                ),
+                value: '$saves',
+                label: 'saves'.tr,
+                onTap: _saveToCookbook,
+              );
+            },
           ),
         ),
+
         const SizedBox(width: 10),
+
         Expanded(
-          child: _statCard(
-            icon: const OnboardingLineIcon('starF', size: 22, color: _P.star),
-            value: _ratingCount == 0 ? '—' : _avgRating.toStringAsFixed(1),
-            label: ratingLabel,
-            onTap: () {},
+          child: ValueListenableBuilder<int>(
+            valueListenable: _ratingCount,
+            builder: (_, count, __) {
+              return ValueListenableBuilder<int>(
+                valueListenable: _ratingSum,
+                builder: (_, sum, __) {
+                  final avg = count > 0 ? sum / count : 0;
+
+                  final label = count == 0
+                      ? 'ratings'.tr
+                      : count == 1
+                      ? '1_rating'.tr
+                      : 'n_ratings'.trParams({'count': '$count'});
+
+                  return _statCard(
+                    icon: const OnboardingLineIcon(
+                      'starF',
+                      size: 22,
+                      color: _P.star,
+                    ),
+                    value: count == 0 ? '—' : avg.toStringAsFixed(1),
+                    label: label,
+                    onTap: () {},
+                  );
+                },
+              );
+            },
           ),
         ),
       ],
@@ -1306,107 +1500,157 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
   }
 
   // ── Comments ─────────────────────────────────────────────────────────────
+  // void _openComments() {
+  //   CommentsSheet.show(
+  //     context,
+  //     ownerId: recipe.userId,
+  //     recipeId: recipe.id,
+  //     onCommentAdded: () {
+  //       _commentsCount.value++;
+  //     },
+  //   );
+  // }
   void _openComments() {
     CommentsSheet.show(
       context,
       ownerId: recipe.userId,
       recipeId: recipe.id,
       onCommentAdded: () {
-        if (mounted) setState(() => _commentsCount += 1);
+        final newCount = _commentsCount.value + 1;
+
+        _commentsCount.value = newCount;
+
+        // Update Discover immediately
+        widget.onSocialChanged?.call(comments: newCount);
       },
     );
   }
 
   Widget _buildCommentsCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(_P.cardPad),
-      decoration: _cardDeco(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return ValueListenableBuilder<int>(
+      valueListenable: _commentsCount,
+      builder: (context, commentsCount, _) {
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(_P.cardPad),
+          decoration: _cardDeco(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('comments'.tr, style: _f(18, FontWeight.w800, _P.textDark)),
-              const Spacer(),
-              Text(
-                '$_commentsCount',
-                style: _f(13, FontWeight.w700, const Color(0xFF9A938A)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-            stream: RecipeSocialService.commentsStream(
-              recipe.userId,
-              recipe.id,
-              limit: 2,
-            ),
-            builder: (context, snap) {
-              final docs = snap.data?.docs ?? const [];
-              if (docs.isEmpty) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 14),
-                  child: Text(
-                    'be_first_to_comment'.tr,
-                    style: _f(13.5, FontWeight.w500, _P.textHint),
-                  ),
-                );
-              }
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [for (final d in docs) _commentPreview(d.data())],
-              );
-            },
-          ),
-          if (_commentsCount > 0)
-            GestureDetector(
-              onTap: _openComments,
-              behavior: HitTestBehavior.opaque,
-              child: Text(
-                'view_all_n_comments'.trParams({'count': '$_commentsCount'}),
-                style: _f(13, FontWeight.w700, _P.primary),
-              ),
-            ),
-          const SizedBox(height: 14),
-          GestureDetector(
-            onTap: _openComments,
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              decoration: BoxDecoration(
-                color: _P.surfaceLight,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: _P.borderInner),
-              ),
-              padding: const EdgeInsets.fromLTRB(14, 6, 6, 6),
-              child: Row(
+              Row(
                 children: [
-                  Expanded(
-                    child: Text(
-                      'add_a_comment'.tr,
-                      style: _f(14, FontWeight.w500, _P.textHint),
-                    ),
+                  Text(
+                    'comments'.tr,
+                    style: _f(18, FontWeight.w800, _P.textDark),
                   ),
-                  Container(
-                    width: 38,
-                    height: 38,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: _P.primary,
-                      borderRadius: BorderRadius.circular(11),
-                    ),
-                    child: const OnboardingLineIcon(
-                      'send',
-                      color: Colors.white,
-                      size: 18,
-                    ),
+                  const Spacer(),
+                  Text(
+                    '$commentsCount',
+                    style: _f(13, FontWeight.w700, const Color(0xFF9A938A)),
                   ),
                 ],
               ),
-            ),
+
+              const SizedBox(height: 14),
+
+              StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                stream: RecipeSocialService.commentsStream(
+                  recipe.userId,
+                  recipe.id,
+                  limit: 2,
+                ),
+                builder: (context, snap) {
+                  // Loading
+                  if (snap.connectionState == ConnectionState.waiting &&
+                      !snap.hasData) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 14),
+                      child: Text(
+                        'loading'.tr,
+                        style: _f(13.5, FontWeight.w500, _P.textHint),
+                      ),
+                    );
+                  }
+
+                  final docs =
+                      snap.data?.docs ??
+                      <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+
+                  // No comments
+                  if (docs.isEmpty) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 14),
+                      child: Text(
+                        'be_first_to_comment'.tr,
+                        style: _f(13.5, FontWeight.w500, _P.textHint),
+                      ),
+                    );
+                  }
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (final doc in docs) _commentPreview(doc.data()),
+                    ],
+                  );
+                },
+              ),
+
+              if (commentsCount > 0) ...[
+                const SizedBox(height: 2),
+
+                GestureDetector(
+                  onTap: _openComments,
+                  behavior: HitTestBehavior.opaque,
+                  child: Text(
+                    'view_all_n_comments'.trParams({'count': '$commentsCount'}),
+                    style: _f(13, FontWeight.w700, _P.primary),
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 14),
+
+              GestureDetector(
+                onTap: _openComments,
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: _P.surfaceLight,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: _P.borderInner),
+                  ),
+                  padding: const EdgeInsets.fromLTRB(14, 6, 6, 6),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'add_a_comment'.tr,
+                          style: _f(14, FontWeight.w500, _P.textHint),
+                        ),
+                      ),
+                      Container(
+                        width: 38,
+                        height: 38,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: _P.primary,
+                          borderRadius: BorderRadius.circular(11),
+                        ),
+                        child: const OnboardingLineIcon(
+                          'send',
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -1529,7 +1773,10 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
     category: (recipe.category),
     cuisine: (recipe.cuisine),
     keywords: const [],
-    ingredients: (recipe.ingredients),
+    // Flattened section items (in order) when the recipe has grouped
+    // ingredients, otherwise the plain list — RecipeModel only carries a
+    // flat ingredient list.
+    ingredients: _effectiveIngredients,
     instructions: (recipe.instructions),
     ingredientSections: const [],
     instructionSections: const [],
@@ -1545,8 +1792,21 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
       buf.writeln();
     }
     buf.writeln('INGREDIENTS');
-    for (final ing in (recipe.ingredients)) {
-      buf.writeln('• $ing');
+    if (recipe.ingredientSections.isNotEmpty) {
+      for (final section in recipe.ingredientSections) {
+        final sectionName = section.name?.trim();
+
+        if (sectionName != null && sectionName.isNotEmpty) {
+          buf.writeln(sectionName.toUpperCase());
+        }
+        for (final ing in section.items) {
+          buf.writeln('• $ing');
+        }
+      }
+    } else {
+      for (final ing in (recipe.ingredients)) {
+        buf.writeln('• $ing');
+      }
     }
     buf.writeln();
     buf.writeln('INSTRUCTIONS');
@@ -1560,8 +1820,9 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
   void _showGrocerySelectionSheet() {
     final system = _settings.unitSystem;
     final multiplier = _servings / _initialServings;
+    final ingredientsSource = _effectiveIngredients;
     final selectedIndices = List<bool>.generate(
-      (recipe.ingredients).length,
+      ingredientsSource.length,
       (_) => true,
     );
 
@@ -1662,9 +1923,9 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
               );
             }
 
-            for (var i = 0; i < (recipe.ingredients).length; i++) {
+            for (var i = 0; i < ingredientsSource.length; i++) {
               final scaled = UnitConverter.scaleAndConvert(
-                (recipe.ingredients)[i],
+                ingredientsSource[i],
                 multiplier,
                 system,
               );
@@ -1792,13 +2053,13 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                               final toAdd = <String>[];
                               for (
                                 var i = 0;
-                                i < (recipe.ingredients).length;
+                                i < ingredientsSource.length;
                                 i++
                               ) {
                                 if (selectedIndices[i]) {
                                   final scaledIng =
                                       IngredientScaleHelper.scaleIngredient(
-                                        (recipe.ingredients)[i],
+                                        ingredientsSource[i],
                                         multiplier,
                                       );
                                   toAdd.add(scaledIng);
@@ -1858,34 +2119,125 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
     );
   }
 
+  // Future<void> _saveToCookbook() async {
+  //   if (_busySave) return;
+
+  //   _busySave = true;
+
+  //   final wasSaved = _saved.value;
+
+  //   if (!wasSaved) {
+  //     _saved.value = true;
+  //     _saves.value++;
+  //   }
+
+  //   try {
+  //     final copyId = await RecipeSocialService.saveCopyToMyRecipes(recipe);
+
+  //     if (copyId == null) {
+  //       if (mounted && !wasSaved) {
+  //         _saved.value = false;
+  //         _saves.value--;
+  //       }
+  //       return;
+  //     }
+
+  //     await RecipeSocialService.setSave(recipe.userId, recipe.id, true);
+
+  //     if (!mounted) return;
+
+  //     showModalBottomSheet(
+  //       context: context,
+  //       isScrollControlled: true,
+  //       backgroundColor: Colors.transparent,
+  //       builder: (_) => CookbookPickerSheet(
+  //         cookbookController: Get.find<CookbookController>(),
+  //         recipeId: copyId,
+  //         recipeImageUrl: recipe.imageUrl,
+  //       ),
+  //     );
+  //   } catch (_) {
+  //     if (mounted && !wasSaved) {
+  //       _saved.value = false;
+  //       _saves.value--;
+  //     }
+  //   } finally {
+  //     _busySave = false;
+  //   }
+  // }
   Future<void> _saveToCookbook() async {
     if (_busySave) return;
+
     _busySave = true;
-    // Public recipes belong to another user, so we first copy the recipe into
-    // the current user's own collection. The cookbook then references OUR copy
-    // (cookbooks resolve ids against the current user's recipes).
-    final copyId = await RecipeSocialService.saveCopyToMyRecipes(recipe);
-    _busySave = false;
-    if (copyId == null || !mounted) return;
 
-    // Reflect the save (counter + marker) if not already saved.
-    if (!_saved) {
-      setState(() {
-        _saved = true;
-        _saves += 1;
-      });
-      RecipeSocialService.setSave(recipe.userId, recipe.id, true);
+    try {
+      // ─────────────────────────────────────────────────────────────
+      // 1. Create temporary copy.
+      // This is NOT considered a real save yet.
+      // ─────────────────────────────────────────────────────────────
+      final copyId = await RecipeSocialService.saveCopyToMyRecipes(recipe);
+
+      if (copyId == null || !mounted) {
+        return;
+      }
+
+      // ─────────────────────────────────────────────────────────────
+      // 2. Open cookbook picker and WAIT for Done.
+      // CookbookPickerSheet should return:
+      //   > 0  => Done + at least one cookbook selected
+      //   null/0 => dismissed or Done without selection
+      // ─────────────────────────────────────────────────────────────
+      final result = await showModalBottomSheet<int>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => CookbookPickerSheet(
+          cookbookController: Get.find<CookbookController>(),
+          recipeId: copyId,
+          recipeImageUrl: recipe.imageUrl,
+        ),
+      );
+
+      // ─────────────────────────────────────────────────────────────
+      // 3. REAL SAVE ONLY AFTER DONE + cookbook selected.
+      // ─────────────────────────────────────────────────────────────
+      final confirmed = result != null && result > 0;
+
+      // User cancelled / dismissed / pressed Done without selecting
+      // any cookbook -> delete temporary copy.
+      if (!confirmed) {
+        final deletedIds = await RecipeSocialService.removeSavedCopy(recipe);
+
+        if (deletedIds.isNotEmpty && Get.isRegistered<CookbookController>()) {
+          final cookbooks = Get.find<CookbookController>();
+
+          for (final id in deletedIds) {
+            await cookbooks.removeRecipeFromAllCookbooks(id);
+          }
+        }
+
+        return;
+      }
+
+      // ─────────────────────────────────────────────────────────────
+      // 4. Now the recipe is REALLY saved.
+      // ─────────────────────────────────────────────────────────────
+      final oldSaves = _saves.value;
+
+      if (mounted) {
+        _saved.value = true;
+        _saves.value = oldSaves + 1;
+      }
+
+      // Update Discover immediately.
+      widget.onSocialChanged?.call(saves: _saves.value, saved: true);
+
+      // Update Firestore/social save state ONLY now.
+      await RecipeSocialService.setSave(recipe.userId, recipe.id, true);
+    } catch (e) {
+      debugPrint('[_saveToCookbook] Error: $e');
+    } finally {
+      _busySave = false;
     }
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => CookbookPickerSheet(
-        cookbookController: Get.find<CookbookController>(),
-        recipeId: copyId,
-        recipeImageUrl: recipe.imageUrl,
-      ),
-    );
   }
 }

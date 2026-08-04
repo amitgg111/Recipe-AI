@@ -915,14 +915,16 @@ class _RecipeListTileState extends State<_RecipeListTile> {
                         color: Color(0xFFA89F90),
                       ),
                       const SizedBox(width: 5),
-                      Text(
-                        recipe.totalTime ?? recipe.cookTime ?? '—',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF8A7E70),
+                      Expanded(
+                        child: Text(
+                          recipe.totalTime ?? recipe.cookTime ?? '—',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF8A7E70),
+                          ),
+                          maxLines: 1,
                         ),
-                        maxLines: 1,
                       ),
                     ],
                   ),

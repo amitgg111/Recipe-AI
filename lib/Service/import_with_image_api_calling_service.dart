@@ -413,6 +413,9 @@ class RecipeImportService {
       'cuisine': recipe.cuisine,
       'keywords': recipe.keywords,
 
+      'ingredients': recipe.ingredients,
+      'instructions': recipe.instructions,
+
       'ingredientSections': recipe.ingredientSections
           .map((e) => {'name': e.name, 'items': e.items})
           .toList(),
@@ -420,10 +423,6 @@ class RecipeImportService {
       'instructionSections': recipe.instructionSections
           .map((e) => {'name': e.name, 'steps': e.steps})
           .toList(),
-
-      'ingredients': recipe.ingredients,
-      'instructions': recipe.instructions,
-
       'isPublic': false,
       'recipeSource': 'imported',
       'originalRecipeId': null,

@@ -138,6 +138,14 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   final GroceryStore _grocery = Get.find<GroceryStore>();
   final HomeController _home = Get.find<HomeController>();
 
+  File? _cachedShareFile;
+  Uint8List? _cachedImageBytes;
+
+  // Share preparation already running હોય તો આ Future reuse થશે.
+  Future<void>? _sharePreparationFuture;
+
+  bool _isPreparingShare = false;
+
   // Live copy of the recipe. Starts from the one passed in, then refreshes in
   // real time whenever the owner saves edits: the editor writes to Firestore,
   // HomeController.recipes re-emits, and the worker below pulls the fresh copy.
@@ -160,10 +168,6 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
   RecipeModel get recipe => _recipe;
   final ScreenshotController _shareController = ScreenshotController();
-
-  Uint8List? _cachedImageBytes;
-  File? _cachedShareFile;
-  bool _isPreparingShare = false;
 
   // ── Display getters — use these instead of `recipe.*` anywhere text is
   // actually shown to the user, so the language rule (owner = original,
@@ -242,7 +246,18 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         );
       });
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startSharePreparation();
+    });
     _prepareShareFile();
+  }
+
+  void _startSharePreparation() {
+    if (_sharePreparationFuture != null) return;
+    _sharePreparationFuture = _prepareShareFile();
+    _sharePreparationFuture!.whenComplete(() {
+      _sharePreparationFuture = null;
+    });
   }
 
   /// Fetches the raw Firestore document (which carries the `original` /
@@ -277,39 +292,92 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   }
 
   Future<void> _prepareShareFile({bool force = false}) async {
-    if (_isPreparingShare) return;
-
-    if (!force && _cachedShareFile != null) {
+    // Already preparing હોય તો એ જ Future complete થવા દો.
+    if (!force && _sharePreparationFuture != null) {
+      await _sharePreparationFuture;
       return;
     }
+
+    if (!force && _cachedShareFile != null) {
+      if (await _cachedShareFile!.exists()) {
+        return;
+      }
+    }
+
+    final future = _doPrepareShareFile(force: force);
+
+    _sharePreparationFuture = future;
+
+    try {
+      await future;
+    } finally {
+      if (identical(_sharePreparationFuture, future)) {
+        _sharePreparationFuture = null;
+      }
+    }
+  }
+
+  Future<void> _doPrepareShareFile({bool force = false}) async {
+    if (_isPreparingShare) return;
 
     _isPreparingShare = true;
 
     try {
-      // Reset old cache
+      final directory = await getApplicationDocumentsDirectory();
+
+      final file = File('${directory.path}/recipe_share_${recipe.id}.png');
+
+      // -----------------------------------------
+      // 1. Check local cached share image
+      // -----------------------------------------
+      if (!force && await file.exists()) {
+        final length = await file.length();
+
+        if (length > 0) {
+          _cachedShareFile = file;
+
+          log('✅ Share image loaded from local cache');
+          log('📁 ${file.path}');
+
+          return;
+        }
+      }
+
+      // -----------------------------------------
+      // 2. Reset image cache
+      // -----------------------------------------
       _cachedShareFile = null;
       _cachedImageBytes = null;
 
-      // Download recipe image
+      // -----------------------------------------
+      // 3. Download recipe image
+      // -----------------------------------------
       final imgUrl = recipe.imageUrl?.trim();
-      log("Image URL: $imgUrl");
+
+      log('🖼️ Image URL: $imgUrl');
 
       if (imgUrl != null && imgUrl.isNotEmpty) {
         try {
           final response = await http
               .get(Uri.parse(imgUrl))
               .timeout(const Duration(seconds: 8));
-          log("Status Code: ${response.statusCode}");
-          log("Bytes: ${response.bodyBytes.length}");
-          if (response.statusCode == 200) {
+
+          log('Image status: ${response.statusCode}');
+          log('Image bytes: ${response.bodyBytes.length}');
+
+          if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
             _cachedImageBytes = response.bodyBytes;
           }
         } catch (e) {
-          log('Image download failed: $e');
+          log('⚠️ Image download failed: $e');
         }
       }
 
-      // Build share card
+      // -----------------------------------------
+      // 4. Generate share card
+      // -----------------------------------------
+      log('🎨 Generating share card...');
+
       final cardBytes = await _shareController.captureFromWidget(
         _buildShareRecipeCard(_cachedImageBytes),
         delay: const Duration(milliseconds: 150),
@@ -317,16 +385,21 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         targetSize: const Size(1080, 1700),
       );
 
-      // Save image
-      final directory = await getTemporaryDirectory();
+      if (cardBytes.isEmpty) {
+        throw Exception('Share card generated empty');
+      }
 
-      final file = File('${directory.path}/recipe_share_${recipe.id}.png');
-
+      // -----------------------------------------
+      // 5. Save permanently in app local storage
+      // -----------------------------------------
       await file.writeAsBytes(cardBytes, flush: true);
 
       _cachedShareFile = file;
-    } catch (e) {
-      log('Prepare share failed: $e');
+
+      log('✅ Share card ready');
+      log('📁 Saved: ${file.path}');
+    } catch (e, stackTrace) {
+      log('❌ Prepare share failed: $e', stackTrace: stackTrace);
     } finally {
       _isPreparingShare = false;
     }
@@ -1557,7 +1630,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             _C.textDark,
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 1),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -1583,9 +1656,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
   Widget _stepBtn(String icon, bool enabled, VoidCallback onTap, Color color) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: enabled ? onTap : null,
       child: SizedBox(
-        width: 36,
+        width: 40,
         height: 36,
         child: Center(
           child: OnboardingLineIcon(
@@ -2058,14 +2132,56 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   // ACTIONS  (business logic preserved verbatim)
   // ═══════════════════════════════════════════════════════════════════════════
 
+  // Future<void> _shareRecipe() async {
+  //   try {
+  //     // If preload is not finished, prepare once.
+  //     if (_cachedShareFile == null) {
+  //       await _prepareShareFile();
+  //     }
+
+  //     if (_cachedShareFile == null) {
+  //       Get.snackbar('Error', 'Unable to prepare recipe for sharing.');
+  //       return;
+  //     }
+
+  //     const appLink = 'https://yourapp.page.link/recipe';
+
+  //     final shareText =
+  //         '''
+  // 🍴 $_displayTitle
+
+  // View the full recipe, ingredients, instructions and more in the app 👇
+
+  // $appLink
+  // ''';
+
+  //     await Share.shareXFiles(
+  //       [XFile(_cachedShareFile!.path)],
+  //       text: shareText,
+  //       subject: _displayTitle,
+  //     );
+  //   } catch (e) {
+  //     log('Share recipe error: $e');
+  //   }
+  // }
+
   Future<void> _shareRecipe() async {
     try {
-      // If preload is not finished, prepare once.
-      if (_cachedShareFile == null) {
+      // -----------------------------------------
+      // Wait for preload if still running
+      // -----------------------------------------
+      if (_cachedShareFile == null || !await _cachedShareFile!.exists()) {
+        log('⏳ Waiting for share content...');
+
         await _prepareShareFile();
       }
 
-      if (_cachedShareFile == null) {
+      // -----------------------------------------
+      // Final safety check
+      // -----------------------------------------
+      final shareFile = _cachedShareFile;
+
+      if (shareFile == null || !await shareFile.exists()) {
         Get.snackbar('Error', 'Unable to prepare recipe for sharing.');
         return;
       }
@@ -2074,20 +2190,22 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
       final shareText =
           '''
-  🍴 $_displayTitle
+🍴 $_displayTitle
 
-  View the full recipe, ingredients, instructions and more in the app 👇
+View the full recipe, ingredients, instructions and more in the app 👇
 
-  $appLink
-  ''';
+$appLink
+''';
 
       await Share.shareXFiles(
-        [XFile(_cachedShareFile!.path)],
+        [XFile(shareFile.path)],
         text: shareText,
         subject: _displayTitle,
       );
-    } catch (e) {
-      log('Share recipe error: $e');
+    } catch (e, stackTrace) {
+      log('❌ Share recipe error: $e', stackTrace: stackTrace);
+
+      Get.snackbar('Error', 'Unable to share recipe. Please try again.');
     }
   }
 

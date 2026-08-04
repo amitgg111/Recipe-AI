@@ -895,6 +895,7 @@ class _GroceriesScreenState extends State<GroceriesScreen> {
           Container(
             width: 34,
             height: 34,
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: _G.noteBg,
               borderRadius: BorderRadius.circular(10),

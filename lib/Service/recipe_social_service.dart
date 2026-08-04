@@ -182,10 +182,67 @@ class RecipeSocialService {
 
   /// Returns the id of the current user's copy (creating it if needed), or the
   /// original id when the recipe already belongs to the current user.
+  // static Future<String?> saveCopyToMyRecipes(DiscoverRecipe r) async {
+  //   final uid = AuthService.currentUser?.uid;
+  //   if (uid == null) return null;
+  //   if (r.userId == uid) return r.id; // already mine
+
+  //   final col = _db.collection('recipes');
+
+  //   // De-dupe: reuse an existing copy of the same source recipe.
+  //   final existing = await col
+  //       .where('ownerId', isEqualTo: uid)
+  //       .where('savedFromRecipeId', isEqualTo: r.id)
+  //       .limit(1)
+  //       .get();
+  //   if (existing.docs.isNotEmpty) return existing.docs.first.id;
+
+  //   final doc = await col.add({
+  //     'title': r.title,
+  //     'description': r.description,
+  //     'imageUrl': r.imageUrl,
+  //     'sourceUrl': '',
+  //     'prepTime': r.prepTime,
+  //     'cookTime': r.cookTime,
+  //     'totalTime': r.totalTime,
+  //     'servings': r.servings,
+  //     'category': r.category,
+  //     'cuisine': r.cuisine,
+  //     'keywords': <String>[],
+  //     'ingredients': r.ingredients,
+  //     'instructions': r.instructions,
+  //     'ingredientSections': [
+  //       {'name': null, 'items': r.ingredients},
+  //     ],
+  //     'instructionSections': [
+  //       {'name': null, 'steps': r.instructions},
+  //     ],
+  //     // Copies are always private and owned by the current user, and are
+  //     // tagged as 'discovered' so they can never be published back to Discover
+  //     // (which would duplicate the original). See RecipePublishPolicy.
+  //     'isPublic': false,
+  //     'recipeSource': 'discovered',
+  //     'originalRecipeId': r.id,
+  //     'ownerId': uid,
+  //     'isDeleted': false,
+  //     'likesCount': 0,
+  //     'commentsCount': 0,
+  //     'savesCount': 0,
+  //     'sharesCount': 0,
+  //     'viewsCount': 0,
+  //     // Provenance so we can de-dupe / remove on un-save.
+  //     'savedFromRecipeId': r.id,
+  //     'savedFromOwnerId': r.userId,
+  //     'createdAt': FieldValue.serverTimestamp(),
+  //     'updatedAt': FieldValue.serverTimestamp(),
+  //   });
+  //   return doc.id;
+  // }
   static Future<String?> saveCopyToMyRecipes(DiscoverRecipe r) async {
     final uid = AuthService.currentUser?.uid;
     if (uid == null) return null;
-    if (r.userId == uid) return r.id; // already mine
+
+    if (r.userId == uid) return r.id;
 
     final col = _db.collection('recipes');
 
@@ -195,7 +252,36 @@ class RecipeSocialService {
         .where('savedFromRecipeId', isEqualTo: r.id)
         .limit(1)
         .get();
-    if (existing.docs.isNotEmpty) return existing.docs.first.id;
+
+    if (existing.docs.isNotEmpty) {
+      return existing.docs.first.id;
+    }
+
+    // Preserve the original grouped ingredient sections.
+    //
+    // If the Discover recipe has sections:
+    // [
+    //   { name: "For the batter", items: [...] },
+    //   { name: "For the filling", items: [...] },
+    // ]
+    //
+    // they will be copied exactly into the user's saved recipe.
+    final ingredientSections = r.ingredientSections.isNotEmpty
+        ? r.ingredientSections
+              .map(
+                (section) => {
+                  'name': section.name,
+                  'items': List<String>.from(section.items),
+                },
+              )
+              .toList()
+        : [
+            {'name': null, 'items': List<String>.from(r.ingredients)},
+          ];
+
+    final instructionSections = [
+      {'name': null, 'steps': List<String>.from(r.instructions)},
+    ];
 
     final doc = await col.add({
       'title': r.title,
@@ -209,33 +295,39 @@ class RecipeSocialService {
       'category': r.category,
       'cuisine': r.cuisine,
       'keywords': <String>[],
-      'ingredients': r.ingredients,
-      'instructions': r.instructions,
-      'ingredientSections': [
-        {'name': null, 'items': r.ingredients},
-      ],
-      'instructionSections': [
-        {'name': null, 'steps': r.instructions},
-      ],
-      // Copies are always private and owned by the current user, and are
-      // tagged as 'discovered' so they can never be published back to Discover
-      // (which would duplicate the original). See RecipePublishPolicy.
+
+      // Keep flat ingredients too.
+      'ingredients': List<String>.from(r.ingredients),
+
+      // IMPORTANT:
+      // Preserve Discover's actual grouped ingredient sections.
+      'ingredientSections': ingredientSections,
+
+      'instructions': List<String>.from(r.instructions),
+
+      'instructionSections': instructionSections,
+
+      // Copies are private.
       'isPublic': false,
       'recipeSource': 'discovered',
       'originalRecipeId': r.id,
       'ownerId': uid,
       'isDeleted': false,
+
       'likesCount': 0,
       'commentsCount': 0,
       'savesCount': 0,
       'sharesCount': 0,
       'viewsCount': 0,
-      // Provenance so we can de-dupe / remove on un-save.
+
+      // Provenance.
       'savedFromRecipeId': r.id,
       'savedFromOwnerId': r.userId,
+
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
+
     return doc.id;
   }
 

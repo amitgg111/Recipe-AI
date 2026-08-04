@@ -160,6 +160,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
               Container(
                 width: 24,
                 height: 24,
+                padding: const EdgeInsets.all(4),
                 decoration: const BoxDecoration(
                   color: AppColors.primary,
                   shape: BoxShape.circle,

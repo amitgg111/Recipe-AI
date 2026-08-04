@@ -165,6 +165,43 @@ class RecipeEditorController extends GetxController {
     }
   }
 
+  // void applyLocalizedRecipe(LocalizedRecipe localized) {
+  //   titleController.text = localized.title;
+  //   descriptionController.text = localized.description ?? '';
+
+  //   prepTimeController.text = localized.prepTime ?? '';
+  //   cookTimeController.text = localized.cookTime ?? '';
+
+  //   // Parse the number and the unit from the ENGLISH canonical, never the
+  //   // display string. Both parsers below are English-only: `\d+` does not
+  //   // match Devanagari numerals, and `contains('hour')` never matches "घंटे"
+  //   // or Gujarati "કલાક". Reading the localized text made the unit silently
+  //   // fall back to 'minutes', so opening and saving a 2-hour recipe in Hindi
+  //   // stored it as 2 MINUTES. Falls back to the display value only when no
+  //   // English canonical exists.
+  //   final totalTime = localized.enTotalTime?.trim().isNotEmpty == true
+  //       ? localized.enTotalTime!
+  //       : (localized.totalTime ?? '');
+  //   final match = RegExp(r'\d+').firstMatch(totalTime);
+
+  //   totalTimeController.text = match?.group(0) ?? '';
+  //   totalTimeUnit.value = totalTime.toLowerCase().contains('hour')
+  //       ? 'hours'
+  //       : 'minutes';
+
+  //   servingsController.text = localized.servings ?? '';
+  //   categoryController.text = localized.category ?? '';
+  //   cuisineController.text = localized.cuisine ?? '';
+
+  //   tags.assignAll(localized.keywords);
+
+  //   ingredients.assignAll(localized.ingredients);
+  //   instructions.assignAll(localized.instructions);
+
+  //   ingredientSections.assignAll(localized.ingredientSections);
+  //   instructionSections.assignAll(localized.instructionSections);
+  // }
+
   void applyLocalizedRecipe(LocalizedRecipe localized) {
     titleController.text = localized.title;
     descriptionController.text = localized.description ?? '';
@@ -172,16 +209,10 @@ class RecipeEditorController extends GetxController {
     prepTimeController.text = localized.prepTime ?? '';
     cookTimeController.text = localized.cookTime ?? '';
 
-    // Parse the number and the unit from the ENGLISH canonical, never the
-    // display string. Both parsers below are English-only: `\d+` does not
-    // match Devanagari numerals, and `contains('hour')` never matches "घंटे"
-    // or Gujarati "કલાક". Reading the localized text made the unit silently
-    // fall back to 'minutes', so opening and saving a 2-hour recipe in Hindi
-    // stored it as 2 MINUTES. Falls back to the display value only when no
-    // English canonical exists.
     final totalTime = localized.enTotalTime?.trim().isNotEmpty == true
         ? localized.enTotalTime!
         : (localized.totalTime ?? '');
+
     final match = RegExp(r'\d+').firstMatch(totalTime);
 
     totalTimeController.text = match?.group(0) ?? '';
@@ -195,14 +226,31 @@ class RecipeEditorController extends GetxController {
 
     tags.assignAll(localized.keywords);
 
+    // Flat data
     ingredients.assignAll(localized.ingredients);
     instructions.assignAll(localized.instructions);
 
-    ingredientSections.assignAll(localized.ingredientSections);
-    instructionSections.assignAll(localized.instructionSections);
-  }
+    // Section data with fallback
+    if (localized.ingredientSections.any((s) => s.items.isNotEmpty)) {
+      ingredientSections.assignAll(localized.ingredientSections);
+    } else if (localized.ingredients.isNotEmpty) {
+      ingredientSections.assignAll([
+        IngredientSection(items: List<String>.from(localized.ingredients)),
+      ]);
+    } else {
+      ingredientSections.clear();
+    }
 
-  
+    if (localized.instructionSections.any((s) => s.steps.isNotEmpty)) {
+      instructionSections.assignAll(localized.instructionSections);
+    } else if (localized.instructions.isNotEmpty) {
+      instructionSections.assignAll([
+        InstructionSection(steps: List<String>.from(localized.instructions)),
+      ]);
+    } else {
+      instructionSections.clear();
+    }
+  }
 
   void _loadRecipe() {
     if (recipe?.imageUrl != null) {
@@ -837,8 +885,26 @@ class RecipeEditorController extends GetxController {
       final collection = FirebaseFirestore.instance.collection("recipes");
 
       if (isEdit) {
-        await collection.doc(recipe!.id).update(recipeData);
-        Get.back(result: {...recipeData, "id": recipe!.id});
+        // await collection.doc(recipe!.id).update(recipeData);
+        // Get.back(result: {...recipeData, "id": recipe!.id});
+
+        final docRef = collection.doc(recipe!.id);
+
+        await docRef.update(recipeData);
+
+        // Read the updated Firestore document and convert it
+        // using the model's existing fromDocument factory.
+        final updatedSnapshot = await docRef.get();
+
+        if (!updatedSnapshot.exists) {
+          throw Exception('Updated recipe not found');
+        }
+
+        final updatedRecipe = RecipeModel.fromDocument(updatedSnapshot);
+
+        log('✅ Updated RecipeModel created: ${updatedRecipe.title}');
+
+        Get.back<RecipeModel>(result: updatedRecipe);
       } else {
         // New recipes start private with zeroed engagement counters. A recipe
         // written in the editor is the user's own creation, so it is publishable.
@@ -870,6 +936,7 @@ class RecipeEditorController extends GetxController {
         type: SnackbarType.success,
       );
     } catch (e) {
+      log('--------------------------------- $e.toString()');
       CustomSnackbar.show(
         title: 'Error',
         message: e.toString(),

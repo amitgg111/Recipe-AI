@@ -1,6 +1,5 @@
 /// Represents a named group of ingredients (e.g. "For the sauce:").
 /// [name] is null when there is a single unnamed group.
-///
 class IngredientSection {
   final String? name;
   final List<String> items;
@@ -19,6 +18,14 @@ class IngredientSection {
             .map((e) => e.toString())
             .toList(),
       );
+
+  /// Creates a copy with optionally changed values.
+  IngredientSection copyWith({String? name, List<String>? items}) {
+    return IngredientSection(
+      name: name ?? this.name,
+      items: items ?? this.items,
+    );
+  }
 }
 
 /// Represents a named group of instruction steps (e.g. "Make the dough").

@@ -552,25 +552,7 @@ class _CookbooksScreenState extends State<CookbooksScreen>
   Widget _buildRecipesGrid(HomeController controller) {
     return Obx(() {
       final recipes = _sortRecipes(_filterRecipes(controller.recipes));
-      // if (recipes.isEmpty) {
-      //   return Padding(
-      //     padding: const EdgeInsets.symmetric(
-      //       horizontal: AppSpacing.xl,
-      //       vertical: 40,
-      //     ),
-      //     child: Center(
-      //       child: Text(
-      //         _searchQuery.isEmpty
-      //             ? 'no_recipes_yet_add_one'.tr
-      //             : 'no_recipes_match'.trParams({'query': _searchQuery}),
-      //         textAlign: TextAlign.center,
-      //         style: AppTextStyles.bodyMedium.copyWith(
-      //           color: AppColors.textMedium,
-      //         ),
-      //       ),
-      //     ),
-      //   );
-      // }
+
       if (recipes.isEmpty) {
         return _buildEmptyRecipesState();
       }
@@ -588,7 +570,8 @@ class _CookbooksScreenState extends State<CookbooksScreen>
           ),
           itemCount: recipes.length,
           itemBuilder: (context, index) {
-            return _RecipeCard(recipe: recipes[index]);
+            final recipe = recipes[index];
+            return _RecipeCard(recipe: recipe, key: ValueKey(recipe.id));
           },
         ),
       );
@@ -1292,8 +1275,7 @@ class _CookbookCard extends StatelessWidget {
 class _RecipeCard extends StatefulWidget {
   final RecipeModel recipe;
 
-  const _RecipeCard({required this.recipe});
-
+  const _RecipeCard({super.key, required this.recipe});
   @override
   State<_RecipeCard> createState() => _RecipeCardState();
 }

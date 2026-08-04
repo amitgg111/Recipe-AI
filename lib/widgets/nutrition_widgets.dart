@@ -106,7 +106,7 @@ class NutritionRing extends StatelessWidget {
     this.size = 172,
     required this.kcal,
     required this.label,
-    this.valueFontSize = 42,
+    this.valueFontSize = 36,
     this.progress = 0.75,
   });
 
@@ -255,7 +255,7 @@ class MacroDonut extends StatelessWidget {
                   value: calories,
                   format: (v) => v.round().toString(),
                   style: NutritionPalette.font(
-                    size: 21,
+                    size: 16,
                     weight: FontWeight.w800,
                     color: NutritionPalette.ink,
                     height: 1,

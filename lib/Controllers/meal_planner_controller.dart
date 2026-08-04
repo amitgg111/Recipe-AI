@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer';
 import 'dart:math' as math;
 
@@ -7,6 +8,7 @@ import 'package:get/get.dart';
 import 'package:recipe_ai/Controllers/home_controller.dart';
 import 'package:recipe_ai/Controllers/meal_plan_controller.dart';
 import 'package:recipe_ai/Helper/recipe_response_parser.dart';
+import 'package:recipe_ai/Service/ai_translation_service.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/Service/import_with_image_api_calling_service.dart';
 import 'package:recipe_ai/Service/nutrition_estimator.dart';
@@ -209,6 +211,37 @@ class PlanRecipe {
       source: source,
     );
   }
+  PlanRecipe copyWith({
+    String? id,
+    String? title,
+    String? imageUrl,
+    String? cuisine,
+    String? category,
+    List<String>? keywords,
+    List<String>? ingredients,
+    List<String>? instructions,
+    String? prepTime,
+    String? cookTime,
+    String? totalTime,
+    double? servings,
+    PlanSource? source,
+  }) {
+    return PlanRecipe(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      imageUrl: imageUrl ?? this.imageUrl,
+      cuisine: cuisine ?? this.cuisine,
+      category: category ?? this.category,
+      keywords: keywords ?? this.keywords,
+      ingredients: ingredients ?? this.ingredients,
+      instructions: instructions ?? this.instructions,
+      prepTime: prepTime ?? this.prepTime,
+      cookTime: cookTime ?? this.cookTime,
+      totalTime: totalTime ?? this.totalTime,
+      servings: servings ?? this.servings,
+      source: source ?? this.source,
+    );
+  }
 }
 
 /// One meal in the generated week grid.
@@ -261,7 +294,9 @@ class MealPlannerController extends GetxController {
   /// Only generate at most this many recipes via AI in one run — the plan is
   /// always completed (repeats fill any remainder) so we never storm the API.
   static const int _aiCap = 8;
+  final RxList<PlannedMeal> translatedMeals = <PlannedMeal>[].obs;
 
+  final RxBool isTranslatingPlan = false.obs;
   // ── Live state ─────────────────────────────────────────────────────────────
   final RxList<GenStep> steps = <GenStep>[].obs;
   final RxList<PlannedMeal> meals = <PlannedMeal>[].obs;
@@ -487,9 +522,14 @@ class MealPlannerController extends GetxController {
 
       log('🍽️ [WeeklyPlan] Meals after balance: ${meals.length}');
 
+      await translateGeneratedWeek();
+
+      log('🌐 [WeeklyPlan] Week translation completed');
+
       await _settle(700);
 
       steps[buildIdx].state = MpStepState.done;
+
       steps.refresh();
 
       buildWatch.stop();
@@ -538,6 +578,94 @@ class MealPlannerController extends GetxController {
     }
   }
 
+  Future<void> translateGeneratedWeek() async {
+    if (meals.isEmpty) {
+      translatedMeals.clear();
+      isTranslatingPlan.value = false;
+      return;
+    }
+
+    isTranslatingPlan.value = true;
+
+    try {
+      final texts = <String>[];
+
+      for (final meal in meals) {
+        final recipe = meal.recipe;
+
+        if (recipe.title.trim().isNotEmpty) {
+          texts.add(recipe.title);
+        }
+
+        texts.addAll(recipe.ingredients.where((e) => e.trim().isNotEmpty));
+
+        texts.addAll(recipe.instructions.where((e) => e.trim().isNotEmpty));
+
+        if ((recipe.cuisine ?? '').trim().isNotEmpty) {
+          texts.add(recipe.cuisine!.trim());
+        }
+
+        if ((recipe.category ?? '').trim().isNotEmpty) {
+          texts.add(recipe.category!.trim());
+        }
+      }
+
+      final uniqueTexts = texts
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toSet()
+          .toList();
+
+      if (uniqueTexts.isEmpty) {
+        translatedMeals.assignAll(meals);
+        return;
+      }
+
+      final translated = await AiTranslationService.translateList(uniqueTexts);
+
+      final translationMap = <String, String>{};
+
+      for (int i = 0; i < uniqueTexts.length; i++) {
+        translationMap[uniqueTexts[i]] = translated[i];
+      }
+
+      String tr(String value) {
+        final clean = value.trim();
+
+        if (clean.isEmpty) return value;
+
+        return translationMap[clean] ?? value;
+      }
+
+      final translatedResult = <PlannedMeal>[];
+
+      for (final meal in meals) {
+        final recipe = meal.recipe;
+
+        final translatedRecipe = recipe.copyWith(
+          title: tr(recipe.title),
+          ingredients: recipe.ingredients.map(tr).toList(),
+          instructions: recipe.instructions.map(tr).toList(),
+          cuisine: recipe.cuisine == null ? null : tr(recipe.cuisine!),
+          category: recipe.category == null ? null : tr(recipe.category!),
+        );
+
+        translatedResult.add(
+          PlannedMeal(day: meal.day, slot: meal.slot, recipe: translatedRecipe),
+        );
+      }
+
+      translatedMeals.assignAll(translatedResult);
+    } catch (e, stackTrace) {
+      log('❌ [WeeklyPlan] Translation failed: $e');
+      log('$stackTrace');
+
+      translatedMeals.assignAll(meals);
+    } finally {
+      isTranslatingPlan.value = false;
+    }
+  }
+
   /// Move the recipe at [fromDay]/[fromSlot] to [toDay]/[toSlot]. If the
   /// destination already has a recipe, the two simply swap places — nothing
   /// is replaced/regenerated, only re-ordered.
@@ -547,13 +675,20 @@ class MealPlannerController extends GetxController {
     required int toDay,
     required String toSlot,
   }) {
-    if (!allowedDays.contains(fromDay) || !allowedDays.contains(toDay)) return;
-    if (fromDay == toDay && fromSlot == toSlot) return;
+    if (!allowedDays.contains(fromDay) || !allowedDays.contains(toDay)) {
+      return;
+    }
+
+    if (fromDay == toDay && fromSlot == toSlot) {
+      return;
+    }
 
     final fromIndex = meals.indexWhere(
       (m) => m.day == fromDay && m.slot == fromSlot,
     );
+
     final toIndex = meals.indexWhere((m) => m.day == toDay && m.slot == toSlot);
+
     if (fromIndex == -1 || toIndex == -1) return;
 
     final fromRecipe = meals[fromIndex].recipe;
@@ -561,8 +696,56 @@ class MealPlannerController extends GetxController {
 
     meals[fromIndex].recipe = toRecipe;
     meals[toIndex].recipe = fromRecipe;
+
+    // Keep translated meals in sync.
+    if (translatedMeals.length == meals.length) {
+      final translatedFromIndex = translatedMeals.indexWhere(
+        (m) => m.day == fromDay && m.slot == fromSlot,
+      );
+
+      final translatedToIndex = translatedMeals.indexWhere(
+        (m) => m.day == toDay && m.slot == toSlot,
+      );
+
+      if (translatedFromIndex != -1 && translatedToIndex != -1) {
+        final translatedFromRecipe =
+            translatedMeals[translatedFromIndex].recipe;
+
+        final translatedToRecipe = translatedMeals[translatedToIndex].recipe;
+
+        translatedMeals[translatedFromIndex].recipe = translatedToRecipe;
+
+        translatedMeals[translatedToIndex].recipe = translatedFromRecipe;
+
+        translatedMeals.refresh();
+      }
+    }
+
     meals.refresh();
   }
+
+  // void reorderMeal({
+  //   required int fromDay,
+  //   required String fromSlot,
+  //   required int toDay,
+  //   required String toSlot,
+  // }) {
+  //   if (!allowedDays.contains(fromDay) || !allowedDays.contains(toDay)) return;
+  //   if (fromDay == toDay && fromSlot == toSlot) return;
+
+  //   final fromIndex = meals.indexWhere(
+  //     (m) => m.day == fromDay && m.slot == fromSlot,
+  //   );
+  //   final toIndex = meals.indexWhere((m) => m.day == toDay && m.slot == toSlot);
+  //   if (fromIndex == -1 || toIndex == -1) return;
+
+  //   final fromRecipe = meals[fromIndex].recipe;
+  //   final toRecipe = meals[toIndex].recipe;
+
+  //   meals[fromIndex].recipe = toRecipe;
+  //   meals[toIndex].recipe = fromRecipe;
+  //   meals.refresh();
+  // }
 
   Future<void> _run(int i, {int minMs = 500}) async {
     steps[i].state = MpStepState.active;
@@ -924,16 +1107,43 @@ class MealPlannerController extends GetxController {
 
   /// Swap a single meal for a different recipe from the pool (Cookbook first,
   /// then Community, then AI), avoiding this-day repeats.
+  // void shuffleMeal(int day, String slot) {
+  //   if (!allowedDays.contains(day)) return; // never touch a past day
+
+  //   if (_pool.length < 2) return;
+  //   final current = _mealAt(day, slot);
+  //   final sameDay = meals
+  //       .where((m) => m.day == day && m.slot != slot)
+  //       .map((m) => m.recipe.dedupeKey)
+  //       .toSet();
+  //   // Prefer other days' usage low, respect source priority order.
+  //   final candidates = [..._pool]
+  //     ..removeWhere(
+  //       (r) =>
+  //           r.dedupeKey == current.recipe.dedupeKey ||
+  //           sameDay.contains(r.dedupeKey),
+  //     )
+  //     ..sort((a, b) => a.source.index.compareTo(b.source.index));
+  //   if (candidates.isEmpty) return;
+  //   // Pick randomly among the top-priority tier for variety.
+  //   final topTier = candidates
+  //       .where((r) => r.source == candidates.first.source)
+  //       .toList();
+  //   current.recipe = topTier[_rand.nextInt(topTier.length)];
+  //   meals.refresh();
+  // }
   void shuffleMeal(int day, String slot) {
-    if (!allowedDays.contains(day)) return; // never touch a past day
+    if (!allowedDays.contains(day)) return;
 
     if (_pool.length < 2) return;
+
     final current = _mealAt(day, slot);
+
     final sameDay = meals
         .where((m) => m.day == day && m.slot != slot)
         .map((m) => m.recipe.dedupeKey)
         .toSet();
-    // Prefer other days' usage low, respect source priority order.
+
     final candidates = [..._pool]
       ..removeWhere(
         (r) =>
@@ -941,13 +1151,69 @@ class MealPlannerController extends GetxController {
             sameDay.contains(r.dedupeKey),
       )
       ..sort((a, b) => a.source.index.compareTo(b.source.index));
+
     if (candidates.isEmpty) return;
-    // Pick randomly among the top-priority tier for variety.
+
     final topTier = candidates
         .where((r) => r.source == candidates.first.source)
         .toList();
-    current.recipe = topTier[_rand.nextInt(topTier.length)];
+
+    final newRecipe = topTier[_rand.nextInt(topTier.length)];
+
+    current.recipe = newRecipe;
     meals.refresh();
+
+    // Translate only the newly selected recipe.
+    unawaited(_translateSingleMealForDisplay(day, slot, newRecipe));
+  }
+
+  Future<void> _translateSingleMealForDisplay(
+    int day,
+    String slot,
+    PlanRecipe recipe,
+  ) async {
+    try {
+      final texts = <String>[
+        recipe.title,
+        ...recipe.ingredients,
+        ...recipe.instructions,
+        if (recipe.cuisine != null) recipe.cuisine!,
+        if (recipe.category != null) recipe.category!,
+      ].map((e) => e.trim()).where((e) => e.isNotEmpty).toSet().toList();
+
+      if (texts.isEmpty) return;
+
+      final translated = await AiTranslationService.translateList(texts);
+
+      final map = <String, String>{};
+
+      for (int i = 0; i < texts.length; i++) {
+        map[texts[i]] = translated[i];
+      }
+
+      String tr(String value) {
+        return map[value.trim()] ?? value;
+      }
+
+      final translatedRecipe = recipe.copyWith(
+        title: tr(recipe.title),
+        ingredients: recipe.ingredients.map(tr).toList(),
+        instructions: recipe.instructions.map(tr).toList(),
+        cuisine: recipe.cuisine == null ? null : tr(recipe.cuisine!),
+        category: recipe.category == null ? null : tr(recipe.category!),
+      );
+
+      final index = translatedMeals.indexWhere(
+        (m) => m.day == day && m.slot == slot,
+      );
+
+      if (index == -1) return;
+
+      translatedMeals[index].recipe = translatedRecipe;
+      translatedMeals.refresh();
+    } catch (e) {
+      log('❌ [WeeklyPlan] Single meal translation failed: $e');
+    }
   }
 
   void shuffleDay(int day) {

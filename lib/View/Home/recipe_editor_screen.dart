@@ -9,7 +9,7 @@ import 'package:recipe_ai/Controllers/home_controller.dart';
 
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/Service/recipe_localizer.dart';
-import 'package:recipe_ai/View/Home/recipe_detail_screen.dart';
+
 import 'package:recipe_ai/widgets/app_network_image.dart';
 import 'package:recipe_ai/Controllers/recipe_editor_controller.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
@@ -130,15 +130,19 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     }
   }
 
+  // The editor is ALWAYS pushed on top of an existing route (Get.to from
+  // RecipeDetailScreen when editing, or from wherever "new recipe" is
+  // launched). Closing it — via the top-left X, system back, or after a
+  // successful save — must simply POP that route with Get.back(), never
+  // replace it with Get.off(). Get.off() was pushing a brand new
+  // RecipeDetailScreen instance on top of the stack instead of returning to
+  // the one that was already there, leaving TWO detail screens stacked
+  // (the old one still alive underneath, timers/streams and all). That is
+  // what caused: (1) tapping back once looking like "nothing happened"
+  // because it only revealed the duplicate old detail screen, and (2) a
+  // second back press then popping past Home and out of the app.
   void _goToRecipeDetail() {
-    final recipe = widget.recipe;
-
-    if (recipe == null) {
-      Get.back();
-      return;
-    }
-
-    Get.off(() => RecipeDetailScreen(recipe: recipe));
+    Get.back();
   }
 
   @override
@@ -685,33 +689,45 @@ class _DragDots extends StatelessWidget {
 
 class _SectionHeader extends StatelessWidget {
   final String name;
+
   const _SectionHeader({required this.name});
+
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(top: 4, bottom: 7),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(
-              color: _E.primary,
-              borderRadius: BorderRadius.circular(3),
+          Padding(
+            padding: const EdgeInsets.only(top: 7),
+            child: Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: _E.primary,
+                borderRadius: BorderRadius.circular(3),
+              ),
             ),
           ),
           const SizedBox(width: 7),
+
           Expanded(
             child: Container(
-              height: 34,
+              constraints: const BoxConstraints(minHeight: 40),
               alignment: Alignment.centerLeft,
-              padding: const EdgeInsets.symmetric(horizontal: 11),
+              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
               decoration: BoxDecoration(
                 color: _E.fieldBg,
                 borderRadius: BorderRadius.circular(9),
                 border: Border.all(color: _E.fieldBorder),
               ),
-              child: Text(name, style: _f(13, FontWeight.w800, _E.textDark)),
+              child: Text(
+                name,
+                style: _f(13, FontWeight.w800, _E.textDark),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ),
         ],
@@ -1283,9 +1299,14 @@ class _InstructionsEditor extends StatelessWidget {
                   stepIdx,
                 ),
                 behavior: HitTestBehavior.opaque,
-                child: const SizedBox(
+                child: Container(
                   width: 34,
-                  child: OnboardingLineIcon('trash', size: 18, color: _E.trash),
+                  padding: const EdgeInsets.all(6),
+                  child: const OnboardingLineIcon(
+                    'trash',
+                    size: 18,
+                    color: _E.trash,
+                  ),
                 ),
               ),
             ],
