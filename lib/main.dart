@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:device_preview/device_preview.dart';
+
 import 'package:firebase_core/firebase_core.dart';
 
 import 'package:flutter/material.dart';
@@ -104,10 +104,7 @@ void main() async {
   await LanguageService.init();
   Orientation.portrait;
   runApp(
-    DevicePreview(
-      enabled: true,
-      builder: (context) => const MyApp(),
-    ), // Wrap your app
+    const MyApp(), // Wrap your app
   );
   // runApp(const MyApp());
   // Work out which country the user is in, so the Language screen offers the

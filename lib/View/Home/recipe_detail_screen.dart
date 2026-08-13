@@ -936,11 +936,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     }
     if (url.contains('gemini_image')) return 'from_photo_import'.tr;
     if (url.contains('recipe_name')) return 'ai_generated_recipe'.tr;
-    if (url.startsWith('http')) {
-      try {
-        return 'from_source'.trParams({'source': Uri.parse(url).host});
-      } catch (_) {}
-    }
+
     return 'from_recipe_ai'.tr;
   }
 

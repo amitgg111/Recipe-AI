@@ -153,7 +153,8 @@ class _CookModeFinishScreenState extends State<CookModeFinishScreen>
         builder: (context, child) {
           // Seamless vertical bob: value(0) == value(1) == 0, no restart snap.
           final phase = _confettiPhase[index % _confettiPhase.length];
-          final floatOffset = 6 *
+          final floatOffset =
+              6 *
               math.sin(
                 2 *
                     math.pi *
@@ -283,16 +284,19 @@ class _CookModeFinishScreenState extends State<CookModeFinishScreen>
         children: [
           const Text('🔥', style: TextStyle(fontSize: 12)),
           const SizedBox(width: 6),
-          Text(
-            'steps_min_caps'.trParams({
-              'steps': '${widget.totalSteps}',
-              'min': '${widget.totalMinutes}',
-            }),
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              color: AppColors.primary,
-              letterSpacing: 0.48,
+          Expanded(
+            child: Text(
+              'steps_min_caps'.trParams({
+                'steps': '${widget.totalSteps}',
+                'min': '${widget.totalMinutes}',
+              }),
+
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                color: AppColors.primary,
+                letterSpacing: 0.48,
+              ),
             ),
           ),
         ],
@@ -387,7 +391,11 @@ class _CookModeFinishScreenState extends State<CookModeFinishScreen>
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.share_outlined, size: 18, color: AppColors.textDark),
+            const Icon(
+              Icons.share_outlined,
+              size: 18,
+              color: AppColors.textDark,
+            ),
             const SizedBox(width: 8),
             Text(
               'share_your_dish'.tr,

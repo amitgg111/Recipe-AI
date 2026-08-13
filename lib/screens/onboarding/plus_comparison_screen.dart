@@ -7,7 +7,6 @@ import 'package:get/get.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 
-
 class PlusComparisonScreen extends StatefulWidget {
   final VoidCallback? onContinue;
   final VoidCallback? onClose;
@@ -70,13 +69,12 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
   // Feature rows: (label, freeValue, plusValue)
   // plusValue: null means checkmark, String means text
   static const _features = <(String, String, String?)>[
-    ('comparison_feat_recipe_imports', 'qty_5_per_week', 'unlimited'),
-    ('comparison_feat_nutrition', '—', null),
-    ('comparison_feat_shopping_lists', '—', null),
-    ('comparison_feat_ai_assistant', '—', null),
-    ('plus_feature_convert_measurements', '—', null),
-    ('comparison_feat_cooking_mode', '—', null),
-    ('comparison_feat_print_export', '—', null),
+    ('Unlimited recipe imports', 'qty_5_per_week', 'unlimited'),
+    ('AI cooking assistant', '—', null),
+    ('Nutrition calculator', '—', null),
+    ('AI meal-plan auto-fill', '—', null),
+    ('Measurement converter', '—', null),
+    ('Export & print recipe PDFs', '—', null),
   ];
 
   @override

@@ -176,10 +176,44 @@ class _AllCuisinesScreenState extends State<AllCuisinesScreen> {
               Expanded(
                 child: filteredSections.isEmpty
                     ? Center(
-                        child: Text(
-                          'no_cuisines_found'.tr,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: AppColors.textMedium,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 32),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: 76,
+                                height: 76,
+                                padding: const EdgeInsets.all(15),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: const [
+                                    BoxShadow(
+                                      color: AppColors.primaryShadow,
+                                      blurRadius: 26,
+                                      offset: Offset(0, 14),
+                                      spreadRadius: -10,
+                                    ),
+                                  ],
+                                ),
+                                child: const OnboardingLineIcon(
+                                  'flame',
+                                  color: AppColors.primaryShadow,
+                                  size: 22,
+                                ),
+                              ),
+                              const SizedBox(height: 30),
+                              Text(
+                                'No Cuisines Found',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textDark,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       )

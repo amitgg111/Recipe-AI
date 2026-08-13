@@ -354,7 +354,7 @@ class _GoalsBodyState extends State<GoalsBody> {
               color: AppColors.textMedium,
             ),
           ),
-          const SizedBox(height: 18),
+
           // Goal tiles - flex:1, column, gap 11
           Expanded(
             child: ListView.separated(

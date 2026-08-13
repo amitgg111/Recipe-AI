@@ -181,18 +181,6 @@ class _CookbooksScreenState extends State<CookbooksScreen>
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
         child: Column(
           children: [
-            const SizedBox(height: AppSpacing.lg),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'cookbooks'.tr,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(height: 26),
             const EmptyPlateIllustration(),
             const SizedBox(height: AppSpacing.xxl),
             Text(
@@ -370,25 +358,7 @@ class _CookbooksScreenState extends State<CookbooksScreen>
       final cookbooks = _sortCookbooks(
         _filterCookbooks(cookbookController.cookbooks),
       );
-      // if (cookbooks.isEmpty) {
-      //   return Padding(
-      //     padding: const EdgeInsets.symmetric(
-      //       horizontal: AppSpacing.xl,
-      //       vertical: 40,
-      //     ),
-      //     child: Center(
-      //       child: Text(
-      //         _searchQuery.isEmpty
-      //             ? 'no_cookbooks_yet'.tr
-      //             : 'no_cookbooks_match'.trParams({'query': _searchQuery}),
-      //         textAlign: TextAlign.center,
-      //         style: AppTextStyles.bodyMedium.copyWith(
-      //           color: AppColors.textMedium,
-      //         ),
-      //       ),
-      //     ),
-      //   );
-      // }
+
       if (cookbooks.isEmpty) {
         return _buildEmptyCookbooksState();
       }
@@ -433,13 +403,15 @@ class _CookbooksScreenState extends State<CookbooksScreen>
       ),
       child: Center(
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             const SizedBox(height: 12),
 
             // Illustration
             Container(
-              width: 132,
-              height: 132,
+              width: 100,
+              height: 100,
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
@@ -447,7 +419,7 @@ class _CookbooksScreenState extends State<CookbooksScreen>
               child: const Center(
                 child: OnboardingLineIcon(
                   'book',
-                  size: 54,
+                  size: 44,
                   color: AppColors.primary,
                 ),
               ),
@@ -460,7 +432,7 @@ class _CookbooksScreenState extends State<CookbooksScreen>
               isSearching ? 'No Cookbooks Found' : 'Your Cookbooks Are Empty',
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
-                fontSize: 21,
+                fontSize: 18,
                 fontWeight: FontWeight.w800,
                 color: AppColors.textDark,
               ),
@@ -554,7 +526,7 @@ class _CookbooksScreenState extends State<CookbooksScreen>
       final recipes = _sortRecipes(_filterRecipes(controller.recipes));
 
       if (recipes.isEmpty) {
-        return _buildEmptyRecipesState();
+        return _buildEmptyState();
       }
 
       return Padding(
@@ -591,8 +563,8 @@ class _CookbooksScreenState extends State<CookbooksScreen>
           children: [
             // Illustration
             Container(
-              width: 150,
-              height: 150,
+              width: 120,
+              height: 120,
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
@@ -600,14 +572,14 @@ class _CookbooksScreenState extends State<CookbooksScreen>
               child: const Center(child: EmptyPlateIllustration()),
             ),
 
-            const SizedBox(height: 28),
+            const SizedBox(height: 78),
 
             // Title
             Text(
               isSearching ? 'No Recipes Found' : 'Your Recipe Is Empty',
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
-                fontSize: 21,
+                fontSize: 18,
                 fontWeight: FontWeight.w800,
                 color: AppColors.textDark,
               ),
@@ -1222,15 +1194,21 @@ class _CookbookCard extends StatelessWidget {
             children: [
               Expanded(child: _gridCell(urls, 0)),
 
+              const SizedBox(width: 2),
+
               Expanded(child: _gridCell(urls, 1)),
             ],
           ),
         ),
-        // const SizedBox(height: 2),
+
+        const SizedBox(height: 2),
+
         Expanded(
           child: Row(
             children: [
               Expanded(child: _gridCell(urls, 2)),
+
+              const SizedBox(width: 2),
 
               Expanded(child: _gridCell(urls, 3)),
             ],
@@ -1261,6 +1239,7 @@ class _CookbookCard extends StatelessWidget {
       width: double.infinity,
       height: double.infinity,
       color: const Color(0xFFE7DECE),
+
       child: const Center(
         child: OnboardingLineIcon('image', size: 20, color: Color(0xFFCFC5B4)),
       ),
