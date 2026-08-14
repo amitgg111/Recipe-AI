@@ -7,6 +7,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:recipe_ai/Controllers/discover_controller.dart';
 import 'package:recipe_ai/Controllers/cookbook_controller.dart';
 import 'package:recipe_ai/Controllers/profile_controller.dart';
+import 'package:recipe_ai/theme/app_text_styles.dart';
+import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:recipe_ai/widgets/custom_snackbar.dart';
 import 'package:recipe_ai/Service/recipe_social_service.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
@@ -116,9 +118,11 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
     final position = feedScrollController.position;
 
-    // Load next page when user is close to the bottom.
-    if (position.pixels >= position.maxScrollExtent - 500) {
-      controller.loadMoreRecipes();
+    // Load more when user is close to bottom
+    if (position.pixels >= position.maxScrollExtent - 800) {
+      if (!controller.isLoading.value && !controller.isLoadingMore) {
+        controller.loadMoreRecipes();
+      }
     }
   }
 
@@ -165,32 +169,15 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 2, 16, 12),
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
                     child: Row(
                       children: [
-                        const AppLogo(size: 28),
-                        const SizedBox(width: 8),
-                        Text.rich(
-                          TextSpan(
-                            text: 'Recipe',
-                            style: _f(
-                              18,
-                              FontWeight.w800,
-                              _D.textDark,
-                              ls: -0.3,
-                            ),
-                            children: [
-                              TextSpan(
-                                text: ' AI',
-                                style: _f(
-                                  18,
-                                  FontWeight.w800,
-                                  _D.primary,
-                                  ls: -0.3,
-                                ),
-                              ),
-                            ],
-                          ),
+                        const AppLogo(size: 36),
+                        const SizedBox(width: 10),
+                        const AppWordmark(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.3,
                         ),
                         const Spacer(),
                         const NotificationBell(),
@@ -283,26 +270,81 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                   return _emptyState();
                 }
 
+                // return RefreshIndicator(
+                //   color: _D.primary,
+
+                //   onRefresh: () =>
+                //       controller.fetchDiscoverRecipes(refresh: true),
+
+                //   child: ListView.separated(
+                //     controller: feedScrollController,
+
+                //     // Build ~5 cards beyond the viewport instead of Flutter's
+                //     // default 250px (barely half a card here, since each is
+                //     // ~400px tall). CachedNetworkImage starts its download when
+                //     // the card BUILDS, so with the default the photo only
+                //     // begins loading as it scrolls into view — which is why
+                //     // images appear late while scrolling. This gives each image
+                //     // a head start and costs a few hundred KB of decoded
+                //     // bitmaps, bounded by memCacheWidth: 700.
+                //     cacheExtent: 2000,
+
+                //     padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+
+                //     itemCount:
+                //         items.length + (controller.isLoadingMore ? 1 : 0),
+
+                //     separatorBuilder: (_, index) {
+                //       if (index >= items.length - 1) {
+                //         return const SizedBox.shrink();
+                //       }
+
+                //       return const SizedBox(height: 16);
+                //     },
+
+                //     itemBuilder: (_, index) {
+                //       if (index >= items.length) {
+                //         return const Padding(
+                //           padding: EdgeInsets.symmetric(vertical: 24),
+                //           child: Center(
+                //             child: CircularProgressIndicator(color: _D.primary),
+                //           ),
+                //         );
+                //       }
+
+                //       return _RecipeCard(recipe: items[index]);
+                //     },
+                //   ),
+                // );
                 return RefreshIndicator(
                   color: _D.primary,
+                  backgroundColor: Colors.white,
 
-                  onRefresh: () =>
-                      controller.fetchDiscoverRecipes(refresh: true),
+                  // Pull down = completely refresh first page
+                  onRefresh: () async {
+                    await controller.fetchDiscoverRecipes(refresh: true);
+
+                    // Refresh pachi top par lai jao
+                    if (feedScrollController.hasClients) {
+                      await feedScrollController.animateTo(
+                        0,
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeOut,
+                      );
+                    }
+                  },
 
                   child: ListView.separated(
                     controller: feedScrollController,
 
-                    // Build ~5 cards beyond the viewport instead of Flutter's
-                    // default 250px (barely half a card here, since each is
-                    // ~400px tall). CachedNetworkImage starts its download when
-                    // the card BUILDS, so with the default the photo only
-                    // begins loading as it scrolls into view — which is why
-                    // images appear late while scrolling. This gives each image
-                    // a head start and costs a few hundred KB of decoded
-                    // bitmaps, bounded by memCacheWidth: 700.
-                    cacheExtent: 2000,
+                    // Important: enough area for smooth scrolling/pagination
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics(),
+                    ),
 
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                    cacheExtent: 2500,
+
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
 
                     itemCount:
                         items.length + (controller.isLoadingMore ? 1 : 0),
@@ -316,11 +358,19 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                     },
 
                     itemBuilder: (_, index) {
+                      // Bottom loading indicator
                       if (index >= items.length) {
                         return const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 24),
+                          padding: EdgeInsets.symmetric(vertical: 28),
                           child: Center(
-                            child: CircularProgressIndicator(color: _D.primary),
+                            child: SizedBox(
+                              width: 26,
+                              height: 26,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: _D.primary,
+                              ),
+                            ),
                           ),
                         );
                       }
@@ -354,20 +404,20 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              OnboardingLineIcon(
-                plus ? 'crown' : 'sparkF',
-                size: 13,
-                color: plus ? AppColors.purpleDark : _D.primary,
+              Padding(
+                padding: const EdgeInsets.only(top: 5.0),
+                child: OnboardingLineIcon(
+                  plus ? 'crown' : 'sparkF',
+                  size: 19,
+                  color: plus ? AppColors.purpleDark : AppColors.primary,
+                ),
               ),
               const SizedBox(width: 5),
               Text(
-                plus
-                    ? 'PLUS'
-                    : '$remaining/${SubscriptionService.kInitialFreeCredits}',
-                style: _f(
-                  13,
-                  FontWeight.w700,
-                  plus ? AppColors.purpleDark : const Color(0xFFC0860F),
+                plus ? 'PLUS' : '$remaining Left',
+                style: AppTextStyles.chipLabel.copyWith(
+                  color: plus ? AppColors.purpleDark : AppColors.gold,
+                  fontSize: 13,
                 ),
               ),
             ],

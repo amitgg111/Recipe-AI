@@ -521,7 +521,7 @@ class _SocialGuideAnimationState extends State<SocialGuideAnimation>
           alignment: Alignment.topCenter,
           child: Column(
             children: [
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(18),
@@ -755,7 +755,10 @@ class _SocialGuideAnimationState extends State<SocialGuideAnimation>
                             ),
                           ),
                           const SizedBox(height: 5),
-                          const AppWordmark(fontSize: 9, fontWeight: FontWeight.w700),
+                          const AppWordmark(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ],
                       ),
                       _circle(

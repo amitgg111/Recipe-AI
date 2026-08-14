@@ -106,6 +106,8 @@ class AuthService {
 
     // merge:true so this never clobbers the `onboarding` map that
     // OnboardingController writes to the same doc on this auth event.
+    final initialResetAt = DateTime.now().add(const Duration(days: 7));
+
     await _firestore.collection("users").doc(credential.user!.uid).set({
       "uid": credential.user!.uid,
       "name": trimmedName,
@@ -113,7 +115,11 @@ class AuthService {
       "photoUrl": "",
       "provider": "email",
       "trialChooserCompleted": false,
-      "freeCredits": SubscriptionService.kInitialFreeCredits,
+
+      // Weekly free credits
+      "freeCredits": SubscriptionService.kWeeklyFreeCredits,
+      "creditsResetAt": Timestamp.fromDate(initialResetAt),
+
       "createdAt": FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
@@ -183,6 +189,8 @@ class AuthService {
     final snapshot = await doc.get();
 
     if (!snapshot.exists) {
+      final initialResetAt = DateTime.now().add(const Duration(days: 7));
+
       await doc.set({
         "uid": user.uid,
         "name": googleName,
@@ -190,7 +198,11 @@ class AuthService {
         "photoUrl": photo,
         "provider": "google",
         "trialChooserCompleted": false,
-        "freeCredits": SubscriptionService.kInitialFreeCredits,
+
+        // Weekly free credits
+        "freeCredits": SubscriptionService.kWeeklyFreeCredits,
+        "creditsResetAt": Timestamp.fromDate(initialResetAt),
+
         "createdAt": FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
@@ -348,7 +360,10 @@ class AuthService {
         'photoUrl': user.photoURL ?? '',
         'provider': 'apple',
         'trialChooserCompleted': false,
-        'freeCredits': SubscriptionService.kInitialFreeCredits,
+        'freeCredits': SubscriptionService.kWeeklyFreeCredits,
+        'creditsResetAt': Timestamp.fromDate(
+          DateTime.now().add(const Duration(days: 7)),
+        ),
         'createdAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
       if (Get.isRegistered<OnboardingController>()) {
@@ -461,64 +476,108 @@ class AuthService {
   }
 
   static Future<void> _deleteFirestoreData(String uid) async {
-    await _deleteDocuments(
-      _firestore.collection('users').doc(uid).collection('followers'),
-    );
-    log('followers delete');
-    await _deleteDocuments(
-      _firestore.collection('users').doc(uid).collection('following'),
-    );
-    log('following delete');
-    await _deleteDocuments(
-      _firestore.collection('users').doc(uid).collection('groceries'),
-    );
-    log('groceries delete');
-    await _deleteDocuments(
-      _firestore.collection('users').doc(uid).collection('meal_plans'),
-    );
-    log('meal_plans delete');
-    final draftRef = _firestore
-        .collection('users')
-        .doc(uid)
-        .collection('meal_planner_draft')
-        .doc('current');
-    await draftRef.delete().catchError((_) {});
-
-    final ownedRecipes = await _firestore
-        .collection('recipes')
-        .where('ownerId', isEqualTo: uid)
-        .get();
-    for (final recipe in ownedRecipes.docs) {
-      await _deleteDocuments(recipe.reference.collection('likes'));
-      await _deleteDocuments(recipe.reference.collection('saves'));
-      await _deleteDocuments(recipe.reference.collection('comments'));
-      await _deleteDocuments(recipe.reference.collection('ratings'));
-      await recipe.reference.delete();
-    }
-    log('likes saves comments ratings delete');
-    final notifications = await _firestore
-        .collection('notifications')
-        .where('senderUserId', isEqualTo: uid)
-        .get();
-
-    final received = await _firestore
-        .collection('notifications')
-        .where('receiverUserId', isEqualTo: uid)
-        .get();
-    log('notifications');
-    final notifIds = <String>{};
-    for (final d in [...notifications.docs, ...received.docs]) {
-      notifIds.add(d.id);
-    }
-    if (notifIds.isNotEmpty) {
-      final batch = _firestore.batch();
-      for (final id in notifIds) {
-        batch.delete(_firestore.collection('notifications').doc(id));
+    Future<void> safe(Future<void> Function() action, String label) async {
+      try {
+        await action();
+        log('$label deleted');
+      } catch (e) {
+        log('$label delete FAILED: $e');
+        // swallow so it never blocks the rest of the deletion flow
       }
-      await batch.commit();
     }
 
-    await _firestore.collection('users').doc(uid).delete();
+    await safe(
+      () => _deleteDocuments(
+        _firestore.collection('users').doc(uid).collection('followers'),
+      ),
+      'followers',
+    );
+
+    await safe(
+      () => _deleteDocuments(
+        _firestore.collection('users').doc(uid).collection('following'),
+      ),
+      'following',
+    );
+
+    await safe(
+      () => _deleteDocuments(
+        _firestore.collection('users').doc(uid).collection('groceries'),
+      ),
+      'groceries',
+    );
+
+    await safe(
+      () => _deleteDocuments(
+        _firestore.collection('users').doc(uid).collection('meal_plans'),
+      ),
+      'meal_plans',
+    );
+
+    await safe(() async {
+      final draftRef = _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('meal_planner_draft')
+          .doc('current');
+      await draftRef.delete();
+    }, 'meal_planner_draft');
+
+    await safe(() async {
+      final ownedRecipes = await _firestore
+          .collection('recipes')
+          .where('ownerId', isEqualTo: uid)
+          .get();
+      for (final recipe in ownedRecipes.docs) {
+        await safe(
+          () => _deleteDocuments(recipe.reference.collection('likes')),
+          'recipe likes',
+        );
+        await safe(
+          () => _deleteDocuments(recipe.reference.collection('saves')),
+          'recipe saves',
+        );
+        await safe(
+          () => _deleteDocuments(recipe.reference.collection('comments')),
+          'recipe comments',
+        );
+        await safe(
+          () => _deleteDocuments(recipe.reference.collection('ratings')),
+          'recipe ratings',
+        );
+        await safe(() => recipe.reference.delete(), 'recipe doc');
+      }
+    }, 'owned recipes');
+
+    await safe(() async {
+      final notifications = await _firestore
+          .collection('notifications')
+          .where('senderUserId', isEqualTo: uid)
+          .get();
+
+      final received = await _firestore
+          .collection('notifications')
+          .where('receiverUserId', isEqualTo: uid)
+          .get();
+
+      final notifIds = <String>{};
+      for (final d in [...notifications.docs, ...received.docs]) {
+        notifIds.add(d.id);
+      }
+      if (notifIds.isNotEmpty) {
+        final batch = _firestore.batch();
+        for (final id in notifIds) {
+          batch.delete(_firestore.collection('notifications').doc(id));
+        }
+        await batch.commit();
+      }
+    }, 'notifications');
+
+    // ✅ Guaranteed last step — runs even if everything above failed.
+    await safe(
+      () => _firestore.collection('users').doc(uid).delete(),
+      'user root doc',
+    );
   }
 
   static Future<void> _deleteDocuments(

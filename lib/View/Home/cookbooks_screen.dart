@@ -131,7 +131,7 @@ class _CookbooksScreenState extends State<CookbooksScreen>
             final plus = sub.isPlusListenable.value;
             final remaining = sub.freeCreditsListenable.value.clamp(
               0,
-              SubscriptionService.kInitialFreeCredits,
+              SubscriptionService.kWeeklyFreeCredits,
             );
             return GestureDetector(
               onTap: () => Get.to(() => const UpgradePlusScreen()),
@@ -150,16 +150,17 @@ class _CookbooksScreenState extends State<CookbooksScreen>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    OnboardingLineIcon(
-                      plus ? 'crown' : 'sparkF',
-                      size: 14,
-                      color: plus ? AppColors.purpleDark : AppColors.primary,
+                    Padding(
+                      padding: const EdgeInsets.only(top: 5.0),
+                      child: OnboardingLineIcon(
+                        plus ? 'crown' : 'sparkF',
+                        size: 19,
+                        color: plus ? AppColors.purpleDark : AppColors.primary,
+                      ),
                     ),
                     const SizedBox(width: 5),
                     Text(
-                      plus
-                          ? 'PLUS'
-                          : '$remaining/${SubscriptionService.kInitialFreeCredits}',
+                      plus ? 'PLUS' : '$remaining Left',
                       style: AppTextStyles.chipLabel.copyWith(
                         color: plus ? AppColors.purpleDark : AppColors.gold,
                         fontSize: 13,
@@ -550,47 +551,47 @@ class _CookbooksScreenState extends State<CookbooksScreen>
     });
   }
 
-  Widget _buildEmptyRecipesState() {
-    final isSearching = _searchQuery.isNotEmpty;
+  // Widget _buildEmptyRecipesState() {
+  //   final isSearching = _searchQuery.isNotEmpty;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.xl,
-        vertical: 36,
-      ),
-      child: Center(
-        child: Column(
-          children: [
-            // Illustration
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.08),
-                shape: BoxShape.circle,
-              ),
-              child: const Center(child: EmptyPlateIllustration()),
-            ),
+  //   return Padding(
+  //     padding: const EdgeInsets.symmetric(
+  //       horizontal: AppSpacing.xl,
+  //       vertical: 36,
+  //     ),
+  //     child: Center(
+  //       child: Column(
+  //         children: [
+  //           // Illustration
+  //           Container(
+  //             width: 120,
+  //             height: 120,
+  //             decoration: BoxDecoration(
+  //               color: AppColors.primary.withValues(alpha: 0.08),
+  //               shape: BoxShape.circle,
+  //             ),
+  //             child: const Center(child: EmptyPlateIllustration()),
+  //           ),
 
-            const SizedBox(height: 78),
+  //           const SizedBox(height: 78),
 
-            // Title
-            Text(
-              isSearching ? 'No Recipes Found' : 'Your Recipe Is Empty',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textDark,
-              ),
-            ),
+  //           // Title
+  //           Text(
+  //             isSearching ? 'No Recipes Found' : 'Your Recipe Is Empty',
+  //             textAlign: TextAlign.center,
+  //             style: GoogleFonts.plusJakartaSans(
+  //               fontSize: 18,
+  //               fontWeight: FontWeight.w800,
+  //               color: AppColors.textDark,
+  //             ),
+  //           ),
 
-            const SizedBox(height: 10),
-          ],
-        ),
-      ),
-    );
-  }
+  //           const SizedBox(height: 10),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _buildFAB() {
     return Positioned(

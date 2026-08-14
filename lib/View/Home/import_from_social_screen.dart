@@ -224,101 +224,128 @@ class _SocialGuideScreenState extends State<SocialGuideScreen> {
       ),
       child: SafeArea(
         top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Drag handle
-              Container(
-                width: 42,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE7E0D2),
-                  borderRadius: BorderRadius.circular(3),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final screenHeight = MediaQuery.of(context).size.height;
+
+            // Smaller height → smaller illustration
+            final guideHeight = screenHeight < 700
+                ? 360.0
+                : screenHeight < 800
+                ? 410.0
+                : 472.0;
+
+            return SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Drag handle
+                    Container(
+                      width: 42,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE7E0D2),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+
+                    const SizedBox(height: 18),
+
+                    // Header
+                    Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () => Get.back(),
+                          behavior: HitTestBehavior.opaque,
+                          child: const SizedBox(
+                            width: 40,
+                            height: 40,
+                            child: OnboardingLineIcon(
+                              'back',
+                              size: 20,
+                              color: AppColors.textDark,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'import_from_platform'.trParams({
+                              'platform': _platformName,
+                            }),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 19,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textDark,
+                              letterSpacing: -0.38,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 6),
+
+                    // Responsive guide
+                    SizedBox(
+                      height: guideHeight,
+                      width: double.infinity,
+                      child: SocialGuideAnimation(platform: _guidePlatform),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Open app button
+                    GestureDetector(
+                      onTap: _openPlatformApp,
+                      child: Container(
+                        width: double.infinity,
+                        height: AppDimensions.buttonHeight,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusButton,
+                          ),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: AppColors.primaryShadow,
+                              blurRadius: 30,
+                              offset: Offset(0, 16),
+                              spreadRadius: -10,
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(_platformIcon, color: Colors.white, size: 20),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                'open_platform_to_find_recipe'.trParams({
+                                  'platform': _platformName,
+                                }),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTextStyles.buttonLabel,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+                  ],
                 ),
               ),
-              const SizedBox(height: 18),
-              // Header: back + title
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Get.back(),
-                    behavior: HitTestBehavior.opaque,
-                    child: const SizedBox(
-                      width: 40,
-                      height: 40,
-                      child: OnboardingLineIcon(
-                        'back',
-                        size: 20,
-                        color: AppColors.textDark,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'import_from_platform'.trParams({
-                      'platform': _platformName,
-                    }),
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 19,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textDark,
-                      letterSpacing: -0.38,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-
-              // Guide illustration (auto-cross-fading slides, HTML design) —
-              // fixed 372px height to match the HTML sheet (not stretched).
-              SizedBox(
-                height: 472,
-                width: double.infinity,
-                child: SocialGuideAnimation(platform: _guidePlatform),
-              ),
-              const SizedBox(height: 24),
-
-              // Open app button
-              GestureDetector(
-                onTap: _openPlatformApp,
-                child: Container(
-                  width: double.infinity,
-                  height: AppDimensions.buttonHeight,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(
-                      AppDimensions.radiusButton,
-                    ),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: AppColors.primaryShadow,
-                        blurRadius: 30,
-                        offset: Offset(0, 16),
-                        spreadRadius: -10,
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(_platformIcon, color: Colors.white, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        'open_platform_to_find_recipe'.trParams({
-                          'platform': _platformName,
-                        }),
-                        style: AppTextStyles.buttonLabel,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
