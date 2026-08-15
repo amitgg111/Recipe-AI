@@ -231,240 +231,235 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
               child: _wash(200, const Color(0x21F2623E)),
             ),
 
-            // ── content ──
+            // ── content: scrollable top + fixed bottom ──
             Positioned.fill(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(22, 22, 22, 28),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // ── animated hat badge ──
-                    Center(child: _badge()),
-                    const SizedBox(height: 18),
-
-                    // ── RECIPE AI PLUS pill ──
-                    Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEFE6FB),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          'recipe_ai_plus'.tr,
-                          style: _font(
-                            size: 11,
-                            weight: FontWeight.w800,
-                            color: _purpleDeep,
-                            letterSpacing: 0.66,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 13),
-
-                    // ── title ──
-                    Text(
-                      'upgrade_plus_title'.tr,
-                      textAlign: TextAlign.center,
-                      style: _font(
-                        size: 27,
-                        weight: FontWeight.w800,
-                        color: _ink,
-                        height: 1.12,
-                        letterSpacing: -0.8,
-                      ),
-                    ),
-                    const SizedBox(height: 9),
-
-                    // ── subtitle ──
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Text(
-                        'plus_paywall_sub'.tr,
-                        textAlign: TextAlign.center,
-                        style: _font(
-                          size: 14,
-                          weight: FontWeight.w500,
-                          color: _grey,
-                          height: 1.5,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // ── benefits ──
-                    for (var i = 0; i < _features.length; i++) ...[
-                      if (i != 0) const SizedBox(height: 10),
-                      PremiumFeatureCard(feature: _features[i]),
-                    ],
-                    const SizedBox(height: 22),
-
-                    // ── plans ──
-                    // The cards stretch to a shared height so their bottoms
-                    // line up; the SAVE badge is overlaid, centred over the
-                    // Yearly (right) card, so it never affects card layout.
-                    Obx(() {
-                      // Depend on the offering so prices/names refresh once the
-                      // store data loads. (offering is read via _rc.monthly.)
-                      _rc.offering.value;
-                      return Stack(
-                        clipBehavior: Clip.none,
+              child: Column(
+                children: [
+                  // ── SCROLLABLE: badge, pill, title, subtitle, features ──
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // IntrinsicHeight gives the stretch Row a concrete
-                          // height (the SingleChildScrollView otherwise leaves
-                          // the vertical axis unbounded), so both cards share the
-                          // taller card's height and their bottoms line up.
-                          IntrinsicHeight(
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Expanded(
-                                  child: PricingCard(
-                                    selected: _monthly,
-                                    title: _monthlyName,
-                                    price: _monthlyPrice,
-                                    note: 'per_month'.tr,
-                                    highlightNoteWhenSelected: false,
-                                    onTap: () =>
-                                        setState(() => _monthly = true),
-                                  ),
+                          Center(child: _badge()),
+                          const SizedBox(height: 18),
+                          Center(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEFE6FB),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                'recipe_ai_plus'.tr,
+                                style: _font(
+                                  size: 11,
+                                  weight: FontWeight.w800,
+                                  color: _purpleDeep,
+                                  letterSpacing: 0.66,
                                 ),
-                                const SizedBox(width: 11),
-                                Expanded(
-                                  child: PricingCard(
-                                    selected: !_monthly,
-                                    title: _yearlyName,
-                                    price: _yearlyPrice,
-                                    note: _yearlyPerMonth,
-                                    highlightNoteWhenSelected: true,
-                                    onTap: () =>
-                                        setState(() => _monthly = false),
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
                           ),
-                          // SAVE 30% badge — straddles the top edge of the
-                          // Yearly card (mirrors the Row's right half).
-                          Positioned(
-                            top: -10,
-                            left: 0,
-                            right: 0,
+                          const SizedBox(height: 5),
+                          Text(
+                            'upgrade_plus_title'.tr,
+                            textAlign: TextAlign.center,
+                            style: _font(
+                              size: 27,
+                              weight: FontWeight.w800,
+                              color: _ink,
+                              height: 1.12,
+                              letterSpacing: -0.8,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Text(
+                              'plus_paywall_sub'.tr,
+                              textAlign: TextAlign.center,
+                              style: _font(
+                                size: 14,
+                                weight: FontWeight.w500,
+                                color: _grey,
+                                height: 1.5,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          for (var i = 0; i < _features.length; i++) ...[
+                            if (i != 0) const SizedBox(height: 5),
+                            PremiumFeatureCard(feature: _features[i]),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // ── FIXED: plans, trial banner, CTA, caption, footer ──
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Obx(() {
+                          _rc.offering.value;
+                          return Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              IntrinsicHeight(
+                                child: Row(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Expanded(
+                                      child: PricingCard(
+                                        selected: _monthly,
+                                        title: _monthlyName,
+                                        price: _monthlyPrice,
+                                        note: 'per_month'.tr,
+                                        highlightNoteWhenSelected: false,
+                                        onTap: () =>
+                                            setState(() => _monthly = true),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 11),
+                                    Expanded(
+                                      child: PricingCard(
+                                        selected: !_monthly,
+                                        title: _yearlyName,
+                                        price: _yearlyPrice,
+                                        note: _yearlyPerMonth,
+                                        highlightNoteWhenSelected: true,
+                                        onTap: () =>
+                                            setState(() => _monthly = false),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Positioned(
+                                top: -10,
+                                left: 0,
+                                right: 0,
+                                child: Row(
+                                  children: [
+                                    const Expanded(child: SizedBox()),
+                                    const SizedBox(width: 11),
+                                    Expanded(
+                                      child: Center(
+                                        child: _saveBadge(selected: !_monthly),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          );
+                        }),
+
+                        if (_monthly && _yearlyHasTrial) ...[
+                          const SizedBox(height: 14),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 13,
+                              vertical: 10,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF6E6),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFFF3E2BC),
+                              ),
+                            ),
                             child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Expanded(child: SizedBox()),
-                                const SizedBox(width: 11),
+                                const Icon(
+                                  Icons.auto_awesome,
+                                  size: 16,
+                                  color: Color(0xFFC0860F),
+                                ),
+                                const SizedBox(width: 8),
                                 Expanded(
-                                  child: Center(
-                                    child: _saveBadge(selected: !_monthly),
+                                  child: Text(
+                                    'trial_yearly_only'.tr,
+                                    style: _font(
+                                      size: 12,
+                                      weight: FontWeight.w600,
+                                      color: const Color(0xFF7A5B12),
+                                      height: 1.4,
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
                           ),
                         ],
-                      );
-                    }),
+                        const SizedBox(height: 12),
 
-                    // ── yellow trial banner (only when Monthly is selected) ──
-                    if (_monthly && _yearlyHasTrial) ...[
-                      const SizedBox(height: 14),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 13,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFF6E6),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFF3E2BC)),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        Obx(() {
+                          _rc.offering.value;
+                          final price = _monthly ? _monthlyPrice : _yearlyPrice;
+                          final period = _monthly
+                              ? 'month'.tr
+                              : 'period_year'.tr;
+                          final label = _busy
+                              ? 'please_wait'.tr
+                              : _selectedHasTrial
+                              ? 'start_free_trial'.tr
+                              : 'subscribe_price_period'.trParams({
+                                  'price': price,
+                                  'period': period,
+                                });
+                          return PrimaryGradientButton(
+                            label: label,
+                            onTap: _busy ? () {} : _subscribe,
+                          );
+                        }),
+                        const SizedBox(height: 10),
+
+                        Obx(() {
+                          _rc.offering.value;
+                          return Text(
+                            _monthly
+                                ? 'billed_monthly_note'.tr
+                                : 'billed_yearly_cancel_anytime'.trParams({
+                                    'price': _yearlyPrice,
+                                  }),
+                            textAlign: TextAlign.center,
+                            style: _font(
+                              size: 12,
+                              weight: FontWeight.w600,
+                              color: const Color(0xFFA8A092),
+                            ),
+                          );
+                        }),
+                        const SizedBox(height: 5),
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(
-                              Icons.auto_awesome,
-                              size: 16,
-                              color: Color(0xFFC0860F),
+                            GestureDetector(
+                              onTap: _restore,
+                              behavior: HitTestBehavior.opaque,
+                              child: _footerLink('restore'.tr),
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'trial_yearly_only'.tr,
-                                style: _font(
-                                  size: 12,
-                                  weight: FontWeight.w600,
-                                  color: const Color(0xFF7A5B12),
-                                  height: 1.4,
-                                ),
-                              ),
-                            ),
+                            _dot(),
+                            _footerLink('terms'.tr),
+                            _dot(),
+                            _footerLink('privacy_short'.tr),
                           ],
                         ),
-                      ),
-                    ],
-                    const SizedBox(height: 20),
-
-                    // ── CTA ──
-                    Obx(() {
-                      _rc.offering.value; // rebuild when store prices load
-                      final price = _monthly ? _monthlyPrice : _yearlyPrice;
-                      final period = _monthly ? 'month'.tr : 'period_year'.tr;
-                      final label = _busy
-                          ? 'please_wait'.tr
-                          : _selectedHasTrial
-                          ? 'start_free_trial'.tr
-                          : 'subscribe_price_period'.trParams({
-                              'price': price,
-                              'period': period,
-                            });
-                      return PrimaryGradientButton(
-                        label: label,
-                        onTap: _busy ? () {} : _subscribe,
-                      );
-                    }),
-                    const SizedBox(height: 12),
-
-                    // ── caption ──
-                    Obx(() {
-                      _rc.offering.value;
-                      return Text(
-                        _monthly
-                            ? 'billed_monthly_note'.tr
-                            : 'billed_yearly_cancel_anytime'.trParams({
-                                'price': _yearlyPrice,
-                              }),
-                        textAlign: TextAlign.center,
-                        style: _font(
-                          size: 12,
-                          weight: FontWeight.w600,
-                          color: const Color(0xFFA8A092),
-                        ),
-                      );
-                    }),
-                    const SizedBox(height: 14),
-
-                    // ── footer links ──
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        GestureDetector(
-                          onTap: _restore,
-                          behavior: HitTestBehavior.opaque,
-                          child: _footerLink('restore'.tr),
-                        ),
-                        _dot(),
-                        _footerLink('terms'.tr),
-                        _dot(),
-                        _footerLink('privacy_short'.tr),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
 

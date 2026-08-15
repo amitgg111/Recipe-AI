@@ -7,6 +7,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:recipe_ai/Controllers/discover_controller.dart';
 import 'package:recipe_ai/Controllers/cookbook_controller.dart';
 import 'package:recipe_ai/Controllers/profile_controller.dart';
+import 'package:recipe_ai/theme/app_dimensions.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:recipe_ai/widgets/custom_snackbar.dart';
@@ -390,16 +391,29 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   Widget _creditsBadge() {
     return Obx(() {
       final sub = SubscriptionService.instance;
+
       final plus = sub.isPlusListenable.value;
-      final remaining = sub.freeCreditsListenable.value;
+
+      final remaining = sub.freeCreditsListenable.value.clamp(
+        0,
+        SubscriptionService.kWeeklyFreeCredits,
+      );
+
+      print(
+        '[UI] Firebase remaining credits:----------------- '
+        '$remaining',
+      );
+
       return GestureDetector(
-        onTap: () => Get.to(() => const UpgradePlusScreen()),
+        onTap: () {
+          Get.to(() => const UpgradePlusScreen());
+        },
         behavior: HitTestBehavior.opaque,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           decoration: BoxDecoration(
-            color: plus ? AppColors.purpleBg : const Color(0xFFFCEFD0),
-            borderRadius: BorderRadius.circular(20),
+            color: plus ? AppColors.purpleBg : AppColors.goldBg,
+            borderRadius: BorderRadius.circular(AppDimensions.radiusRound),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -412,7 +426,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                   color: plus ? AppColors.purpleDark : AppColors.primary,
                 ),
               ),
+
               const SizedBox(width: 5),
+
               Text(
                 plus ? 'PLUS' : '$remaining Left',
                 style: AppTextStyles.chipLabel.copyWith(

@@ -22,7 +22,6 @@ import 'package:recipe_ai/View/Home/recipe_detail_screen.dart';
 import 'package:recipe_ai/View/Home/recipe_editor_screen.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/Service/subscription_service.dart';
-import 'package:recipe_ai/widgets/premium_lock_overlay.dart';
 import 'package:recipe_ai/View/Home/settings/upgrade_plus_screen.dart';
 import 'package:recipe_ai/widgets/app_logo.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
@@ -61,6 +60,33 @@ class _CookbooksScreenState extends State<CookbooksScreen>
       duration: const Duration(milliseconds: 2400),
       vsync: this,
     )..repeat();
+
+    _bindSubscription();
+  }
+
+  Future<void> _bindSubscription() async {
+    try {
+      final user = AuthService.currentUser;
+
+      if (user == null) {
+        print('[CookbooksScreen] No logged-in user.');
+        return;
+      }
+
+      print(
+        '[CookbooksScreen] Binding subscription for UID: '
+        '${user.uid}',
+      );
+
+      await SubscriptionService.instance.bindUser(user.uid);
+
+      print(
+        '[CookbooksScreen] Firebase credits: '
+        '${SubscriptionService.instance.freeCredits}',
+      );
+    } catch (e) {
+      print('[CookbooksScreen] Subscription bind error: $e');
+    }
   }
 
   @override
@@ -119,22 +145,36 @@ class _CookbooksScreenState extends State<CookbooksScreen>
       child: Row(
         children: [
           const AppLogo(size: 36),
+
           const SizedBox(width: 10),
+
           const AppWordmark(
             fontSize: 20,
             fontWeight: FontWeight.w800,
             letterSpacing: -0.3,
           ),
+
           const Spacer(),
+
           Obx(() {
             final sub = SubscriptionService.instance;
+
             final plus = sub.isPlusListenable.value;
+
             final remaining = sub.freeCreditsListenable.value.clamp(
               0,
               SubscriptionService.kWeeklyFreeCredits,
             );
+
+            print(
+              '[UI] Firebase remaining credits: '
+              '$remaining',
+            );
+
             return GestureDetector(
-              onTap: () => Get.to(() => const UpgradePlusScreen()),
+              onTap: () {
+                Get.to(() => const UpgradePlusScreen());
+              },
               behavior: HitTestBehavior.opaque,
               child: Container(
                 padding: const EdgeInsets.symmetric(
@@ -158,7 +198,9 @@ class _CookbooksScreenState extends State<CookbooksScreen>
                         color: plus ? AppColors.purpleDark : AppColors.primary,
                       ),
                     ),
+
                     const SizedBox(width: 5),
+
                     Text(
                       plus ? 'PLUS' : '$remaining Left',
                       style: AppTextStyles.chipLabel.copyWith(
@@ -711,392 +753,6 @@ void showNewCookbookSheet(BuildContext context) async {
   final name = await AddCookbookSheet.show(context);
   if (name != null && name.trim().isNotEmpty) {
     Get.find<CookbookController>().createCookbook(name.trim());
-  }
-}
-
-class ImportSourcePickerScreen extends StatelessWidget {
-  const ImportSourcePickerScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 8),
-              // Top bar: back + title
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Get.back(),
-                    child: const OnboardingLineIcon(
-                      'back',
-                      size: 20,
-                      color: AppColors.textDark,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'add_a_recipe'.tr,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textDark,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              _ImportQuotaBanner(),
-              const SizedBox(height: 20),
-
-              // Import from social media banner
-              GestureDetector(
-                onTap: () {
-                  if (!SubscriptionService.instance.canUseRecipeImport()) {
-                    showUpgradeDialog(context, feature: 'Social imports');
-                    return;
-                  }
-                  ImportFromSocialScreen.showPicker(context);
-                },
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 46,
-                            height: 46,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(15),
-                            ),
-                            child: const OnboardingLineIcon(
-                              'share',
-                              color: Colors.white,
-                              size: 22,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'import_from_social_media'.tr,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'import_from_social_desc'.tr,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w400,
-                          color: Colors.white.withValues(alpha: 0.8),
-                          height: 1.4,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      // Social icons row
-                      Row(
-                        children: [
-                          _socialIcon('camera', const Color(0xFFC13584)),
-                          const SizedBox(width: 8),
-                          _socialIcon('music', const Color(0xFF1F1F24)),
-                          const SizedBox(width: 8),
-                          _socialIcon('chat', const Color(0xFF2D6FE0)),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Grid of import options (2x2)
-              Row(
-                children: [
-                  Expanded(
-                    child: _ImportSourceCard(
-                      iconName: 'camera',
-                      iconBg: const Color(0xFFE4ECFB),
-                      iconColor: const Color(0xFF2D6FE0),
-                      title: 'import_from_photo'.tr,
-                      subtitle: 'scan_a_cookbook_page'.tr,
-                      onTap: () {
-                        if (!SubscriptionService.instance
-                            .canUseRecipeImport()) {
-                          showUpgradeDialog(context, feature: 'Photo import');
-                          return;
-                        }
-                        Get.back();
-                        RecipeImportService.importRecipeFromGallery(context);
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _ImportSourceCard(
-                      iconName: 'file',
-                      iconBg: const Color(0xFFFDEBD2),
-                      iconColor: const Color(0xFFD98A12),
-                      title: 'import_from_text'.tr,
-                      subtitle: 'enter_recipe_name'.tr,
-                      onTap: () {
-                        if (!SubscriptionService.instance
-                            .canUseRecipeImport()) {
-                          showUpgradeDialog(context, feature: 'Text import');
-                          return;
-                        }
-                        Get.back();
-                        Get.to(() => const GenerateRecipeScreen());
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _ImportSourceCard(
-                      iconName: 'globe',
-                      iconBg: const Color(0xFFEDE7FE),
-                      iconColor: const Color(0xFF7C3AED),
-                      title: 'import_from_web'.tr,
-                      subtitle: 'paste_a_link'.tr,
-                      onTap: () {
-                        Get.back();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const ImportFromWebScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _ImportSourceCard(
-                      iconName: 'pencil',
-                      iconBg: const Color(0xFFDBF0E7),
-                      iconColor: const Color(0xFF1F7A5E),
-                      title: 'write_from_scratch'.tr,
-                      subtitle: 'create_manually'.tr,
-                      onTap: () {
-                        Get.back();
-                        Get.to(() => const RecipeEditorScreen());
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _socialIcon(String iconName, Color color) {
-    return Container(
-      width: 36,
-      height: 36,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: OnboardingLineIcon(iconName, size: 20, color: color),
-    );
-  }
-}
-
-/// Free-tier import quota strip on the "Add a recipe" screen. Reacts live to the
-/// count; hidden entirely for Plus users (they have unlimited imports).
-class _ImportQuotaBanner extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Obx(() {
-      final sub = SubscriptionService.instance;
-      if (sub.isPlusListenable.value) return const SizedBox.shrink();
-      final remaining = sub.freeCreditsListenable.value;
-      final exhausted = remaining <= 0;
-      const max = 5;
-      final accent = exhausted ? AppColors.purpleDark : AppColors.primary;
-      return GestureDetector(
-        onTap: exhausted ? () => showUpgradeDialog(context) : null,
-        behavior: HitTestBehavior.opaque,
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-          decoration: BoxDecoration(
-            color: exhausted ? AppColors.purpleBgLight : AppColors.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: exhausted
-                  ? AppColors.purpleBorder
-                  : AppColors.surfaceBorder,
-            ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  exhausted ? Icons.lock_rounded : Icons.auto_awesome_rounded,
-                  size: 20,
-                  color: accent,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'recipe_imports'.tr,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textDark,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      exhausted
-                          ? 'imports_remaining_upgrade'.tr
-                          : 'n_of_m_remaining'.trParams({
-                              'remaining': '$remaining',
-                              'max': '$max',
-                            }),
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                        color: exhausted
-                            ? AppColors.purpleDark
-                            : AppColors.textMedium,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(999),
-                      child: LinearProgressIndicator(
-                        value: max == 0 ? 0 : remaining / max,
-                        minHeight: 6,
-                        backgroundColor: accent.withValues(alpha: 0.15),
-                        valueColor: AlwaysStoppedAnimation(accent),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 10),
-              if (exhausted)
-                const PlusBadge()
-              else
-                Text(
-                  '$remaining/$max',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: accent,
-                  ),
-                ),
-            ],
-          ),
-        ),
-      );
-    });
-  }
-}
-
-class _ImportSourceCard extends StatelessWidget {
-  final String iconName;
-  final Color iconBg;
-  final Color iconColor;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  const _ImportSourceCard({
-    required this.iconName,
-    required this.iconBg,
-    required this.iconColor,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 175,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.surfaceBorderLight),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 46,
-              height: 46,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: iconBg,
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: OnboardingLineIcon(iconName, color: iconColor, size: 24),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textDark,
-                height: 1.3,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: AppTextStyles.smallLabel.copyWith(
-                color: AppColors.textMedium,
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 

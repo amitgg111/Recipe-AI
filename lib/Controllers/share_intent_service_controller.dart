@@ -22,8 +22,8 @@ class ShareIntentService extends GetxService {
   Future<void> init() async {
     try {
       // Content shared while the app was terminated (cold start via share sheet).
-      final initialMedia =
-          await ReceiveSharingIntent.instance.getInitialMedia();
+      final initialMedia = await ReceiveSharingIntent.instance
+          .getInitialMedia();
       if (initialMedia.isNotEmpty) {
         _pendingInitialMedia = initialMedia; // defer — see the field doc above.
       }
@@ -33,12 +33,11 @@ class ShareIntentService extends GetxService {
 
       // Content shared while the app is already running / backgrounded — no
       // navigation race here (home is already up), so handle it immediately.
-      ReceiveSharingIntent.instance.getMediaStream().listen(
-        (sharedMedia) async {
-          await _handleSharedMedia(sharedMedia);
-        },
-        onError: (Object e) => log('Share stream error: $e'),
-      );
+      ReceiveSharingIntent.instance.getMediaStream().listen((
+        sharedMedia,
+      ) async {
+        await _handleSharedMedia(sharedMedia);
+      }, onError: (Object e) => log('Share stream error: $e'));
     } catch (e) {
       log('Share Handler Error: $e');
     }
@@ -85,6 +84,8 @@ class ShareIntentService extends GetxService {
           url: sharedUrl,
           caption: caption,
         );
+        print("--------------------importRecipeFromSocialContent----------");
+
         return;
       }
 
@@ -95,11 +96,13 @@ class ShareIntentService extends GetxService {
             await RecipeImportService.importRecipeFromSharedVideo(
               File(item.path),
             );
+            print("--------------------importRecipeFromSharedVideo----------");
             return;
           case SharedMediaType.image:
             await RecipeImportService.importRecipeFromSharedImage(
               File(item.path),
             );
+            print("--------------------importRecipeFromSharedImage----------");
             return;
           case SharedMediaType.file:
           case SharedMediaType.text:
@@ -113,6 +116,8 @@ class ShareIntentService extends GetxService {
         await RecipeImportService.importRecipeFromSocialContent(
           caption: caption,
         );
+
+        print("--------------------importRecipeFromSocialContent----------");
       }
     } catch (e) {
       log('Share import error: $e');

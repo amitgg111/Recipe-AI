@@ -377,16 +377,96 @@ function buildImagePrompt(recipe) {
   const title = String(r.title || "dish").trim();
   const cuisine = String(r.cuisine || "").trim();
   const desc = String(r.description || "").trim();
-  const cuisineTag = cuisine ? ` (${cuisine})` : "";
+  const servings = String(r.servings || "").trim();
+  const category = String(r.category || "").trim();
+
+  // Pull a handful of ingredient names (not quantities) so Imagen has some
+  // concrete visual anchors even when Gemini didn't supply recipe.imagePrompt.
+  const flatIngredients = Array.isArray(r.ingredientSections) ?
+    r.ingredientSections.flatMap((s) => s && Array.isArray(s.items) ?
+      s.items :
+      []) :
+    (Array.isArray(r.ingredients) ? r.ingredients : []);
+  const keyIngredients = flatIngredients
+      .slice(0, 6)
+      .map((i) => String(i || "").trim())
+      .filter(Boolean)
+      .join(", ");
+
+  const cuisineTag = cuisine ? ` (${cuisine} cuisine)` : "";
+  const categoryTag = category ? ` ${category.toLowerCase()} dish,` : "";
+  const servingsTag = servings ? ` plated for ${servings} serving(s),` : "";
+
   return [
-    "Ultra-realistic close-up FOOD PHOTOGRAPH of the finished, cooked",
-    `dish "${title}"${cuisineTag}, plated and filling almost the entire`,
-    "frame. This is food photography ONLY — never a landscape, scenery,",
-    "nature, people, buildings or any other dish. Generate exactly this",
-    `dish. ${desc}`,
-    "Professional restaurant-quality DSLR photo, 4K, natural lighting,",
-    "45-degree hero angle, shallow depth of field, authentic colours,",
-    "no text, no watermark, no logo, no illustration, no cartoon.",
+    `A single, finished, plated serving of "${title}"${cuisineTag}, a` +
+      `${categoryTag}${servingsTag} shown as one complete dish filling` +
+      " about 90% of the frame.",
+    desc ? `Dish description: ${desc}` : "",
+    keyIngredients ?
+      `Key visible ingredients to reflect accurately: ${keyIngredients}.` :
+      "",
+    "Show realistic colour, texture, browning, and sauce or gravy" +
+      " consistency appropriate to this exact dish. Serve it in a plate" +
+      " or bowl that suits the dish and cuisine.",
+    "Do not add other dishes, side dishes, drinks, cutlery, napkins," +
+      " table decorations, hands, people, kitchens, restaurants, text," +
+      " logos, or watermarks.",
+    "Ultra realistic DSLR professional food photography, macro food" +
+      " details, authentic colours, shallow depth of field, natural" +
+      " lighting, 4K, 45-degree close-up hero shot.",
+  ].filter(Boolean).join("\n");
+}
+
+/**
+ * Wraps the recipe-specific image description (either Gemini's
+ * `recipe.imagePrompt` or the local `buildImagePrompt` fallback) with a
+ * single, clean, well-formed instruction block for Imagen. Previously this
+ * function accidentally embedded literal JS string-concatenation syntax
+ * (stray quotes and `+` characters) inside the template literal, which sent
+ * that raw syntax to the image model as if it were part of the prompt text.
+ * @param {string} dishDescription The recipe-specific visual description.
+ * @return {string} The final prompt sent to Imagen.
+ */
+function buildImagenInstructionPrompt(dishDescription) {
+  return [
+    "Generate ONLY a photorealistic image of the EXACT finished recipe",
+    "described below. Do not reinterpret, restyle, or embellish it.",
+    "",
+    "CRITICAL REQUIREMENTS",
+    "- Recreate the exact cooked dish as described.",
+    "- Do NOT redesign the recipe.",
+    "- Do NOT improve or upgrade the presentation.",
+    "- Do NOT invent ingredients that are not described.",
+    "- Do NOT change colours.",
+    "- Do NOT change garnish or its placement.",
+    "- Do NOT change plating or arrangement.",
+    "- Do NOT change the bowl, plate, or serving vessel.",
+    "- Do NOT change sauce or gravy consistency.",
+    "- Do NOT change food texture.",
+    "- Do NOT change ingredient proportions.",
+    "- The generated dish must look as close as possible to the",
+    "  description below.",
+    "",
+    "FOOD COMPOSITION",
+    "- Show ONLY one finished dish.",
+    "- Fill approximately 90% of the frame with the food.",
+    "- Close-up hero shot at a 45-degree camera angle.",
+    "- Natural shadows and realistic reflections.",
+    "- Restaurant-quality plating only if explicitly described below;",
+    "  otherwise an authentic homemade appearance.",
+    "- No extra side dishes, drinks, cutlery, napkins, table",
+    "  decorations, or flowers.",
+    "- No hands, people, or background objects.",
+    "",
+    "IMAGE STYLE",
+    "- Ultra realistic, DSLR, professional food photography.",
+    "- Macro food details, natural lighting, high dynamic range.",
+    "- Extremely realistic textures, 4K, sharp focus.",
+    "- No illustration, CGI, cartoon, or painting.",
+    "- No text, logo, or watermark.",
+    "",
+    "Recipe description:",
+    dishDescription,
   ].join("\n").trim();
 }
 
@@ -403,71 +483,13 @@ async function generateAndStoreRecipeImage(ai, recipe) {
     if (!recipe || !recipe.title) return "";
 
     // Prefer the image prompt Gemini authored alongside the recipe (it knows
-    // the exact dish); fall back to a short built prompt. A fixed food anchor
-    // is prepended so Imagen can never drift to a non-food subject.
-    const base = String(recipe.imagePrompt || "").trim() ||
+    // the exact dish); fall back to a locally built, ingredient-aware prompt.
+    // A fixed food anchor is layered on top so Imagen can never drift to a
+    // non-food subject.
+    const dishDescription = String(recipe.imagePrompt || "").trim() ||
       buildImagePrompt(recipe);
-    const prompt = `
-"Generate ONLY a photorealistic image of the EXACT finished " +
-"recipe described below. "
-CRITICAL REQUIREMENTS
+    const prompt = buildImagenInstructionPrompt(dishDescription);
 
-- Recreate the exact cooked dish.
-- Do NOT redesign the recipe.
-- Do NOT improve the presentation.
-- Do NOT invent ingredients.
-- Do NOT change colours.
-- Do NOT change garnish.
-- Do NOT change plating.
-- Do NOT change bowl, plate or serving vessel.
-- Do NOT change sauce consistency.
-- Do NOT change food texture.
-- Do NOT change ingredient proportions.
-"- The generated dish must look as close as possible to the " +
-"original recipe description."
-FOOD COMPOSITION
-
-- Show ONLY one finished dish.
-- Fill approximately 90% of the frame with the food.
-- Close-up hero shot.
-- 45-degree camera angle.
-- Natural shadows.
-- Realistic reflections.
-- Restaurant-quality plating only if the recipe explicitly describes it.
-- Authentic homemade appearance.
-- No extra side dishes.
-- No drinks.
-- No cutlery.
-- No napkins.
-- No table decorations.
-- No flowers.
-- No hands.
-- No people.
-- No background objects.
-
-IMAGE STYLE
-
-- Ultra realistic
-- DSLR
-- Professional food photography
-- Macro food details
-- Natural lighting
-- High dynamic range
-- Extremely realistic textures
-- 4K
-- Sharp focus
-- No illustration
-- No CGI
-- No cartoon
-- No painting
-- No text
-- No logo
-- No watermark
-
-Recipe Description:
-
-${base}
-`.trim();
     const response = await ai.models.generateImages({
       model: "imagen-4.0-generate-001",
       prompt,
@@ -529,8 +551,8 @@ const RECIPE_IMAGE_PROMPT = `
     {"isRecipe": false, "title": "", "description": "", "ingredients": [],
      "instructions": [], "ingredientSections": [], "instructionSections": []}
     and DO NOT invent, guess, or hallucinate a recipe.
-  - Only if it clearly shows food or a recipe, set "isRecipe": true and produce
-    the full structured recipe described below.
+  - Only if the image clearly shows food or a recipe, set "isRecipe": true and
+    produce the full structured recipe described below.
 
   Analyze the food image and generate the most accurate complete recipe.
 
@@ -592,6 +614,22 @@ NUTRITION:
 
   TITLE:
   - Use proper dish name: "Veg Manchurian", "Paneer Butter Masala", etc.
+
+  IMAGE PROMPT (VERY IMPORTANT — this text is sent directly to an AI image
+  generator, no other context is given to it):
+  - Fill "imagePrompt" with a single, self-contained food-photography
+    description of THIS exact dish as seen in the image (or as described,
+    if inferred) — plated, filling the frame.
+  - Describe the real, specific appearance: colour, browning, sauce/gravy
+    thickness, texture, visible ingredients and their placement, garnish
+    and its exact placement, portion size, shape, layering, and the type
+    and colour of plate or bowl it is served in.
+  - Food only — never landscapes, scenery, nature, people, buildings, text,
+    or a different dish.
+  - Always end the imagePrompt with: "ultra realistic professional
+    restaurant food photo, DSLR, 4K, natural lighting, 45-degree close-up
+    hero shot."
+  - This field must NEVER be left empty.
 
   OTHER:
   - servings: numeric string only, e.g. "4"
@@ -683,6 +721,21 @@ NUTRITION:
 - Estimate nutrition per serving using all available ingredients and quantities.
 - Return approximate values for calories, protein, carbohydrates, and fat.
 - Do not leave any nutrition field empty.
+
+IMAGE PROMPT (VERY IMPORTANT — this text is sent directly to an AI image
+generator, no other context is given to it):
+- Fill "imagePrompt" with a single, self-contained food-photography
+  description of THIS exact finished dish — plated, filling the frame.
+- Describe colour, texture, sauce/gravy consistency, visible ingredients,
+  garnish and its placement, portion size, and the plate or bowl it is
+  served in, based on the caption/context and typical preparation of
+  this dish.
+- Food only — never landscapes, scenery, nature, people, buildings, text,
+  or a different dish.
+- Always end the imagePrompt with: "ultra realistic professional
+  restaurant food photo, DSLR, 4K, natural lighting, 45-degree close-up
+  hero shot."
+- This field must NEVER be left empty.
 
 FLAT LISTS:
 - "ingredients" = ALL items from every ingredientSection combined in order.
@@ -794,14 +847,42 @@ OTHER:
 `;
 
 const RECIPE_VIDEO_PROMPT = `
-You are an expert chef and recipe developer. 
-Extract a structured recipe
-from the provided source.
-Return ONLY valid JSON
-matching this schema.
-No markdown.
-No commentary: 
- {
+You are an expert chef and recipe developer analyzing a cooking video.
+
+STEP 0 — IS THIS ACTUALLY A RECIPE VIDEO?
+Decide whether the video genuinely shows or narrates a food/drink recipe
+(ingredients being used, cooking steps being performed, a finished dish, or
+a recipe being read out / displayed on screen).
+- If it does NOT (unrelated vlog, no cooking shown, a person just talking,
+  a landscape, a product review, etc.), return EXACTLY this JSON and
+  nothing else:
+  {"isRecipe": false, "title": "", "description": "", "servings": "",
+   "prepTime": "", "cookTime": "", "totalTime": "", "category": "Snack",
+   "keywords": [], "ingredientSections": [], "instructionSections": [],
+   "ingredients": [], "instructions": [], "sourceUrl": "", "imageUrl": "",
+   "imagePrompt": "", "imageSearchQuery": ""}
+  Do NOT invent, guess, or hallucinate a recipe in this case.
+- Only if the video clearly shows/describes a real recipe, set
+  "isRecipe": true and produce the full structured recipe below.
+
+STRICT ACCURACY RULE (MOST IMPORTANT — READ CAREFULLY):
+- Base the recipe ONLY on what is actually shown, said, or written in the
+  video: ingredients visibly used, quantities shown/mentioned, and steps
+  actually performed or narrated.
+- Do NOT invent ingredients that never appear in the video.
+- Do NOT invent cooking steps that never happen in the video.
+- Do NOT pad ingredient/instruction lists to hit a "minimum" count — capture
+  exactly what's there, nothing more, nothing less.
+- If an ingredient is clearly used but its exact quantity isn't shown/stated,
+  you may estimate a reasonable quantity for THAT ingredient only — never use
+  this as license to add ingredients or steps with no basis in the video.
+- If the audio/visual is unclear on a minor detail (e.g. exact cook time),
+  infer the most likely value using culinary knowledge, but never fabricate
+  entire ingredients, steps, or dish identity.
+
+Return ONLY valid JSON matching this schema. No markdown. No commentary:
+{
+  "isRecipe": boolean,
   "title": string,
   "description": string,
   "servings": string,            // numeric only, e.g. "4"
@@ -815,48 +896,36 @@ No commentary:
   "ingredients": string[],       // flattened, all sections in order
   "instructions": string[],      // flattened, all sections in order
   "sourceUrl": string,
-  "imageUrl": string,      // fill ONLY if a real thumbnail/
- // frame URL is given in context; else ""
-   "imageSearchQuery": string
-// ALWAYS non-empty.
-// Use a 3-6 word
-// food-photography
-// search phrase
-// for this dish.
- }
+  "imageUrl": string,            // fill ONLY if a real thumbnail/frame URL
+                                  // is given in context; else ""
+  "imagePrompt": string,         // ALWAYS non-empty when isRecipe is true.
+                                  // A single, self-contained food-photo
+                                  // description of the EXACT dish shown in
+                                  // the video: colour, texture, sauce/gravy
+                                  // consistency, visible ingredients,
+                                  // garnish placement, and serving vessel.
+                                  // End with: "ultra realistic professional
+                                  // restaurant food photo, DSLR, 4K, natural
+                                  // lighting, 45-degree close-up hero shot."
+                                  // Food only, no people/text/logos.
+  "imageSearchQuery": string     // ALWAYS non-empty. 3-6 word food-photo
+                                  // search phrase for this dish.
+}
 
- NUTRITION:
-- Estimate nutrition per serving using all available ingredients and quantities.
+NUTRITION:
+- Estimate nutrition per serving using only the ingredients/quantities you
+  actually captured from the video.
 - Return approximate values for calories, protein, carbohydrates, and fat.
-- Do not leave any nutrition field empty.
- 
-  RULES:
-- Sections are primary.
-- Split multi-component dishes
-  (e.g. sauce, filling, garnish)
-- Capture every ingredient actually used.
-- Do not pad or omit ingredients
-  to hit a target count.   
-- Every instruction is one clear action.
-- No step numbers.
-- Capture every distinct action shown.
-- Do not merge or split actions artificially.
- - Capture every ingredient actually used 
- — do not pad or omit to hit a target count.
- - Every instruction is one clear action, no step numbers.
-  Capture every distinct action shown
-  — do not merge or split artificially.
-- "ingredients" and "instructions"
-  must be the exact concatenation
-  of all section items and steps,
-  preserving order. - servings: digits only, no units.
-  - If a detail is genuinely missing or unclear,
-  infer the most likely value using
-  culinary knowledge.
-- Do not leave fields blank.
-- Exception: imageUrl follows the
-  rule above.
- - Never fabricate a URL. If you don't have a real one, use "".`;
+
+RULES:
+- Sections are primary. Split multi-component dishes (e.g. sauce, filling,
+  garnish) into separate named sections; use "Main Recipe" for simple dishes.
+- Every instruction is one clear action, no step numbers.
+- "ingredients" and "instructions" must be the exact concatenation of all
+  section items and steps, preserving order.
+- servings: digits only, no units.
+- Never fabricate a URL. If you don't have a real one, use "".
+`;
 /**
  * @param {string} html
  * @return {Record<string, string>}
@@ -1081,24 +1150,7 @@ exports.analyzeRecipeVideo = onCall(
 
         let videoData = videoBase64;
         let resolvedMimeType = mimeType;
-        const rawRecipe = JSON.parse(text);
 
-        if (
-          rawRecipe.isRecipe === false ||
-  !rawRecipe.title ||
-  !Array.isArray(rawRecipe.ingredients) ||
-  rawRecipe.ingredients.length === 0
-        ) {
-          return {
-            success: true,
-            recipe: {
-              isRecipe: false,
-            },
-          };
-        }
-
-        const recipe = normalizeRecipe(rawRecipe);
-        recipe.isRecipe = true;
         // Download video from Storage only when base64 is not available.
         if (!videoData && storagePath) {
           console.log("Downloading video from Storage...");
@@ -1114,7 +1166,6 @@ exports.analyzeRecipeVideo = onCall(
           videoData = buffer[0].toString("base64");
 
           const metadata = metadataResult[0];
-
           if (metadata.contentType) {
             resolvedMimeType = metadata.contentType;
           }
@@ -1126,11 +1177,8 @@ exports.analyzeRecipeVideo = onCall(
           );
         }
 
-
         if (!videoData) {
-          throw new Error(
-              "Video data or storagePath is required",
-          );
+          throw new Error("Video data or storagePath is required");
         }
 
         const ai = getAI();
@@ -1144,9 +1192,7 @@ exports.analyzeRecipeVideo = onCall(
         const response = await ai.models.generateContent({
           model: "gemini-2.5-flash",
           contents: [
-            {
-              text: promptText,
-            },
+            {text: promptText},
             {
               inlineData: {
                 mimeType: resolvedMimeType,
@@ -1157,16 +1203,10 @@ exports.analyzeRecipeVideo = onCall(
           config: {
             responseMimeType: "application/json",
             responseSchema: RECIPE_RESPONSE_SCHEMA,
-
-            // Disable thinking for faster response.
             thinkingConfig: {
               thinkingBudget: 0,
             },
-
-            // Limit unnecessary output tokens.
             maxOutputTokens: 2500,
-
-            // More deterministic and slightly faster.
             temperature: 0.2,
           },
         });
@@ -1178,35 +1218,47 @@ exports.analyzeRecipeVideo = onCall(
         );
 
         let text = response.text.trim();
-
-        // Remove accidental markdown code blocks.
         text = text
             .replace(/^```json\s*/i, "")
             .replace(/^```\s*/i, "")
             .replace(/\s*```$/i, "")
             .trim();
 
+        const rawRecipe = JSON.parse(text);
+
+        // Not a recipe video → bail out early instead of returning a
+        // hallucinated recipe. Require the flag AND real content AND a
+        // real title, since a hallucinated non-recipe result often still
+        // has an empty/placeholder title.
+        const hasContent =
+          (Array.isArray(rawRecipe.ingredients) &&
+            rawRecipe.ingredients.length > 0) ||
+          (Array.isArray(rawRecipe.instructions) &&
+            rawRecipe.instructions.length > 0);
+        const title = (rawRecipe.title || "").toString().trim().toLowerCase();
+        const placeholderTitle =
+          ["", "unknown", "unknown recipe", "untitled", "n/a"]
+              .includes(title);
+
+        if (rawRecipe.isRecipe === false || !hasContent || placeholderTitle) {
+          return {
+            success: true,
+            recipe: {isRecipe: false},
+          };
+        }
+
+        const recipe = normalizeRecipe(rawRecipe);
+        recipe.isRecipe = true;
+
         if (sourceUrl) {
           recipe.sourceUrl = sourceUrl;
         }
-
-        console.log(
-            "Recipe generated:",
-            recipe.title,
-        );
-
-        // ---------------------------------------------------------
-        // IMPORTANT:
-        // Do NOT generate Imagen image here if response speed matters.
-        //
-        // Video thumbnail/frame will be used as image.
-        // This saves one complete Imagen API call.
-        // ---------------------------------------------------------
 
         if (!recipe.imageUrl) {
           recipe.imageUrl = "";
         }
 
+        console.log("Recipe generated:", recipe.title);
         console.log(
             "TOTAL VIDEO ANALYSIS TIME:",
             Date.now() - startTime,
@@ -1218,10 +1270,7 @@ exports.analyzeRecipeVideo = onCall(
           recipe,
         };
       } catch (error) {
-        console.error(
-            "analyzeRecipeVideo failed:",
-            error,
-        );
+        console.error("analyzeRecipeVideo failed:", error);
 
         return {
           success: false,
