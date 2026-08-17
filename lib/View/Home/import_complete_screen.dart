@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:recipe_ai/View/Home/home_screen.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:recipe_ai/widgets/app_network_image.dart';
-import 'package:recipe_ai/View/Auth/auth_wrapper.dart';
 import 'dart:ui' as ui;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
@@ -126,9 +125,11 @@ class _ImportCompleteScreenState extends State<ImportCompleteScreen> {
       // intent), a system-back pop would leave an empty, black navigator.
       // Allow the normal back only when a screen exists beneath; otherwise
       // route to the app home instead of a black screen.
-      canPop: Navigator.of(context).canPop(),
+      canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) Get.offAll(() => const AuthWrapper());
+        if (didPop) return;
+
+        Get.offAll(() => const HomeScreen());
       },
       child: Scaffold(
         backgroundColor: AppColors.background,

@@ -1188,8 +1188,9 @@ class RecipeImportService {
 
     return _runImport(
       loadingSteps: const [
-        'Generating recipe...',
-        'Preparing ingredients...',
+        'Found recipe title...',
+        'Extracting ingredients...',
+        'Reading the steps...',
         'Saving recipe...',
       ],
       errorMessage: 'Failed to generate recipe.',

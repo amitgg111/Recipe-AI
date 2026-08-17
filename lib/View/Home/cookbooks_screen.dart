@@ -45,7 +45,7 @@ class CookbooksScreen extends StatefulWidget {
 
 class _CookbooksScreenState extends State<CookbooksScreen>
     with TickerProviderStateMixin {
-  int _selectedSegment = 0;
+  int _selectedSegment = 1;
   int _sortIndex = 0;
   late AnimationController _fabPulseController;
 

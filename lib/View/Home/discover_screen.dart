@@ -271,52 +271,6 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                   return _emptyState();
                 }
 
-                // return RefreshIndicator(
-                //   color: _D.primary,
-
-                //   onRefresh: () =>
-                //       controller.fetchDiscoverRecipes(refresh: true),
-
-                //   child: ListView.separated(
-                //     controller: feedScrollController,
-
-                //     // Build ~5 cards beyond the viewport instead of Flutter's
-                //     // default 250px (barely half a card here, since each is
-                //     // ~400px tall). CachedNetworkImage starts its download when
-                //     // the card BUILDS, so with the default the photo only
-                //     // begins loading as it scrolls into view — which is why
-                //     // images appear late while scrolling. This gives each image
-                //     // a head start and costs a few hundred KB of decoded
-                //     // bitmaps, bounded by memCacheWidth: 700.
-                //     cacheExtent: 2000,
-
-                //     padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-
-                //     itemCount:
-                //         items.length + (controller.isLoadingMore ? 1 : 0),
-
-                //     separatorBuilder: (_, index) {
-                //       if (index >= items.length - 1) {
-                //         return const SizedBox.shrink();
-                //       }
-
-                //       return const SizedBox(height: 16);
-                //     },
-
-                //     itemBuilder: (_, index) {
-                //       if (index >= items.length) {
-                //         return const Padding(
-                //           padding: EdgeInsets.symmetric(vertical: 24),
-                //           child: Center(
-                //             child: CircularProgressIndicator(color: _D.primary),
-                //           ),
-                //         );
-                //       }
-
-                //       return _RecipeCard(recipe: items[index]);
-                //     },
-                //   ),
-                // );
                 return RefreshIndicator(
                   color: _D.primary,
                   backgroundColor: Colors.white,
