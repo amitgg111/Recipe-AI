@@ -115,18 +115,13 @@ class RecipeImportService {
         final aiStopwatch = Stopwatch()..start();
         final uploadStopwatch = Stopwatch()..start();
 
-        // બંને calls simultaneously start
-        final aiFuture = getRecipeFromImage(imageFile).then((result) {
-          aiStopwatch.stop();
-
-          print(
-            '[AI] COMPLETED: '
-            '${aiStopwatch.elapsedMilliseconds} ms',
-          );
-
-          return result;
-        });
-
+        // Both start at the same time, but we do NOT wait for the upload
+        // before navigating — only the AI result gates navigation. The
+        // upload keeps running in the background and updates Firestore
+        // (via _saveRecipeAndNavigate's `pendingImageUpload`) whenever it
+        // finishes; the ImportCompleteScreen hero already listens to the
+        // Firestore doc via StreamBuilder, so the photo just fades in
+        // whenever it's ready — it no longer blocks the recipe itself.
         final uploadFuture = _uploadImageFile(imageFile, uid).then((result) {
           uploadStopwatch.stop();
 
@@ -138,12 +133,14 @@ class RecipeImportService {
           return result;
         });
 
-        // બંને parallel run થાય છે
-        final results = await Future.wait([aiFuture, uploadFuture]);
+        final recipeData = await getRecipeFromImage(imageFile);
 
-        final recipeData = results[0] as Map<String, dynamic>;
+        aiStopwatch.stop();
 
-        final firebaseImageUrl = results[1] as String?;
+        print(
+          '[AI] COMPLETED: '
+          '${aiStopwatch.elapsedMilliseconds} ms',
+        );
 
         // Validation
         if (!_isRecipeResult(recipeData)) {
@@ -158,7 +155,10 @@ class RecipeImportService {
         await _saveRecipeAndNavigate(
           recipe: recipe,
           sourceUrl: 'gemini_image_import',
-          firebaseImageUrl: firebaseImageUrl,
+          // Not awaited here — navigation happens as soon as the recipe is
+          // saved. The upload result (whenever it lands) is applied to
+          // Firestore in the background.
+          pendingImageUpload: uploadFuture,
           doneSignal: doneSignal,
         );
 
@@ -314,6 +314,12 @@ class RecipeImportService {
     String? remoteImageUrl,
     bool isVideoImport = false,
     Completer<void>? doneSignal,
+    // A Firebase Storage upload that is STILL RUNNING when we save/navigate.
+    // We do not await this before showing the recipe — instead it's applied
+    // to the Firestore doc in the background once it resolves, and the
+    // ImportCompleteScreen hero (StreamBuilder on the recipe doc) picks the
+    // new imageUrl up automatically.
+    Future<String?>? pendingImageUpload,
   }) async {
     final uid = AuthService.currentUser?.uid;
 
@@ -327,6 +333,7 @@ class RecipeImportService {
     print('firebaseImageUrl: ${firebaseImageUrl ?? "null"}');
     print('remoteImageUrl: ${remoteImageUrl ?? "null"}');
     print('isVideoImport: $isVideoImport');
+    print('pendingImageUpload: ${pendingImageUpload != null}');
 
     String? imageUrl;
 
@@ -366,8 +373,11 @@ class RecipeImportService {
     // ❌ AI image generation is NOT done.
     //
     if (!isVideoImport) {
-      imageUrl = firebaseImageUrl ?? remoteImageUrl ?? '';
-
+      imageUrl =
+          firebaseImageUrl ??
+          remoteImageUrl ??
+          (recipe.imageUrl!.isNotEmpty ? recipe.imageUrl : null) ??
+          '';
       print(
         '[IMAGE IMPORT] Existing Firebase image selected: '
         '${imageUrl.isEmpty ? "NO IMAGE" : imageUrl}',
@@ -387,9 +397,14 @@ class RecipeImportService {
     // ✅ Save recipe first
     // ✅ Generate AI image in background
     //
+    // NOTE: skipped whenever a real upload is already in flight
+    // (`pendingImageUpload`) — that upload will supply the real photo
+    // shortly, so we must not also kick off a fake AI-generated one.
+    //
     bool needsImageGeneration = false;
 
     if (!isVideoImport &&
+        pendingImageUpload == null &&
         (imageUrl == null || imageUrl.isEmpty) &&
         sourceUrl != 'social_caption_import' &&
         sourceUrl != 'social_video_share' &&
@@ -433,7 +448,8 @@ class RecipeImportService {
       'description': recipe.description,
 
       // For image import:
-      //     Existing image URL
+      //     Existing image URL (or '' if the upload is still pending — see
+      //     `pendingImageUpload` below, which fills this in shortly after).
       //
       // For video/name import:
       //     Empty initially.
@@ -480,14 +496,15 @@ class RecipeImportService {
     print('[FIRESTORE] Recipe saved: ${docRef.id}');
 
     // ============================================================
-    // AI IMAGE GENERATION
+    // AI IMAGE GENERATION  /  BACKGROUND IMAGE UPLOAD
     // ============================================================
     //
     // VIDEO:
     // ✅ Always generate AI image
     //
-    // IMAGE:
-    // ❌ Never generate AI image
+    // IMAGE (upload still in flight):
+    // ✅ Wait for the real upload in the background, then patch Firestore
+    // ❌ Never generate an AI image
     //
     // RECIPE NAME / NO IMAGE:
     // ✅ Generate AI image
@@ -503,6 +520,18 @@ class RecipeImportService {
           recipeId: docRef.id,
           title: recipe.title,
           description: recipe.description,
+        ),
+      );
+    } else if (pendingImageUpload != null) {
+      print(
+        '[IMAGE UPLOAD] Recipe shown now, waiting on upload in background | '
+        'recipeId=${docRef.id}',
+      );
+
+      unawaited(
+        _applyPendingImageUpload(
+          recipeId: docRef.id,
+          pendingUpload: pendingImageUpload,
         ),
       );
     } else {
@@ -521,9 +550,9 @@ class RecipeImportService {
       title: recipe.title,
       description: recipe.description,
 
-      // For video/name import this is initially empty.
-      // The recipe detail screen can listen to Firestore updates
-      // and receive the generated image later.
+      // For video/name/pending-upload imports this is initially empty.
+      // The recipe detail / complete screen listens to Firestore updates
+      // (StreamBuilder) and receives the image the moment it lands.
       imageUrl: imageUrl,
 
       sourceUrl: sourceUrl,
@@ -569,6 +598,41 @@ class RecipeImportService {
     );
 
     print('========== SAVE RECIPE COMPLETED ==========');
+  }
+
+  /// Waits for a Storage upload that was already running when the recipe was
+  /// saved/navigated-to, then patches the Firestore doc's `imageUrl`. Runs
+  /// completely in the background — it must never block navigation, and a
+  /// failure here should never crash or surface to the user (the recipe
+  /// itself already saved fine; worst case the photo stays blank).
+  static Future<void> _applyPendingImageUpload({
+    required String recipeId,
+    required Future<String?> pendingUpload,
+  }) async {
+    try {
+      final url = await pendingUpload;
+
+      if (url == null || url.isEmpty) {
+        print(
+          '[IMAGE UPLOAD] Background upload produced no URL | '
+          'recipeId=$recipeId',
+        );
+        return;
+      }
+
+      await FirebaseFirestore.instance
+          .collection('recipes')
+          .doc(recipeId)
+          .update({'imageUrl': url, 'updatedAt': FieldValue.serverTimestamp()});
+
+      print(
+        '[IMAGE UPLOAD] Firestore image URL updated SUCCESS | '
+        'recipeId=$recipeId',
+      );
+    } catch (e, stack) {
+      print('[IMAGE UPLOAD] Background apply FAILED: $e');
+      print(stack.toString());
+    }
   }
 
   static Future<void> _generateRealImageInBackground({
@@ -812,14 +876,11 @@ class RecipeImportService {
 
         final imageFile = File(image.path);
 
-        final results = await Future.wait([
-          getRecipeFromImage(imageFile),
-          _uploadImageFile(imageFile, uid),
-        ]);
+        // Kick the upload off, but only gate navigation on the AI result —
+        // see importRecipeFromImage for the full explanation.
+        final uploadFuture = _uploadImageFile(imageFile, uid);
 
-        final recipeData = results[0] as Map<String, dynamic>;
-
-        final firebaseImageUrl = results[1] as String?;
+        final recipeData = await getRecipeFromImage(imageFile);
 
         if (!_isRecipeResult(recipeData)) {
           throw const _NotARecipeException(
@@ -833,11 +894,9 @@ class RecipeImportService {
         await _saveRecipeAndNavigate(
           recipe: recipe,
           sourceUrl: 'gemini_image_import',
-          firebaseImageUrl: firebaseImageUrl,
+          pendingImageUpload: uploadFuture,
           doneSignal: doneSignal,
         );
-        // final recipe = SavedRecipe.fromGeminiResponse(recipeData);
-        // final firebaseImageUrl = await _uploadImageFile(File(image.path), uid);
       },
     );
   }
@@ -1038,14 +1097,11 @@ class RecipeImportService {
 
         print('[SharedImage] AI + Firebase upload STARTED');
 
-        // AI analysis and Firebase upload run in parallel.
-        final results = await Future.wait([
-          getRecipeFromImage(imageFile),
-          _uploadImageFile(imageFile, uid),
-        ]);
+        // AI analysis and Firebase upload start together, but only the AI
+        // result gates navigation — the upload finishes in the background.
+        final uploadFuture = _uploadImageFile(imageFile, uid);
 
-        final recipeData = results[0] as Map<String, dynamic>;
-        final firebaseImageUrl = results[1] as String?;
+        final recipeData = await getRecipeFromImage(imageFile);
 
         // ========================================================
         // VALIDATE RECIPE
@@ -1071,8 +1127,8 @@ class RecipeImportService {
         await _saveRecipeAndNavigate(
           recipe: recipe,
           sourceUrl: 'shared_image_import',
-          firebaseImageUrl: firebaseImageUrl,
           isVideoImport: false,
+          pendingImageUpload: uploadFuture,
           doneSignal: doneSignal,
         );
       },
@@ -1241,6 +1297,7 @@ class RecipeImportService {
           recipe: recipe,
           sourceUrl: 'recipe_name_search',
           doneSignal: doneSignal,
+          firebaseImageUrl: recipe.imageUrl!.isNotEmpty ? recipe.imageUrl : null,
         );
 
         print(

@@ -394,95 +394,135 @@ function buildImagePrompt(recipe) {
  * Generates an image with Imagen and stores it in Firebase Storage.
  * Returns "" (empty string) on any failure so callers can fall back safely.
  *
+ * IMPORTANT (debugging): every failure path below now logs the FULL reason
+ * (thrown error, or the raw Imagen response when it came back with no image
+ * bytes) via console.error BEFORE returning "". Previously the caller
+ * (`generateRecipeImage`) only ever saw a generic "Image generation failed"
+ * because this function swallowed the real error and returned an empty
+ * string. Check `firebase functions:log --only generateRecipeImage` (or the
+ * Cloud Logging console) for these lines — that is where the actual root
+ * cause (billing/quota/model access/malformed response, etc.) will show up.
+ *
  * @param {Object} ai GoogleGenAI client instance.
  * @param {Object} recipe Recipe object.
  * @return {Promise<string>} Public image URL, or "" on failure.
  */
 async function generateAndStoreRecipeImage(ai, recipe) {
   try {
-    if (!recipe || !recipe.title) return "";
+    if (!recipe || !recipe.title) {
+      console.error(
+          "generateAndStoreRecipeImage: no recipe/title supplied, skipping.",
+      );
+      return "";
+    }
 
     // Prefer the image prompt Gemini authored alongside the recipe (it knows
     // the exact dish); fall back to a short built prompt. A fixed food anchor
     // is prepended so Imagen can never drift to a non-food subject.
     const base = String(recipe.imagePrompt || "").trim() ||
       buildImagePrompt(recipe);
-    const prompt = `
-"Generate ONLY a photorealistic image of the EXACT finished " +
-"recipe described below. "
-CRITICAL REQUIREMENTS
 
-- Recreate the exact cooked dish.
-- Do NOT redesign the recipe.
-- Do NOT improve the presentation.
-- Do NOT invent ingredients.
-- Do NOT change colours.
-- Do NOT change garnish.
-- Do NOT change plating.
-- Do NOT change bowl, plate or serving vessel.
-- Do NOT change sauce consistency.
-- Do NOT change food texture.
-- Do NOT change ingredient proportions.
-"- The generated dish must look as close as possible to the " +
-"original recipe description."
-FOOD COMPOSITION
+    const prompt = [
+      "Generate ONLY a photorealistic image of the EXACT finished recipe " +
+      "described below.",
+      "",
+      "CRITICAL REQUIREMENTS",
+      "- Recreate the exact cooked dish.",
+      "- Do NOT redesign the recipe.",
+      "- Do NOT improve the presentation.",
+      "- Do NOT invent ingredients.",
+      "- Do NOT change colours.",
+      "- Do NOT change garnish.",
+      "- Do NOT change plating.",
+      "- Do NOT change bowl, plate or serving vessel.",
+      "- Do NOT change sauce consistency.",
+      "- Do NOT change food texture.",
+      "- Do NOT change ingredient proportions.",
+      "- The generated dish must look as close as possible to the " +
+      "original recipe description.",
+      "",
+      "FOOD COMPOSITION",
+      "- Show ONLY one finished dish.",
+      "- Fill approximately 90% of the frame with the food.",
+      "- Close-up hero shot.",
+      "- 45-degree camera angle.",
+      "- Natural shadows.",
+      "- Realistic reflections.",
+      "- Restaurant-quality plating only if the recipe explicitly " +
+      "describes it.",
+      "- Authentic homemade appearance.",
+      "- No extra side dishes.",
+      "- No drinks.",
+      "- No cutlery.",
+      "- No napkins.",
+      "- No table decorations.",
+      "- No flowers.",
+      "- No hands.",
+      "- No people.",
+      "- No background objects.",
+      "",
+      "IMAGE STYLE",
+      "- Ultra realistic",
+      "- DSLR",
+      "- Professional food photography",
+      "- Macro food details",
+      "- Natural lighting",
+      "- High dynamic range",
+      "- Extremely realistic textures",
+      "- 4K",
+      "- Sharp focus",
+      "- No illustration",
+      "- No CGI",
+      "- No cartoon",
+      "- No painting",
+      "- No text",
+      "- No logo",
+      "- No watermark",
+      "",
+      "Recipe Description:",
+      "",
+      base,
+    ].join("\n").trim();
 
-- Show ONLY one finished dish.
-- Fill approximately 90% of the frame with the food.
-- Close-up hero shot.
-- 45-degree camera angle.
-- Natural shadows.
-- Realistic reflections.
-- Restaurant-quality plating only if the recipe explicitly describes it.
-- Authentic homemade appearance.
-- No extra side dishes.
-- No drinks.
-- No cutlery.
-- No napkins.
-- No table decorations.
-- No flowers.
-- No hands.
-- No people.
-- No background objects.
+    console.log(
+        "[generateAndStoreRecipeImage] Calling Imagen | title=",
+        recipe.title,
+        "| promptChars=",
+        prompt.length,
+    );
 
-IMAGE STYLE
-
-- Ultra realistic
-- DSLR
-- Professional food photography
-- Macro food details
-- Natural lighting
-- High dynamic range
-- Extremely realistic textures
-- 4K
-- Sharp focus
-- No illustration
-- No CGI
-- No cartoon
-- No painting
-- No text
-- No logo
-- No watermark
-
-Recipe Description:
-
-${base}
-`.trim();
-    const response = await ai.models.generateImages({
-      model: "imagen-4.0-generate-001",
-      prompt,
+    const response = await ai.models.generateContent({
+      model: "gemini-3.1-flash-image",
+      contents: prompt,
       config: {
-        numberOfImages: 1,
-        aspectRatio: "4:3",
+        responseModalities: ["IMAGE"],
+        imageConfig: {
+          aspectRatio: "4:3",
+        },
       },
     });
 
-    const generatedImages = response && response.generatedImages;
-    const first = Array.isArray(generatedImages) ? generatedImages[0] : null;
-    const imageBytes = first && first.image && first.image.imageBytes;
+    // Gemini image models return the image inside candidates[0].content.parts,
+    // as inlineData — NOT response.generatedImages (that's the Imagen
+    // predict-API shape, different endpoint entirely).
+    const parts = response &&
+  response.candidates &&
+  response.candidates[0] &&
+  response.candidates[0].content &&
+  response.candidates[0].content.parts;
+
+    const imagePart = Array.isArray(parts) ?
+  parts.find((p) => p.inlineData && p.inlineData.data) :
+  null;
+
+    const imageBytes = imagePart && imagePart.inlineData.data;
 
     if (!imageBytes) {
-      console.error("Image generation returned no image bytes.");
+      console.error(
+          "[generateAndStoreRecipeImage] No image bytes in Gemini " +
+      "response. Raw response:",
+          JSON.stringify(response, null, 2).slice(0, 4000),
+      );
       return "";
     }
 
@@ -510,9 +550,31 @@ ${base}
       },
     });
 
+    console.log(
+        "[generateAndStoreRecipeImage] Image stored OK | title=",
+        recipe.title,
+    );
+
     return `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(fileName)}?alt=media&token=${downloadToken}`;
   } catch (error) {
-    console.error("generateAndStoreRecipeImage failed:", error);
+    // This is the branch most likely firing for you. Common root causes for
+    // Imagen specifically:
+    //  1. Billing / quota — Imagen requires a Cloud project with billing
+    //     enabled; a plain GEMINI_API_KEY on a free-tier project throws a
+    //     permission/billing error here.
+    //  2. Model access — "imagen-4.0-generate-001" not enabled/allow-listed
+    //     for your API key/project yet.
+    //  3. Safety filters — Imagen silently blocks some prompts; that usually
+    //     surfaces as an error with a RESOURCE_EXHAUSTED / PERMISSION_DENIED
+    //     / INVALID_ARGUMENT code — check `error.status` / `error.code`
+    //     below in the logs.
+    console.error(
+        "generateAndStoreRecipeImage failed:",
+        error && error.message,
+        "| status:", error && error.status,
+        "| code:", error && error.code,
+        "| full:", error,
+    );
     return "";
   }
 }
@@ -1237,7 +1299,14 @@ exports.generateRecipeImage = onCall(
         const imageUrl = await generateAndStoreRecipeImage(ai, recipe);
 
         if (!imageUrl) {
-          throw new Error("Image generation failed");
+          // The DETAILED reason is already in the logs from
+          // generateAndStoreRecipeImage above (console.error). Check
+          // `firebase functions:log --only generateRecipeImage`.
+          throw new Error(
+              "Image generation failed — see generateAndStoreRecipeImage " +
+              "logs above for the real cause (billing/quota/model access/" +
+              "empty Imagen response).",
+          );
         }
 
         return {
@@ -1423,7 +1492,9 @@ Generate a complete recipe for: ${recipeName}
           console.error(
               "generateRecipeFromName: image generation failed for",
               recipeName,
-              "— falling back to picsum placeholder.",
+              "— falling back to picsum placeholder. Check the " +
+              "generateAndStoreRecipeImage error logs directly above " +
+              "this line for the real cause.",
           );
           // Deterministic fallback so the UI never shows a broken image.
           const seed = encodeURIComponent(
@@ -1469,4 +1540,3 @@ exports.checkEmailRegistered = onCall(async (request) => {
     return {registered: true};
   }
 });
-
