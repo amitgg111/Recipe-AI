@@ -227,6 +227,25 @@ class RecipeImportService {
     String? url,
     String? caption,
   }) async {
+    // Enrich the caption from the post's public page BEFORE calling the
+    // backend. This runs ON-DEVICE, so it uses the phone's residential/mobile
+    // IP — Instagram serves the full og:description caption (which usually
+    // contains the whole recipe) to that, whereas the Cloud Function's
+    // datacenter IP gets a login/consent wall (empty). Purely additive: on any
+    // failure we fall back to the original caption, so the existing flow is
+    // never affected.
+    String? effectiveCaption = caption;
+    if (url != null && url.trim().isNotEmpty) {
+      final pageCaption = await _fetchSocialCaption(url);
+      if (pageCaption != null && pageCaption.trim().isNotEmpty) {
+        final shared = caption?.trim() ?? '';
+        // The share-sheet "caption" is often just the URL — don't duplicate it.
+        effectiveCaption = (shared.isEmpty || shared == url.trim())
+            ? pageCaption
+            : '$shared\n\n$pageCaption';
+      }
+    }
+
     final callable = FirebaseFunctions.instance.httpsCallable(
       'extractRecipeFromSocialContent',
       options: HttpsCallableOptions(timeout: const Duration(seconds: 120)),
@@ -234,7 +253,8 @@ class RecipeImportService {
 
     final result = await callable.call({
       if (url != null && url.isNotEmpty) 'url': url,
-      if (caption != null && caption.isNotEmpty) 'caption': caption,
+      if (effectiveCaption != null && effectiveCaption.isNotEmpty)
+        'caption': effectiveCaption,
     });
 
     final data = Map<String, dynamic>.from(result.data);
@@ -244,6 +264,85 @@ class RecipeImportService {
     }
 
     return Map<String, dynamic>.from(data['recipe']);
+  }
+
+  /// Fetches a social post's caption from its public page using the
+  /// facebookexternalhit crawler UA. On-device, so it uses the phone's
+  /// residential/mobile IP — Instagram/TikTok serve the full og:description
+  /// caption to that, unlike the backend's datacenter IP which is walled.
+  /// Returns null on any failure so callers fall back to the existing flow.
+  static Future<String?> _fetchSocialCaption(String url) async {
+    try {
+      final response = await http
+          .get(
+            Uri.parse(url),
+            headers: const {
+              'User-Agent':
+                  'facebookexternalhit/1.1 '
+                  '(+http://www.facebook.com/externalhit_uatext.php)',
+              'Accept': 'text/html,application/xhtml+xml',
+            },
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode != 200) return null;
+
+      final body = response.body;
+      // og:description carries the full caption (with the recipe); fall back to
+      // og:title, which on Instagram also contains the caption.
+      final raw = _extractMetaContent(body, 'og:description') ??
+          _extractMetaContent(body, 'og:title');
+      if (raw == null || raw.trim().isEmpty) return null;
+
+      return _decodeHtmlEntities(raw).trim();
+    } catch (_) {
+      // Any failure (timeout, wall, parse) → fall back to the existing flow.
+      return null;
+    }
+  }
+
+  /// Pulls the `content` of a `<meta property="…">` / `<meta name="…">` tag,
+  /// handling both attribute orders. Instagram HTML-encodes real quotes inside
+  /// the value (&quot; / &#039;), so the delimiter match is unambiguous.
+  static String? _extractMetaContent(String html, String property) {
+    final escaped = RegExp.escape(property);
+    final forward = RegExp(
+      '<meta[^>]+(?:property|name)=["\']$escaped["\'][^>]+'
+      'content=["\']([^"\']*)["\']',
+      caseSensitive: false,
+    ).firstMatch(html);
+    if (forward != null) return forward.group(1);
+
+    final reverse = RegExp(
+      '<meta[^>]+content=["\']([^"\']*)["\'][^>]+'
+      '(?:property|name)=["\']$escaped["\']',
+      caseSensitive: false,
+    ).firstMatch(html);
+    return reverse?.group(1);
+  }
+
+  /// Decodes the common HTML entities Instagram uses in og tags (&amp;, &quot;,
+  /// numeric &#39; and &#x1f60b; emoji) so the caption reaches Gemini clean.
+  static String _decodeHtmlEntities(String input) {
+    var s = input
+        .replaceAll('&amp;', '&')
+        .replaceAll('&quot;', '"')
+        .replaceAll('&#039;', "'")
+        .replaceAll('&#39;', "'")
+        .replaceAll('&apos;', "'")
+        .replaceAll('&lt;', '<')
+        .replaceAll('&gt;', '>')
+        .replaceAll('&nbsp;', ' ');
+
+    s = s.replaceAllMapped(RegExp(r'&#x([0-9a-fA-F]+);'), (m) {
+      final code = int.tryParse(m.group(1)!, radix: 16);
+      return code != null ? String.fromCharCode(code) : m.group(0)!;
+    });
+    s = s.replaceAllMapped(RegExp(r'&#(\d+);'), (m) {
+      final code = int.tryParse(m.group(1)!);
+      return code != null ? String.fromCharCode(code) : m.group(0)!;
+    });
+    return s;
   }
 
   static Future<Map<String, dynamic>> getRecipeFromVideo(
@@ -351,6 +450,10 @@ class RecipeImportService {
     // ✅ Generate a new AI food image in background.
     //
     if (isVideoImport) {
+      // Cover thumbnails from reels are unreliable (sometimes a title card or
+      // the wrong frame), so video imports ALWAYS generate a clean AI food
+      // image. It runs in the background and the ImportCompleteScreen picks it
+      // up live once ready.
       imageUrl = '';
 
       print(

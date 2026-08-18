@@ -408,8 +408,9 @@ async function generateAndStoreRecipeImage(ai, recipe) {
     const base = String(recipe.imagePrompt || "").trim() ||
       buildImagePrompt(recipe);
     const prompt = `
-"Generate ONLY a photorealistic image of the EXACT finished " +
-"recipe described below. "
+Generate ONLY a photorealistic image of the EXACT finished recipe described
+below.
+
 CRITICAL REQUIREMENTS
 
 - Recreate the exact cooked dish.
@@ -423,8 +424,9 @@ CRITICAL REQUIREMENTS
 - Do NOT change sauce consistency.
 - Do NOT change food texture.
 - Do NOT change ingredient proportions.
-"- The generated dish must look as close as possible to the " +
-"original recipe description."
+- The generated dish must look as close as possible to the original recipe
+  description.
+
 FOOD COMPOSITION
 
 - Show ONLY one finished dish.
@@ -468,18 +470,32 @@ Recipe Description:
 
 ${base}
 `.trim();
-    const response = await ai.models.generateImages({
-      model: "imagen-4.0-generate-001",
-      prompt,
+    // NOTE: imagen-4.0-generate-001 was removed by Google (404 NOT_FOUND —
+    // "no longer available"). Image generation now runs through the Gemini
+    // image model via generateContent with an IMAGE response modality; the
+    // picture comes back as an inline data part, not a generatedImages array.
+    const response = await ai.models.generateContent({
+      model: "gemini-3.1-flash-image",
+      contents: prompt,
       config: {
-        numberOfImages: 1,
-        aspectRatio: "4:3",
+        responseModalities: ["IMAGE"],
       },
     });
 
-    const generatedImages = response && response.generatedImages;
-    const first = Array.isArray(generatedImages) ? generatedImages[0] : null;
-    const imageBytes = first && first.image && first.image.imageBytes;
+    const parts =
+      (response &&
+        response.candidates &&
+        response.candidates[0] &&
+        response.candidates[0].content &&
+        response.candidates[0].content.parts) ||
+      [];
+    let imageBytes = "";
+    for (const part of parts) {
+      if (part && part.inlineData && part.inlineData.data) {
+        imageBytes = part.inlineData.data;
+        break;
+      }
+    }
 
     if (!imageBytes) {
       console.error("Image generation returned no image bytes.");
@@ -655,15 +671,30 @@ exports.askGemini = onCall(
 const RECIPE_SOCIAL_PROMPT = `
 You are a world-class chef and recipe developer.
 
-Extract a complete structured recipe from the social media post context below.
-The content may come from Instagram, Facebook, TikTok, YouTube, or similar
-platforms.
+You are given a social media post: its caption/text, page metadata, and — when
+available — the post's actual cover image is attached alongside this prompt.
+The content may come from Instagram, Facebook, TikTok, YouTube, or similar.
 
-Use ALL available context: caption text, page title, description, hashtags,
-and URL.
-If the post shows a cooking video or food image description, infer the full
-recipe.
-If information is incomplete, use culinary knowledge to fill reasonable gaps.
+STEP 0 — IS THIS ACTUALLY A FOOD / RECIPE POST?
+Decide whether the caption text and the attached image genuinely show or
+describe a food or drink recipe (a cooked dish, food being prepared, or a
+recipe written out).
+- If it is clearly NOT food/recipe content (a generic vlog, selfie, meme,
+  product ad, landscape, or unrelated post), return EXACTLY:
+  {"isRecipe": false, "title": "", "description": "", "ingredients": [],
+   "instructions": [], "ingredientSections": [], "instructionSections": []}
+  and DO NOT invent, guess, or hallucinate a recipe.
+- Only if it clearly shows/describes food, set "isRecipe": true and produce the
+  full structured recipe below.
+
+ACCURACY RULE (IMPORTANT — do not hallucinate):
+- Identify the REAL dish from the attached image and the caption text. Use ALL
+  available context: caption, page title, description, hashtags, and URL.
+- Once you have confidently identified the dish, you MAY use culinary knowledge
+  to complete standard ingredients/steps for THAT dish.
+- Do NOT invent a different dish, and do NOT fabricate a recipe when the post
+  is not clearly about food. When the image and caption disagree, trust what
+  the image actually shows.
 
 CRITICAL — SECTION STRUCTURE (MUST FOLLOW):
 - ingredientSections and instructionSections are the PRIMARY structure.
@@ -957,20 +988,87 @@ async function fetchUrlContext(url) {
 }
 
 /**
+ * True for any YouTube watch / Shorts / youtu.be link. Gemini can ingest a
+ * YouTube URL directly (it actually watches the video), so these get the
+ * accurate video-analysis path instead of text-only metadata guessing.
+ * @param {string} url
+ * @return {boolean}
+ */
+function isYouTubeUrl(url) {
+  return /(?:youtube\.com\/|youtu\.be\/)/i.test(String(url || ""));
+}
+
+/**
+ * Downloads a social post's cover image (og:image) and returns it as an inline
+ * Gemini image part so the model can SEE the real dish instead of guessing from
+ * caption text alone. Returns null on any failure (caller falls back to
+ * text-only), and skips anything that isn't a reasonably-sized image.
+ * @param {string} imageUrl
+ * @return {Promise<{inlineData: {mimeType: string, data: string}}|null>}
+ */
+async function fetchImageAsInlinePart(imageUrl) {
+  try {
+    if (!imageUrl) return null;
+    const res = await fetch(imageUrl, {
+      headers: {
+        "User-Agent":
+          "facebookexternalhit/1.1 " +
+          "(+http://www.facebook.com/externalhit_uatext.php)",
+        "Accept": "image/*",
+      },
+      redirect: "follow",
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!res.ok) return null;
+
+    const contentType = String(
+        res.headers.get("content-type") || "",
+    ).toLowerCase();
+    if (!contentType.startsWith("image/")) return null;
+
+    const bytes = Buffer.from(await res.arrayBuffer());
+    // Keep the request small; a post thumbnail should never be this big.
+    if (bytes.length === 0 || bytes.length > 7 * 1024 * 1024) return null;
+
+    return {
+      inlineData: {
+        mimeType: contentType.split(";")[0].trim() || "image/jpeg",
+        data: bytes.toString("base64"),
+      },
+    };
+  } catch (error) {
+    console.error("fetchImageAsInlinePart failed:", error.message);
+    return null;
+  }
+}
+
+/**
+ * Runs Gemini structured recipe extraction. `contents` may be a plain string
+ * (text-only) OR an array of parts (text + inline image / YouTube fileData),
+ * so the same JSON schema + normalisation is reused for every source.
+ *
+ * Reasoning is OFF (thinkingBudget:0) for speed and reliability. The output cap
+ * stays generous so a fully-sectioned recipe + nutrition can never be truncated
+ * mid-JSON.
  * @param {object} ai
- * @param {string} prompt
+ * @param {string|Array<object>} contents
  * @return {Promise<Record<string, unknown>>}
  */
-async function generateStructuredRecipe(ai, prompt) {
+async function generateStructuredRecipe(ai, contents) {
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
-    contents: prompt,
+    contents,
     config: {
       responseMimeType: "application/json",
       responseSchema: RECIPE_RESPONSE_SCHEMA,
-      thinkingConfig: {
-        thinkingBudget: 0,
-      },
+      temperature: 0.2,
+      maxOutputTokens: 8192,
+      // Reasoning OFF (thinkingBudget:0) — fast and reliable. Dynamic thinking
+      // (-1) was tried to help image-less "walled" reels but made calls hang,
+      // so it's reverted. A walled reel (no cover image + thin caption) can't
+      // be recovered by a thinking tweak anyway — that needs the real video
+      // (a resolver API).
+      thinkingConfig: {thinkingBudget: 0},
     },
   });
 
@@ -998,60 +1096,105 @@ exports.extractRecipeFromSocialContent = onCall(
           throw new Error("URL or caption is required");
         }
 
+        const ai = getAI();
+
         let pageContext = {};
         if (url) {
           pageContext = await fetchUrlContext(url);
         }
 
-        const contextParts = [
-          url ? `Post URL: ${url}` : "",
-          caption ? `Shared caption/text:\n${caption}` : "",
-          pageContext.pageTitle ?
-            `Page title: ${pageContext.pageTitle}` :
-            "",
-          pageContext.description ?
-            `Page description: ${pageContext.description}` :
-            "",
-          pageContext.siteName ?
-            `Platform: ${pageContext.siteName}` :
-            "",
-          pageContext.imageUrl ?
-            `Thumbnail URL: ${pageContext.imageUrl}` :
-            "",
-          pageContext.fetchError ?
-            `Note: Could not fetch URL (${pageContext.fetchError}). ` +
-            "Use caption text only." :
-            "",
-        ].filter(Boolean);
+        let recipe = null;
 
-        const ai = getAI();
-        const prompt = `${RECIPE_SOCIAL_PROMPT}\n\n---\nPOST CONTEXT:\n${
-          contextParts.join("\n")
-        }`;
+        // ── Route 1: YouTube — Gemini watches the ACTUAL video ──────────────
+        // A YouTube URL can be passed to Gemini directly; it analyses the real
+        // footage, so we use the strict video prompt instead of guessing from
+        // metadata. Falls back to the multimodal route if that call fails
+        // (private / age-gated video, etc.).
+        if (url && isYouTubeUrl(url)) {
+          try {
+            const ytPrompt = caption ?
+              `${RECIPE_VIDEO_PROMPT}\n\nSource URL: ${url}\n` +
+                `Caption:\n${caption}` :
+              `${RECIPE_VIDEO_PROMPT}\n\nSource URL: ${url}`;
+            recipe = await generateStructuredRecipe(ai, [
+              {text: ytPrompt},
+              {fileData: {fileUri: url, mimeType: "video/*"}},
+            ]);
+          } catch (ytError) {
+            console.error(
+                "YouTube video analysis failed, using metadata:",
+                ytError.message,
+            );
+            recipe = null;
+          }
+        }
 
-        const recipe = await generateStructuredRecipe(ai, prompt);
+        // ── Route 2: caption + the post's ACTUAL cover image ────────────────
+        // For Instagram / TikTok / Facebook the raw video is not fetchable from
+        // a server, but the cover frame (og:image) IS. Attaching it lets Gemini
+        // SEE the dish instead of hallucinating a recipe from caption text.
+        if (!recipe) {
+          const contextParts = [
+            url ? `Post URL: ${url}` : "",
+            caption ? `Shared caption/text:\n${caption}` : "",
+            pageContext.pageTitle ?
+              `Page title: ${pageContext.pageTitle}` :
+              "",
+            pageContext.description ?
+              `Page description: ${pageContext.description}` :
+              "",
+            pageContext.siteName ?
+              `Platform: ${pageContext.siteName}` :
+              "",
+            pageContext.fetchError ?
+              `Note: Could not fetch URL (${pageContext.fetchError}). ` +
+              "Use caption text only." :
+              "",
+          ].filter(Boolean);
+
+          const promptText =
+            `${RECIPE_SOCIAL_PROMPT}\n\n---\nPOST CONTEXT:\n${
+              contextParts.join("\n")
+            }`;
+          const parts = [{text: promptText}];
+
+          const imagePart = pageContext.imageUrl ?
+            await fetchImageAsInlinePart(pageContext.imageUrl) :
+            null;
+          if (imagePart) parts.push(imagePart);
+
+          recipe = await generateStructuredRecipe(ai, parts);
+        }
+
+        // ── Not a recipe → tell the client, don't save a hallucination ──────
+        const hasContent =
+          (Array.isArray(recipe.ingredients) &&
+            recipe.ingredients.length > 0) ||
+          (Array.isArray(recipe.instructions) &&
+            recipe.instructions.length > 0);
+        const gateTitle = String(recipe.title || "").trim().toLowerCase();
+        const placeholderTitle =
+          ["", "unknown", "unknown recipe", "untitled", "n/a"]
+              .includes(gateTitle);
+
+        if (recipe.isRecipe === false || !hasContent || placeholderTitle) {
+          return {success: true, recipe: {isRecipe: false}};
+        }
+        recipe.isRecipe = true;
 
         if (url && (!recipe.sourceUrl ||
             recipe.sourceUrl === "AI Generated")) {
           recipe.sourceUrl = url;
         }
 
-        const socialType = String(pageContext.contentType || "unknown");
-
-        if (socialType === "video") {
-          // Video imports do not have a stable source still image, so generate
-          // a durable food image and save that URL in Firebase.
-          const generatedUrl = await generateAndStoreRecipeImage(ai, recipe);
-          if (generatedUrl) {
-            recipe.imageUrl = generatedUrl;
-          } else if (pageContext.imageUrl) {
-            recipe.imageUrl = pageContext.imageUrl;
-          }
-        } else if (pageContext.imageUrl) {
-          // Image imports must keep the original social-media image.
+        // Speed: never block the response on server-side image generation. Use
+        // the post's real cover image (og:image) when available — for a reel
+        // that's the creator's chosen thumbnail of the dish. The client shows
+        // it instantly and persists it to Firebase in the background, so the
+        // recipe returns without waiting on any image work.
+        if (pageContext.imageUrl) {
           recipe.imageUrl = pageContext.imageUrl;
         }
-
 
         return {success: true, recipe};
       } catch (error) {
@@ -1141,10 +1284,13 @@ exports.analyzeRecipeVideo = onCall(
           config: {
             responseMimeType: "application/json",
             responseSchema: RECIPE_RESPONSE_SCHEMA,
-            thinkingConfig: {
-              thinkingBudget: 0,
-            },
-            maxOutputTokens: 2500,
+            // Reasoning left ON (previously thinkingBudget:0, which made the
+            // model skim the footage). Reading ingredients/steps out of a fast
+            // cooking video is a hard multimodal task and needs real thinking.
+            // Output cap raised 2500 -> 8192 so a fully-sectioned recipe +
+            // nutrition can never be cut off mid-JSON (which was throwing a
+            // JSON.parse error and surfacing as a generic import failure).
+            maxOutputTokens: 8192,
             temperature: 0.2,
           },
         });
