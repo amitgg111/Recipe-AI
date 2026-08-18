@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/widgets/app_wordmark.dart';
 
@@ -465,7 +466,7 @@ class _SocialGuideAnimationState extends State<SocialGuideAnimation>
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                'Share',
+                                'share'.tr,
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w800,
@@ -610,7 +611,7 @@ class _SocialGuideAnimationState extends State<SocialGuideAnimation>
                               ),
                               const SizedBox(height: 3),
                               Text(
-                                'Share to...',
+                                'share_to'.tr,
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 9,
                                   fontWeight: FontWeight.w600,

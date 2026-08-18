@@ -210,7 +210,16 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                           final cat = controller.categories[i];
                           final on = selected == cat;
                           return GestureDetector(
-                            onTap: () => controller.selectCategory(cat),
+                            onTap: () {
+                              controller.selectCategory(cat);
+                              // The instant cache keeps the list (no clear), so
+                              // reset the feed to the top on switch — otherwise
+                              // the new tab shows at the previous tab's scroll
+                              // offset.
+                              if (feedScrollController.hasClients) {
+                                feedScrollController.jumpTo(0);
+                              }
+                            },
                             child: Container(
                               alignment: Alignment.center,
                               padding: const EdgeInsets.symmetric(
@@ -277,7 +286,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
                   // Pull down = completely refresh first page
                   onRefresh: () async {
-                    await controller.fetchDiscoverRecipes(refresh: true);
+                    // Refresh the CURRENT tab's data (not always "All").
+                    await controller.refreshCurrent();
 
                     // Refresh pachi top par lai jao
                     if (feedScrollController.hasClients) {

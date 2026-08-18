@@ -159,6 +159,27 @@ class DiscoverRecipe {
   }
 }
 
+/// A snapshot of one Discover filter's loaded feed, so returning to a
+/// previously-viewed tab ("All" or a category/cuisine) restores instantly with
+/// no re-fetch and no loading spinner.
+class _DiscoverFilterCache {
+  final List<DiscoverRecipe> recipes;
+  final List<DiscoverRecipe> english;
+  final DocumentSnapshot<Map<String, dynamic>>? cursor;
+  final bool hasMore;
+  final Set<String> liked;
+  final Set<String> saved;
+
+  _DiscoverFilterCache(
+    this.recipes,
+    this.english,
+    this.cursor,
+    this.hasMore,
+    this.liked,
+    this.saved,
+  );
+}
+
 class DiscoverController extends GetxController {
   final RxList<DiscoverRecipe> recipes = <DiscoverRecipe>[].obs;
   final RxBool isLoading = true.obs;
@@ -1299,6 +1320,84 @@ class DiscoverController extends GetxController {
     return found ? total : null;
   }
 
+  // ── Per-filter cache (instant tab switching) ─────────────────────────────
+  // Remembers each filter's loaded feed + pagination cursor so returning to a
+  // tab shows its data immediately, instead of clearing the list and showing a
+  // spinner while it re-fetches from Firestore.
+  final Map<String, _DiscoverFilterCache> _filterCache = {};
+
+  String _filterKey(String filter) => filter.trim().toLowerCase();
+
+  /// Saves the currently-loaded filter's feed into the cache before switching
+  /// away, so it can be restored instantly later.
+  void _snapshotCurrentFilter() {
+    if (recipes.isEmpty) return;
+    final key = _filterKey(_activeFirestoreFilter);
+    final isAll = key == 'all';
+    _filterCache[key] = _DiscoverFilterCache(
+      List.of(recipes),
+      List.of(_english),
+      isAll ? _lastDocument : _categoryLastDocument,
+      isAll ? _hasMore : _categoryHasMore,
+      Set.of(likedOriginalIds),
+      Set.of(savedOriginalIds),
+    );
+  }
+
+  /// Restores a cached filter's feed instantly (no clear, no spinner) and tops
+  /// up its liked/saved state from Firestore in the background.
+  void _restoreFilter(String category) {
+    final key = _filterKey(category);
+    final cached = _filterCache[key];
+    if (cached == null) return;
+    final isAll = key == 'all';
+
+    recipes.assignAll(cached.recipes);
+    _english
+      ..clear()
+      ..addAll(cached.english);
+
+    _activeFirestoreFilter = isAll ? 'All' : category.trim();
+    if (isAll) {
+      _lastDocument = cached.cursor;
+      _hasMore = cached.hasMore;
+    } else {
+      _categoryLastDocument = cached.cursor;
+      _categoryHasMore = cached.hasMore;
+    }
+    // Restore the cached liked/saved state SYNCHRONOUSLY so hearts/bookmarks
+    // render correct on the first frame (no empty→filled flash). The prior
+    // fetch cleared these sets, so without this they'd flicker in late.
+    likedOriginalIds.addAll(cached.liked);
+    savedOriginalIds.addAll(cached.saved);
+
+    _fetching = false;
+    _categoryLoading = false;
+    _isLoadingMore = false;
+    isLoading.value = false;
+
+    // Then top up from Firestore in the background (additive, no spinner) so a
+    // like/save made on another tab is eventually reflected here too.
+    unawaited(_loadSocialStates(cached.recipes));
+  }
+
+  /// Pull-to-refresh: re-fetch FRESH data for the CURRENTLY-selected tab (not
+  /// always "All"). Bypasses the cache, then updates it so the refreshed data
+  /// is what a later tab-switch restores.
+  Future<void> refreshCurrent() async {
+    final cat = selectedCategory.value.trim();
+    final lower = cat.toLowerCase();
+
+    if (cat.isEmpty || lower == 'all' || lower == 'quick & easy') {
+      await fetchDiscoverRecipes(refresh: true);
+    } else {
+      await fetchCategoryRecipes(category: cat, refresh: true);
+    }
+
+    // Keep the cache in sync with the freshly-loaded data for this tab.
+    _snapshotCurrentFilter();
+  }
+
   Future<void> selectCategory(String cat) async {
     final category = cat.trim();
 
@@ -1306,13 +1405,43 @@ class DiscoverController extends GetxController {
 
     log('🔘 Discover category selected: $category');
 
+    // Save the outgoing filter's loaded feed so returning to it is instant.
+    _snapshotCurrentFilter();
+
     selectedCategory.value = category;
 
-    // ------------------------------------------------------------
-    // ALL
-    // ------------------------------------------------------------
+    final lower = category.toLowerCase();
 
-    if (category.toLowerCase() == 'all') {
+    // ------------------------------------------------------------
+    // QUICK & EASY — a client-side filter over the All feed. Never fetched or
+    // cached as its own tab; it reuses whatever the All feed currently holds.
+    // ------------------------------------------------------------
+    if (lower == 'quick & easy') {
+      _activeFirestoreFilter = 'All';
+
+      _categoryLastDocument = null;
+      _categoryHasMore = true;
+
+      if (recipes.isEmpty && _hasMore) {
+        await fetchDiscoverRecipes(refresh: true);
+      }
+
+      return;
+    }
+
+    // ------------------------------------------------------------
+    // CACHE HIT — show the previously-loaded feed instantly (no spinner).
+    // ------------------------------------------------------------
+    if (_filterCache.containsKey(_filterKey(category))) {
+      log('⚡ Discover cache hit: $category (instant)');
+      _restoreFilter(category);
+      return;
+    }
+
+    // ------------------------------------------------------------
+    // CACHE MISS — fetch from Firestore (with spinner), first time only.
+    // ------------------------------------------------------------
+    if (lower == 'all') {
       _activeFirestoreFilter = 'All';
 
       _categoryLastDocument = null;
@@ -1327,42 +1456,7 @@ class DiscoverController extends GetxController {
       return;
     }
 
-    // ------------------------------------------------------------
-    // QUICK & EASY
-    // ------------------------------------------------------------
-
-    if (category.toLowerCase() == 'quick & easy') {
-      /*
-     * Quick & Easy is calculated from recipe time.
-     *
-     * IMPORTANT:
-     * Do NOT call fetchCategoryRecipes() here.
-     * That method is only for Firestore category/cuisine filters.
-     */
-
-      _activeFirestoreFilter = 'All';
-
-      _categoryLastDocument = null;
-      _categoryHasMore = true;
-
-      /*
-     * If we already have loaded recipes, filteredRecipes
-     * will immediately calculate the <= 30 min recipes.
-     *
-     * If there are not enough recipes, load another normal
-     * Firestore page.
-     */
-      if (recipes.isEmpty && _hasMore) {
-        await fetchDiscoverRecipes(refresh: true);
-      }
-
-      return;
-    }
-
-    // ------------------------------------------------------------
     // OTHER CATEGORY / CUISINE
-    // ------------------------------------------------------------
-
     _categoryLastDocument = null;
     _categoryHasMore = true;
 

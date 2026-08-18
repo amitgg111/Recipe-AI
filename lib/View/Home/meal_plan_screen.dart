@@ -797,7 +797,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
               const OnboardingLineIcon('crown', size: 15, color: Colors.white),
               const SizedBox(width: 6),
               Text(
-                'TODAY\'S NUTRITION',
+                'todays_nutrition'.tr,
                 style: _S
                     .f(11, FontWeight.w800, Colors.white)
                     .copyWith(letterSpacing: 0.4),

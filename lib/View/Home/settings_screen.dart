@@ -391,22 +391,22 @@ class _SettingsScreenState extends State<SettingsScreen>
                       ),
                     ),
                     const SizedBox(width: 13),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Upgrade to Plus',
-                            style: TextStyle(
+                            'upgrade_to_plus'.tr,
+                            style: const TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w800,
                               color: Colors.white,
                             ),
                           ),
-                          SizedBox(height: 1),
+                          const SizedBox(height: 1),
                           Text(
-                            'Unlimited imports, nutrition & AI',
-                            style: TextStyle(
+                            'unlimited_imports_nutrition_ai'.tr,
+                            style: const TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w600,
                               color: Color(0xD9FFFFFF),
@@ -1049,9 +1049,9 @@ class _ConfirmDialogState extends State<_ConfirmDialog> {
                           borderRadius: BorderRadius.circular(13),
                         ),
                       ),
-                      child: const Text(
-                        'Cancel',
-                        style: TextStyle(
+                      child: Text(
+                        'cancel'.tr,
+                        style: const TextStyle(
                           fontSize: 14.5,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textDark,

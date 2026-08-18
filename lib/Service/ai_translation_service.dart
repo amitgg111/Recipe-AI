@@ -1275,6 +1275,8 @@ class AiTranslationService {
     switch (code) {
       case 'hi':
         return TranslateLanguage.hindi;
+      case 'gu':
+        return TranslateLanguage.gujarati;
       case 'es':
         return TranslateLanguage.spanish;
       case 'de':

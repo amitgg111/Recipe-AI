@@ -35,6 +35,29 @@ class AppTranslations extends Translations {
 
   // key: [ English, हिन्दी, Español, Deutsch, Français, Português ]
   static const Map<String, List<String>> _data = {
+
+    'hour_unit': ['HR', 'घं', 'h', 'Std.', 'h', 'h'],
+    'monthly_plan': ['Monthly Plan', 'मासिक प्लान', 'Plan mensual', 'Monatsabo', 'Abonnement mensuel', 'Plano mensal'],
+    'Week': ['Week', 'सप्ताह', 'Semana', 'Woche', 'Semaine', 'Semana'],
+    'beautiful': ['beautiful', 'सुंदर', 'hermosa', 'schöne', 'belle', 'linda'],
+
+    'unable_to_access_camera': ['Unable to access camera', 'कैमरा एक्सेस नहीं हो पा रहा', 'No se puede acceder a la cámara', 'Kein Zugriff auf die Kamera', 'Impossible d\'accéder à la caméra', 'Não foi possível acessar a câmera'],
+    'detecting_your_recipe': ['Detecting your recipe...', 'आपकी रेसिपी पहचानी जा रही है...', 'Detectando tu receta...', 'Rezept wird erkannt...', 'Détection de votre recette...', 'Detectando sua receita...'],
+    'scan_recipe': ['Scan Recipe', 'रेसिपी स्कैन करें', 'Escanear receta', 'Rezept scannen', 'Scanner la recette', 'Escanear receita'],
+    'scan_your_recipe': ['Scan your recipe', 'अपनी रेसिपी स्कैन करें', 'Escanea tu receta', 'Scanne dein Rezept', 'Scannez votre recette', 'Escaneie sua receita'],
+    'place_recipe_in_frame': ['Place the recipe clearly inside the frame', 'रेसिपी को फ्रेम के अंदर साफ़ रखें', 'Coloca la receta dentro del marco', 'Platziere das Rezept deutlich im Rahmen', 'Placez la recette bien dans le cadre', 'Posicione a receita dentro do quadro'],
+    'use_this_photo': ['Use this photo?', 'यह फ़ोटो उपयोग करें?', '¿Usar esta foto?', 'Dieses Foto verwenden?', 'Utiliser cette photo ?', 'Usar esta foto?'],
+    'ensure_recipe_visible': ['Make sure the recipe is clearly visible.', 'सुनिश्चित करें कि रेसिपी साफ़ दिख रही है।', 'Asegúrate de que la receta se vea con claridad.', 'Stelle sicher, dass das Rezept gut sichtbar ist.', 'Assurez-vous que la recette est bien visible.', 'Certifique-se de que a receita esteja bem visível.'],
+    'retake': ['Retake', 'फिर से लें', 'Repetir', 'Wiederholen', 'Reprendre', 'Refazer'],
+    'use_photo': ['Use Photo', 'फ़ोटो उपयोग करें', 'Usar foto', 'Foto verwenden', 'Utiliser la photo', 'Usar foto'],
+    'search_cuisines': ['Search cuisines...', 'व्यंजन खोजें...', 'Buscar cocinas...', 'Küchen suchen...', 'Rechercher des cuisines...', 'Buscar culinárias...'],
+    'no_cuisines_found': ['No cuisines found', 'कोई व्यंजन नहीं मिला', 'No se encontraron cocinas', 'Keine Küchen gefunden', 'Aucune cuisine trouvée', 'Nenhuma culinária encontrada'],
+    'view_full_breakdown': ['View full breakdown', 'पूरा विवरण देखें', 'Ver desglose completo', 'Vollständige Übersicht ansehen', 'Voir le détail complet', 'Ver detalhamento completo'],
+    'todays_nutrition': ['TODAY\'S NUTRITION', 'आज का पोषण', 'NUTRICIÓN DE HOY', 'HEUTIGE NÄHRWERTE', 'NUTRITION DU JOUR', 'NUTRIÇÃO DE HOJE'],
+    'unlimited_imports_nutrition_ai': ['Unlimited imports, nutrition & AI', 'असीमित इम्पोर्ट, पोषण और AI', 'Importaciones ilimitadas, nutrición y AI', 'Unbegrenzte Importe, Nährwerte & AI', 'Imports illimités, nutrition et AI', 'Importações ilimitadas, nutrição e AI'],
+    'ask_ai': ['Ask AI', 'AI से पूछें', 'Preguntar a la AI', 'AI fragen', 'Demander à l\'AI', 'Perguntar à AI'],
+    'swapped': ['SWAPPED', 'बदला गया', 'SUSTITUIDO', 'GETAUSCHT', 'REMPLACÉ', 'SUBSTITUÍDO'],
+    'cook_smarter': ['Cook Smarter', 'स्मार्ट पकाएँ', 'Cocina mejor', 'Klüger kochen', 'Cuisinez plus malin', 'Cozinhe com mais inteligência'],
     // ── App / brand ──────────────────────────────────────────────────────────
     'app_name': [
       'Recipe AI',

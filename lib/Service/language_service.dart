@@ -30,6 +30,7 @@ class LanguageService {
     AppLanguage('en', 'English', 'English'),
     AppLanguage('es', 'Español', 'Spanish'),
     AppLanguage('hi', 'हिन्दी', 'Hindi'),
+    AppLanguage('gu', 'ગુજરાતી', 'Gujarati'),
     AppLanguage('pt', 'Português (Brasil)', 'Portuguese (Brazil)'),
     AppLanguage('ar', 'العربية', 'Arabic', isRtl: true),
     AppLanguage('fr', 'Français', 'French'),
@@ -56,7 +57,7 @@ class LanguageService {
   ];
 
   static const Map<String, List<String>> countryLanguages = {
-    'IN': ['en', 'hi'],
+    'IN': ['en', 'hi', 'gu'],
     'JP': ['en', 'ja'],
     'FR': ['en', 'fr'],
     'DE': ['en', 'de'],

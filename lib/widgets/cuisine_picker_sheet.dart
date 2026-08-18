@@ -118,7 +118,7 @@ class _CuisinePickerSheetState extends State<CuisinePickerSheet> {
               children: [
                 Expanded(
                   child: Text(
-                    'Select Cuisine',
+                    'select_cuisine'.tr,
                     style: _S.f(19, FontWeight.w800, AppColors.textDark),
                   ),
                 ),
@@ -126,7 +126,7 @@ class _CuisinePickerSheetState extends State<CuisinePickerSheet> {
                   GestureDetector(
                     onTap: () => Navigator.pop(context, _selected),
                     child: Text(
-                      'Done',
+                      'done'.tr,
                       style: _S.f(14, FontWeight.w700, AppColors.primary),
                     ),
                   )
@@ -155,7 +155,7 @@ class _CuisinePickerSheetState extends State<CuisinePickerSheet> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: AppSearchBar(
-              hintText: 'Search cuisines...',
+              hintText: 'search_cuisines'.tr,
               onChanged: (v) => setState(() => _search = v.toLowerCase()),
             ),
           ),
@@ -170,7 +170,7 @@ class _CuisinePickerSheetState extends State<CuisinePickerSheet> {
               if (categories.isEmpty) {
                 return Center(
                   child: Text(
-                    'No cuisines found',
+                    'no_cuisines_found'.tr,
                     style: _S.f(14, FontWeight.w500, AppColors.textHint),
                   ),
                 );
@@ -190,7 +190,7 @@ class _CuisinePickerSheetState extends State<CuisinePickerSheet> {
               if (filtered.isEmpty) {
                 return Center(
                   child: Text(
-                    'No matches',
+                    'no_matches'.tr,
                     style: _S.f(14, FontWeight.w500, AppColors.textHint),
                   ),
                 );

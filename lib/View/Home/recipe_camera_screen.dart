@@ -179,10 +179,10 @@ class _RecipeCameraScreenState extends State<RecipeCameraScreen> {
                 else if (controller != null && controller.value.isInitialized)
                   _buildCameraPreview(controller)
                 else
-                  const Center(
+                  Center(
                     child: Text(
-                      'Unable to access camera',
-                      style: TextStyle(color: Colors.white, fontSize: 16),
+                      'unable_to_access_camera'.tr,
+                      style: const TextStyle(color: Colors.white, fontSize: 16),
                     ),
                   ),
 
@@ -255,15 +255,15 @@ class _RecipeCameraScreenState extends State<RecipeCameraScreen> {
                 if (_isProcessing)
                   Container(
                     color: Colors.black.withValues(alpha: 0.65),
-                    child: const Center(
+                    child: Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          CircularProgressIndicator(color: Colors.white),
-                          SizedBox(height: 16),
+                          const CircularProgressIndicator(color: Colors.white),
+                          const SizedBox(height: 16),
                           Text(
-                            'Detecting your recipe...',
-                            style: TextStyle(
+                            'detecting_your_recipe'.tr,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
@@ -307,14 +307,18 @@ class _RecipeCameraScreenState extends State<RecipeCameraScreen> {
             color: Colors.black.withValues(alpha: 0.45),
             borderRadius: BorderRadius.circular(20),
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 15),
-              SizedBox(width: 6),
+              const Icon(
+                Icons.auto_awesome_rounded,
+                color: Colors.white,
+                size: 15,
+              ),
+              const SizedBox(width: 6),
               Text(
-                'Scan Recipe',
-                style: TextStyle(
+                'scan_recipe'.tr,
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
                   fontSize: 13,
@@ -352,10 +356,10 @@ class _RecipeCameraScreenState extends State<RecipeCameraScreen> {
   Widget _buildHeader() {
     return Column(
       children: [
-        const Text(
-          'Scan your recipe',
+        Text(
+          'scan_your_recipe'.tr,
           textAlign: TextAlign.center,
-          style: TextStyle(
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 22,
             fontWeight: FontWeight.w700,
@@ -363,7 +367,7 @@ class _RecipeCameraScreenState extends State<RecipeCameraScreen> {
         ),
         const SizedBox(height: 6),
         Text(
-          'Place the recipe clearly inside the frame',
+          'place_recipe_in_frame'.tr,
           textAlign: TextAlign.center,
           style: TextStyle(
             color: Colors.white.withValues(alpha: 0.8),
@@ -407,9 +411,9 @@ class _RecipeCameraScreenState extends State<RecipeCameraScreen> {
                     ),
                   ),
                   const SizedBox(height: 7),
-                  const Text(
-                    'Gallery',
-                    style: TextStyle(
+                  Text(
+                    'gallery'.tr,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
@@ -480,15 +484,18 @@ class _RecipeCameraScreenState extends State<RecipeCameraScreen> {
 
                   const SizedBox(height: 18),
 
-                  const Text(
-                    'Use this photo?',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                  Text(
+                    'use_this_photo'.tr,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
 
                   const SizedBox(height: 6),
 
                   Text(
-                    'Make sure the recipe is clearly visible.',
+                    'ensure_recipe_visible'.tr,
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
                   ),
@@ -506,7 +513,7 @@ class _RecipeCameraScreenState extends State<RecipeCameraScreen> {
                               borderRadius: BorderRadius.circular(14),
                             ),
                           ),
-                          child: const Text('Retake'),
+                          child: Text('retake'.tr),
                         ),
                       ),
 
@@ -523,7 +530,7 @@ class _RecipeCameraScreenState extends State<RecipeCameraScreen> {
                               borderRadius: BorderRadius.circular(14),
                             ),
                           ),
-                          child: const Text('Use Photo'),
+                          child: Text('use_photo'.tr),
                         ),
                       ),
                     ],

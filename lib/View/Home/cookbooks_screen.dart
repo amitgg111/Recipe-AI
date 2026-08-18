@@ -7,6 +7,7 @@ import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/Service/language_service.dart';
 import 'package:recipe_ai/Service/recipe_localizer.dart';
 import 'package:recipe_ai/screens/cookbooks/sort_sheet.dart';
+import 'package:recipe_ai/utils/locale_sort.dart';
 import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:recipe_ai/widgets/app_network_image.dart';
 import 'package:get/get.dart';
@@ -349,46 +350,34 @@ class _CookbooksScreenState extends State<CookbooksScreen>
         .toList();
   }
 
+  /// A pending Firestore serverTimestamp reads as null right after an import —
+  /// treat it as "just now" (newest) so a freshly added item sorts to the TOP
+  /// of "Newest first" (and the bottom of "Oldest first") instead of the wrong
+  /// end while the real timestamp resolves on the server.
+  static int _byNewest(DateTime? a, DateTime? b) =>
+      (b ?? DateTime(9999)).compareTo(a ?? DateTime(9999));
+
+  static int _byOldest(DateTime? a, DateTime? b) =>
+      (a ?? DateTime(9999)).compareTo(b ?? DateTime(9999));
+
   List<CookbookModel> _sortCookbooks(List<CookbookModel> cookbooks) {
     final sorted = List<CookbookModel>.from(cookbooks);
 
     switch (_sortIndex) {
       case 0: // Newest first
-        sorted.sort((a, b) {
-          final aDate = a.createdAt;
-          final bDate = b.createdAt;
-
-          if (aDate == null && bDate == null) return 0;
-          if (aDate == null) return 1;
-          if (bDate == null) return -1;
-
-          return bDate.compareTo(aDate);
-        });
+        sorted.sort((a, b) => _byNewest(a.createdAt, b.createdAt));
         break;
 
       case 1: // Oldest first
-        sorted.sort((a, b) {
-          final aDate = a.createdAt;
-          final bDate = b.createdAt;
-
-          if (aDate == null && bDate == null) return 0;
-          if (aDate == null) return 1;
-          if (bDate == null) return -1;
-
-          return aDate.compareTo(bDate);
-        });
+        sorted.sort((a, b) => _byOldest(a.createdAt, b.createdAt));
         break;
 
-      case 2: // Name A-Z
-        sorted.sort(
-          (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-        );
+      case 2: // Name A-Z (language-aware)
+        sorted.sort((a, b) => LocaleSort.compare(a.name, b.name));
         break;
 
-      case 3: // Name Z-A
-        sorted.sort(
-          (a, b) => b.name.toLowerCase().compareTo(a.name.toLowerCase()),
-        );
+      case 3: // Name Z-A (language-aware)
+        sorted.sort((a, b) => LocaleSort.compare(b.name, a.name));
         break;
     }
 
@@ -497,68 +486,26 @@ class _CookbooksScreenState extends State<CookbooksScreen>
   List<RecipeModel> _sortRecipes(List<RecipeModel> recipes) {
     final sorted = List<RecipeModel>.from(recipes);
 
-    log('========== SORT DEBUG ==========');
-    log('SORT INDEX: $_sortIndex');
-    log('TOTAL RECIPES: ${sorted.length}');
-
-    for (final recipe in sorted) {
-      log('${recipe.title} => ${recipe.createdAt}');
-    }
-
     switch (_sortIndex) {
       case 0:
         // NEWEST FIRST
-        sorted.sort((a, b) {
-          final aDate = a.createdAt;
-          final bDate = b.createdAt;
-
-          if (aDate == null && bDate == null) return 0;
-          if (aDate == null) return 1;
-          if (bDate == null) return -1;
-
-          return bDate.compareTo(aDate);
-        });
+        sorted.sort((a, b) => _byNewest(a.createdAt, b.createdAt));
         break;
 
       case 1:
         // OLDEST FIRST
-        sorted.sort((a, b) {
-          final aDate = a.createdAt;
-          final bDate = b.createdAt;
-
-          if (aDate == null && bDate == null) return 0;
-          if (aDate == null) return 1;
-          if (bDate == null) return -1;
-
-          return aDate.compareTo(bDate);
-        });
+        sorted.sort((a, b) => _byOldest(a.createdAt, b.createdAt));
         break;
 
       case 2:
-        // A-Z
-        sorted.sort((a, b) {
-          final aTitle = a.title.trim().toLowerCase();
-          final bTitle = b.title.trim().toLowerCase();
-
-          return aTitle.compareTo(bTitle);
-        });
+        // A-Z (language-aware)
+        sorted.sort((a, b) => LocaleSort.compare(a.title, b.title));
         break;
 
       case 3:
-        // Z-A
-        sorted.sort((a, b) {
-          final aTitle = a.title.trim().toLowerCase();
-          final bTitle = b.title.trim().toLowerCase();
-
-          return bTitle.compareTo(aTitle);
-        });
+        // Z-A (language-aware)
+        sorted.sort((a, b) => LocaleSort.compare(b.title, a.title));
         break;
-    }
-
-    log('========== AFTER SORT ==========');
-
-    for (final recipe in sorted) {
-      log('${recipe.title} => ${recipe.createdAt}');
     }
 
     return sorted;

@@ -23,6 +23,7 @@ import 'nl.dart';
 import 'ta.dart';
 import 'ms.dart';
 import 'sw.dart';
+import 'gu.dart';
 
 const Map<String, Map<String, String>> generatedLanguageMaps = {
   'ar': arTranslations,
@@ -45,4 +46,5 @@ const Map<String, Map<String, String>> generatedLanguageMaps = {
   'ta': taTranslations,
   'ms': msTranslations,
   'sw': swTranslations,
+  'gu': guTranslations,
 };

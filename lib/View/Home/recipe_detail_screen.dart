@@ -640,7 +640,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                           ),
                           const SizedBox(width: 9),
                           Text(
-                            'Ask AI',
+                            'ask_ai'.tr,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 15,
                               fontWeight: FontWeight.w800,
@@ -757,7 +757,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               },
               behavior: HitTestBehavior.opaque,
               child: Text(
-                'Undo',
+                'undo'.tr,
                 style: _font(12.5, FontWeight.w800, const Color(0xFF7A45E0)),
               ),
             ),
@@ -1835,7 +1835,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                         borderRadius: BorderRadius.circular(5),
                       ),
                       child: Text(
-                        'SWAPPED',
+                        'swapped'.tr,
                         style: _font(
                           9,
                           FontWeight.w800,
@@ -1866,7 +1866,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                           border: Border.all(color: const Color(0xFFE6DAF9)),
                         ),
                         child: Text(
-                          'Undo',
+                          'undo'.tr,
                           style: _font(
                             12,
                             FontWeight.w800,

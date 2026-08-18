@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import 'package:recipe_ai/Model/nutrition_model.dart';
 import 'package:recipe_ai/widgets/nutrition_animations.dart';
@@ -53,7 +54,7 @@ class NutritionPreviewCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'NUTRITION',
+                  'nutrition'.tr,
                   style: NutritionPalette.font(
                     size: 13,
                     weight: FontWeight.w800,
@@ -136,7 +137,7 @@ class NutritionPreviewCard extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            'View full breakdown',
+                            'view_full_breakdown'.tr,
                             style: NutritionPalette.font(
                               size: 14,
                               weight: FontWeight.w700,

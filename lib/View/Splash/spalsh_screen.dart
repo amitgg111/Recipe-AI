@@ -202,7 +202,7 @@ class _SplashScreenState extends State<SplashScreen>
                     child: SlideTransition(
                       position: _tagSlide,
                       child: Text(
-                        'Cook Smarter'.toUpperCase(),
+                        'cook_smarter'.tr.toUpperCase(),
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,

@@ -141,6 +141,13 @@ class RecipeModel {
       instructionSections: instructionSections ?? this.instructionSections,
       note: note ?? this.note,
       nutritionData: nutritionData ?? this.nutritionData,
+      // Preserve createdAt + visibility through copyWith. Background translation
+      // replaces each recipe via copyWith; dropping these made translated
+      // (non-English) recipes lose their date — which broke newest/oldest
+      // sorting (the list jumped as each recipe translated) — and silently
+      // reset visibility to 'private'.
+      createdAt: createdAt,
+
 
       isDeleted: isDeleted,
       visibilityWasStored: visibilityWasStored,
@@ -466,8 +473,8 @@ class HomeController extends GetxController {
 
     // First translate only first few recipes.
     // These are normally the recipes user sees immediately.
-    final visibleCount = currentLanguageRecipes.length > 5
-        ? 5
+    final visibleCount = currentLanguageRecipes.length > 10
+        ? 10
         : currentLanguageRecipes.length;
 
     final visibleRecipes = currentLanguageRecipes.take(visibleCount).toList();
