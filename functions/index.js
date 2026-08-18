@@ -391,6 +391,27 @@ function buildImagePrompt(recipe) {
 }
 
 /**
+ * Builds an image prompt straight from a social-media caption, for the PARALLEL
+ * import path where the image is generated ALONGSIDE recipe extraction (so it
+ * doesn't wait for the recipe). The caption names the dish, so the image model
+ * identifies and renders the correct dish — no separate title needed.
+ * @param {string} caption Social post caption.
+ * @return {string} Image prompt.
+ */
+function buildCaptionImagePrompt(caption) {
+  const c = String(caption || "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 1000);
+  return [
+    "The finished, plated dish that this social-media recipe caption is about.",
+    "Identify the exact dish named in the caption and show ONLY that dish —",
+    "never text, people, hands, packaging, a collage, or a different dish.",
+    `CAPTION: ${c}`,
+  ].join("\n");
+}
+
+/**
  * Generates an image with Imagen and stores it in Firebase Storage.
  * Returns "" (empty string) on any failure so callers can fall back safely.
  *
@@ -1372,7 +1393,18 @@ exports.generateRecipeImage = onCall(
     },
     async (request) => {
       try {
-        const recipe = request.data.recipe;
+        let recipe = request.data.recipe;
+        const caption = String(request.data.caption || "").trim();
+
+        // PARALLEL path: when only a caption is provided (no extracted recipe
+        // yet), generate straight from the caption — the dish is named in it —
+        // so the image can run alongside recipe extraction instead of after it.
+        if ((!recipe || !recipe.title) && caption) {
+          recipe = {
+            title: "recipe",
+            imagePrompt: buildCaptionImagePrompt(caption),
+          };
+        }
 
         if (!recipe || !recipe.title) {
           throw new Error("Recipe data is required");

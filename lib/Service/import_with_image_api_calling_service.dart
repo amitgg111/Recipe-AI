@@ -227,25 +227,9 @@ class RecipeImportService {
     String? url,
     String? caption,
   }) async {
-    // Enrich the caption from the post's public page BEFORE calling the
-    // backend. This runs ON-DEVICE, so it uses the phone's residential/mobile
-    // IP — Instagram serves the full og:description caption (which usually
-    // contains the whole recipe) to that, whereas the Cloud Function's
-    // datacenter IP gets a login/consent wall (empty). Purely additive: on any
-    // failure we fall back to the original caption, so the existing flow is
-    // never affected.
-    String? effectiveCaption = caption;
-    if (url != null && url.trim().isNotEmpty) {
-      final pageCaption = await _fetchSocialCaption(url);
-      if (pageCaption != null && pageCaption.trim().isNotEmpty) {
-        final shared = caption?.trim() ?? '';
-        // The share-sheet "caption" is often just the URL — don't duplicate it.
-        effectiveCaption = (shared.isEmpty || shared == url.trim())
-            ? pageCaption
-            : '$shared\n\n$pageCaption';
-      }
-    }
-
+    // The caption is already enriched by the caller
+    // (importRecipeFromSocialContent fetches the post's page on-device and
+    // passes the full caption here).
     final callable = FirebaseFunctions.instance.httpsCallable(
       'extractRecipeFromSocialContent',
       options: HttpsCallableOptions(timeout: const Duration(seconds: 120)),
@@ -253,8 +237,7 @@ class RecipeImportService {
 
     final result = await callable.call({
       if (url != null && url.isNotEmpty) 'url': url,
-      if (effectiveCaption != null && effectiveCaption.isNotEmpty)
-        'caption': effectiveCaption,
+      if (caption != null && caption.isNotEmpty) 'caption': caption,
     });
 
     final data = Map<String, dynamic>.from(result.data);
@@ -266,12 +249,35 @@ class RecipeImportService {
     return Map<String, dynamic>.from(data['recipe']);
   }
 
-  /// Fetches a social post's caption from its public page using the
-  /// facebookexternalhit crawler UA. On-device, so it uses the phone's
+  /// Generates a recipe image straight from a caption (PARALLEL path) — the
+  /// backend identifies the dish from the caption, so this can run alongside
+  /// recipe extraction. Returns the stored image URL, or null on any failure.
+  static Future<String?> _generateImageFromCaption(String caption) async {
+    try {
+      final callable = FirebaseFunctions.instance.httpsCallable(
+        'generateRecipeImage',
+        options: HttpsCallableOptions(timeout: const Duration(seconds: 120)),
+      );
+      final result = await callable.call({'caption': caption});
+      final data = Map<String, dynamic>.from(result.data);
+      if (data['success'] == true) {
+        final imageUrl = data['imageUrl']?.toString() ?? '';
+        if (imageUrl.isNotEmpty) return imageUrl;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Fetches a social post's caption AND cover image from its public page using
+  /// the facebookexternalhit crawler UA. On-device, so it uses the phone's
   /// residential/mobile IP — Instagram/TikTok serve the full og:description
-  /// caption to that, unlike the backend's datacenter IP which is walled.
-  /// Returns null on any failure so callers fall back to the existing flow.
-  static Future<String?> _fetchSocialCaption(String url) async {
+  /// caption + og:image to that, unlike the backend's datacenter IP which is
+  /// walled. Returns null on any failure so callers fall back to the old flow.
+  static Future<({String? caption, String? imageUrl})?> _fetchSocialMeta(
+    String url,
+  ) async {
     try {
       final response = await http
           .get(
@@ -290,11 +296,19 @@ class RecipeImportService {
       final body = response.body;
       // og:description carries the full caption (with the recipe); fall back to
       // og:title, which on Instagram also contains the caption.
-      final raw = _extractMetaContent(body, 'og:description') ??
+      final rawCaption = _extractMetaContent(body, 'og:description') ??
           _extractMetaContent(body, 'og:title');
-      if (raw == null || raw.trim().isEmpty) return null;
+      final rawImage = _extractMetaContent(body, 'og:image');
 
-      return _decodeHtmlEntities(raw).trim();
+      final caption = (rawCaption != null && rawCaption.trim().isNotEmpty)
+          ? _decodeHtmlEntities(rawCaption).trim()
+          : null;
+      final imageUrl = (rawImage != null && rawImage.trim().isNotEmpty)
+          ? _decodeHtmlEntities(rawImage).trim()
+          : null;
+
+      if (caption == null && imageUrl == null) return null;
+      return (caption: caption, imageUrl: imageUrl);
     } catch (_) {
       // Any failure (timeout, wall, parse) → fall back to the existing flow.
       return null;
@@ -612,7 +626,24 @@ class RecipeImportService {
     // RECIPE NAME / NO IMAGE:
     // ✅ Generate AI image
     //
-    if (isVideoImport || needsImageGeneration) {
+    if (isVideoImport && pendingImageUpload != null) {
+      // PARALLEL path: the caption-image was generated alongside extraction.
+      // Apply it when ready; if it produced nothing, fall back to generating
+      // from the extracted recipe title so a reel is never left imageless.
+      print(
+        '[PARALLEL IMAGE] Applying caption-image when ready | '
+        'recipeId=${docRef.id}',
+      );
+
+      unawaited(
+        _applyParallelImage(
+          recipeId: docRef.id,
+          parallelImage: pendingImageUpload,
+          fallbackTitle: recipe.title,
+          fallbackDescription: recipe.description,
+        ),
+      );
+    } else if (isVideoImport || needsImageGeneration) {
       print(
         '[AI IMAGE] Starting background image generation | '
         'recipeId=${docRef.id}',
@@ -735,6 +766,44 @@ class RecipeImportService {
     } catch (e, stack) {
       print('[IMAGE UPLOAD] Background apply FAILED: $e');
       print(stack.toString());
+    }
+  }
+
+  /// Applies the PARALLEL caption-image to the recipe doc once it resolves. If
+  /// the parallel generation produced nothing, falls back to generating from
+  /// the extracted recipe title, so a reel is never left without an image.
+  static Future<void> _applyParallelImage({
+    required String recipeId,
+    required Future<String?> parallelImage,
+    required String fallbackTitle,
+    String? fallbackDescription,
+  }) async {
+    try {
+      final url = await parallelImage;
+      if (url != null && url.isNotEmpty) {
+        await FirebaseFirestore.instance
+            .collection('recipes')
+            .doc(recipeId)
+            .update({
+          'imageUrl': url,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+        print('[PARALLEL IMAGE] applied | recipeId=$recipeId');
+        return;
+      }
+      print('[PARALLEL IMAGE] empty → AI-gen fallback | recipeId=$recipeId');
+      await _generateRealImageInBackground(
+        recipeId: recipeId,
+        title: fallbackTitle,
+        description: fallbackDescription,
+      );
+    } catch (e) {
+      print('[PARALLEL IMAGE] failed → AI-gen fallback: $e');
+      await _generateRealImageInBackground(
+        recipeId: recipeId,
+        title: fallbackTitle,
+        description: fallbackDescription,
+      );
     }
   }
 
@@ -1037,14 +1106,54 @@ class RecipeImportService {
           }
 
           // ========================================================
-          // STEP 1: AI RECIPE EXTRACTION
+          // STEP 1: FETCH CAPTION + COVER ON-DEVICE (residential IP)
+          // ========================================================
+          //
+          // The phone can read the post's og:description (full caption) and
+          // og:image (cover) that Instagram walls from the backend's datacenter
+          // IP. We fetch once, then run recipe extraction and image generation
+          // in PARALLEL off the same caption.
+          //
+          String? enrichedCaption = caption;
+          String? coverImage;
+          if (url != null && url.trim().isNotEmpty) {
+            final meta = await _fetchSocialMeta(url);
+            if (meta != null) {
+              final pageCaption = meta.caption;
+              if (pageCaption != null && pageCaption.trim().isNotEmpty) {
+                final shared = caption?.trim() ?? '';
+                enrichedCaption = (shared.isEmpty || shared == url.trim())
+                    ? pageCaption
+                    : '$shared\n\n$pageCaption';
+              }
+              coverImage = meta.imageUrl;
+            }
+          }
+
+          // Start image generation NOW (in parallel with extraction), from the
+          // caption's dish — but only for VIDEO/reel URLs (image posts keep
+          // their real photo) and only when the caption is rich enough to name
+          // the dish. Otherwise no parallel image; _saveRecipeAndNavigate then
+          // generates from the extracted recipe title, so it's never wrong.
+          final looksLikeVideo = url != null &&
+              (url.contains('/reel/') ||
+                  url.contains('/reels/') ||
+                  url.contains('/tv/'));
+          final captionForImage = enrichedCaption?.trim() ?? '';
+          final Future<String?>? parallelImage =
+              (looksLikeVideo && captionForImage.length >= 25)
+                  ? _generateImageFromCaption(captionForImage)
+                  : null;
+
+          // ========================================================
+          // STEP 2: AI RECIPE EXTRACTION (parallel with the image above)
           // ========================================================
 
           final aiTimer = Stopwatch()..start();
 
           final recipeData = await getRecipeFromSocialContent(
             url: url,
-            caption: caption,
+            caption: enrichedCaption,
           );
 
           aiTimer.stop();
@@ -1059,7 +1168,7 @@ class RecipeImportService {
           }
 
           // ========================================================
-          // STEP 2: VALIDATE RECIPE
+          // STEP 3: VALIDATE RECIPE
           // ========================================================
 
           if (!_isRecipeResult(recipeData)) {
@@ -1069,7 +1178,7 @@ class RecipeImportService {
           }
 
           // ========================================================
-          // STEP 3: CONVERT RECIPE
+          // STEP 4: CONVERT + SAVE
           // ========================================================
 
           final recipe = SavedRecipe.fromGeminiResponse(recipeData);
@@ -1079,15 +1188,8 @@ class RecipeImportService {
             'title=${recipe.title}',
           );
 
-          // ========================================================
-          // STEP 4: SAVE RECIPE IMMEDIATELY
-          // ========================================================
-          //
-          // Existing image from AI response is used immediately.
-          // Original social thumbnail is processed in background.
-          //
-
-          final remoteImageUrl = recipeData['imageUrl']?.toString();
+          final remoteImageUrl =
+              coverImage ?? recipeData['imageUrl']?.toString();
 
           final isVideoImport = _isVideoSocialContent(
             url: url,
@@ -1105,9 +1207,14 @@ class RecipeImportService {
             sourceUrl: url ?? 'social_caption_import',
             remoteImageUrl: remoteImageUrl,
 
-            // Reel/Video => AI image generate
+            // Reel/Video => image generated in PARALLEL (pendingImageUpload)
             // Image post => existing image use
             isVideoImport: isVideoImport,
+
+            // The parallel caption-image (if any). _saveRecipeAndNavigate
+            // applies it when ready and falls back to AI-gen-from-title if it
+            // produced nothing.
+            pendingImageUpload: parallelImage,
 
             doneSignal: doneSignal,
           );
