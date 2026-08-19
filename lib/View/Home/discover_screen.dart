@@ -24,6 +24,7 @@ import 'package:recipe_ai/View/Home/recipe_detail_screen.dart'
 import 'package:recipe_ai/widgets/comments_sheet.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shimmer/shimmer.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Design constants (matched to the HTML "Discover (feed)" design)
@@ -269,8 +270,14 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             Expanded(
               child: Obx(() {
                 if (controller.isLoading.value) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: _D.primary),
+                  // Skeleton cards in the app's own shapes and colours read as
+                  // "content is coming" — a bare spinner reads as "stuck".
+                  return ListView.separated(
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
+                    itemCount: 2,
+                    separatorBuilder: (_, __) => const SizedBox(height: 16),
+                    itemBuilder: (_, __) => const _SkeletonCard(),
                   );
                 }
 
@@ -326,17 +333,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                       // Bottom loading indicator
                       if (index >= items.length) {
                         return const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 28),
-                          child: Center(
-                            child: SizedBox(
-                              width: 26,
-                              height: 26,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.5,
-                                color: _D.primary,
-                              ),
-                            ),
-                          ),
+                          padding: EdgeInsets.only(top: 16),
+                          child: _SkeletonCard(),
                         );
                       }
 
@@ -1326,10 +1324,95 @@ class _RecipeCardState extends State<_RecipeCard> {
     );
   }
 
-  Widget _imgPh() => Container(
-    color: const Color(0xFFEDE5D7),
-    child: const Center(
-      child: Icon(Icons.restaurant_rounded, size: 40, color: Color(0xFFC7BCAC)),
+  Widget _imgPh() => Shimmer.fromColors(
+    baseColor: const Color(0xFFEDE5D7),
+    highlightColor: const Color(0xFFFBF7F0),
+    child: Container(
+      color: const Color(0xFFEDE5D7),
+      child: const Center(
+        child: Icon(Icons.restaurant_rounded, size: 40, color: Colors.white),
+      ),
     ),
   );
+}
+
+/// Loading placeholder shaped like a real feed card — header row, photo block
+/// and action row — swept by a warm shimmer in the app's palette. Used for
+/// the initial feed load (x2) and as the pagination indicator at the bottom
+/// of the list.
+class _SkeletonCard extends StatelessWidget {
+  const _SkeletonCard();
+
+  @override
+  Widget build(BuildContext context) {
+    Widget bar(double w, double h, [double r = 6]) => Container(
+      width: w,
+      height: h,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(r),
+      ),
+    );
+
+    return Container(
+      decoration: BoxDecoration(
+        color: _D.card,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: _D.border),
+      ),
+      child: Shimmer.fromColors(
+        baseColor: const Color(0xFFEDE5D7),
+        highlightColor: const Color(0xFFFBF7F0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      bar(120, 12),
+                      const SizedBox(height: 6),
+                      bar(70, 10),
+                    ],
+                  ),
+                  const Spacer(),
+                  bar(80, 12),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: bar(double.infinity, 280, 18),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  bar(24, 24, 12),
+                  const SizedBox(width: 14),
+                  bar(24, 24, 12),
+                  const SizedBox(width: 14),
+                  bar(24, 24, 12),
+                  const Spacer(),
+                  bar(24, 24, 12),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

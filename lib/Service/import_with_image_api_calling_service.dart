@@ -47,6 +47,18 @@ class RecipeImportService {
 
   static final _urlPattern = RegExp(r'https?://[^\s]+', caseSensitive: false);
 
+  /// True only for images WE generated and stored — a URL in our own Storage
+  /// bucket under recipe_images/. Strict prefix match: a platform CDN
+  /// thumbnail, a picsum placeholder, or a lookalike host
+  /// (firebasestorage.googleapis.com.evil.com) must all fail this.
+  static bool _isOurStorageImage(String? url) {
+    if (url == null || url.isEmpty) return false;
+    return url.startsWith(
+          'https://firebasestorage.googleapis.com/v0/b/',
+        ) &&
+        url.contains('/o/recipe_images%2F');
+  }
+
   static String? extractUrl(String? text) {
     if (text == null || text.trim().isEmpty) return null;
     final match = _urlPattern.firstMatch(text.trim());
@@ -464,11 +476,19 @@ class RecipeImportService {
     // ✅ Generate a new AI food image in background.
     //
     if (isVideoImport) {
-      // Cover thumbnails from reels are unreliable (sometimes a title card or
-      // the wrong frame), so video imports ALWAYS generate a clean AI food
-      // image. It runs in the background and the ImportCompleteScreen picks it
-      // up live once ready.
-      imageUrl = '';
+      // Cover thumbnails from reels are unreliable (a title card, the wrong
+      // frame), so they are never used. BUT extractRecipeFromSocialContent
+      // already generates and stores a clean AI food image server-side for
+      // video imports — and this branch used to discard it and fire a SECOND
+      // generateRecipeImage call in the background. Every reel import paid
+      // for two image generations and kept the worse-prompted one. Honor our
+      // own Storage image; only regenerate when there genuinely isn't one.
+      if (_isOurStorageImage(recipe.imageUrl)) {
+        imageUrl = recipe.imageUrl;
+        print('[VIDEO IMPORT] Using server-generated AI image.');
+      } else {
+        imageUrl = '';
+      }
 
       print(
         '[VIDEO IMPORT] No existing image found. '
@@ -493,7 +513,13 @@ class RecipeImportService {
       imageUrl =
           firebaseImageUrl ??
           remoteImageUrl ??
-          (recipe.imageUrl!.isNotEmpty ? recipe.imageUrl : null) ??
+          // A picsum URL is the server's "generation failed" placeholder —
+          // treating it as a real image used to persist it forever and block
+          // the background retry that would produce an actual food photo.
+          ((recipe.imageUrl ?? '').isNotEmpty &&
+                  !recipe.imageUrl!.contains('picsum.photos')
+              ? recipe.imageUrl
+              : null) ??
           '';
       print(
         '[IMAGE IMPORT] Existing Firebase image selected: '
@@ -643,7 +669,8 @@ class RecipeImportService {
           fallbackDescription: recipe.description,
         ),
       );
-    } else if (isVideoImport || needsImageGeneration) {
+    } else if ((isVideoImport && (imageUrl == null || imageUrl.isEmpty)) ||
+        needsImageGeneration) {
       print(
         '[AI IMAGE] Starting background image generation | '
         'recipeId=${docRef.id}',

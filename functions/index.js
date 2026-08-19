@@ -1,8 +1,14 @@
-const {onCall} = require("firebase-functions/v2/https");
+const {onCall, HttpsError} = require("firebase-functions/v2/https");
 const {setGlobalOptions} = require("firebase-functions/v2");
 const {GoogleGenAI} = require("@google/genai");
 const admin = require("firebase-admin");
 const crypto = require("crypto");
+const sharp = require("sharp");
+const ffmpegPath = require("ffmpeg-static");
+const {spawn} = require("child_process");
+const fs = require("fs/promises");
+const os = require("os");
+const path = require("path");
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -20,6 +26,257 @@ const getAI = () => {
     apiKey: process.env.GEMINI_API_KEY,
   });
 };
+
+// ── Cost & abuse controls ───────────────────────────────────────────────────
+
+/**
+ * Every AI callable requires a signed-in user and is capped per uid per day.
+ * The cap is deliberately far above any legitimate use (Plus included): its
+ * job is to bound a stolen-client or scripted loop, not to meter real users —
+ * the weekly credit UX stays in the app.
+ * @param {Object} request onCall request.
+ * @return {Promise<void>}
+ */
+async function requireAuthAndCap(request) {
+  if (!request.auth || !request.auth.uid) {
+    throw new HttpsError("unauthenticated", "Sign in to use AI features.");
+  }
+  const uid = request.auth.uid;
+  const day = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  const ref = admin.firestore().collection("usage_daily")
+      .doc(`${uid}_${day}`);
+  await admin.firestore().runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const used = (snap.exists && snap.data().count) || 0;
+    if (used >= 60) {
+      throw new HttpsError(
+          "resource-exhausted",
+          "Daily AI limit reached. Please try again tomorrow.",
+      );
+    }
+    tx.set(ref, {
+      count: used + 1,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, {merge: true});
+  });
+}
+
+/**
+ * Enforces the app's real weekly credit system server-side, against the
+ * SAME users/{uid} fields the app maintains (isPlus / freeCredits /
+ * creditsResetAt). Validate-only by design: the client's consumeCredit()
+ * transaction remains the single place a credit is decremented, so nothing
+ * is ever charged twice — this simply refuses AI work for a non-Plus user
+ * whose 5 weekly credits are spent, even if the client-side check was
+ * bypassed or the app reinstalled.
+ *
+ * Deliberately permissive on edge states (missing doc, missing fields, or
+ * an expired week the client hasn't replenished yet): blocking a paying or
+ * brand-new user is worse than letting one extra call through — the 60/day
+ * cap in requireAuthAndCap still bounds the worst case.
+ * @param {string} uid Signed-in user id.
+ * @return {Promise<void>}
+ */
+async function enforceImportCredit(uid) {
+  let data = null;
+  try {
+    const doc = await admin.firestore().collection("users").doc(uid).get();
+    data = doc.exists ? (doc.data() || {}) : null;
+  } catch (e) {
+    console.error("enforceImportCredit read failed:", e.message);
+    return;
+  }
+  if (!data) return;
+  if (data.isPlus === true) return;
+  if (!("freeCredits" in data)) return;
+  const credits = Number(data.freeCredits);
+  if (!Number.isFinite(credits)) return;
+  const resetAt = data.creditsResetAt;
+  const resetDate = resetAt && typeof resetAt.toDate === "function" ?
+    resetAt.toDate() : null;
+  if (resetDate && Date.now() > resetDate.getTime()) {
+    // Week rolled over; the client replenishes to 5 on next open.
+    return;
+  }
+  if (credits <= 0) {
+    throw new HttpsError(
+        "resource-exhausted",
+        "You've used all your free imports for this week. " +
+        "Upgrade to Plus for unlimited imports.",
+    );
+  }
+}
+
+/**
+ * One-line token accounting per model call, so spend per path is measured
+ * instead of estimated. Read it with:
+ *   firebase functions:log | grep "\[tokens\]"
+ * @param {string} tag Path label.
+ * @param {Object} response generateContent response.
+ */
+function logTokens(tag, response) {
+  const u = (response && response.usageMetadata) || {};
+  console.log(
+      `[tokens] ${tag}`,
+      "in=", u.promptTokenCount || 0,
+      "think=", u.thoughtsTokenCount || 0,
+      "out=", u.candidatesTokenCount || 0,
+      "total=", u.totalTokenCount || 0,
+  );
+}
+
+/**
+ * @param {string} title Dish title.
+ * @return {string} Registry slug.
+ */
+function slugifyDish(title) {
+  return String(title || "").toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "")
+      .slice(0, 80);
+}
+
+/**
+ * The dish-image registry: every image this backend stores (generated,
+ * mirrored thumbnail, or video frame) is recorded under its dish slug, and
+ * every request for an image checks here FIRST. "Paneer Butter Masala"
+ * imported a hundred times costs one image, ever — the catalog becomes its
+ * own stock library and the saving compounds forever.
+ * @param {string} slug Dish slug.
+ * @return {Promise<string>} Existing image URL, or "".
+ */
+async function lookupDishImage(slug) {
+  if (!slug) return "";
+  try {
+    const doc = await admin.firestore()
+        .collection("dish_images").doc(slug).get();
+    return (doc.exists && doc.data().url) || "";
+  } catch (e) {
+    return "";
+  }
+}
+
+/**
+ * @param {string} slug Dish slug.
+ * @param {string} url Stored image URL.
+ * @param {string} source generated|mirrored|frame.
+ * @return {Promise<void>}
+ */
+async function registerDishImage(slug, url, source) {
+  if (!slug || !url) return;
+  try {
+    await admin.firestore().collection("dish_images").doc(slug).set({
+      url,
+      source,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, {merge: true});
+  } catch (e) {
+    console.error("dish_images write failed:", e.message);
+  }
+}
+
+/**
+ * Re-encode any image buffer to a 1020px JPEG and store it under
+ * recipe_images/ with a download token — the same shape the client's
+ * Storage-URL allowlist accepts.
+ * @param {Buffer} buffer Raw image bytes.
+ * @param {string} seed Filename seed.
+ * @return {Promise<string>} Public URL, or "".
+ */
+async function storeJpegBuffer(buffer, seed) {
+  try {
+    const jpeg = await sharp(buffer)
+        .resize({width: 1020, withoutEnlargement: true})
+        .jpeg({quality: 80, mozjpeg: true})
+        .toBuffer();
+    const bucket = admin.storage().bucket();
+    const safeSeed = slugifyDish(seed) || "recipe";
+    const fileName =
+      `recipe_images/${safeSeed}-${Date.now()}-` +
+      `${Math.random().toString(36).slice(2, 8)}.jpg`;
+    const file = bucket.file(fileName);
+    const downloadToken = crypto.randomUUID();
+    await file.save(jpeg, {
+      metadata: {
+        contentType: "image/jpeg",
+        cacheControl: "public, max-age=31536000",
+        metadata: {firebaseStorageDownloadTokens: downloadToken},
+      },
+    });
+    return `https://firebasestorage.googleapis.com/v0/b/${bucket.name}` +
+      `/o/${encodeURIComponent(fileName)}?alt=media&token=${downloadToken}`;
+  } catch (e) {
+    console.error("storeJpegBuffer failed:", e.message);
+    return "";
+  }
+}
+
+/**
+ * Mirror a social post's real cover image (og:image) into our Storage.
+ * Platform CDN URLs are short-lived signed links — hotlinking them breaks in
+ * days — and a mirrored copy also passes the client's allowlist, so no AI
+ * image is generated at all. Free beats generated.
+ * @param {string} url Remote image URL.
+ * @param {string} seed Filename seed.
+ * @return {Promise<string>} Our Storage URL, or "".
+ */
+async function mirrorRemoteImage(url, seed) {
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "facebookexternalhit/1.1 " +
+          "(+http://www.facebook.com/externalhit_uatext.php)",
+      },
+      redirect: "follow",
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return "";
+    const type = String(res.headers.get("content-type") || "");
+    if (!type.startsWith("image/")) return "";
+    const buffer = Buffer.from(await res.arrayBuffer());
+    const meta = await sharp(buffer).metadata();
+    // Reject tiny favicons/badges — a real cover frame is a real photo.
+    if (!meta.width || meta.width < 300 || !meta.height) return "";
+    return await storeJpegBuffer(buffer, seed);
+  } catch (e) {
+    console.error("mirrorRemoteImage failed:", e.message);
+    return "";
+  }
+}
+
+/**
+ * Grab one frame from an uploaded cooking video with ffmpeg — the actual
+ * dish, for $0, instead of an AI's imagination for $0.04.
+ * @param {string} base64 Video bytes, base64.
+ * @param {string} seed Filename seed.
+ * @return {Promise<string>} Our Storage URL, or "".
+ */
+async function extractVideoFrame(base64, seed) {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "vid-"));
+  const inFile = path.join(dir, "in.mp4");
+  const outFile = path.join(dir, "frame.jpg");
+  try {
+    await fs.writeFile(inFile, Buffer.from(base64, "base64"));
+    await new Promise((resolve, reject) => {
+      const p = spawn(ffmpegPath, [
+        "-ss", "1", "-i", inFile,
+        "-frames:v", "1", "-q:v", "3", "-y", outFile,
+      ]);
+      p.on("error", reject);
+      p.on("close", (code) => {
+        if (code === 0) resolve();
+        else reject(new Error(`ffmpeg exit ${code}`));
+      });
+    });
+    const frame = await fs.readFile(outFile);
+    return await storeJpegBuffer(frame, seed);
+  } catch (e) {
+    console.error("extractVideoFrame failed:", e.message);
+    return "";
+  } finally {
+    fs.rm(dir, {recursive: true, force: true}).catch(() => {});
+  }
+}
 
 const RECIPE_RESPONSE_SCHEMA = {
   type: "OBJECT",
@@ -109,6 +366,11 @@ const RECIPE_RESPONSE_SCHEMA = {
     },
   },
   required: [
+    // Without this the model may omit isRecipe entirely (OpenAPI semantics:
+    // unlisted properties are optional), and `rawRecipe.isRecipe === false`
+    // evaluates undefined === false -> the non-recipe guard silently never
+    // fires. This was the "imports a hallucinated recipe" bug.
+    "isRecipe",
     "title",
     "description",
     "imageUrl",
@@ -128,6 +390,17 @@ const RECIPE_RESPONSE_SCHEMA = {
     "nutrition",
   ],
 };
+
+// analyzeRecipeImage uses the USER'S OWN PHOTO, so paying the model to
+// author a ~450-word image-generation prompt — schema description on input,
+// long generated string on output — was pure waste on the app's highest-
+// volume path. Identical schema, minus that one field.
+const RECIPE_PHOTO_SCHEMA = (() => {
+  const clone = JSON.parse(JSON.stringify(RECIPE_RESPONSE_SCHEMA));
+  delete clone.properties.imagePrompt;
+  clone.required = clone.required.filter((k) => k !== "imagePrompt");
+  return clone;
+})();
 
 /**
  * @param {unknown} item
@@ -423,6 +696,15 @@ async function generateAndStoreRecipeImage(ai, recipe) {
   try {
     if (!recipe || !recipe.title) return "";
 
+    // Free before paid: if ANY image for this dish already exists in the
+    // registry (generated, mirrored or a video frame), reuse it.
+    const dishSlug = slugifyDish(recipe.title);
+    const existing = await lookupDishImage(dishSlug);
+    if (existing) {
+      console.log("[dish_images] reuse:", dishSlug);
+      return existing;
+    }
+
     // Prefer the image prompt Gemini authored alongside the recipe (it knows
     // the exact dish); fall back to a short built prompt. A fixed food anchor
     // is prepended so Imagen can never drift to a non-food subject.
@@ -503,6 +785,7 @@ ${base}
       },
     });
 
+    logTokens("image-gen", response);
     const parts =
       (response &&
         response.candidates &&
@@ -523,7 +806,19 @@ ${base}
       return "";
     }
 
-    const buffer = Buffer.from(imageBytes, "base64");
+    let buffer = Buffer.from(imageBytes, "base64");
+    // The image model returns a PNG that is typically 1-2MB. Re-encode to a
+    // 1020px-wide JPEG (~100-150KB) before storing — the card renders at
+    // ~1000px, so nothing visible is lost, and every future feed load
+    // downloads a tenth of the bytes. Failure falls back to the raw PNG.
+    try {
+      buffer = await sharp(buffer)
+          .resize({width: 1020, withoutEnlargement: true})
+          .jpeg({quality: 80, mozjpeg: true})
+          .toBuffer();
+    } catch (e) {
+      console.error("Generated-image JPEG re-encode failed, storing PNG:", e);
+    }
     const bucket = admin.storage().bucket();
     const safeSeed = recipe.title
         .toLowerCase()
@@ -532,14 +827,14 @@ ${base}
         .slice(0, 60) || "recipe";
     const fileName =
       `recipe_images/${safeSeed}-${Date.now()}-` +
-      `${Math.random().toString(36).slice(2, 8)}.png`;
+      `${Math.random().toString(36).slice(2, 8)}.jpg`;
     const file = bucket.file(fileName);
 
     const downloadToken = crypto.randomUUID();
 
     await file.save(buffer, {
       metadata: {
-        contentType: "image/png",
+        contentType: "image/jpeg",
         cacheControl: "public, max-age=31536000",
         metadata: {
           firebaseStorageDownloadTokens: downloadToken,
@@ -547,7 +842,11 @@ ${base}
       },
     });
 
-    return `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(fileName)}?alt=media&token=${downloadToken}`;
+    const publicUrl =
+      `https://firebasestorage.googleapis.com/v0/b/${bucket.name}` +
+      `/o/${encodeURIComponent(fileName)}?alt=media&token=${downloadToken}`;
+    await registerDishImage(dishSlug, publicUrl, "generated");
+    return publicUrl;
   } catch (error) {
     console.error("generateAndStoreRecipeImage failed:", error);
     return "";
@@ -648,6 +947,7 @@ exports.askGemini = onCall(
       const startTime = Date.now();
 
       try {
+        await requireAuthAndCap(request);
         console.log("API CALL STARTED");
 
         const prompt = request.data.prompt;
@@ -667,6 +967,7 @@ exports.askGemini = onCall(
           },
         });
 
+        logTokens("askGemini", response);
         const responseTime = Date.now() - startTime;
 
         console.log(`API RESPONSE TIME: ${responseTime} ms`);
@@ -1073,11 +1374,13 @@ async function fetchImageAsInlinePart(imageUrl) {
  * mid-JSON.
  * @param {object} ai
  * @param {string|Array<object>} contents
+ * @param {string} model Gemini model id.
  * @return {Promise<Record<string, unknown>>}
  */
-async function generateStructuredRecipe(ai, contents) {
+async function generateStructuredRecipe(
+    ai, contents, model = "gemini-2.5-flash") {
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model,
     contents,
     config: {
       responseMimeType: "application/json",
@@ -1092,6 +1395,8 @@ async function generateStructuredRecipe(ai, contents) {
       thinkingConfig: {thinkingBudget: 0},
     },
   });
+
+  logTokens("extract", response);
 
   let text = response.text.trim();
   text = text.replace(/```json/g, "");
@@ -1110,6 +1415,8 @@ exports.extractRecipeFromSocialContent = onCall(
     },
     async (request) => {
       try {
+        await requireAuthAndCap(request);
+        await enforceImportCredit(request.auth.uid);
         const url = String(request.data.url || "").trim();
         const caption = String(request.data.caption || "").trim();
 
@@ -1118,6 +1425,25 @@ exports.extractRecipeFromSocialContent = onCall(
         }
 
         const ai = getAI();
+
+        // One viral reel imported by N users used to mean N extractions
+        // and N images. Cache the finished recipe by URL hash — repeat
+        // imports of the same post cost zero Gemini calls and reuse the
+        // same stored image.
+        const cacheKey = url ?
+          crypto.createHash("sha1").update(url).digest("hex") : "";
+        if (cacheKey) {
+          try {
+            const hit = await admin.firestore()
+                .collection("extraction_cache").doc(cacheKey).get();
+            if (hit.exists && hit.data().recipe) {
+              console.log("[cache] extraction hit:", url);
+              return {success: true, recipe: hit.data().recipe};
+            }
+          } catch (e) {
+            console.error("extraction_cache read failed:", e.message);
+          }
+        }
 
         let pageContext = {};
         if (url) {
@@ -1213,8 +1539,37 @@ exports.extractRecipeFromSocialContent = onCall(
         // that's the creator's chosen thumbnail of the dish. The client shows
         // it instantly and persists it to Firebase in the background, so the
         // recipe returns without waiting on any image work.
-        if (pageContext.imageUrl) {
+        // Image priority: dish registry -> mirrored real cover image ->
+        // nothing (client falls back to one AI generation). The og:image is
+        // the creator's own thumbnail of the dish; mirroring it into our
+        // Storage makes it durable (platform CDN links expire) and lets the
+        // client's allowlist accept it, so no image is generated at all.
+        const dishSlug = slugifyDish(recipe.title);
+        let ownedImage = await lookupDishImage(dishSlug);
+        if (!ownedImage && pageContext.imageUrl) {
+          ownedImage = await mirrorRemoteImage(
+              pageContext.imageUrl, recipe.title);
+          if (ownedImage) {
+            await registerDishImage(dishSlug, ownedImage, "mirrored");
+          }
+        }
+        if (ownedImage) {
+          recipe.imageUrl = ownedImage;
+        } else if (pageContext.imageUrl) {
           recipe.imageUrl = pageContext.imageUrl;
+        }
+
+        if (cacheKey) {
+          try {
+            await admin.firestore()
+                .collection("extraction_cache").doc(cacheKey).set({
+                  recipe,
+                  url,
+                  createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                });
+          } catch (e) {
+            console.error("extraction_cache write failed:", e.message);
+          }
         }
 
         return {success: true, recipe};
@@ -1237,6 +1592,8 @@ exports.analyzeRecipeVideo = onCall(
       const startTime = Date.now();
 
       try {
+        await requireAuthAndCap(request);
+        await enforceImportCredit(request.auth.uid);
         console.log("VIDEO ANALYSIS STARTED");
 
         const videoBase64 = request.data.video;
@@ -1300,6 +1657,11 @@ exports.analyzeRecipeVideo = onCall(
                 mimeType: resolvedMimeType,
                 data: videoData,
               },
+              // Sample 1 frame every 2s instead of every second. Cooking
+              // steps span seconds, so adjacent frames are near-duplicates;
+              // this halves the VISUAL token cost of every video import
+              // (audio is billed flat at 32 tokens/sec regardless of fps).
+              videoMetadata: {fps: 0.5},
             },
           ],
           config: {
@@ -1316,6 +1678,7 @@ exports.analyzeRecipeVideo = onCall(
           },
         });
 
+        logTokens("video-import", response);
         console.log(
             "Gemini response received in:",
             Date.now() - startTime,
@@ -1359,6 +1722,23 @@ exports.analyzeRecipeVideo = onCall(
           recipe.sourceUrl = sourceUrl;
         }
 
+        // A real frame of the user's own video beats a $0.04 AI imagining
+        // of it. Registry first, then ffmpeg; only if both fail does the
+        // client fall back to generation.
+        if (!recipe.imageUrl) {
+          const vSlug = slugifyDish(recipe.title);
+          let vImage = await lookupDishImage(vSlug);
+          if (!vImage && videoData) {
+            vImage = await extractVideoFrame(videoData, recipe.title);
+            if (vImage) {
+              await registerDishImage(vSlug, vImage, "frame");
+            }
+          }
+          if (vImage) {
+            recipe.imageUrl = vImage;
+          }
+        }
+
         if (!recipe.imageUrl) {
           recipe.imageUrl = "";
         }
@@ -1393,6 +1773,7 @@ exports.generateRecipeImage = onCall(
     },
     async (request) => {
       try {
+        await requireAuthAndCap(request);
         let recipe = request.data.recipe;
         const caption = String(request.data.caption || "").trim();
 
@@ -1443,6 +1824,8 @@ exports.analyzeRecipeImage = onCall(
     },
     async (request) => {
       try {
+        await requireAuthAndCap(request);
+        await enforceImportCredit(request.auth.uid);
         const imageBase64 = request.data.image;
 
         if (!imageBase64) {
@@ -1464,12 +1847,13 @@ exports.analyzeRecipeImage = onCall(
           ],
           config: {
             responseMimeType: "application/json",
-            responseSchema: RECIPE_RESPONSE_SCHEMA,
+            responseSchema: RECIPE_PHOTO_SCHEMA,
             thinkingConfig: {
               thinkingBudget: 0,
             },
           },
         });
+        logTokens("photo-import", response);
 
         let text = response.text.trim();
         text = text.replace(/```json/g, "");
@@ -1570,7 +1954,10 @@ exports.generateRecipeFromName = onCall(
     },
     async (request) => {
       try {
-        const recipeName = String(request.data.recipeName || "").trim();
+        await requireAuthAndCap(request);
+        await enforceImportCredit(request.auth.uid);
+        const recipeName =
+          String(request.data.recipeName || "").trim();
 
         if (!recipeName) {
           throw new Error("Recipe name is required");
@@ -1584,7 +1971,12 @@ ${RECIPE_TEXT_PROMPT}
 Generate a complete recipe for: ${recipeName}
 `;
 
-        const recipe = await generateStructuredRecipe(ai, prompt);
+        // flash-lite: name -> recipe is pure culinary knowledge, no
+        // vision. $0.10/$0.40 per M vs $0.30/$2.50 — ~80% off this
+        // path's text cost. Revert to "gemini-2.5-flash" if quality
+        // drops in A/B.
+        const recipe = await generateStructuredRecipe(
+            ai, prompt, "gemini-2.5-flash-lite");
 
         console.log(
             "generateRecipeFromName: title=",
