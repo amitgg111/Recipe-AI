@@ -19,6 +19,7 @@ import 'package:recipe_ai/Service/local_notification_service.dart';
 import 'package:recipe_ai/Service/notification_service.dart';
 import 'package:recipe_ai/Service/revenuecat_service.dart';
 import 'package:recipe_ai/Service/subscription_service.dart';
+import 'package:recipe_ai/Service/remote_config_service.dart';
 import 'package:recipe_ai/utils/auth_error_mapper.dart';
 
 /// Outcome of an Apple Sign In attempt.
@@ -117,7 +118,7 @@ class AuthService {
       "trialChooserCompleted": false,
 
       // Weekly free credits
-      "freeCredits": SubscriptionService.kWeeklyFreeCredits,
+      "freeCredits": RemoteConfigService.instance.newUserCredit,
       "creditsResetAt": Timestamp.fromDate(initialResetAt),
 
       "createdAt": FieldValue.serverTimestamp(),
@@ -200,7 +201,7 @@ class AuthService {
         "trialChooserCompleted": false,
 
         // Weekly free credits
-        "freeCredits": SubscriptionService.kWeeklyFreeCredits,
+        "freeCredits": RemoteConfigService.instance.newUserCredit,
         "creditsResetAt": Timestamp.fromDate(initialResetAt),
 
         "createdAt": FieldValue.serverTimestamp(),
@@ -360,7 +361,7 @@ class AuthService {
         'photoUrl': user.photoURL ?? '',
         'provider': 'apple',
         'trialChooserCompleted': false,
-        'freeCredits': SubscriptionService.kWeeklyFreeCredits,
+        'freeCredits': RemoteConfigService.instance.newUserCredit,
         'creditsResetAt': Timestamp.fromDate(
           DateTime.now().add(const Duration(days: 7)),
         ),

@@ -959,7 +959,7 @@ exports.askGemini = onCall(
         const ai = getAI();
 
         const response = await ai.models.generateContent({
-          model: "gemini-2.5-flash",
+          model: "gemini-3.5-flash-lite",
           contents: prompt,
           config: {
             maxOutputTokens: 2000,
@@ -1369,16 +1369,19 @@ async function fetchImageAsInlinePart(imageUrl) {
  * (text-only) OR an array of parts (text + inline image / YouTube fileData),
  * so the same JSON schema + normalisation is reused for every source.
  *
- * Reasoning is OFF (thinkingBudget:0) for speed and reliability. The output cap
- * stays generous so a fully-sectioned recipe + nutrition can never be truncated
- * mid-JSON.
+ * Reasoning is kept LOW for speed and reliability. NOTE: Gemini 3.x models
+ * use `thinkingLevel` (semantic: minimal/low/medium/high) instead of the
+ * Gemini 2.5-era `thinkingBudget` (numeric token budget) — the two params
+ * are NOT interchangeable and mixing them throws a 400 INVALID_ARGUMENT.
+ * The output cap stays generous so a fully-sectioned recipe + nutrition can
+ * never be truncated mid-JSON.
  * @param {object} ai
  * @param {string|Array<object>} contents
  * @param {string} model Gemini model id.
  * @return {Promise<Record<string, unknown>>}
  */
 async function generateStructuredRecipe(
-    ai, contents, model = "gemini-2.5-flash") {
+    ai, contents, model = "gemini-3.5-flash-lite") {
   const response = await ai.models.generateContent({
     model,
     contents,
@@ -1387,12 +1390,9 @@ async function generateStructuredRecipe(
       responseSchema: RECIPE_RESPONSE_SCHEMA,
       temperature: 0.2,
       maxOutputTokens: 8192,
-      // Reasoning OFF (thinkingBudget:0) — fast and reliable. Dynamic thinking
-      // (-1) was tried to help image-less "walled" reels but made calls hang,
-      // so it's reverted. A walled reel (no cover image + thin caption) can't
-      // be recovered by a thinking tweak anyway — that needs the real video
-      // (a resolver API).
-      thinkingConfig: {thinkingBudget: 0},
+      // Gemini 3.x has no "off" — "low" is the cheapest/fastest available
+      // level and is the closest equivalent to the old thinkingBudget:0.
+      thinkingConfig: {thinkingLevel: "low"},
     },
   });
 
@@ -1649,7 +1649,7 @@ exports.analyzeRecipeVideo = onCall(
         console.log("Gemini video analysis started");
 
         const response = await ai.models.generateContent({
-          model: "gemini-2.5-flash",
+          model: "gemini-3.5-flash-lite",
           contents: [
             {text: promptText},
             {
@@ -1667,12 +1667,13 @@ exports.analyzeRecipeVideo = onCall(
           config: {
             responseMimeType: "application/json",
             responseSchema: RECIPE_RESPONSE_SCHEMA,
-            // Reasoning left ON (previously thinkingBudget:0, which made the
-            // model skim the footage). Reading ingredients/steps out of a fast
-            // cooking video is a hard multimodal task and needs real thinking.
-            // Output cap raised 2500 -> 8192 so a fully-sectioned recipe +
-            // nutrition can never be cut off mid-JSON (which was throwing a
-            // JSON.parse error and surfacing as a generic import failure).
+            // Reasoning left ON (medium/high default for gemini-3.x) since
+            // this model does NOT set thinkingConfig here — reading
+            // ingredients/steps out of a fast cooking video is a hard
+            // multimodal task and needs real thinking. Output cap raised
+            // 2500 -> 8192 so a fully-sectioned recipe + nutrition can never
+            // be cut off mid-JSON (which was throwing a JSON.parse error and
+            // surfacing as a generic import failure).
             maxOutputTokens: 8192,
             temperature: 0.2,
           },
@@ -1835,7 +1836,7 @@ exports.analyzeRecipeImage = onCall(
         const ai = getAI();
 
         const response = await ai.models.generateContent({
-          model: "gemini-2.5-flash",
+          model: "gemini-3.5-flash-lite",
           contents: [
             {text: RECIPE_IMAGE_PROMPT},
             {
@@ -1848,8 +1849,12 @@ exports.analyzeRecipeImage = onCall(
           config: {
             responseMimeType: "application/json",
             responseSchema: RECIPE_PHOTO_SCHEMA,
+            // Gemini 3.x uses thinkingLevel (minimal/low/medium/high), NOT
+            // the Gemini 2.5-era thinkingBudget (numeric). Passing
+            // thinkingBudget here against a gemini-3.x model is what threw
+            // "400 INVALID_ARGUMENT" — the two params are not interchangeable.
             thinkingConfig: {
-              thinkingBudget: 0,
+              thinkingLevel: "low",
             },
           },
         });
@@ -1972,11 +1977,9 @@ Generate a complete recipe for: ${recipeName}
 `;
 
         // flash-lite: name -> recipe is pure culinary knowledge, no
-        // vision. $0.10/$0.40 per M vs $0.30/$2.50 — ~80% off this
-        // path's text cost. Revert to "gemini-2.5-flash" if quality
-        // drops in A/B.
+        // vision. Cheapest text-only path.
         const recipe = await generateStructuredRecipe(
-            ai, prompt, "gemini-2.5-flash-lite");
+            ai, prompt, "gemini-3.5-flash-lite");
 
         console.log(
             "generateRecipeFromName: title=",

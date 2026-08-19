@@ -86,6 +86,7 @@ dependencies:
   image: ^4.5.4
   google_mlkit_language_id: ^0.14.0
   vector_math: ^2.1.4
+  firebase_remote_config: ^6.5.6
 
 
 

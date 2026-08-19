@@ -10,6 +10,7 @@ import 'package:get_storage/get_storage.dart';
 import 'package:recipe_ai/Controllers/cuisine_controller.dart';
 import 'package:recipe_ai/Service/ai_translation_service.dart';
 import 'package:recipe_ai/Service/language_service.dart';
+import 'package:recipe_ai/Service/remote_config_service.dart';
 import 'package:recipe_ai/Service/recipe_auto_translate_service.dart';
 import 'package:recipe_ai/translations/app_translations.dart';
 import 'package:recipe_ai/Controllers/cookbook_controller.dart';
@@ -99,6 +100,10 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // Start pulling the live credit amounts (new-user / weekly-renewal) from
+  // Remote Config as early as possible. Fire-and-forget: the getters return a
+  // safe fallback until the fetch activates, so nothing needs to block on it.
+  await RemoteConfigService.instance.init();
   await GetStorage.init();
   // Restore the saved language before the first frame so the app opens already
   // localized (defaults to English when nothing is saved).
@@ -165,6 +170,7 @@ void _bindNotificationsToAuth() {
       await NotificationService.instance.loginUser(user.uid);
       await settings.bindUser(user.uid);
       await subscription.bindUser(user.uid);
+      await RemoteConfigService.instance.refresh();
       await RevenueCatService.instance.loginUser(user.uid);
       unawaited(AiTranslationService.prepareAllSupportedLanguages());
       unawaited(AiTranslationService.prepareAlternateLanguages());

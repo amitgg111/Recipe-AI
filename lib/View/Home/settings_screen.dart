@@ -7,6 +7,7 @@ import 'package:recipe_ai/Controllers/notification_controller.dart';
 import 'package:recipe_ai/Controllers/profile_controller.dart';
 import 'package:recipe_ai/Controllers/settings_controller.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
+import 'package:recipe_ai/Service/remote_config_service.dart';
 import 'package:recipe_ai/Service/subscription_service.dart';
 import 'package:recipe_ai/View/Auth/auth_wrapper.dart';
 import 'package:recipe_ai/screens/auth/create_account_screen.dart';
@@ -762,7 +763,8 @@ class _SettingsScreenState extends State<SettingsScreen>
                           ? 'unlimited_with_plus'.tr
                           : 'credits_left_week'.trParams({
                               'count': '$remaining',
-                              'max': '$max',
+                              'max':
+                                  '${RemoteConfigService.instance.newUserCredit}',
                             }),
                       style: const TextStyle(
                         fontSize: 12,

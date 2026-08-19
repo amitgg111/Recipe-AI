@@ -356,10 +356,10 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
       final plus = sub.isPlusListenable.value;
 
-      final remaining = sub.freeCreditsListenable.value.clamp(
-        0,
-        SubscriptionService.kWeeklyFreeCredits,
-      );
+      // Show the true remaining count (never negative). Credit amounts are
+      // Remote-Config driven now, so there is no fixed weekly max to clamp to.
+      final rawCredits = sub.freeCreditsListenable.value;
+      final remaining = rawCredits < 0 ? 0 : rawCredits;
 
       print(
         '[UI] Firebase remaining credits:----------------- '

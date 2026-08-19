@@ -397,10 +397,17 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:recipe_ai/Service/remote_config_service.dart';
 
 class SubscriptionService extends GetxController {
-  /// Maximum free credits available per week.
+  /// Legacy fallback constant. Credit amounts are now driven by Remote Config
+  /// ([RemoteConfigService.newUserCredit] / [RemoteConfigService.weeklyRenewalCredit]);
+  /// this is only kept as a last-resort default reference.
   static const int kWeeklyFreeCredits = 5;
+
+  // Live credit amounts from Remote Config (console-tunable, no app update).
+  int get _newUserCredit => RemoteConfigService.instance.newUserCredit;
+  int get _weeklyRenewalCredit => RemoteConfigService.instance.weeklyRenewalCredit;
 
   static SubscriptionService get instance {
     if (Get.isRegistered<SubscriptionService>()) {
@@ -588,16 +595,17 @@ class SubscriptionService extends GetxController {
     DocumentReference<Map<String, dynamic>> ref,
   ) async {
     final resetAt = _nextWeeklyReset();
+    final grant = _newUserCredit;
 
     await ref.set({
       'isPlus': false,
-      'freeCredits': kWeeklyFreeCredits,
+      'freeCredits': grant,
       'creditsResetAt': Timestamp.fromDate(resetAt),
     }, SetOptions(merge: true));
 
     _isPlus.value = false;
 
-    _freeCredits.value = kWeeklyFreeCredits;
+    _freeCredits.value = grant;
 
     _creditsResetAt.value = resetAt;
 
@@ -606,8 +614,8 @@ class SubscriptionService extends GetxController {
     print('[Subscription] New user created.');
 
     print(
-      '[Subscription] freeCredits = '
-      '$kWeeklyFreeCredits',
+      '[Subscription] freeCredits (new_user_credit) = '
+      '$grant',
     );
   }
 
@@ -633,24 +641,26 @@ class SubscriptionService extends GetxController {
 
     final hasCredits = data.containsKey('freeCredits');
 
-    // Old user without freeCredits.
+    // Old user without freeCredits — treat this first-time grant like a new
+    // user (new_user_credit).
     if (!hasCredits) {
       final resetAt = _nextWeeklyReset();
+      final grant = _newUserCredit;
 
       await ref.set({
-        'freeCredits': kWeeklyFreeCredits,
+        'freeCredits': grant,
         'creditsResetAt': Timestamp.fromDate(resetAt),
       }, SetOptions(merge: true));
 
-      _freeCredits.value = kWeeklyFreeCredits;
+      _freeCredits.value = grant;
 
       _creditsResetAt.value = resetAt;
 
       _cacheValues();
 
       print(
-        '[Subscription] freeCredits field created: '
-        '$kWeeklyFreeCredits',
+        '[Subscription] freeCredits field created (new_user_credit): '
+        '$grant',
       );
 
       return;
@@ -685,21 +695,22 @@ class SubscriptionService extends GetxController {
 
     if (DateTime.now().isAfter(resetAt)) {
       final newResetAt = _nextWeeklyReset();
+      final renewal = _weeklyRenewalCredit;
 
       await ref.set({
-        'freeCredits': kWeeklyFreeCredits,
+        'freeCredits': renewal,
         'creditsResetAt': Timestamp.fromDate(newResetAt),
       }, SetOptions(merge: true));
 
-      _freeCredits.value = kWeeklyFreeCredits;
+      _freeCredits.value = renewal;
 
       _creditsResetAt.value = newResetAt;
 
       _cacheValues();
 
       print(
-        '[Subscription] Weekly credits reset: '
-        '$kWeeklyFreeCredits',
+        '[Subscription] Weekly credits reset (weekly_renewal_credit): '
+        '$renewal',
       );
 
       return;
@@ -903,9 +914,20 @@ class SubscriptionService extends GetxController {
 
         if (DateTime.now().isAfter(resetAt)) {
           final newResetAt = _nextWeeklyReset();
+          final renewal = _weeklyRenewalCredit;
+
+          // Renew the week, then spend this import from it. If the renewal
+          // amount is 0, there is nothing to spend — renew to 0 and deny.
+          if (renewal <= 0) {
+            transaction.update(ref, {
+              'freeCredits': 0,
+              'creditsResetAt': Timestamp.fromDate(newResetAt),
+            });
+            return false;
+          }
 
           transaction.update(ref, {
-            'freeCredits': kWeeklyFreeCredits - 1,
+            'freeCredits': renewal - 1,
             'creditsResetAt': Timestamp.fromDate(newResetAt),
           });
 
