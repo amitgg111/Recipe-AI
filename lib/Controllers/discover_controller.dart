@@ -197,7 +197,10 @@ class DiscoverController extends GetxController {
   DocumentSnapshot<Map<String, dynamic>>? _lastDocument;
 
   bool _hasMore = true;
-  bool _isLoadingMore = false;
+  // Reactive: the bottom skeleton row reads this inside an Obx. As a plain
+  // bool, flipping it never rebuilt the list — the load-more indicator simply
+  // never appeared, which is why pagination felt like a silent hang.
+  final RxBool _isLoadingMore = false.obs;
   // ------------------------------------------------------------
   // Category-specific pagination
   // ------------------------------------------------------------
@@ -213,12 +216,16 @@ class DiscoverController extends GetxController {
   static const int _categoryPageSize = 20;
 
   bool get hasMore => _hasMore;
-  bool get isLoadingMore => _isLoadingMore;
+  bool get isLoadingMore => _isLoadingMore.value;
 
   // English originals of the feed (Firestore is English). [recipes] holds
   // the translated-for-display copies; re-translation always starts from
   // here.
   final List<DiscoverRecipe> _english = [];
+
+  /// Session-lifetime cache of author profiles (name/avatar) keyed by uid,
+  /// so pagination doesn't refetch the same user docs page after page.
+  final Map<String, Map<String, dynamic>> _ownerProfileCache = {};
 
   // Onboarding-selected cuisines. NOTE: these are no longer used to
   // prioritize/sort the feed — the feed is always newest-first. They are
@@ -313,7 +320,7 @@ class DiscoverController extends GetxController {
     }
 
     _categoryLoading = true;
-    _isLoadingMore = _categoryLastDocument != null;
+    _isLoadingMore.value = _categoryLastDocument != null;
 
     try {
       final aliases = _categoryAliases(normalizedCategory);
@@ -468,7 +475,7 @@ class DiscoverController extends GetxController {
       log(stack.toString());
     } finally {
       _categoryLoading = false;
-      _isLoadingMore = false;
+      _isLoadingMore.value = false;
       isLoading.value = false;
     }
   }
@@ -902,11 +909,56 @@ class DiscoverController extends GetxController {
   Future<void> _processAndAppend(List<DiscoverRecipe> chunk) async {
     if (chunk.isEmpty) return;
 
-    final translated = await _translateForFeed(chunk);
+    // Paint NOW. The projection below is synchronous cache lookups only, so
+    // cards appear the moment the Firestore page lands. Anything not yet in
+    // the translation cache shows English for a beat and is patched in place
+    // by _finishProcessing. Previously this method awaited a full ML Kit
+    // translation pass AND the liked/saved reads before the spinner cleared —
+    // three network/CPU round trips between data arriving and pixels.
+    recipes.addAll(_projectFromCache(chunk));
 
-    recipes.addAll(translated);
+    unawaited(_finishProcessing(chunk));
+  }
 
-    // Batch load for liked/saved state.
+  /// Synchronous, cache-only translation projection of one fetched page.
+  /// Never blocks: a cache miss simply renders its English source.
+  List<DiscoverRecipe> _projectFromCache(List<DiscoverRecipe> list) {
+    if (!AiTranslationService.isTranslating) return list;
+    String? tr(String? s) =>
+        s == null ? null : AiTranslationService.cachedOrSelf(s);
+    return list
+        .map(
+          (r) => r.copyWith(
+            title: AiTranslationService.cachedOrSelf(r.title),
+            description: tr(r.description),
+            category: tr(r.category),
+            cuisine: tr(r.cuisine),
+            enTitle: r.title,
+            enDescription: r.description,
+            enCategory: r.category,
+            enCuisine: r.cuisine,
+          ),
+        )
+        .toList();
+  }
+
+  /// Everything that used to block first paint, now strictly after it:
+  /// the real translation pass (patched into the live rows by id, so sorting
+  /// can't misalign anything), liked/saved state, count listeners, prewarm.
+  Future<void> _finishProcessing(List<DiscoverRecipe> chunk) async {
+    try {
+      if (AiTranslationService.isTranslating) {
+        final translated = await _translateForFeed(chunk);
+        for (final t in translated) {
+          final i = recipes.indexWhere((r) => r.id == t.id);
+          if (i != -1) recipes[i] = t;
+        }
+        recipes.refresh();
+      }
+    } catch (e) {
+      log('Discover deferred translation failed: $e');
+    }
+
     await _loadSocialStates(chunk);
 
     // Realtime likes/comments/shares/saves counts.
@@ -919,7 +971,7 @@ class DiscoverController extends GetxController {
   /// preference is intentionally NOT used to reorder or prioritize
   /// anything here anymore — it only feeds the chip row (see [categories]).
   Future<void> fetchDiscoverRecipes({bool refresh = false}) async {
-    if (_fetching || _isLoadingMore) return;
+    if (_fetching || _isLoadingMore.value) return;
 
     if (refresh) {
       _fetching = true;
@@ -964,7 +1016,7 @@ class DiscoverController extends GetxController {
       _fetching = true;
       isLoading.value = true;
     } else {
-      _isLoadingMore = true;
+      _isLoadingMore.value = true;
     }
 
     try {
@@ -1011,7 +1063,7 @@ class DiscoverController extends GetxController {
     } finally {
       isLoading.value = false;
       _fetching = false;
-      _isLoadingMore = false;
+      _isLoadingMore.value = false;
     }
   }
 
@@ -1024,22 +1076,24 @@ class DiscoverController extends GetxController {
 
     for (final doc in docs) {
       final data = doc.data();
-      log(
-        '🍛 ${doc.id} | '
-        'title=${data['title']} | '
-        'category=${data['category']} | '
-        'cuisine=${data['cuisine']} | '
-        'isPublic=${data['isPublic']}',
-      );
       final ownerId = data['ownerId']?.toString();
 
       if (ownerId != null && ownerId.isNotEmpty) {
         ownerIds.add(ownerId);
       }
-      log('🔍 ${data['title']} -> cuisine=${data['cuisine']}');
     }
 
     final userProfiles = <String, Map<String, dynamic>>{};
+
+    // Serve repeat authors from the session memo — a feed is dominated by a
+    // handful of creators, so later pages were re-reading the same user docs
+    // on every scroll.
+    ownerIds.removeWhere((uid) {
+      final cached = _ownerProfileCache[uid];
+      if (cached == null) return false;
+      userProfiles[uid] = cached;
+      return true;
+    });
 
     if (ownerIds.isNotEmpty) {
       final userDocs = await Future.wait(
@@ -1052,6 +1106,7 @@ class DiscoverController extends GetxController {
       for (final userDoc in userDocs) {
         if (userDoc.exists) {
           userProfiles[userDoc.id] = userDoc.data() ?? {};
+          _ownerProfileCache[userDoc.id] = userProfiles[userDoc.id]!;
         }
       }
     }
@@ -1175,7 +1230,7 @@ class DiscoverController extends GetxController {
   //   await fetchDiscoverRecipes();
   // }
   Future<void> loadMoreRecipes() async {
-    if (_fetching || _isLoadingMore) return;
+    if (_fetching || _isLoadingMore.value) return;
 
     final category = selectedCategory.value.trim();
 
@@ -1383,7 +1438,7 @@ class DiscoverController extends GetxController {
 
     _fetching = false;
     _categoryLoading = false;
-    _isLoadingMore = false;
+    _isLoadingMore.value = false;
     isLoading.value = false;
 
     // Then top up from Firestore in the background (additive, no spinner) so a
@@ -1459,7 +1514,7 @@ class DiscoverController extends GetxController {
 
       // Cancel/reset category state
       _categoryLoading = false;
-      _isLoadingMore = false;
+      _isLoadingMore.value = false;
 
       await fetchDiscoverRecipes(refresh: true);
 
