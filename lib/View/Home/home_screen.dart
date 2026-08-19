@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:recipe_ai/Controllers/meal_plan_controller.dart';
 import 'package:recipe_ai/Controllers/share_intent_service_controller.dart';
 import 'package:recipe_ai/View/Home/cookbooks_screen.dart';
 import 'package:recipe_ai/View/Home/discover_screen.dart';
@@ -9,13 +10,18 @@ import 'package:recipe_ai/View/Home/settings_screen.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/app_bottom_nav.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, this.initialIndex = 0});
 
-  /// Tab to open on first build (0 = Cookbooks). Deep-link callers pass this
-  /// instead of a shared static field, so the selected tab never leaks across
-  /// sessions (e.g. logging out while on Settings, then logging back in).
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({
+    super.key,
+    this.initialIndex = 0,
+    this.showRecipesTab = false,
+  });
+
   final int initialIndex;
+
+  /// true only when opening Cookbook from ImportCompleteScreen.
+  final bool showRecipesTab;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -27,10 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // Home is now on-screen — process any recipe shared into the app while it
-    // was closed. Deferred to here (after the first frame) so the import's
-    // processing screen is pushed on top of home and isn't wiped out by the
-    // splash → home redirect.
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (Get.isRegistered<ShareIntentService>()) {
         Get.find<ShareIntentService>().consumePendingInitialShare();
@@ -38,22 +41,27 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  final List<Widget> _pages = [
-    const CookbooksScreen(),
-    const DiscoverScreen(),
-    const MealPlanScreen(),
-    const GroceriesScreen(),
-    const SettingsScreen(),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final pages = [
+      CookbooksScreen(showRecipesTab: widget.showRecipesTab),
+      const DiscoverScreen(),
+      const MealPlanScreen(),
+      const GroceriesScreen(),
+      const SettingsScreen(),
+    ];
+
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: IndexedStack(index: _activeIndex, children: _pages),
+      body: IndexedStack(index: _activeIndex, children: pages),
       bottomNavigationBar: AppBottomNav(
         currentIndex: _activeIndex,
-        onTap: (index) => setState(() => _activeIndex = index),
+        onTap: (index) {
+          // The Meal Plan tab (2) always opens on the current week/month,
+          // regardless of which month the user last browsed before leaving.
+          if (index == 2) Get.find<MealPlanController>().goToToday();
+          setState(() => _activeIndex = index);
+        },
       ),
     );
   }

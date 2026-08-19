@@ -38,7 +38,9 @@ import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/widgets/empty_plate_illustration.dart';
 
 class CookbooksScreen extends StatefulWidget {
-  const CookbooksScreen({super.key});
+  final bool showRecipesTab;
+
+  const CookbooksScreen({super.key, this.showRecipesTab = false});
 
   @override
   State<CookbooksScreen> createState() => _CookbooksScreenState();
@@ -46,7 +48,7 @@ class CookbooksScreen extends StatefulWidget {
 
 class _CookbooksScreenState extends State<CookbooksScreen>
     with TickerProviderStateMixin {
-  int _selectedSegment = 1;
+  late int _selectedSegment = widget.showRecipesTab ? 1 : 0;
   int _sortIndex = 0;
   late AnimationController _fabPulseController;
 

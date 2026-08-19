@@ -129,7 +129,7 @@ class _ImportCompleteScreenState extends State<ImportCompleteScreen> {
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
 
-        Get.offAll(() => const HomeScreen());
+        Get.offAll(() => const HomeScreen(showRecipesTab: true));
       },
       child: Scaffold(
         backgroundColor: AppColors.background,
@@ -197,7 +197,7 @@ class _ImportCompleteScreenState extends State<ImportCompleteScreen> {
                       // screen); if it ended up as the ONLY route, a bare pop
                       // would leave an empty, black navigator — so fall back to
                       // the app home instead.
-                      Get.offAll(() => const HomeScreen());
+                      Get.offAll(() => const HomeScreen(showRecipesTab: true));
 
                       // final nav = Navigator.of(context);
                       // if (nav.canPop()) {

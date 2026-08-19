@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:recipe_ai/Controllers/home_controller.dart';
 import 'package:recipe_ai/Controllers/meal_plan_controller.dart';
+import 'package:recipe_ai/Core/Routes/app_route_observer.dart';
 import 'package:recipe_ai/Model/meal_plan_model.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/Service/recipe_localizer.dart';
@@ -96,7 +97,7 @@ class MealPlanScreen extends StatefulWidget {
   State<MealPlanScreen> createState() => _MealPlanScreenState();
 }
 
-class _MealPlanScreenState extends State<MealPlanScreen> {
+class _MealPlanScreenState extends State<MealPlanScreen> with RouteAware {
   final MealPlanController controller = Get.find<MealPlanController>();
   final HomeController homeController = Get.find<HomeController>();
   final Map<String, LocalizedRecipe> _localizedRecipes = {};
@@ -107,11 +108,34 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
   @override
   void initState() {
     super.initState();
+    // The screen opens on the Week tab, which is always locked to the CURRENT
+    // week. Re-pin here too so a long-lived (permanent) controller that drifted
+    // across a day/week boundary still lands on today's week on entry.
+    controller.goToToday();
     // Fetch the visible month's data reactively (not inside build) — only when
     // the month actually changes and only while the month view is showing.
     _monthWorker = ever<DateTime>(controller.selectedDate, (date) {
       if (_viewIndex == 1) _ensureMonthFetched(date);
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Subscribe to route pops so returning here from a pushed screen (e.g. a
+    // recipe detail opened from a meal card) snaps the view back to the current
+    // period — see [didPopNext].
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) appRouteObserver.subscribe(this, route);
+  }
+
+  @override
+  void didPopNext() {
+    // A screen pushed above Home was popped and the Meal Plan tab is showing
+    // again — reset to the current week/month so the Month view never keeps a
+    // month the user had browsed to before leaving.
+    controller.goToToday();
+    if (_viewIndex == 1) _ensureMonthFetched(controller.selectedDate.value);
   }
 
   Future<void> _loadLocalizedRecipe(MealPlanItem meal) async {
@@ -164,6 +188,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
 
   @override
   void dispose() {
+    appRouteObserver.unsubscribe(this);
     _monthWorker?.dispose();
     super.dispose();
   }
@@ -261,6 +286,12 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
       selectedIndex: _viewIndex,
       onChanged: (index) {
         setState(() => _viewIndex = index);
+        // Both tabs always open on the CURRENT period: goToToday() re-pins the
+        // week window AND sets the selected day to today, so the Week view shows
+        // this week and the Month view (which derives its month from the
+        // selected day) shows the current month — never a month/week the user
+        // had browsed to earlier.
+        controller.goToToday();
         if (index == 1) _ensureMonthFetched(controller.selectedDate.value);
       },
     );

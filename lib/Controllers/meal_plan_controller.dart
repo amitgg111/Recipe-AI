@@ -75,11 +75,10 @@ class MealPlanController extends GetxController {
   }
 
   void selectDate(DateTime date) {
+    // The Week view is pinned to the CURRENT week (see [goToToday] / [onInit])
+    // and must never drift. Selecting a date — e.g. tapping a future day in the
+    // Month calendar — only moves the highlighted day, never the week window.
     selectedDate.value = date;
-    final monday = _getMonday(date);
-    if (monday != selectedWeekStart.value) {
-      selectedWeekStart.value = monday;
-    }
   }
 
   void goToToday() {

@@ -1,9 +1,9 @@
 import 'dart:async';
 
-
 import 'package:firebase_core/firebase_core.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -26,6 +26,7 @@ import 'package:recipe_ai/Controllers/onboarding_controller.dart';
 import 'package:recipe_ai/Controllers/notification_controller.dart';
 import 'package:recipe_ai/Controllers/share_intent_service_controller.dart';
 import 'package:recipe_ai/Core/Routes/app_routes.dart';
+import 'package:recipe_ai/Core/Routes/app_route_observer.dart';
 import 'package:recipe_ai/Core/Theme/app_theme_controller.dart';
 import 'package:recipe_ai/View/Splash/spalsh_screen.dart';
 
@@ -102,11 +103,14 @@ void main() async {
   // Restore the saved language before the first frame so the app opens already
   // localized (defaults to English when nothing is saved).
   await LanguageService.init();
-  Orientation.portrait;
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
   runApp(
     const MyApp(), // Wrap your app
   );
-  // runApp(const MyApp());
+
   // Work out which country the user is in, so the Language screen offers the
   // right options and splash knows which model to pre-download. Resolved here
   // (not in splash) because both of those read it, and it must not race them.
@@ -195,6 +199,9 @@ class MyApp extends StatelessWidget {
       theme: new_theme.AppTheme.light,
       darkTheme: new_theme.AppTheme.light,
       themeMode: ThemeMode.light,
+      // Lets always-alive Home tabs (e.g. Meal Plan) know when a route pushed
+      // above Home is popped, so they can reset to the current period.
+      navigatorObservers: [appRouteObserver],
       home: const SplashScreen(),
       getPages: [
         // Onboarding
