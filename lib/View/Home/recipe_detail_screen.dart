@@ -3591,173 +3591,175 @@ class _MealPlanPickerSheetState extends State<_MealPlanPickerSheet> {
   Widget build(BuildContext context) {
     // The sheet's accent (calendar highlight + Add button) stays the app
     // primary — only the meal-type TAB shows its own colour.
-    return Container(
-      decoration: const BoxDecoration(
-        color: _C.card,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.9,
+    return SafeArea(
+      child: Container(
+        decoration: const BoxDecoration(
+          color: _C.card,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  margin: const EdgeInsets.only(top: 12, bottom: 4),
-                  width: 50,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(20),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        ),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.9,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 12, bottom: 4),
+                    width: 50,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
                   ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 14, 8, 0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'add_to_meal_plan'.tr,
-                            style: _font(18, FontWeight.w800, _C.textDark),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            _title,
-                            style: _font(12, FontWeight.w500, _C.textMedium),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 14, 8, 0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'add_to_meal_plan'.tr,
+                              style: _font(18, FontWeight.w800, _C.textDark),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _title,
+                              style: _font(12, FontWeight.w500, _C.textMedium),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    IconButton(
-                      icon: const OnboardingLineIcon(
-                        'x',
-                        size: 20,
-                        color: _C.textMedium,
+                      IconButton(
+                        icon: const OnboardingLineIcon(
+                          'x',
+                          size: 20,
+                          color: _C.textMedium,
+                        ),
+                        onPressed: () => Get.back(),
                       ),
-                      onPressed: () => Get.back(),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              Padding(
-                padding: const EdgeInsets.only(left: 20, bottom: 10),
-                child: Text(
-                  'select_date'.tr.toUpperCase(),
-                  style: _font(11, FontWeight.w700, _C.textHint, ls: 0.8),
+                const SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.only(left: 20, bottom: 10),
+                  child: Text(
+                    'select_date'.tr.toUpperCase(),
+                    style: _font(11, FontWeight.w700, _C.textHint, ls: 0.8),
+                  ),
                 ),
-              ),
-              _calendar(_C.primary),
-              const SizedBox(height: 20),
-              Padding(
-                padding: const EdgeInsets.only(left: 20, bottom: 10),
-                child: Text(
-                  'meal_type'.tr.toUpperCase(),
-                  style: _font(11, FontWeight.w700, _C.textHint, ls: 0.8),
+                _calendar(_C.primary),
+                const SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.only(left: 20, bottom: 10),
+                  child: Text(
+                    'meal_type'.tr.toUpperCase(),
+                    style: _font(11, FontWeight.w700, _C.textHint, ls: 0.8),
+                  ),
                 ),
-              ),
-              // Colored pill tabs — each meal type keeps its own colour; the
-              // selected one fills solid, the rest show a light tint. Only these
-              // tabs are coloured (the calendar + button stay the app primary).
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: Row(
-                  children: _mealTypes.map((type) {
-                    final sel = _selectedMealType == type;
-                    final c = _mealColors[type]!;
-                    return Expanded(
-                      child: GestureDetector(
-                        onTap: () => setState(() => _selectedMealType = type),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          padding: const EdgeInsets.symmetric(vertical: 11),
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: sel ? c : c.withValues(alpha: 0.13),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            type,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                            style: _font(
-                              12.5,
-                              sel ? FontWeight.w800 : FontWeight.w700,
-                              sel ? Colors.white : c,
+                // Colored pill tabs — each meal type keeps its own colour; the
+                // selected one fills solid, the rest show a light tint. Only these
+                // tabs are coloured (the calendar + button stay the app primary).
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: Row(
+                    children: _mealTypes.map((type) {
+                      final sel = _selectedMealType == type;
+                      final c = _mealColors[type]!;
+                      return Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() => _selectedMealType = type),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            padding: const EdgeInsets.symmetric(vertical: 11),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: sel ? c : c.withValues(alpha: 0.13),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              type,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: _font(
+                                12.5,
+                                sel ? FontWeight.w800 : FontWeight.w700,
+                                sel ? Colors.white : c,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    );
-                  }).toList(),
+                      );
+                    }).toList(),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: GestureDetector(
-                  onTap: _isAdding ? null : _confirm,
-                  child: Container(
-                    width: double.infinity,
-                    height: AppDimensions.buttonHeight,
-                    decoration: BoxDecoration(
-                      color: _C.primary,
-                      borderRadius: BorderRadius.circular(
-                        AppDimensions.radiusButton,
+                const SizedBox(height: 24),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: GestureDetector(
+                    onTap: _isAdding ? null : _confirm,
+                    child: Container(
+                      width: double.infinity,
+                      height: AppDimensions.buttonHeight,
+                      decoration: BoxDecoration(
+                        color: _C.primary,
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusButton,
+                        ),
                       ),
-                    ),
-                    child: Center(
-                      child: _isAdding
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  _mealIcons[_selectedMealType] ??
-                                      Icons.restaurant,
-                                  size: 18,
+                      child: Center(
+                        child: _isAdding
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
                                   color: Colors.white,
+                                  strokeWidth: 2,
                                 ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'add_to_meal'.trParams({
-                                    'meal': _selectedMealType,
-                                  }),
-                                  style: _font(
-                                    15,
-                                    FontWeight.w700,
-                                    Colors.white,
+                              )
+                            : Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    _mealIcons[_selectedMealType] ??
+                                        Icons.restaurant,
+                                    size: 18,
+                                    color: Colors.white,
                                   ),
-                                ),
-                              ],
-                            ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'add_to_meal'.trParams({
+                                      'meal': _selectedMealType,
+                                    }),
+                                    style: _font(
+                                      15,
+                                      FontWeight.w700,
+                                      Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -3888,249 +3890,258 @@ class _CookbookPickerSheetState extends State<CookbookPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-      ),
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 26),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Grab handle
-          Center(
-            child: Container(
-              width: 42,
-              height: 5,
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE7E0D2),
-                borderRadius: BorderRadius.circular(3),
+    return SafeArea(
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 26),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Grab handle
+            Center(
+              child: Container(
+                width: 42,
+                height: 5,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE7E0D2),
+                  borderRadius: BorderRadius.circular(3),
+                ),
               ),
             ),
-          ),
-          // Header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: Row(
-              children: [
-                Text(
-                  'add_to_cookbook'.tr,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFF2A211B),
-                    letterSpacing: -0.4,
-                  ),
-                ),
-                const Spacer(),
-                GestureDetector(
-                  onTap: () => Get.back(),
-                  child: Container(
-                    width: 34,
-                    height: 34,
-                    alignment: Alignment.center,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF4F1EA),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const OnboardingLineIcon(
-                      'x',
-                      size: 19,
-                      color: Color(0xFF8A7E70),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          // Cookbook list
-          Flexible(
-            child: Obx(() {
-              final cbs = widget.cookbookController.cookbooks;
-              if (cbs.isEmpty) {
-                return Padding(
-                  padding: const EdgeInsets.fromLTRB(6, 16, 6, 16),
-                  child: Text(
-                    'no_cookbooks_yet_create'.tr,
-                    style: _font(13.5, FontWeight.w500, _C.textMedium),
-                  ),
-                );
-              }
-              return ListView.separated(
-                shrinkWrap: true,
-                padding: EdgeInsets.zero,
-                itemCount: cbs.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 2),
-                itemBuilder: (_, i) {
-                  final cb = cbs[i];
-                  final selected = _selected.contains(cb.id);
-                  final count = cb.recipeIds.length;
-                  return GestureDetector(
-                    onTap: () => setState(() {
-                      selected ? _selected.remove(cb.id) : _selected.add(cb.id);
-                    }),
-                    behavior: HitTestBehavior.opaque,
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? const Color(0xFFFFF3EF)
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      child: Row(
-                        children: [
-                          _thumb(cb),
-                          const SizedBox(width: 13),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  cb.name,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700,
-                                    color: const Color(0xFF2A211B),
-                                  ),
-                                ),
-                                const SizedBox(height: 1),
-                                Text(
-                                  count == 1
-                                      ? 'n_recipe'.trParams({'count': '$count'})
-                                      : 'n_recipes'.trParams({
-                                          'count': '$count',
-                                        }),
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: const Color(0xFF9A938A),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Container(
-                            width: 26,
-                            height: 26,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(13),
-                              color: selected
-                                  ? const Color(0xFFF2623E)
-                                  : Colors.transparent,
-                              border: selected
-                                  ? null
-                                  : Border.all(
-                                      color: const Color(0xFFE2D8C7),
-                                      width: 2,
-                                    ),
-                            ),
-                            child: selected
-                                ? const OnboardingLineIcon(
-                                    'check',
-                                    color: Colors.white,
-                                    size: 16,
-                                  )
-                                : null,
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              );
-            }),
-          ),
-          // New cookbook
-          GestureDetector(
-            onTap: () {
-              showNewCookbookSheet(context);
-              // AddCookbookSheet.show(context);
-            },
-            behavior: HitTestBehavior.opaque,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+            // Header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
               child: Row(
                 children: [
-                  const SizedBox(
-                    width: 42,
-                    height: 42,
-                    child: CustomPaint(
-                      painter: _DashedRRectPainter(
-                        color: Color(0xFFD8CFBE),
-                        radius: 12,
-                        strokeWidth: 1.5,
-                      ),
-                      child: Center(
-                        child: OnboardingLineIcon(
-                          'plus',
-                          size: 22,
-                          color: Color(0xFFF2623E),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 13),
                   Text(
-                    'new_cookbook'.tr,
+                    'add_to_cookbook'.tr,
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFFF2623E),
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF2A211B),
+                      letterSpacing: -0.4,
+                    ),
+                  ),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () => Get.back(),
+                    child: Container(
+                      width: 34,
+                      height: 34,
+                      alignment: Alignment.center,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFF4F1EA),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const OnboardingLineIcon(
+                        'x',
+                        size: 19,
+                        color: Color(0xFF8A7E70),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 12),
-          // Done button
-          GestureDetector(
-            onTap: _apply,
-            child: Container(
-              width: double.infinity,
-              height: 50,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF2623E),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFF2623E).withValues(alpha: 0.4),
-                    blurRadius: 26,
-                    offset: const Offset(0, 14),
-                    spreadRadius: -10,
-                  ),
-                ],
-              ),
-              child: Center(
-                child: _saving
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
+            const SizedBox(height: 14),
+            // Cookbook list
+            Flexible(
+              child: Obx(() {
+                final cbs = widget.cookbookController.cookbooks;
+                if (cbs.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(6, 16, 6, 16),
+                    child: Text(
+                      'no_cookbooks_yet_create'.tr,
+                      style: _font(13.5, FontWeight.w500, _C.textMedium),
+                    ),
+                  );
+                }
+                return ListView.separated(
+                  shrinkWrap: true,
+                  padding: EdgeInsets.zero,
+                  itemCount: cbs.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 2),
+                  itemBuilder: (_, i) {
+                    final cb = cbs[i];
+                    final selected = _selected.contains(cb.id);
+                    final count = cb.recipeIds.length;
+                    return GestureDetector(
+                      onTap: () => setState(() {
+                        selected
+                            ? _selected.remove(cb.id)
+                            : _selected.add(cb.id);
+                      }),
+                      behavior: HitTestBehavior.opaque,
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? const Color(0xFFFFF3EF)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(15),
                         ),
-                      )
-                    : Text(
-                        'done'.tr,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                        child: Row(
+                          children: [
+                            _thumb(cb),
+                            const SizedBox(width: 13),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    cb.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                      color: const Color(0xFF2A211B),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 1),
+                                  Text(
+                                    count == 1
+                                        ? 'n_recipe'.trParams({
+                                            'count': '$count',
+                                          })
+                                        : 'n_recipes'.trParams({
+                                            'count': '$count',
+                                          }),
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFF9A938A),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Container(
+                              width: 26,
+                              height: 26,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(13),
+                                color: selected
+                                    ? const Color(0xFFF2623E)
+                                    : Colors.transparent,
+                                border: selected
+                                    ? null
+                                    : Border.all(
+                                        color: const Color(0xFFE2D8C7),
+                                        width: 2,
+                                      ),
+                              ),
+                              child: selected
+                                  ? const OnboardingLineIcon(
+                                      'check',
+                                      color: Colors.white,
+                                      size: 16,
+                                    )
+                                  : null,
+                            ),
+                          ],
                         ),
                       ),
+                    );
+                  },
+                );
+              }),
+            ),
+            // New cookbook
+            GestureDetector(
+              onTap: () {
+                showNewCookbookSheet(context);
+                // AddCookbookSheet.show(context);
+              },
+              behavior: HitTestBehavior.opaque,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 13,
+                ),
+                child: Row(
+                  children: [
+                    const SizedBox(
+                      width: 42,
+                      height: 42,
+                      child: CustomPaint(
+                        painter: _DashedRRectPainter(
+                          color: Color(0xFFD8CFBE),
+                          radius: 12,
+                          strokeWidth: 1.5,
+                        ),
+                        child: Center(
+                          child: OnboardingLineIcon(
+                            'plus',
+                            size: 22,
+                            color: Color(0xFFF2623E),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 13),
+                    Text(
+                      'new_cookbook'.tr,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFFF2623E),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            // Done button
+            GestureDetector(
+              onTap: _apply,
+              child: Container(
+                width: double.infinity,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF2623E),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFF2623E).withValues(alpha: 0.4),
+                      blurRadius: 26,
+                      offset: const Offset(0, 14),
+                      spreadRadius: -10,
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: _saving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Text(
+                          'done'.tr,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

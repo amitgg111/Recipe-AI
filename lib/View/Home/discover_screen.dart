@@ -606,7 +606,10 @@ class _RecipeCardState extends State<_RecipeCard> {
   }
 
   String _ago() {
-    final dt = recipe.createdAt;
+    // Show time since the recipe was made PUBLIC (shared), not since it was
+    // authored. Legacy recipes published before publishedAt was tracked fall
+    // back to createdAt.
+    final dt = recipe.publishedAt ?? recipe.createdAt;
     if (dt == null) return '';
     final d = DateTime.now().difference(dt);
     if (d.inDays >= 7) return '${(d.inDays / 7).floor()}w ago';

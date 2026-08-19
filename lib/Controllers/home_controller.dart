@@ -733,13 +733,21 @@ class HomeController extends GetxController {
         }
       }
 
+      final update = <String, dynamic>{
+        'isPublic': isPublic,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+      // Stamp WHEN the recipe was made public. Discover shows this instead of
+      // createdAt so the "x ago" reflects when it was shared, not authored.
+      // Re-stamped on every publish, so private→public→public shows the latest.
+      if (isPublic) {
+        update['publishedAt'] = FieldValue.serverTimestamp();
+      }
+
       await FirebaseFirestore.instance
           .collection('recipes')
           .doc(recipeId)
-          .update({
-            'isPublic': isPublic,
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
+          .update(update);
     } catch (e) {
       log("Visibility update error: $e");
     }

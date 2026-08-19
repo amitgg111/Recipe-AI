@@ -41,6 +41,12 @@ class DiscoverRecipe {
   final String? userAvatar;
   final DateTime? createdAt;
 
+  /// When the recipe was made public (shared to Discover). Discover shows the
+  /// "x ago" from this, not [createdAt], so it reflects the share time — not
+  /// when the recipe was originally authored. Null on legacy recipes published
+  /// before this was tracked; callers fall back to [createdAt].
+  final DateTime? publishedAt;
+
   // Social engagement counters (stored on the recipe document).
   final int likesCount;
   final int commentsCount;
@@ -85,6 +91,7 @@ class DiscoverRecipe {
     required this.userName,
     this.userAvatar,
     this.createdAt,
+    this.publishedAt,
     this.likesCount = 0,
     this.commentsCount = 0,
     this.sharesCount = 0,
@@ -112,6 +119,7 @@ class DiscoverRecipe {
     String? userName,
     String? userAvatar,
     DateTime? createdAt,
+    DateTime? publishedAt,
 
     int? likesCount,
     int? commentsCount,
@@ -145,6 +153,7 @@ class DiscoverRecipe {
       userName: userName ?? this.userName,
       userAvatar: userAvatar ?? this.userAvatar,
       createdAt: createdAt ?? this.createdAt,
+      publishedAt: publishedAt ?? this.publishedAt,
 
       likesCount: likesCount ?? this.likesCount,
       commentsCount: commentsCount ?? this.commentsCount,
@@ -1094,6 +1103,7 @@ class DiscoverController extends GetxController {
           userName: ownerData['name']?.toString() ?? 'Chef',
           userAvatar: ownerData['photoUrl']?.toString(),
           createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+          publishedAt: (data['publishedAt'] as Timestamp?)?.toDate(),
           likesCount: (data['likesCount'] as num?)?.toInt() ?? 0,
           commentsCount: (data['commentsCount'] as num?)?.toInt() ?? 0,
           sharesCount: (data['sharesCount'] as num?)?.toInt() ?? 0,

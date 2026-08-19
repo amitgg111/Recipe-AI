@@ -280,7 +280,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
           : AppColors.background,
       body: SafeArea(
         top: false,
-        bottom: false,
+        // bottom: false,
         child: Column(
           children: [
             // Fixed top: app name, then back button + animated progress

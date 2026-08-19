@@ -109,9 +109,14 @@ class _MealPlanScreenState extends State<MealPlanScreen> with RouteAware {
   void initState() {
     super.initState();
     // The screen opens on the Week tab, which is always locked to the CURRENT
-    // week. Re-pin here too so a long-lived (permanent) controller that drifted
-    // across a day/week boundary still lands on today's week on entry.
-    controller.goToToday();
+    // week. Re-pin so a long-lived (permanent) controller that drifted across a
+    // day/week boundary still lands on today's week on entry. This mutates Rx
+    // values, so it MUST run AFTER the first frame — MealPlanScreen mounts
+    // inside the Home IndexedStack during build, and writing an observed Rx
+    // mid-build throws "setState() called during build".
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) controller.goToToday();
+    });
     // Fetch the visible month's data reactively (not inside build) — only when
     // the month actually changes and only while the month view is showing.
     _monthWorker = ever<DateTime>(controller.selectedDate, (date) {
@@ -508,92 +513,102 @@ class _MealPlanScreenState extends State<MealPlanScreen> with RouteAware {
   void _shareMealPlan() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
+      backgroundColor: const Color.fromRGBO(0, 0, 0, 0),
       isScrollControlled: true,
-      builder: (_) => Container(
-        padding: const EdgeInsets.fromLTRB(18, 14, 18, 24),
-        decoration: const BoxDecoration(
-          color: _S.card,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 42,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE7E0D2),
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Text(
-                  'share_meal_plan'.tr,
-                  style: _S.f(19, FontWeight.w800, _S.textDark),
-                ),
-                const Spacer(),
-                GestureDetector(
-                  onTap: () => Get.back(),
-                  behavior: HitTestBehavior.opaque,
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF4F1EA),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const OnboardingLineIcon(
-                      'x',
-                      color: Color(0xFF8A7E70),
-                      size: 16,
-                    ),
+      builder: (_) => SafeArea(
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(18, 14, 18, 24),
+          decoration: const BoxDecoration(
+            color: _S.card,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE7E0D2),
+                    borderRadius: BorderRadius.circular(3),
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.42,
               ),
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFBF7F0),
-                  border: Border.all(color: const Color(0xFFEFE6D6)),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                padding: const EdgeInsets.fromLTRB(16, 15, 16, 15),
-                child: SingleChildScrollView(child: _buildSharePreview()),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Text(
+                    'share_meal_plan'.tr,
+                    style: _S.f(19, FontWeight.w800, _S.textDark),
+                  ),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () => Get.back(),
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF4F1EA),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const OnboardingLineIcon(
+                        'x',
+                        color: Color(0xFF8A7E70),
+                        size: 16,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                _shareDest(
-                  'chat',
-                  'WhatsApp',
-                  bg: const Color(0xFF25D366),
-                  fg: Colors.white,
-                  onTap: () => _shareVia('whatsapp'),
+              const SizedBox(height: 14),
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.42,
                 ),
-                _shareDest(
-                  'copy',
-                  'copy_text'.tr,
-                  onTap: () => _shareVia('copy'),
+                child: Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFBF7F0),
+                    border: Border.all(color: const Color(0xFFEFE6D6)),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  padding: const EdgeInsets.fromLTRB(16, 15, 16, 15),
+                  child: SingleChildScrollView(child: _buildSharePreview()),
                 ),
-                _shareDest('mail', 'email'.tr, onTap: () => _shareVia('email')),
-                _shareDest('share', 'more'.tr, onTap: () => _shareVia('more')),
-              ],
-            ),
-          ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  _shareDest(
+                    'chat',
+                    'WhatsApp',
+                    bg: const Color(0xFF25D366),
+                    fg: Colors.white,
+                    onTap: () => _shareVia('whatsapp'),
+                  ),
+                  _shareDest(
+                    'copy',
+                    'copy_text'.tr,
+                    onTap: () => _shareVia('copy'),
+                  ),
+                  _shareDest(
+                    'mail',
+                    'email'.tr,
+                    onTap: () => _shareVia('email'),
+                  ),
+                  _shareDest(
+                    'share',
+                    'more'.tr,
+                    onTap: () => _shareVia('more'),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
