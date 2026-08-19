@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/Service/ai_translation_service.dart';
+import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/Service/language_service.dart';
 import 'package:recipe_ai/View/Auth/auth_wrapper.dart';
 import 'package:recipe_ai/screens/onboarding/onboarding_flow_screen.dart';
@@ -85,10 +86,24 @@ class _SplashScreenState extends State<SplashScreen>
 
     _redirectTimer = Timer(const Duration(seconds: 3), () {
       if (!mounted) return;
+
+      // Auth FIRST: a signed-in user always goes straight to the app,
+      // regardless of the local onboarding flag. That flag lives in GetStorage,
+      // which can be cleared independently of Firebase's own session storage —
+      // so checking auth first stops a logged-in user from ever being pushed
+      // back into onboarding.
+      if (AuthService.currentUser != null) {
+        Get.off(() => const AuthWrapper());
+        return;
+      }
+
       final box = GetStorage();
       final hasSeenOnboarding = box.read<bool>('hasSeenOnboarding') ?? false;
       if (!hasSeenOnboarding) {
-        box.write('hasSeenOnboarding', true);
+        // NOTE: the flag is NOT written here. It is set only when onboarding
+        // actually COMPLETES (OnboardingFlowScreen._advance → Plus intro), so a
+        // user who abandons onboarding part-way sees it again next launch
+        // instead of being skipped straight to sign-in.
         Get.off(
           () => const OnboardingFlowScreen(),
           transition: Transition.noTransition,

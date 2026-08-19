@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:recipe_ai/screens/onboarding/cuisine_preference.dart';
 import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 
 import '../../theme/app_colors.dart';
 import '../../widgets/app_logo.dart';
@@ -105,7 +106,13 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
       _syncSettingUpGate();
       _syncSettingUpGate();
     } else {
-      // Step 12 done → continue to the existing Plus intro (steps 13–15).
+      // Step 12 done → onboarding is COMPLETE (all preference steps collected).
+      // Persist the flag HERE (not at splash), so a user who abandons
+      // onboarding part-way sees it again next launch instead of skipping
+      // straight to sign-in.
+      GetStorage().write('hasSeenOnboarding', true);
+
+      // Continue to the existing Plus intro (steps 13–15).
       Get.to(
         () => const PlusIntroScreen(),
         transition: Transition.noTransition,
