@@ -138,7 +138,7 @@ class _GroceriesScreenState extends State<GroceriesScreen> {
         _localizedRecipes[recipe.id] = localized;
       });
     } catch (e) {
-      debugPrint('Failed to localize grocery recipe ${recipe.id}: $e');
+      print('Failed to localize grocery recipe ${recipe.id}: $e');
     } finally {
       _localizingRecipeIds.remove(recipe.id);
     }

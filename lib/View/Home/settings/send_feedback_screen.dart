@@ -105,7 +105,7 @@ class _SendFeedbackScreenState extends State<SendFeedbackScreen> {
       // A clear confirmation "moment": an animated success dialog, then pop
       // back to Settings when the user taps Done.
     } catch (e) {
-      debugPrint('SendFeedback: submit failed → $e');
+      print('SendFeedback: submit failed → $e');
       CustomSnackbar.show(
         title: 'error'.tr,
         message: 'could_not_send_feedback'.tr,
@@ -254,8 +254,7 @@ class _SendFeedbackScreenState extends State<SendFeedbackScreen> {
                       const SizedBox(height: 8),
                       Form(
                         key: _formKey,
-                        autovalidateMode:
-                            AutovalidateMode.onUserInteraction,
+                        autovalidateMode: AutovalidateMode.onUserInteraction,
                         child: SizedBox(
                           height: 150,
                           child: Container(
@@ -284,11 +283,10 @@ class _SendFeedbackScreenState extends State<SendFeedbackScreen> {
                               keyboardType: TextInputType.multiline,
                               textAlignVertical: TextAlignVertical.top,
                               validator: (v) {
-                                final requiredError =
-                                    ValidationHelper.required(
-                                      v,
-                                      field: 'Feedback',
-                                    );
+                                final requiredError = ValidationHelper.required(
+                                  v,
+                                  field: 'Feedback',
+                                );
                                 if (requiredError != null) {
                                   return requiredError;
                                 }

@@ -111,8 +111,8 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
       // onboarding part-way sees it again next launch instead of skipping
       // straight to sign-in.
       GetStorage().write('hasSeenOnboarding', true);
-
       // Continue to the existing Plus intro (steps 13–15).
+
       Get.to(
         () => const PlusIntroScreen(),
         transition: Transition.noTransition,

@@ -58,8 +58,7 @@ class NotificationService {
   bool _initialized = false;
 
   bool get isConfigured =>
-      oneSignalAppId.isNotEmpty &&
-      oneSignalAppId != 'YOUR_ONESIGNAL_APP_ID';
+      oneSignalAppId.isNotEmpty && oneSignalAppId != 'YOUR_ONESIGNAL_APP_ID';
 
   /// Call once at startup (before any permission request). Does NOT prompt.
   Future<void> init() async {
@@ -106,7 +105,7 @@ class NotificationService {
         'oneSignalUpdatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     } catch (e) {
-      debugPrint('NotificationService: failed to save oneSignalId: $e');
+      print('NotificationService: failed to save oneSignalId: $e');
     }
   }
 

@@ -639,7 +639,7 @@ class _WeekReviewScreenState extends State<WeekReviewScreen> {
       await _controller.applyToPlan();
       success = true;
     } catch (e, stackTrace) {
-      debugPrint('Apply failed: $e');
+      print('Apply failed: $e');
       debugPrintStack(stackTrace: stackTrace);
     }
 

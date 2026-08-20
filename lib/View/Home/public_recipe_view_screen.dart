@@ -283,7 +283,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
 
       _ratingCount.value = (d['ratingCount'] as num?)?.toInt() ?? 0;
     } catch (e) {
-      debugPrint('Social load error: $e');
+      print('Social load error: $e');
     }
   }
 
@@ -2235,7 +2235,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
       // Update Firestore/social save state ONLY now.
       await RecipeSocialService.setSave(recipe.userId, recipe.id, true);
     } catch (e) {
-      debugPrint('[_saveToCookbook] Error: $e');
+      print('[_saveToCookbook] Error: $e');
     } finally {
       _busySave = false;
     }

@@ -350,7 +350,7 @@ class RecipeEditorController extends GetxController {
       log("UPLOAD PATH => ${ref.fullPath}");
       return await ref.getDownloadURL();
     } catch (e) {
-      debugPrint(e.toString());
+      print(e.toString());
       return null;
     }
   }
@@ -973,7 +973,7 @@ class RecipeEditorController extends GetxController {
 
       await FirebaseStorage.instance.refFromURL(url).delete();
     } catch (e) {
-      debugPrint(e.toString());
+      print(e.toString());
     }
   }
 

@@ -52,7 +52,7 @@ class _RecipeCameraScreenState extends State<RecipeCameraScreen> {
         }
       }
     } catch (e) {
-      debugPrint('Camera initialization error: $e');
+      print('Camera initialization error: $e');
 
       if (mounted) {
         setState(() => _isInitializing = false);
@@ -129,7 +129,7 @@ class _RecipeCameraScreenState extends State<RecipeCameraScreen> {
     try {
       await RecipeImportService.importRecipeFromImage(context, image);
     } catch (e) {
-      debugPrint('Recipe image processing error: $e');
+      print('Recipe image processing error: $e');
     } finally {
       if (mounted) {
         setState(() => _isProcessing = false);

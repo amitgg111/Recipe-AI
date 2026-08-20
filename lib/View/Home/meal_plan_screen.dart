@@ -177,7 +177,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> with RouteAware {
         _localizedRecipes[recipeId] = localized;
       });
     } catch (e) {
-      debugPrint('Meal plan localization failed: $e');
+      print('Meal plan localization failed: $e');
     } finally {
       _localizingRecipeIds.remove(recipeId);
     }

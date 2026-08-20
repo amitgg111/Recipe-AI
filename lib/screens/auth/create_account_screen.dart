@@ -112,7 +112,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           .doc(user.uid)
           .get();
       final needsTrialChooser = snap.data()?['trialChooserCompleted'] == false;
-
+      print("--------------- final needsTrialChooser-------------------$needsTrialChooser");
       Get.offAll(
         () =>
             needsTrialChooser ? const TrialChooserScreen() : const HomeScreen(),

@@ -54,7 +54,7 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
 
       return localized;
     } catch (e) {
-      debugPrint('Failed to localize recipe ${recipe.id}: $e');
+      print('Failed to localize recipe ${recipe.id}: $e');
       return null;
     } finally {
       _localizingRecipeIds.remove(recipe.id);

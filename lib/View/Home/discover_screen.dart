@@ -707,7 +707,7 @@ class _RecipeCardState extends State<_RecipeCard> {
 
       disc.likedOriginalIds.refresh();
 
-      debugPrint('[_toggleLike] Error: $e');
+      print('[_toggleLike] Error: $e');
     } finally {
       _busyLike = false;
     }
@@ -820,7 +820,7 @@ class _RecipeCardState extends State<_RecipeCard> {
       // 6. Update Firestore/social save state.
       await RecipeSocialService.setSave(recipe.userId, recipe.id, true);
     } catch (e) {
-      debugPrint('[_openSaveSheet] Error: $e');
+      print('[_openSaveSheet] Error: $e');
     } finally {
       _busySave = false;
     }
@@ -933,7 +933,7 @@ class _RecipeCardState extends State<_RecipeCard> {
         );
       }
     } catch (e) {
-      debugPrint('[_unsave] Error: $e');
+      print('[_unsave] Error: $e');
     } finally {
       _busySave = false;
     }

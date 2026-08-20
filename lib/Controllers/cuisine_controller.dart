@@ -46,7 +46,7 @@ class CuisineController extends GetxController {
       final cached = _storage.read(_cacheKey);
 
       if (cached == null) {
-        debugPrint('[Cuisine] No local cache found');
+        print('[Cuisine] No local cache found');
         return;
       }
 
@@ -66,13 +66,13 @@ class CuisineController extends GetxController {
       if (result.isNotEmpty) {
         categories.assignAll(result);
 
-        debugPrint(
+        print(
           '[Cuisine] Loaded from local cache: '
           '${result.length} categories',
         );
       }
     } catch (e) {
-      debugPrint('[Cuisine] Local cache error: $e');
+      print('[Cuisine] Local cache error: $e');
     }
   }
 
@@ -98,7 +98,7 @@ class CuisineController extends GetxController {
           .get();
 
       if (snap.docs.isEmpty) {
-        debugPrint('[Cuisine] No Firestore documents found');
+        print('[Cuisine] No Firestore documents found');
         return;
       }
 
@@ -122,12 +122,12 @@ class CuisineController extends GetxController {
         // Save for next time.
         await _storage.write(_cacheKey, jsonEncode(result));
 
-        debugPrint('[Cuisine] Firestore data updated');
+        print('[Cuisine] Firestore data updated');
       }
 
       _fetched = true;
     } catch (e) {
-      debugPrint('[Cuisine] Firestore fetch error: $e');
+      print('[Cuisine] Firestore fetch error: $e');
     } finally {
       isLoading.value = false;
     }
@@ -163,8 +163,8 @@ class GoalController extends GetxController {
       final data = doc.data();
       data['id'] = doc.id; // document id પણ add કરી દો
 
-      debugPrint("Goal: ${data['title']}");
-      debugPrint("Image: ${data['image']}");
+      print("Goal: ${data['title']}");
+      print("Image: ${data['image']}");
       return data;
     }).toList();
     isLoading.value = false;

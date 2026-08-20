@@ -92,25 +92,56 @@ class _SplashScreenState extends State<SplashScreen>
       // which can be cleared independently of Firebase's own session storage —
       // so checking auth first stops a logged-in user from ever being pushed
       // back into onboarding.
+      // if (AuthService.currentUser != null) {
+      //   Get.off(() => const AuthWrapper());
+      //   return;
+      // }
+
+      // final box = GetStorage();
+      // final hasSeenOnboarding = box.read<bool>('hasSeenOnboarding') ?? false;
+      // print("--------  final box = ------------$box");
+      // print(
+      //   "--------  final hasSeenOnboarding = ------------$hasSeenOnboarding",
+      // );
+      // if (!hasSeenOnboarding) {
+      //   // NOTE: the flag is NOT written here. It is set only when onboarding
+      //   // actually COMPLETES (OnboardingFlowScreen._advance → Plus intro), so a
+      //   // user who abandons onboarding part-way sees it again next launch
+      //   // instead of being skipped straight to sign-in.
+      //   Get.off(
+      //     () => const OnboardingFlowScreen(),
+      //     transition: Transition.noTransition,
+      //   );
+      //   print(
+      //     "--------- if (!hasSeenOnboarding) {------------$hasSeenOnboarding",
+      //   );
+      // } else {
+      //   Get.off(() => const AuthWrapper());
+      // }
+      final box = GetStorage();
+      final hasSeenOnboarding = box.read<bool>('hasSeenOnboarding') ?? false;
+
+      print('hasSeenOnboarding: $hasSeenOnboarding');
+      print('currentUser: ${AuthService.currentUser?.uid}');
+
+      if (!hasSeenOnboarding) {
+        // Fresh install / onboarding not completed.
+        // Always show onboarding first.
+        Get.off(
+          () => const OnboardingFlowScreen(),
+          transition: Transition.noTransition,
+        );
+        return;
+      }
+
+      // Onboarding completed → now check Firebase auth.
       if (AuthService.currentUser != null) {
         Get.off(() => const AuthWrapper());
         return;
       }
 
-      final box = GetStorage();
-      final hasSeenOnboarding = box.read<bool>('hasSeenOnboarding') ?? false;
-      if (!hasSeenOnboarding) {
-        // NOTE: the flag is NOT written here. It is set only when onboarding
-        // actually COMPLETES (OnboardingFlowScreen._advance → Plus intro), so a
-        // user who abandons onboarding part-way sees it again next launch
-        // instead of being skipped straight to sign-in.
-        Get.off(
-          () => const OnboardingFlowScreen(),
-          transition: Transition.noTransition,
-        );
-      } else {
-        Get.off(() => const AuthWrapper());
-      }
+      // No onboarding + no auth.
+      Get.off(() => const AuthWrapper());
     });
   }
 

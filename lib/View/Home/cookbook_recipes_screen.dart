@@ -837,7 +837,7 @@ class _RecipeListTileState extends State<_RecipeListTile> {
         _localizedRecipe = localized;
       });
     } catch (e) {
-      debugPrint(
+      print(
         'CookbookRecipesScreen: Failed to localize recipe '
         '${widget.recipe.id}: $e',
       );
