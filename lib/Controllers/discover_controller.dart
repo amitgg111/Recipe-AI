@@ -7,13 +7,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/Service/ai_translation_service.dart';
 import 'package:recipe_ai/Service/recipe_social_service.dart';
-// `IngredientSection` (named group of ingredients, e.g. "For the batter")
-// is the app's existing model — reused here rather than redeclared, so this
-// file stays compatible with HomeController / RecipeEditorController /
-// RecipeDetailScreen, which all import this same class from here. Declaring
-// a second class with the same name in this file previously caused an
-// "ambiguous import" error in every file that imported both this file and
-// recipe_section_model.dart (HomeController does).
 import 'package:recipe_ai/Model/recipe_section_model.dart';
 
 class DiscoverRecipe {
@@ -28,47 +21,25 @@ class DiscoverRecipe {
   final String? totalTime;
   final String? servings;
   final List<String> ingredients;
-
-  /// Optional grouped view of [ingredients] (e.g. "For the batter" / "For
-  /// the tempering"). Empty when the recipe was authored/imported with a
-  /// flat ingredient list only — callers should fall back to [ingredients]
-  /// in that case.
   final List<IngredientSection> ingredientSections;
-
   final List<String> instructions;
   final String userId;
   final String userName;
   final String? userAvatar;
   final DateTime? createdAt;
-
-  /// When the recipe was made public (shared to Discover). Discover shows the
-  /// "x ago" from this, not [createdAt], so it reflects the share time — not
-  /// when the recipe was originally authored. Null on legacy recipes published
-  /// before this was tracked; callers fall back to [createdAt].
   final DateTime? publishedAt;
 
-  // Social engagement counters (stored on the recipe document).
   final int likesCount;
   final int commentsCount;
   final int sharesCount;
   final int savesCount;
 
-  // English originals, kept when [title]/[category]/[cuisine] hold a
-  // translated value for display. The chip filters (Quick & Easy/Vegan/
-  // Desserts…) and category matching are defined in English, so they read
-  // these — null falls back to the main field, which for an untranslated
-  // recipe already IS English.
   final String? enTitle;
   final String? enDescription;
   final String? enCategory;
   final String? enCuisine;
 
   String get filterTitle => enTitle ?? title;
-
-  /// English original of [description]. The feed sets it when it
-  /// translates; an untranslated model's description already IS English.
-  /// Detail screens translate from this so a translated description can
-  /// never be fed back through ML Kit a second time.
   String? get filterDescription => enDescription ?? description;
   String get filterCategory => enCategory ?? category ?? '';
   String get filterCuisine => enCuisine ?? cuisine ?? '';
@@ -120,12 +91,10 @@ class DiscoverRecipe {
     String? userAvatar,
     DateTime? createdAt,
     DateTime? publishedAt,
-
     int? likesCount,
     int? commentsCount,
     int? sharesCount,
     int? savesCount,
-
     String? enTitle,
     String? enDescription,
     String? enCategory,
@@ -133,33 +102,27 @@ class DiscoverRecipe {
   }) {
     return DiscoverRecipe(
       id: id,
-
       title: title ?? this.title,
       description: description ?? this.description,
       imageUrl: imageUrl ?? this.imageUrl,
       category: category ?? this.category,
       cuisine: cuisine ?? this.cuisine,
-
       prepTime: prepTime ?? this.prepTime,
       cookTime: cookTime ?? this.cookTime,
       totalTime: totalTime ?? this.totalTime,
       servings: servings ?? this.servings,
-
       ingredients: ingredients ?? this.ingredients,
       ingredientSections: ingredientSections ?? this.ingredientSections,
       instructions: instructions ?? this.instructions,
-
       userId: userId ?? this.userId,
       userName: userName ?? this.userName,
       userAvatar: userAvatar ?? this.userAvatar,
       createdAt: createdAt ?? this.createdAt,
       publishedAt: publishedAt ?? this.publishedAt,
-
       likesCount: likesCount ?? this.likesCount,
       commentsCount: commentsCount ?? this.commentsCount,
       sharesCount: sharesCount ?? this.sharesCount,
       savesCount: savesCount ?? this.savesCount,
-
       enTitle: enTitle ?? this.enTitle,
       enDescription: enDescription ?? this.enDescription,
       enCategory: enCategory ?? this.enCategory,
@@ -168,9 +131,6 @@ class DiscoverRecipe {
   }
 }
 
-/// A snapshot of one Discover filter's loaded feed, so returning to a
-/// previously-viewed tab ("All" or a category/cuisine) restores instantly with
-/// no re-fetch and no loading spinner.
 class _DiscoverFilterCache {
   final List<DiscoverRecipe> recipes;
   final List<DiscoverRecipe> english;
@@ -195,51 +155,39 @@ class DiscoverController extends GetxController {
   static const int _pageSize = 20;
 
   DocumentSnapshot<Map<String, dynamic>>? _lastDocument;
-
   bool _hasMore = true;
-  // Reactive: the bottom skeleton row reads this inside an Obx. As a plain
-  // bool, flipping it never rebuilt the list — the load-more indicator simply
-  // never appeared, which is why pagination felt like a silent hang.
   final RxBool _isLoadingMore = false.obs;
-  // ------------------------------------------------------------
-  // Category-specific pagination
-  // ------------------------------------------------------------
 
   String _activeFirestoreFilter = 'All';
-
   DocumentSnapshot<Map<String, dynamic>>? _categoryLastDocument;
-
   bool _categoryHasMore = true;
-
   bool _categoryLoading = false;
-
   static const int _categoryPageSize = 20;
 
   bool get hasMore => _hasMore;
   bool get isLoadingMore => _isLoadingMore.value;
 
-  // English originals of the feed (Firestore is English). [recipes] holds
-  // the translated-for-display copies; re-translation always starts from
-  // here.
   final List<DiscoverRecipe> _english = [];
-
-  /// Session-lifetime cache of author profiles (name/avatar) keyed by uid,
-  /// so pagination doesn't refetch the same user docs page after page.
   final Map<String, Map<String, dynamic>> _ownerProfileCache = {};
-
-  // Onboarding-selected cuisines. NOTE: these are no longer used to
-  // prioritize/sort the feed — the feed is always newest-first. They are
-  // used ONLY to build the extra cuisine chips shown right after "All" in
-  // [categories], so the user's preferred cuisines are one tap away.
   final RxList<String> _preferredCuisines = <String>[].obs;
+
+  // ── LIVE FEED (real-time add/remove of public recipes) ──
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _liveFeedSub;
+  // How many newest matching public docs we keep a live eye on. Anything
+  // outside this window is only refreshed by pagination/pull-to-refresh —
+  // keeps read cost bounded while still catching "just published" / "just
+  // made private" in real time for what the user is actually looking at.
+  static const int _liveFeedWindow = 30;
+
+  // ── TAB EXISTENCE (real-time: does this category/cuisine have ANY public
+  // recipe right now?) — drives which chips are shown. Firestore-verified,
+  // not just "is something currently loaded into `recipes`".
+  final RxMap<String, bool> categoryHasData = <String, bool>{}.obs;
+  final Map<String, StreamSubscription<QuerySnapshot<Map<String, dynamic>>>>
+  _existenceSubs = {};
 
   List<String> get preferredCuisines => _preferredCuisines.toList();
 
-  /// The pre-translation (English) copy of a feed recipe, for logic that
-  /// must key off English — e.g. ingredient→emoji matching, which uses an
-  /// English keyword dictionary and would miss on a translated name. Null
-  /// when the recipe isn't in the loaded feed; callers then fall back to
-  /// the visible text.
   DiscoverRecipe? englishById(String id) {
     for (final r in _english) {
       if (r.id == id) return r;
@@ -252,21 +200,82 @@ class DiscoverController extends GetxController {
 
     switch (key) {
       case 'vegan':
-        return ['vegan', 'Vegan', 'VEGAN'];
+        return [
+          'vegan',
+          'Vegan',
+          'VEGAN',
+          'plant based',
+          'plant-based',
+          'plant based food',
+        ];
 
       case 'desserts':
-        return ['dessert', 'Dessert', 'desserts', 'Desserts', 'sweet', 'Sweet'];
+      case 'dessert':
+        return [
+          'dessert',
+          'Dessert',
+          'desserts',
+          'Desserts',
+          'sweet',
+          'Sweet',
+          'sweets',
+          'Sweets',
+          'sweet dish',
+          'Sweet Dish',
+          'sweet dishes',
+          'Sweet Dishes',
+          'pudding',
+          'Pudding',
+          'cake',
+          'Cake',
+          'cakes',
+          'Cakes',
+          'pastry',
+          'Pastry',
+          'pastries',
+          'Pastries',
+          'ice cream',
+          'Ice Cream',
+          'icecream',
+          'Icecream',
+          'baked dessert',
+          'Baked Dessert',
+        ];
 
       case 'breakfast':
-        return ['breakfast', 'Breakfast'];
+        return [
+          'breakfast',
+          'Breakfast',
+          'morning',
+          'Morning',
+          'morning meal',
+          'Morning Meal',
+          'brunch',
+          'Brunch',
+        ];
 
       case 'lunch':
-        return ['lunch', 'Lunch'];
+        return [
+          'lunch',
+          'Lunch',
+          'midday',
+          'Midday',
+          'midday meal',
+          'Midday Meal',
+        ];
 
       case 'dinner':
-        return ['dinner', 'Dinner'];
+        return [
+          'dinner',
+          'Dinner',
+          'evening meal',
+          'Evening Meal',
+          'supper',
+          'Supper',
+        ];
 
       case 'drinks':
+      case 'drink':
         return [
           'drink',
           'Drink',
@@ -276,10 +285,124 @@ class DiscoverController extends GetxController {
           'Beverage',
           'beverages',
           'Beverages',
+          'juice',
+          'Juice',
+          'juices',
+          'Juices',
+          'smoothie',
+          'Smoothie',
+          'smoothies',
+          'Smoothies',
+          'shake',
+          'Shake',
+          'shakes',
+          'Shakes',
+          'cocktail',
+          'Cocktail',
+          'mocktail',
+          'Mocktail',
         ];
 
       default:
-        return [category];
+        return [category, category.toLowerCase(), category.toUpperCase()];
+    }
+  }
+
+  bool _isBaseCategory(String value) {
+    return _baseCategories.any(
+      (category) => category.toLowerCase() == value.trim().toLowerCase(),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // TAB EXISTENCE LISTENERS
+  // ═══════════════════════════════════════════════════════════════════════
+
+  /// Builds the "does at least 1 public recipe exist for this category /
+  /// cuisine" query. `limit(1)` keeps it cheap; `.snapshots()` (not `.get()`)
+  /// keeps it realtime so a tab appears/disappears the instant a recipe is
+  /// published/unpublished — no app restart or manual refresh needed.
+  Query<Map<String, dynamic>> _existenceQueryFor(String category) {
+    final isBase = _isBaseCategory(category);
+    final field = isBase ? 'category' : 'cuisine';
+    final aliases = _categoryAliases(category);
+
+    Query<Map<String, dynamic>> query = FirebaseFirestore.instance
+        .collection('recipes')
+        .where('isPublic', isEqualTo: true);
+
+    if (aliases.length == 1) {
+      query = query.where(field, isEqualTo: aliases.first);
+    } else {
+      // Firestore whereIn supports up to 30 values.
+      query = query.where(field, whereIn: aliases.take(30).toList());
+    }
+
+    return query.limit(10);
+  }
+
+  /// Keeps one lightweight realtime listener per base-category and per
+  /// preferred cuisine, updating [categoryHasData]. Called whenever the set
+  /// of preferred cuisines can have changed (login, onboarding update).
+  void _setupCategoryExistenceListeners() {
+    final wanted = <String>{
+      ..._baseCategories,
+      ...preferredCuisines.map(_canonicalCuisine).where((c) => c.isNotEmpty),
+    };
+
+    // Drop listeners for categories no longer relevant (e.g. user changed
+    // their preferred cuisines).
+    for (final key in _existenceSubs.keys.toList()) {
+      if (!wanted.contains(key)) {
+        _existenceSubs.remove(key)?.cancel();
+        categoryHasData.remove(key);
+      }
+    }
+
+    for (final cat in wanted) {
+      if (_existenceSubs.containsKey(cat)) continue; // already listening
+
+      final isBase = _isBaseCategory(cat);
+      final field = isBase ? 'category' : 'cuisine';
+      final aliases = _categoryAliases(cat);
+
+      log(
+        '👁️ Existence listener started: "$cat" | field=$field | aliases=$aliases',
+      );
+
+      final sub = _existenceQueryFor(cat).snapshots().listen(
+        (snapshot) {
+          final hasData = snapshot.docs.isNotEmpty;
+          categoryHasData[cat] = hasData;
+
+          // 👈 DEBUG: prints exactly what Firestore matched (or didn't) so
+          // a mismatch between the stored category/cuisine value and the
+          // expected aliases is visible immediately. Safe to remove later.
+          log(
+            '👁️ Existence["$cat"] -> hasData=$hasData '
+            '(matched ${snapshot.docs.length} doc(s) on $field IN $aliases)',
+          );
+
+          // If the user is currently sitting on a tab that just emptied out
+          // (its last public recipe went private/was deleted), don't leave
+          // them stranded on a chip that's about to vanish — fall back to
+          // "All" automatically.
+          if (!hasData && selectedCategory.value == cat) {
+            selectCategory('All');
+          }
+        },
+        onError: (e) {
+          log(
+            '❌ Existence listener failed for "$cat" (field=$field, '
+            'aliases=$aliases): $e\n'
+            '   → this is almost always a MISSING FIRESTORE INDEX. '
+            'Copy the link in this error (if any) into a browser and '
+            'click "Create Index".',
+          );
+        },
+      );
+
+      _existenceSubs[cat] = sub;
     }
   }
 
@@ -295,10 +418,6 @@ class DiscoverController extends GetxController {
         normalizedCategory.toLowerCase() == 'all') {
       return;
     }
-
-    // ------------------------------------------------------------
-    // RESET CATEGORY
-    // ------------------------------------------------------------
 
     if (refresh || _activeFirestoreFilter != normalizedCategory) {
       _categoryLastDocument = null;
@@ -324,9 +443,7 @@ class DiscoverController extends GetxController {
 
     try {
       final aliases = _categoryAliases(normalizedCategory);
-
       final isBaseCategory = _isBaseCategory(normalizedCategory);
-
       final List<DiscoverRecipe> allCategoryRecipes = [];
 
       log(
@@ -335,30 +452,16 @@ class DiscoverController extends GetxController {
         'aliases=$aliases',
       );
 
-      // ------------------------------------------------------------
-      // FIRESTORE QUERY
-      // ------------------------------------------------------------
-
       for (final alias in aliases) {
         Query<Map<String, dynamic>> query;
 
         if (isBaseCategory) {
-          // --------------------------------------------------------
-          // CATEGORY
-          // Vegan / Desserts / Breakfast / Lunch / Dinner / Drinks
-          // --------------------------------------------------------
-
           query = FirebaseFirestore.instance
               .collection('recipes')
               .where('isPublic', isEqualTo: true)
               .where('category', isEqualTo: alias)
               .limit(_categoryPageSize);
         } else {
-          // --------------------------------------------------------
-          // CUISINE
-          // North Indian / South Indian / Italian / Mexican etc.
-          // --------------------------------------------------------
-
           query = FirebaseFirestore.instance
               .collection('recipes')
               .where('isPublic', isEqualTo: true)
@@ -368,18 +471,10 @@ class DiscoverController extends GetxController {
 
         final snapshot = await query.get();
 
-        log(
-          '🔎 Firestore [$alias] -> '
-          '${snapshot.docs.length} documents',
-        );
-
-        // ----------------------------------------------------------
-        // DEBUG EACH DOCUMENT
-        // ----------------------------------------------------------
+        log('🔎 Firestore [$alias] -> ${snapshot.docs.length} documents');
 
         for (final doc in snapshot.docs) {
           final data = doc.data();
-
           log(
             '🍛 Recipe: ${data['title']} | '
             'category=${data['category']} | '
@@ -390,68 +485,42 @@ class DiscoverController extends GetxController {
 
         if (snapshot.docs.isNotEmpty) {
           final parsed = await _documentsToDiscoverRecipes(snapshot.docs);
-
           allCategoryRecipes.addAll(parsed);
         }
       }
 
-      // ------------------------------------------------------------
-      // REMOVE DUPLICATES
-      // ------------------------------------------------------------
-
       final unique = <String, DiscoverRecipe>{};
-
       for (final recipe in allCategoryRecipes) {
         unique[recipe.id] = recipe;
       }
-
       final newRecipes = unique.values.toList();
 
-      // ------------------------------------------------------------
-      // NEWEST FIRST
-      // ------------------------------------------------------------
-
       newRecipes.sort((a, b) {
-        final aDate = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-
-        final bDate = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-
+        final aDate =
+            a.publishedAt ??
+            a.createdAt ??
+            DateTime.fromMillisecondsSinceEpoch(0);
+        final bDate =
+            b.publishedAt ??
+            b.createdAt ??
+            DateTime.fromMillisecondsSinceEpoch(0);
         return bDate.compareTo(aDate);
       });
 
-      // ------------------------------------------------------------
-      // REMOVE ALREADY LOADED
-      // ------------------------------------------------------------
-
       final existingIds = _english.map((e) => e.id).toSet();
-
       final filteredNewRecipes = newRecipes
           .where((recipe) => !existingIds.contains(recipe.id))
           .toList();
 
-      // ------------------------------------------------------------
-      // APPEND
-      // ------------------------------------------------------------
-
       if (filteredNewRecipes.isNotEmpty) {
         _english.addAll(filteredNewRecipes);
-
         await _processAndAppend(filteredNewRecipes);
-
         _sortDiscoverRecipes();
       }
 
-      // ------------------------------------------------------------
-      // NO RESULTS
-      // ------------------------------------------------------------
-
       if (filteredNewRecipes.isEmpty) {
         _categoryHasMore = false;
-
-        log(
-          '⚠️ Category [$normalizedCategory] '
-          'returned 0 NEW recipes',
-        );
+        log('⚠️ Category [$normalizedCategory] returned 0 NEW recipes');
       } else {
         log(
           '🍽️ Category [$normalizedCategory] '
@@ -459,31 +528,17 @@ class DiscoverController extends GetxController {
         );
       }
 
-      // ------------------------------------------------------------
-      // END
-      // ------------------------------------------------------------
-
       if (newRecipes.length < _categoryPageSize) {
         _categoryHasMore = false;
       }
     } catch (e, stack) {
-      log(
-        '❌ Category recipe fetch failed '
-        '[$normalizedCategory]: $e',
-      );
-
+      log('❌ Category recipe fetch failed [$normalizedCategory]: $e');
       log(stack.toString());
     } finally {
       _categoryLoading = false;
       _isLoadingMore.value = false;
       isLoading.value = false;
     }
-  }
-
-  bool _isBaseCategory(String value) {
-    return _baseCategories.any(
-      (category) => category.toLowerCase() == value.trim().toLowerCase(),
-    );
   }
 
   Future<void> _loadPreferredCuisines() async {
@@ -506,9 +561,7 @@ class DiscoverController extends GetxController {
       }
 
       final data = userDoc.data() ?? {};
-
       final onboarding = data['onboarding'] as Map<String, dynamic>? ?? {};
-
       final cuisines = onboarding['cuisines'];
 
       if (cuisines is List) {
@@ -522,24 +575,17 @@ class DiscoverController extends GetxController {
         _preferredCuisines.clear();
       }
 
-      log(
-        '🍽️ Discover preferred cuisines: '
-        '${_preferredCuisines.join(', ')}',
-      );
+      log('🍽️ Discover preferred cuisines: ${_preferredCuisines.join(', ')}');
     } catch (e, stack) {
       log('❌ Failed to load preferred cuisines: $e');
       log(stack.toString());
-
       _preferredCuisines.clear();
     }
   }
 
-  /// Re-reads the user's onboarding cuisines (e.g. after they update them
-  /// from Settings → Cuisine Preferences) and rebuilds the chip row.
-  /// Does NOT touch the loaded feed — the feed itself never depends on
-  /// cuisine preference, only on latest-first ordering.
   Future<void> refreshPreferredCuisines() async {
     await _loadPreferredCuisines();
+    _setupCategoryExistenceListeners();
   }
 
   String _normalizeCuisine(String value) {
@@ -553,9 +599,7 @@ class DiscoverController extends GetxController {
 
   String _canonicalCuisine(String value) {
     final normalized = _normalizeCuisine(value);
-
     if (normalized.isEmpty) return '';
-
     return normalized
         .split(' ')
         .map(
@@ -578,65 +622,44 @@ class DiscoverController extends GetxController {
 
     if (index != -1) {
       final old = recipes[index];
-
       recipes[index] = old.copyWith(
         likesCount: likes ?? old.likesCount,
         savesCount: saves ?? old.savesCount,
         commentsCount: comments ?? old.commentsCount,
       );
-
       recipes.refresh();
     }
 
-    // IMPORTANT:
-    // PublicRecipeViewScreen -> DiscoverScreen
-    // like state must also update the shared RxSet.
     if (liked != null) {
       if (liked) {
         likedOriginalIds.add(recipeId);
       } else {
         likedOriginalIds.remove(recipeId);
       }
-
       likedOriginalIds.refresh();
     }
 
-    // Same for save/bookmark state.
     if (saved != null) {
       if (saved) {
         savedOriginalIds.add(recipeId);
       } else {
         savedOriginalIds.remove(recipeId);
       }
-
       savedOriginalIds.refresh();
     }
   }
 
-  /// Translate the CARD fields (title/description/category/cuisine) of
-  /// every feed recipe into the current language, keeping the English
-  /// originals for chip filtering. Ingredients/instructions are left
-  /// English here and translated lazily by [translateForDetail] when a
-  /// recipe is opened — so the feed stays fast even with a couple hundred
-  /// recipes. No-op for English.
   Future<List<DiscoverRecipe>> _translateForFeed(
     List<DiscoverRecipe> list,
   ) async {
     if (list.isEmpty || !AiTranslationService.isTranslating) return list;
 
-    // First attempt — normally instant, since onLanguageChanged() already
-    // ran right before this in _applyContentLanguage.
     var ready = await AiTranslationService.ensureReady().timeout(
       const Duration(seconds: 5),
       onTimeout: () => false,
     );
 
     if (!ready) {
-      // A slow model download can still be finishing in the background
-      // (ensureReady()'s `_preparing` future keeps running past our
-      // timeout — only the wait gave up, not the download). Give it one
-      // more, longer window instead of permanently falling back to English
-      // with no retry.
       log('⚠️ Discover: translator not ready in 5s, retrying once (10s)…');
       ready = await AiTranslationService.ensureReady().timeout(
         const Duration(seconds: 10),
@@ -671,10 +694,6 @@ class DiscoverController extends GetxController {
     );
   }
 
-  /// Translate a single recipe's ingredients + steps for the detail screen.
-  /// Called on card tap so the (potentially long) lists are only translated
-  /// for the one recipe actually opened. Also translates [ingredientSections]
-  /// (both the group name and each item) when present.
   Future<DiscoverRecipe> translateForDetail(DiscoverRecipe r) async {
     if (!AiTranslationService.isTranslating) return r;
 
@@ -691,7 +710,6 @@ class DiscoverController extends GetxController {
       translatedSections = await Future.wait(
         r.ingredientSections.map((section) async {
           final sectionName = section.name?.trim();
-
           final name = sectionName == null || sectionName.isEmpty
               ? section.name
               : await AiTranslationService.translate(sectionName);
@@ -708,31 +726,17 @@ class DiscoverController extends GetxController {
     );
   }
 
-  /// Re-translate the loaded feed after the app language changes.
   Future<void> refreshLanguage() async {
     recipes.assignAll(await _translateForFeed(_english));
-    // The new language starts with an empty cache for the detail strings
-    // too, so warm them again in the background.
     unawaited(_prewarmDetails(_english));
   }
 
   final RxString selectedCategory = ''.obs;
   final RxString searchQuery = ''.obs;
 
-  /// Original Discover recipe ids the current user has saved. Bookmarks
-  /// observe this set so the saved icon flips live — e.g. when the saved
-  /// copy is deleted from My Recipes / a cookbook, that path removes the id
-  /// and the icon updates.
   final RxSet<String> savedOriginalIds = <String>{}.obs;
-
-  /// Original Discover recipe ids the current user has liked. Populated in
-  /// one batched read per feed load (see [_loadSocialStates]) instead of
-  /// each _RecipeCard querying Firestore individually — that per-card
-  /// querying was the cause of the feed feeling slow/heavy to load.
   final RxSet<String> likedOriginalIds = <String>{}.obs;
 
-  // Fixed chips shown after "All" and after the user's onboarding-cuisine
-  // chips. See [categories] for how the full, dynamic chip row is built.
   final List<String> _baseCategories = [
     'Quick & Easy',
     'Vegan',
@@ -743,35 +747,36 @@ class DiscoverController extends GetxController {
     'Drinks',
   ];
 
-  /// Full, dynamic set of Discover filter chips:
-  ///   All → <user's onboarding cuisines, in order> → Quick & Easy → Vegan
-  ///   → Desserts → Breakfast → Lunch → Dinner → Drinks
-  ///
-  /// The cuisine chips come from [preferredCuisines] (onboarding selection)
-  /// and are de-duplicated + title-cased for display. This list updates
-  /// automatically whenever [_preferredCuisines] changes (feed refresh, or
-  /// [refreshPreferredCuisines] after the user edits their cuisines in
-  /// Settings) since it's built from the reactive list.
+  /// Chips shown in the UI. "All" is always shown. Every other chip
+  /// (preferred cuisine or base category) only appears once [categoryHasData]
+  /// — populated from a live Firestore existence check — confirms it
+  /// actually has at least one public recipe right now.
   List<String> get categories {
     final chips = <String>['All'];
-
     final seen = <String>{};
+
     for (final pref in preferredCuisines) {
       final label = _canonicalCuisine(pref);
       if (label.isEmpty) continue;
+      if (categoryHasData[label] != true) continue; // Firestore-verified
       final key = label.toLowerCase();
       if (seen.add(key)) {
         chips.add(label);
       }
     }
 
-    chips.addAll(_baseCategories);
+    for (final cat in _baseCategories) {
+      if (categoryHasData[cat] != true) continue; // Firestore-verified
+      chips.add(cat);
+    }
+
     return chips;
   }
 
   StreamSubscription? _authSub;
   final Map<String, StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>>
   _socialCountSubscriptions = {};
+
   @override
   void onInit() {
     super.onInit();
@@ -781,43 +786,159 @@ class DiscoverController extends GetxController {
     _authSub = AuthService.authStateChanges.listen((user) {
       if (user != null) {
         fetchDiscoverRecipes(refresh: true);
+        _startLiveFeedListener(category: 'All');
       } else {
         recipes.clear();
         _english.clear();
         for (final subscription in _socialCountSubscriptions.values) {
           subscription.cancel();
         }
-
         _socialCountSubscriptions.clear();
         likedOriginalIds.clear();
         savedOriginalIds.clear();
-
         _preferredCuisines.clear();
-
         _lastDocument = null;
         _hasMore = true;
+
+        _liveFeedSub?.cancel();
+        _liveFeedSub = null;
+
+        for (final sub in _existenceSubs.values) {
+          sub.cancel();
+        }
+        _existenceSubs.clear();
+        categoryHasData.clear();
       }
     });
-
-    fetchDiscoverRecipes(refresh: true);
   }
 
   @override
   void onClose() {
     _authSub?.cancel();
+    _liveFeedSub?.cancel();
 
     for (final subscription in _socialCountSubscriptions.values) {
       subscription.cancel();
     }
-
     _socialCountSubscriptions.clear();
+
+    for (final sub in _existenceSubs.values) {
+      sub.cancel();
+    }
+    _existenceSubs.clear();
 
     super.onClose();
   }
 
-  // Guards against overlapping fetches (onInit + the auth listener can both
-  // fire on startup) so the feed isn't queried twice at once.
   bool _fetching = false;
+
+  /// Watches the newest [_liveFeedWindow] public recipes matching the given
+  /// [category] (or the currently selected one) in real time.
+  ///
+  /// Uses `docChanges` (not a raw `snapshot.docs` diff) so BOTH directions
+  /// are caught:
+  ///  • `added`   → a recipe just entered the result set (freshly published,
+  ///                or just edited into matching this category/cuisine)
+  ///                → insert it into the feed live.
+  ///  • `removed` → a recipe just LEFT the result set — deleted, OR a field
+  ///                used in the `where` clause changed so it no longer
+  ///                matches (e.g. `isPublic` flipped to false, or the
+  ///                category/cuisine was edited) → pulled out of the feed
+  ///                immediately, no refresh needed.
+  void _startLiveFeedListener({String? category}) {
+    _liveFeedSub?.cancel();
+
+    final rawCat = (category ?? selectedCategory.value).trim();
+    final lower = rawCat.toLowerCase();
+    final isAllOrQuick =
+        rawCat.isEmpty || lower == 'all' || lower == 'quick & easy';
+
+    Query<Map<String, dynamic>> query = FirebaseFirestore.instance
+        .collection('recipes')
+        .where('isPublic', isEqualTo: true);
+
+    if (!isAllOrQuick) {
+      final isBase = _isBaseCategory(rawCat);
+      final field = isBase ? 'category' : 'cuisine';
+      final aliases = _categoryAliases(rawCat);
+
+      if (aliases.length == 1) {
+        query = query.where(field, isEqualTo: aliases.first);
+      } else {
+        query = query.where(field, whereIn: aliases.take(30).toList());
+      }
+    }
+
+    query = query
+        .orderBy('publishedAt', descending: true)
+        .limit(_liveFeedWindow);
+
+    _liveFeedSub = query.snapshots().listen(
+      (QuerySnapshot<Map<String, dynamic>> snapshot) async {
+        try {
+          final List<DocumentSnapshot<Map<String, dynamic>>> toAdd = [];
+          final Set<String> toRemoveIds = {};
+
+          for (final DocumentChange<Map<String, dynamic>> change
+              in snapshot.docChanges) {
+            switch (change.type) {
+              case DocumentChangeType.added:
+                toAdd.add(change.doc);
+                break;
+              case DocumentChangeType.removed:
+                toRemoveIds.add(change.doc.id);
+                break;
+              case DocumentChangeType.modified:
+                break;
+            }
+          }
+
+          if (toRemoveIds.isNotEmpty) {
+            recipes.removeWhere((r) => toRemoveIds.contains(r.id));
+            _english.removeWhere((r) => toRemoveIds.contains(r.id));
+
+            for (final id in toRemoveIds) {
+              _socialCountSubscriptions.remove(id)?.cancel();
+            }
+
+            log(
+              '🟡 Live[$rawCat]: removed ${toRemoveIds.length} recipe(s) '
+              '(now private/deleted)',
+            );
+          }
+
+          if (toAdd.isNotEmpty) {
+            final knownIds = <String>{
+              ..._english.map((r) => r.id),
+              ...recipes.map((r) => r.id),
+            };
+
+            final freshDocs = toAdd
+                .where((d) => !knownIds.contains(d.id))
+                .toList();
+
+            if (freshDocs.isNotEmpty) {
+              final newRecipes = await _documentsToDiscoverRecipes(freshDocs);
+
+              if (newRecipes.isNotEmpty) {
+                _english.insertAll(0, newRecipes);
+                recipes.insertAll(0, _projectFromCache(newRecipes));
+                unawaited(_finishProcessing(newRecipes));
+                _sortDiscoverRecipes();
+
+                log('🟢 Live[$rawCat]: added ${newRecipes.length} recipe(s)');
+              }
+            }
+          }
+        } catch (e, st) {
+          log('❌ Live feed processing error [$rawCat]: $e', stackTrace: st);
+        }
+      },
+      onError: (e, st) {
+        log('❌ Live feed listener failed [$rawCat]: $e', stackTrace: st);
+      },
+    );
+  }
 
   void _listenToRecipeSocialCounts(List<DiscoverRecipe> loadedRecipes) {
     for (final recipe in loadedRecipes) {
@@ -837,11 +958,9 @@ class DiscoverController extends GetxController {
               if (data == null) return;
 
               final index = recipes.indexWhere((r) => r.id == recipe.id);
-
               if (index == -1) return;
 
               final old = recipes[index];
-
               final updated = old.copyWith(
                 likesCount: (data['likesCount'] as num?)?.toInt() ?? 0,
                 commentsCount: (data['commentsCount'] as num?)?.toInt() ?? 0,
@@ -852,7 +971,6 @@ class DiscoverController extends GetxController {
               recipes[index] = updated;
               recipes.refresh();
 
-              // Keep English copy in sync too.
               final englishIndex = _english.indexWhere(
                 (r) => r.id == recipe.id,
               );
@@ -878,10 +996,6 @@ class DiscoverController extends GetxController {
     }
   }
 
-  /// Batch-loads which of [loaded] recipes the current user has
-  /// liked/saved — ONE Firestore query each for the whole feed, instead of
-  /// every _RecipeCard firing its own isLiked/isSaved read on build.
-
   Future<void> _loadSocialStates(List<DiscoverRecipe> loaded) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
 
@@ -904,24 +1018,14 @@ class DiscoverController extends GetxController {
     }
   }
 
-  /// Translates, appends to [recipes]/[_english], loads social state and
-  /// prewarms detail strings for one page of fetched recipes.
   Future<void> _processAndAppend(List<DiscoverRecipe> chunk) async {
     if (chunk.isEmpty) return;
 
-    // Paint NOW. The projection below is synchronous cache lookups only, so
-    // cards appear the moment the Firestore page lands. Anything not yet in
-    // the translation cache shows English for a beat and is patched in place
-    // by _finishProcessing. Previously this method awaited a full ML Kit
-    // translation pass AND the liked/saved reads before the spinner cleared —
-    // three network/CPU round trips between data arriving and pixels.
     recipes.addAll(_projectFromCache(chunk));
 
     unawaited(_finishProcessing(chunk));
   }
 
-  /// Synchronous, cache-only translation projection of one fetched page.
-  /// Never blocks: a cache miss simply renders its English source.
   List<DiscoverRecipe> _projectFromCache(List<DiscoverRecipe> list) {
     if (!AiTranslationService.isTranslating) return list;
     String? tr(String? s) =>
@@ -942,9 +1046,6 @@ class DiscoverController extends GetxController {
         .toList();
   }
 
-  /// Everything that used to block first paint, now strictly after it:
-  /// the real translation pass (patched into the live rows by id, so sorting
-  /// can't misalign anything), liked/saved state, count listeners, prewarm.
   Future<void> _finishProcessing(List<DiscoverRecipe> chunk) async {
     try {
       if (AiTranslationService.isTranslating) {
@@ -960,16 +1061,10 @@ class DiscoverController extends GetxController {
     }
 
     await _loadSocialStates(chunk);
-
-    // Realtime likes/comments/shares/saves counts.
     _listenToRecipeSocialCounts(chunk);
-
     unawaited(_prewarmDetails(chunk));
   }
 
-  /// Fetches the Discover feed strictly newest-first, page by page. Cuisine
-  /// preference is intentionally NOT used to reorder or prioritize
-  /// anything here anymore — it only feeds the chip row (see [categories]).
   Future<void> fetchDiscoverRecipes({bool refresh = false}) async {
     if (_fetching || _isLoadingMore.value) return;
 
@@ -977,11 +1072,9 @@ class DiscoverController extends GetxController {
       _fetching = true;
 
       try {
-        // Still load onboarding cuisines — needed to build the chip row —
-        // but no longer to influence sort order.
         await _loadPreferredCuisines();
+        _setupCategoryExistenceListeners();
 
-        // Reset feed.
         _lastDocument = null;
         _hasMore = true;
 
@@ -1023,7 +1116,7 @@ class DiscoverController extends GetxController {
       Query<Map<String, dynamic>> query = FirebaseFirestore.instance
           .collection('recipes')
           .where('isPublic', isEqualTo: true)
-          .orderBy('createdAt', descending: true)
+          .orderBy('publishedAt', descending: true)
           .limit(_pageSize);
 
       if (_lastDocument != null) {
@@ -1051,11 +1144,22 @@ class DiscoverController extends GetxController {
         }
         return;
       }
+      final existingIds = <String>{
+        ..._english.map((r) => r.id),
+        ...recipes.map((r) => r.id),
+      };
 
-      _english.addAll(newRecipes);
+      final uniqueRecipes = newRecipes
+          .where((r) => !existingIds.contains(r.id))
+          .toList();
 
-      await _processAndAppend(newRecipes);
+      if (uniqueRecipes.isEmpty) {
+        return;
+      }
 
+      _english.addAll(uniqueRecipes);
+
+      await _processAndAppend(uniqueRecipes);
       _sortDiscoverRecipes();
     } catch (e, stack) {
       log('❌ Discover pagination fetch failed: $e');
@@ -1068,7 +1172,7 @@ class DiscoverController extends GetxController {
   }
 
   Future<List<DiscoverRecipe>> _documentsToDiscoverRecipes(
-    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+    List<DocumentSnapshot<Map<String, dynamic>>> docs,
   ) async {
     if (docs.isEmpty) return [];
 
@@ -1076,7 +1180,7 @@ class DiscoverController extends GetxController {
 
     for (final doc in docs) {
       final data = doc.data();
-      final ownerId = data['ownerId']?.toString();
+      final ownerId = data?['ownerId']?.toString();
 
       if (ownerId != null && ownerId.isNotEmpty) {
         ownerIds.add(ownerId);
@@ -1085,9 +1189,6 @@ class DiscoverController extends GetxController {
 
     final userProfiles = <String, Map<String, dynamic>>{};
 
-    // Serve repeat authors from the session memo — a feed is dominated by a
-    // handful of creators, so later pages were re-reading the same user docs
-    // on every scroll.
     ownerIds.removeWhere((uid) {
       final cached = _ownerProfileCache[uid];
       if (cached == null) return false;
@@ -1116,18 +1217,15 @@ class DiscoverController extends GetxController {
     for (final recipeDoc in docs) {
       final data = recipeDoc.data();
 
+      if (data == null) continue;
+
       if (data['isDeleted'] == true) {
         continue;
       }
 
       final ownerId = data['ownerId']?.toString() ?? '';
-
       final ownerData = userProfiles[ownerId] ?? {};
 
-      // ingredientSections: array of { name: string, items: string[] }.
-      // Stored alongside the flat `ingredients` array — not every recipe
-      // has it (older/imported recipes only have the flat list), so this
-      // safely falls back to an empty list when absent or malformed.
       List<IngredientSection> sections = const [];
       final rawSections = data['ingredientSections'];
       if (rawSections is List) {
@@ -1152,7 +1250,6 @@ class DiscoverController extends GetxController {
           servings: data['servings']?.toString(),
           ingredients: List<String>.from(data['ingredients'] ?? const []),
           ingredientSections: sections,
-
           instructions: List<String>.from(data['instructions'] ?? const []),
           userId: ownerId,
           userName: ownerData['name']?.toString() ?? 'Chef',
@@ -1170,30 +1267,24 @@ class DiscoverController extends GetxController {
     return result;
   }
 
-  /// Strictly newest-first. No cuisine-based prioritization.
+  /// Newest-first, keyed off `publishedAt` (falling back to `createdAt`) —
+  /// matches the Firestore `orderBy('publishedAt', ...)` used everywhere
+  /// this list is fetched, so live-inserted recipes land in the right spot
+  /// instead of only sorting correctly by coincidence.
   void _sortDiscoverRecipes() {
     recipes.sort((a, b) {
-      final aDate = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final bDate = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final aDate =
+          a.publishedAt ??
+          a.createdAt ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+      final bDate =
+          b.publishedAt ??
+          b.createdAt ??
+          DateTime.fromMillisecondsSinceEpoch(0);
       return bDate.compareTo(aDate);
     });
   }
 
-  /// Pre-translate what the DETAIL screen will need for [list], in the
-  /// background, right after a feed page lands.
-  ///
-  /// The feed itself only translates card fields (title/description/
-  /// category/cuisine). Ingredients and instructions are left English, so
-  /// opening a recipe used to hit a cold cache and render English for a
-  /// beat before filling in. Splash-time prewarming cannot help either: it
-  /// queries ownerId == uid while the feed is isPublic == true — disjoint
-  /// sets, so public recipes were never warmed by anything.
-  ///
-  /// Also prewarms ingredientSections (group names + items) so grouped
-  /// ingredient cards don't show a beat of English either.
-  ///
-  /// Runs unawaited and strictly after the page is on screen, so it never
-  /// delays the feed. translateList de-duplicates and writes the cache once.
   Future<void> _prewarmDetails(List<DiscoverRecipe> list) async {
     if (list.isEmpty || !AiTranslationService.isTranslating) return;
     try {
@@ -1203,7 +1294,6 @@ class DiscoverController extends GetxController {
         texts.addAll(r.instructions);
         for (final section in r.ingredientSections) {
           final sectionName = section.name?.trim();
-
           if (sectionName != null && sectionName.isNotEmpty) {
             texts.add(sectionName);
           }
@@ -1224,50 +1314,22 @@ class DiscoverController extends GetxController {
     }
   }
 
-  // Future<void> loadMoreRecipes() async {
-  //   if (_fetching || _isLoadingMore || !_hasMore) return;
-
-  //   await fetchDiscoverRecipes();
-  // }
   Future<void> loadMoreRecipes() async {
     if (_fetching || _isLoadingMore.value) return;
 
     final category = selectedCategory.value.trim();
 
-    // ------------------------------------------------------------
-    // ALL
-    // ------------------------------------------------------------
-
     if (category.isEmpty || category == 'All') {
       if (!_hasMore) return;
-
       await fetchDiscoverRecipes();
-
       return;
     }
-
-    // ------------------------------------------------------------
-    // QUICK & EASY
-    // ------------------------------------------------------------
 
     if (category == 'Quick & Easy') {
-      /*
-     * Quick & Easy uses the normal feed and filters by time.
-     *
-     * If there aren't enough quick recipes loaded,
-     * load another normal page.
-     */
-
       if (!_hasMore) return;
-
       await fetchDiscoverRecipes();
-
       return;
     }
-
-    // ------------------------------------------------------------
-    // CATEGORY
-    // ------------------------------------------------------------
 
     if (!_categoryHasMore || _categoryLoading) {
       return;
@@ -1280,15 +1342,6 @@ class DiscoverController extends GetxController {
     var list = recipes.toList();
 
     final sel = selectedCategory.value.trim();
-
-    /*
-   * IMPORTANT:
-   *
-   * Category-specific recipes are now fetched directly from Firestore.
-   *
-   * Therefore we should NOT again filter them using title/category
-   * keywords here.
-   */
 
     switch (sel) {
       case '':
@@ -1303,24 +1356,9 @@ class DiscoverController extends GetxController {
         break;
 
       default:
-        /*
-       * For:
-       *
-       * Vegan
-       * Desserts
-       * Breakfast
-       * Lunch
-       * Dinner
-       * Drinks
-       *
-       * Firestore has already filtered the recipes.
-       *
-       * So do nothing here.
-       */
         break;
     }
 
-    // Search still works on loaded recipes.
     if (searchQuery.value.trim().isNotEmpty) {
       final q = searchQuery.value.trim().toLowerCase();
 
@@ -1339,21 +1377,20 @@ class DiscoverController extends GetxController {
     }
 
     list.sort((a, b) {
-      final aDate = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-
-      final bDate = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-
+      final aDate =
+          a.publishedAt ??
+          a.createdAt ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+      final bDate =
+          b.publishedAt ??
+          b.createdAt ??
+          DateTime.fromMillisecondsSinceEpoch(0);
       return bDate.compareTo(aDate);
     });
 
     return list;
   }
 
-  /// True when any [keywords] appear in the recipe's title / category /
-  /// cuisine.
-
-  /// Best-effort minutes parsed from a time string ("30 min", "1 hour 20
-  /// mins", "1h 30m"). Returns null when no duration can be read.
   int? _minutes(DiscoverRecipe r) {
     final t = (r.totalTime?.isNotEmpty ?? false)
         ? r.totalTime!
@@ -1385,16 +1422,10 @@ class DiscoverController extends GetxController {
     return found ? total : null;
   }
 
-  // ── Per-filter cache (instant tab switching) ─────────────────────────────
-  // Remembers each filter's loaded feed + pagination cursor so returning to a
-  // tab shows its data immediately, instead of clearing the list and showing a
-  // spinner while it re-fetches from Firestore.
   final Map<String, _DiscoverFilterCache> _filterCache = {};
 
   String _filterKey(String filter) => filter.trim().toLowerCase();
 
-  /// Saves the currently-loaded filter's feed into the cache before switching
-  /// away, so it can be restored instantly later.
   void _snapshotCurrentFilter() {
     if (recipes.isEmpty) return;
     final key = _filterKey(_activeFirestoreFilter);
@@ -1409,8 +1440,6 @@ class DiscoverController extends GetxController {
     );
   }
 
-  /// Restores a cached filter's feed instantly (no clear, no spinner) and tops
-  /// up its liked/saved state from Firestore in the background.
   void _restoreFilter(String category) {
     final key = _filterKey(category);
     final cached = _filterCache[key];
@@ -1430,9 +1459,7 @@ class DiscoverController extends GetxController {
       _categoryLastDocument = cached.cursor;
       _categoryHasMore = cached.hasMore;
     }
-    // Restore the cached liked/saved state SYNCHRONOUSLY so hearts/bookmarks
-    // render correct on the first frame (no empty→filled flash). The prior
-    // fetch cleared these sets, so without this they'd flicker in late.
+
     likedOriginalIds.addAll(cached.liked);
     savedOriginalIds.addAll(cached.saved);
 
@@ -1441,14 +1468,9 @@ class DiscoverController extends GetxController {
     _isLoadingMore.value = false;
     isLoading.value = false;
 
-    // Then top up from Firestore in the background (additive, no spinner) so a
-    // like/save made on another tab is eventually reflected here too.
     unawaited(_loadSocialStates(cached.recipes));
   }
 
-  /// Pull-to-refresh: re-fetch FRESH data for the CURRENTLY-selected tab (not
-  /// always "All"). Bypasses the cache, then updates it so the refreshed data
-  /// is what a later tab-switch restores.
   Future<void> refreshCurrent() async {
     final cat = selectedCategory.value.trim();
     final lower = cat.toLowerCase();
@@ -1459,7 +1481,6 @@ class DiscoverController extends GetxController {
       await fetchCategoryRecipes(category: cat, refresh: true);
     }
 
-    // Keep the cache in sync with the freshly-loaded data for this tab.
     _snapshotCurrentFilter();
   }
 
@@ -1470,17 +1491,12 @@ class DiscoverController extends GetxController {
 
     log('🔘 Discover category selected: $category');
 
-    // Save the outgoing filter's loaded feed so returning to it is instant.
     _snapshotCurrentFilter();
 
     selectedCategory.value = category;
 
     final lower = category.toLowerCase();
 
-    // ------------------------------------------------------------
-    // QUICK & EASY — a client-side filter over the All feed. Never fetched or
-    // cached as its own tab; it reuses whatever the All feed currently holds.
-    // ------------------------------------------------------------
     if (lower == 'quick & easy') {
       _activeFirestoreFilter = 'All';
 
@@ -1491,40 +1507,36 @@ class DiscoverController extends GetxController {
         await fetchDiscoverRecipes(refresh: true);
       }
 
+      _startLiveFeedListener(category: 'All');
       return;
     }
 
-    // ------------------------------------------------------------
-    // CACHE HIT — show the previously-loaded feed instantly (no spinner).
-    // ------------------------------------------------------------
     if (_filterCache.containsKey(_filterKey(category))) {
       log('⚡ Discover cache hit: $category (instant)');
       _restoreFilter(category);
+      _startLiveFeedListener(category: _activeFirestoreFilter);
       return;
     }
 
-    // ------------------------------------------------------------
-    // CACHE MISS — fetch from Firestore (with spinner), first time only.
-    // ------------------------------------------------------------
     if (lower == 'all') {
       _activeFirestoreFilter = 'All';
 
       _categoryLastDocument = null;
       _categoryHasMore = true;
 
-      // Cancel/reset category state
       _categoryLoading = false;
       _isLoadingMore.value = false;
 
       await fetchDiscoverRecipes(refresh: true);
+      _startLiveFeedListener(category: 'All');
 
       return;
     }
 
-    // OTHER CATEGORY / CUISINE
     _categoryLastDocument = null;
     _categoryHasMore = true;
 
     await fetchCategoryRecipes(category: category, refresh: true);
+    _startLiveFeedListener(category: category);
   }
 }

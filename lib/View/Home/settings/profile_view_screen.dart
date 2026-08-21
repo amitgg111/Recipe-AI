@@ -547,10 +547,6 @@ class _ProfileViewScreenState extends State<ProfileViewScreen>
         height: 50,
         fit: BoxFit.cover,
 
-        // Small thumbnail mate enough.
-        memCacheWidth: 100,
-        memCacheHeight: 100,
-
         // Cache ma hoy to immediately show.
         fadeInDuration: Duration.zero,
         fadeOutDuration: Duration.zero,

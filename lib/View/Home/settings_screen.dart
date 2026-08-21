@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -221,7 +223,9 @@ class _SettingsScreenState extends State<SettingsScreen>
         color: SettingsUi.rowIcon,
         size: 20,
       ),
-      label: 'Cuisine Preferences',
+
+      // label: 'Cuisine Preferences'.tr,
+      label: 'select_cuisine'.tr,
       onTap: () async {
         await Get.to(() => const AllCuisinesScreen());
 
@@ -943,44 +947,68 @@ class _SettingsScreenState extends State<SettingsScreen>
         confirmColor: const Color(0xFFB0453A),
         onConfirm: () async {
           Get.back(); // confirm dialog band karo
-          _showFullScreenLoader(); // full screen spinner batavo
+          // _showFullScreenLoader(); // full screen spinner batavo
           await _deleteAccount();
         },
       ),
     );
   }
 
-  void _showFullScreenLoader() {
-    Get.dialog(
-      PopScope(
-        canPop: false, // back button thi band na thay
-        child: Container(
-          color: Colors.black.withValues(alpha: 0.55),
-          alignment: Alignment.center,
-          child: const CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation(Colors.white),
-          ),
-        ),
-      ),
-      barrierDismissible: false,
-      barrierColor: Colors.transparent,
-    );
-  }
+  // void _showFullScreenLoader() {
+  //   Get.dialog(
+  //     PopScope(
+  //       canPop: false, // back button thi band na thay
+  //       child: Container(
+  //         color: Colors.black.withValues(alpha: 0.55),
+  //         alignment: Alignment.center,
+  //         child: const CircularProgressIndicator(
+  //           valueColor: AlwaysStoppedAnimation(Colors.white),
+  //         ),
+  //       ),
+  //     ),
+  //     barrierDismissible: false,
+  //     barrierColor: Colors.transparent,
+  //   );
+  // }
 
+  // Future<void> _deleteAccount() async {
+  //   try {
+  //     await AuthService.deleteAccountEverywhere();
+  //     if (Get.isRegistered<NotificationController>()) {
+  //       Get.find<NotificationController>().clear();
+  //     }
+  //     Get.back(); // loader band karo
+  //     await Get.offAll(
+  //       () => const CreateAccountScreen(),
+  //       transition: Transition.noTransition,
+  //     );
+  //   } catch (_) {
+  //     Get.back(); // error avya to pan loader band karvu jaruri
+  //   }
+  // }
   Future<void> _deleteAccount() async {
-    try {
-      await AuthService.deleteAccountEverywhere();
-      if (Get.isRegistered<NotificationController>()) {
-        Get.find<NotificationController>().clear();
-      }
-      Get.back(); // loader band karo
-      await Get.offAll(
-        () => const CreateAccountScreen(),
-        transition: Transition.noTransition,
-      );
-    } catch (_) {
-      Get.back(); // error avya to pan loader band karvu jaruri
+    // 1) Local state + navigation TARAT j — no loader, no wait.
+    if (Get.isRegistered<NotificationController>()) {
+      Get.find<NotificationController>().clear();
     }
+    if (Get.isRegistered<ProfileController>()) {
+      Get.find<ProfileController>().clearLocalData();
+    }
+
+    Get.offAll(
+      () => const CreateAccountScreen(),
+      transition: Transition.noTransition,
+    );
+
+    // 2) Actual account + data deletion background ma — await NATHI karvanu.
+    // User ne hવે kai j dikhatu nathi, screen already badlai gayi.
+    unawaited(
+      AuthService.deleteAccountEverywhere().catchError((e) {
+        // Silent fail — user already navigated away. Chho to error log karo
+        // / analytics send karo debugging mate.
+        debugPrint('❌ Background account deletion failed: $e');
+      }),
+    );
   }
 }
 

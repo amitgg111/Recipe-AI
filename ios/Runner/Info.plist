@@ -2,40 +2,64 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
   <dict>
+
+    <!-- Camera Permission -->
     <key>NSCameraUsageDescription</key>
     <string>Recipe AI needs camera access to scan and detect recipes from photos.</string>
+
+    <!-- Location Permission -->
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Recipe AI uses your location to provide relevant features and improve your app experience.</string>
+
+    <!-- App Information -->
     <key>CFBundleDevelopmentRegion</key>
     <string>$(DEVELOPMENT_LANGUAGE)</string>
+
     <key>CFBundleDisplayName</key>
     <string>Recipe AI</string>
+
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
+
     <key>CFBundleIdentifier</key>
     <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
+
     <key>CFBundleName</key>
     <string>Recipe AI</string>
+
     <key>CFBundlePackageType</key>
     <string>APPL</string>
+
     <key>CFBundleShortVersionString</key>
     <string>$(FLUTTER_BUILD_NAME)</string>
+
     <key>CFBundleSignature</key>
     <string>????</string>
+
     <key>CFBundleVersion</key>
     <string>$(FLUTTER_BUILD_NUMBER)</string>
+
     <key>LSRequiresIPhoneOS</key>
     <true/>
+
+    <!-- Launch Screen -->
     <key>UILaunchStoryboardName</key>
     <string>LaunchScreen</string>
+
     <key>UIMainStoryboardFile</key>
     <string>Main</string>
+
+    <!-- Supported Orientations -->
     <key>UISupportedInterfaceOrientations</key>
     <array>
       <string>UIInterfaceOrientationPortrait</string>
       <string>UIInterfaceOrientationLandscapeLeft</string>
       <string>UIInterfaceOrientationLandscapeRight</string>
     </array>
+
     <key>UISupportedInterfaceOrientations~ipad</key>
     <array>
       <string>UIInterfaceOrientationPortrait</string>
@@ -43,55 +67,80 @@
       <string>UIInterfaceOrientationLandscapeLeft</string>
       <string>UIInterfaceOrientationLandscapeRight</string>
     </array>
+
+    <!-- Flutter -->
     <key>CADisableMinimumFrameDurationOnPhone</key>
     <true/>
+
     <key>UIApplicationSupportsIndirectInputEvents</key>
     <true/>
-    <!-- Push notifications (OneSignal) -->
+
+    <!-- Push Notifications / OneSignal -->
     <key>UIBackgroundModes</key>
     <array>
       <string>remote-notification</string>
     </array>
+
+    <!-- Siri / User Activity -->
     <key>NSUserActivityTypes</key>
     <array>
       <string>INSendMessageIntent</string>
     </array>
+
+    <!-- URL Schemes -->
     <key>CFBundleURLTypes</key>
     <array>
+
+      <!-- Share Media -->
       <dict>
         <key>CFBundleTypeRole</key>
         <string>Editor</string>
+
         <key>CFBundleURLSchemes</key>
         <array>
           <string>ShareMedia-$(PRODUCT_BUNDLE_IDENTIFIER)</string>
         </array>
       </dict>
-      <!-- Google Sign-In: reversed client id from GoogleService-Info.plist.
-		     Required or Google Sign-In fails/crashes on iOS. -->
+
+      <!-- Google Sign-In -->
+      <!-- Reversed client ID from GoogleService-Info.plist -->
       <dict>
         <key>CFBundleTypeRole</key>
         <string>Editor</string>
+
         <key>CFBundleURLSchemes</key>
         <array>
           <string>com.googleusercontent.apps.727358456642-fu9np8taebtusp876kpgjo2u737n2ek3</string>
         </array>
       </dict>
+
     </array>
+
+    <!-- Photo Library Permission -->
     <key>NSPhotoLibraryUsageDescription</key>
     <string>Photos and videos can be shared to Recipe AI to extract recipes.</string>
+
+    <!-- Microphone Permission -->
     <key>NSMicrophoneUsageDescription</key>
     <string>Recipe AI needs microphone access when you record a recipe video to import.</string>
+
+    <!-- Save Photos Permission -->
     <key>NSPhotoLibraryAddUsageDescription</key>
     <string>Recipe AI saves recipe images to your photo library when you export them.</string>
+
+    <!-- Documents -->
     <key>LSSupportsOpeningDocumentsInPlace</key>
     <string>No</string>
+
     <key>CFBundleDocumentTypes</key>
     <array>
       <dict>
         <key>CFBundleTypeName</key>
         <string>ShareHandler</string>
+
         <key>LSHandlerRank</key>
         <string>Alternate</string>
+
         <key>LSItemContentTypes</key>
         <array>
           <string>public.file-url</string>
@@ -103,5 +152,6 @@
         </array>
       </dict>
     </array>
+
   </dict>
 </plist>

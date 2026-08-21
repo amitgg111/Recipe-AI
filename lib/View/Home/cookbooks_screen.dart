@@ -28,6 +28,7 @@ import 'package:recipe_ai/widgets/app_logo.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_spacing.dart';
 import 'package:recipe_ai/theme/app_dimensions.dart';
+import 'package:recipe_ai/widgets/empty_plate_illustration.dart';
 import 'package:recipe_ai/widgets/sliding_segmented.dart';
 import 'package:recipe_ai/widgets/app_search_bar.dart';
 import 'package:recipe_ai/screens/import/add_menu_sheet.dart';
@@ -35,7 +36,6 @@ import 'package:recipe_ai/screens/import/add_cookbook_sheet.dart';
 import 'package:recipe_ai/screens/import/import_picker_screen.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
-import 'package:recipe_ai/widgets/empty_plate_illustration.dart';
 
 class CookbooksScreen extends StatefulWidget {
   final bool showRecipesTab;
@@ -444,22 +444,30 @@ class _CookbooksScreenState extends State<CookbooksScreen>
             const SizedBox(height: 12),
 
             // Illustration
+            // Container(
+            //   width: 100,
+            //   height: 100,
+            //   decoration: BoxDecoration(
+            //     color: AppColors.primary.withValues(alpha: 0.08),
+            //     shape: BoxShape.circle,
+            //   ),
+            //   child: const Center(
+            //     child: OnboardingLineIcon(
+            //       'book',
+            //       size: 44,
+            //       color: AppColors.primary,
+            //     ),
+            //   ),
+            // ),
             Container(
-              width: 100,
-              height: 100,
+              width: 150,
+              height: 150,
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),
-              child: const Center(
-                child: OnboardingLineIcon(
-                  'book',
-                  size: 44,
-                  color: AppColors.primary,
-                ),
-              ),
+              child: Center(child: Image.asset("assets/welcome/empty.png")),
             ),
-
             const SizedBox(height: 26),
 
             // Title
@@ -542,48 +550,6 @@ class _CookbooksScreenState extends State<CookbooksScreen>
       );
     });
   }
-
-  // Widget _buildEmptyRecipesState() {
-  //   final isSearching = _searchQuery.isNotEmpty;
-
-  //   return Padding(
-  //     padding: const EdgeInsets.symmetric(
-  //       horizontal: AppSpacing.xl,
-  //       vertical: 36,
-  //     ),
-  //     child: Center(
-  //       child: Column(
-  //         children: [
-  //           // Illustration
-  //           Container(
-  //             width: 120,
-  //             height: 120,
-  //             decoration: BoxDecoration(
-  //               color: AppColors.primary.withValues(alpha: 0.08),
-  //               shape: BoxShape.circle,
-  //             ),
-  //             child: const Center(child: EmptyPlateIllustration()),
-  //           ),
-
-  //           const SizedBox(height: 78),
-
-  //           // Title
-  //           Text(
-  //             isSearching ? 'No Recipes Found' : 'Your Recipe Is Empty',
-  //             textAlign: TextAlign.center,
-  //             style: GoogleFonts.plusJakartaSans(
-  //               fontSize: 18,
-  //               fontWeight: FontWeight.w800,
-  //               color: AppColors.textDark,
-  //             ),
-  //           ),
-
-  //           const SizedBox(height: 10),
-  //         ],
-  //       ),
-  //     ),
-  //   );
-  // }
 
   Widget _buildFAB() {
     return Positioned(

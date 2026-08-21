@@ -342,7 +342,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-
   Widget _field({
     required TextEditingController controller,
     bool focused = false,

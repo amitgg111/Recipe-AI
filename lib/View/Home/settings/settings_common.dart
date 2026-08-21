@@ -217,9 +217,8 @@ class ProfileAvatar extends StatelessWidget {
               file,
               width: size,
               height: size,
-              fit: BoxFit.cover,
-              cacheWidth: 200,
-              cacheHeight: 200,
+              fit: BoxFit.cover, // 👈 FIX: contain -> cover
+
               gaplessPlayback: true,
               errorBuilder: (_, __, ___) => _placeholder(),
             ),
@@ -238,8 +237,7 @@ class ProfileAvatar extends StatelessWidget {
             width: size,
             height: size,
             fit: BoxFit.cover,
-            memCacheWidth: 200,
-            memCacheHeight: 200,
+
             fadeInDuration: Duration.zero,
             fadeOutDuration: Duration.zero,
             placeholder: (_, __) => _placeholder(),

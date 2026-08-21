@@ -480,9 +480,9 @@ class AuthService {
     Future<void> safe(Future<void> Function() action, String label) async {
       try {
         await action();
-        log('$label deleted');
+        print('$label deleted');
       } catch (e) {
-        log('$label delete FAILED: $e');
+        print('$label delete FAILED: $e');
         // swallow so it never blocks the rest of the deletion flow
       }
     }
@@ -614,7 +614,7 @@ class AuthService {
   static Future<void> _deleteAuthUser(User user) async {
     try {
       await user.delete();
-      log('user');
+      print('user');
     } on FirebaseAuthException catch (e) {
       if (e.code != 'requires-recent-login') rethrow;
     }
