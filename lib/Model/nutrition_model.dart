@@ -24,6 +24,8 @@ class NutritionModel {
   /// Per-ingredient contribution (per serving), largest first.
   final List<IngredientNutrition> ingredientsNutrition;
 
+  final int unknownIngredientCount; // 👈 NEW
+
   const NutritionModel({
     required this.caloriesPerServing,
     required this.protein,
@@ -36,7 +38,9 @@ class NutritionModel {
     required this.saturatedFat,
     required this.servings,
     required this.ingredientsNutrition,
+    this.unknownIngredientCount = 0, // 👈 NEW WITH DEFAULT
   });
+  bool get hasUnknownIngredients => unknownIngredientCount > 0;
 
   // ── Whole-recipe multiples ─────────────────────────────────────────────────
   double get caloriesWholeRecipe => caloriesPerServing * servings;
@@ -70,36 +74,37 @@ class NutritionModel {
   );
 
   Map<String, dynamic> toMap() => {
-        'caloriesPerServing': caloriesPerServing,
-        'protein': protein,
-        'carbs': carbs,
-        'fat': fat,
-        'fiber': fiber,
-        'sugar': sugar,
-        'sodium': sodium,
-        'cholesterol': cholesterol,
-        'saturatedFat': saturatedFat,
-        'servings': servings,
-        'ingredientsNutrition':
-            ingredientsNutrition.map((e) => e.toMap()).toList(),
-      };
+    'caloriesPerServing': caloriesPerServing,
+    'protein': protein,
+    'carbs': carbs,
+    'fat': fat,
+    'fiber': fiber,
+    'sugar': sugar,
+    'sodium': sodium,
+    'cholesterol': cholesterol,
+    'saturatedFat': saturatedFat,
+    'servings': servings,
+    'ingredientsNutrition': ingredientsNutrition.map((e) => e.toMap()).toList(),
+  };
 
   factory NutritionModel.fromMap(Map<String, dynamic> m) => NutritionModel(
-        caloriesPerServing: (m['caloriesPerServing'] ?? 0).toDouble(),
-        protein: (m['protein'] ?? 0).toDouble(),
-        carbs: (m['carbs'] ?? 0).toDouble(),
-        fat: (m['fat'] ?? 0).toDouble(),
-        fiber: (m['fiber'] ?? 0).toDouble(),
-        sugar: (m['sugar'] ?? 0).toDouble(),
-        sodium: (m['sodium'] ?? 0).toDouble(),
-        cholesterol: (m['cholesterol'] ?? 0).toDouble(),
-        saturatedFat: (m['saturatedFat'] ?? 0).toDouble(),
-        servings: (m['servings'] ?? 1).toInt(),
-        ingredientsNutrition: ((m['ingredientsNutrition'] ?? []) as List)
-            .map((e) => IngredientNutrition.fromMap(
-                Map<String, dynamic>.from(e as Map)))
-            .toList(),
-      );
+    caloriesPerServing: (m['caloriesPerServing'] ?? 0).toDouble(),
+    protein: (m['protein'] ?? 0).toDouble(),
+    carbs: (m['carbs'] ?? 0).toDouble(),
+    fat: (m['fat'] ?? 0).toDouble(),
+    fiber: (m['fiber'] ?? 0).toDouble(),
+    sugar: (m['sugar'] ?? 0).toDouble(),
+    sodium: (m['sodium'] ?? 0).toDouble(),
+    cholesterol: (m['cholesterol'] ?? 0).toDouble(),
+    saturatedFat: (m['saturatedFat'] ?? 0).toDouble(),
+    servings: (m['servings'] ?? 1).toInt(),
+    ingredientsNutrition: ((m['ingredientsNutrition'] ?? []) as List)
+        .map(
+          (e) =>
+              IngredientNutrition.fromMap(Map<String, dynamic>.from(e as Map)),
+        )
+        .toList(),
+  );
 }
 
 /// One ingredient's contribution to a single serving.
@@ -119,12 +124,12 @@ class IngredientNutrition {
   });
 
   Map<String, dynamic> toMap() => {
-        'name': name,
-        'calories': calories,
-        'protein': protein,
-        'carbs': carbs,
-        'fat': fat,
-      };
+    'name': name,
+    'calories': calories,
+    'protein': protein,
+    'carbs': carbs,
+    'fat': fat,
+  };
 
   factory IngredientNutrition.fromMap(Map<String, dynamic> m) =>
       IngredientNutrition(

@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// One selectable app language.
@@ -92,7 +94,8 @@ class LanguageService {
   /// country code here (the language mapping already exists in
   /// [countryLanguages], so this set is the only switch).
   /// ---------------------------------------------------------------------
-  static const Set<String> enabledCountries = {'IN'};
+  // static const Set<String> enabledCountries = {'IN'};
+  static Set<String> get enabledCountries => countryLanguages.keys.toSet();
 
   /// Forces a country for testing (e.g. `'IN'` on a US device). Debug only —
   /// set it before [detectCountry] runs. Never set in production code.
@@ -141,6 +144,8 @@ class LanguageService {
   static String get currentCode => _current;
   static Locale get locale => Locale(_current);
 
+  /// All countries listed in countryLanguages are live — no separate rollout gate.
+
   static List<Locale> get supportedLocales =>
       supported.map((l) => Locale(l.code)).toList();
 
@@ -178,6 +183,50 @@ class LanguageService {
     }
   }
 
+  /// Detects country from the public IP address.
+  ///
+  /// This is VPN-aware:
+  /// - India VPN      -> IN
+  /// - Japan VPN      -> JP
+  /// - France VPN     -> FR
+  /// - Germany VPN    -> DE
+  ///
+  /// Falls back to device locale/timezone if IP lookup fails.
+  static Future<String> _countryFromIp() async {
+    try {
+      final response = await http
+          .get(
+            Uri.parse('https://ipwho.is/'),
+            headers: const {'Accept': 'application/json'},
+          )
+          .timeout(const Duration(seconds: 5));
+
+      if (response.statusCode != 200) {
+        print('❌ IP country lookup failed: HTTP ${response.statusCode}');
+        return '';
+      }
+
+      final data = jsonDecode(response.body);
+
+      final country =
+          data['country_code']?.toString().trim().toUpperCase() ?? '';
+
+      final ip = data['ip']?.toString() ?? '';
+
+      print('🌐 Public IP: $ip');
+      print('🌍 IP Country: $country');
+
+      if (country.length == 2) {
+        return country;
+      }
+
+      return '';
+    } catch (e) {
+      print('❌ IP country detection failed: $e');
+      return '';
+    }
+  }
+
   /// Resolve which country the user is in, and remember it.
   ///
   /// The device locale is checked first because it is synchronous and free.
@@ -190,31 +239,70 @@ class LanguageService {
   static Future<String> detectCountry() async {
     if (debugCountryOverride != null) {
       _resolvedCountry = debugCountryOverride!.toUpperCase();
+
+      print('🧪 Debug country override: $_resolvedCountry');
+
       return _resolvedCountry;
     }
 
+    // ============================================================
+    // 1. PRIMARY: PUBLIC IP COUNTRY
+    // ============================================================
+
+    final ipCountry = await _countryFromIp();
+
+    if (ipCountry.isNotEmpty) {
+      _resolvedCountry = ipCountry;
+
+      try {
+        final prefs = await SharedPreferences.getInstance();
+
+        await prefs.setString(_countryPrefKey, ipCountry);
+      } catch (_) {}
+
+      print('🌍 Country resolved from IP: $_resolvedCountry');
+
+      return _resolvedCountry;
+    }
+
+    // ============================================================
+    // 2. FALLBACK: DEVICE LOCALE
+    // ============================================================
+
     var country = deviceCountryCode;
 
-    // Only pay for the platform channel when the locale hasn't already put us
-    // in a rollout country.
-    if (!enabledCountries.contains(country)) {
+    print('⚠️ IP country unavailable. Device locale country: $country');
+
+    // ============================================================
+    // 3. FALLBACK: TIMEZONE
+    // ============================================================
+
+    if (country.isEmpty) {
       final fromZone = await _countryFromTimezone();
-      if (fromZone.isNotEmpty &&
-          (country.isEmpty || enabledCountries.contains(fromZone))) {
+
+      if (fromZone.isNotEmpty) {
         country = fromZone;
+
+        print('🌍 Country resolved from timezone: $country');
       }
     }
+
+    // ============================================================
+    // 4. SAVE RESULT
+    // ============================================================
 
     if (country.isNotEmpty) {
       _resolvedCountry = country;
+
       try {
         final prefs = await SharedPreferences.getInstance();
+
         await prefs.setString(_countryPrefKey, country);
-      } catch (_) {
-        // Not persisting just means we re-detect next launch — harmless.
-      }
+      } catch (_) {}
     }
-    log(_resolvedCountry);
+
+    print('🌍 Final resolved country: $_resolvedCountry');
+
     return _resolvedCountry;
   }
 

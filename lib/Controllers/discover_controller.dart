@@ -295,6 +295,7 @@ class DiscoverController extends GetxController {
           'Smoothies',
           'shake',
           'Shake',
+          'lassi',
           'shakes',
           'Shakes',
           'cocktail',

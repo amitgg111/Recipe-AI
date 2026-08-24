@@ -443,22 +443,6 @@ class _CookbooksScreenState extends State<CookbooksScreen>
           children: [
             const SizedBox(height: 12),
 
-            // Illustration
-            // Container(
-            //   width: 100,
-            //   height: 100,
-            //   decoration: BoxDecoration(
-            //     color: AppColors.primary.withValues(alpha: 0.08),
-            //     shape: BoxShape.circle,
-            //   ),
-            //   child: const Center(
-            //     child: OnboardingLineIcon(
-            //       'book',
-            //       size: 44,
-            //       color: AppColors.primary,
-            //     ),
-            //   ),
-            // ),
             Container(
               width: 150,
               height: 150,
@@ -472,7 +456,51 @@ class _CookbooksScreenState extends State<CookbooksScreen>
 
             // Title
             Text(
-              isSearching ? 'No Cookbooks Found' : 'Your Cookbooks Are Empty',
+              isSearching ? 'No Data Found' : 'Your Cookbooks Are Empty',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textDark,
+              ),
+            ),
+
+            const SizedBox(height: 10),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyRecipeState() {
+    final isSearching = _searchQuery.trim().isNotEmpty;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xl,
+        vertical: 32,
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const SizedBox(height: 12),
+
+            Container(
+              width: 150,
+              height: 150,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+              child: Center(child: Image.asset("assets/welcome/empty.png")),
+            ),
+            const SizedBox(height: 26),
+
+            // Title
+            Text(
+              isSearching ? 'No Data Found' : 'Your Recipe Are Empty',
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 18,
@@ -527,7 +555,7 @@ class _CookbooksScreenState extends State<CookbooksScreen>
       final recipes = _sortRecipes(_filterRecipes(controller.recipes));
 
       if (recipes.isEmpty) {
-        return _buildEmptyState();
+        return _buildEmptyRecipeState();
       }
 
       return Padding(

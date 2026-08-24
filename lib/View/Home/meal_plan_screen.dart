@@ -255,7 +255,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> with RouteAware {
             ),
             child: Row(
               children: [
-                Flexible(
+                Expanded(
                   child: Text(
                     'meal_plan'.tr,
                     style: _S.f(22, FontWeight.w800, _S.textDark, ls: -0.44),
@@ -779,6 +779,42 @@ class _MealPlanScreenState extends State<MealPlanScreen> with RouteAware {
                 children: [
                   for (final type in MealPlanController.mealTypes)
                     _buildMealSection(sel, type),
+
+                  // ── Auto-fill my week button ──  (static)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    child: GestureDetector(
+                      onTap: () => _showAutoFillSheet(),
+                      child: Container(
+                        width: double.infinity,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF4EEFD),
+                          borderRadius: BorderRadius.circular(13),
+                          border: Border.all(color: const Color(0xFFE0D2F7)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const OnboardingLineIcon(
+                              'crown',
+                              size: 24,
+                              color: Color(0xFF7A4FC0),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'auto_fill_my_week'.tr,
+                              style: _S.f(
+                                13.5,
+                                FontWeight.w700,
+                                const Color(0xFF7A4FC0),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

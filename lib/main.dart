@@ -108,6 +108,7 @@ void main() async {
   // Restore the saved language before the first frame so the app opens already
   // localized (defaults to English when nothing is saved).
   await LanguageService.init();
+  await LanguageService.detectCountry();
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
@@ -119,7 +120,7 @@ void main() async {
   // Work out which country the user is in, so the Language screen offers the
   // right options and splash knows which model to pre-download. Resolved here
   // (not in splash) because both of those read it, and it must not race them.
-  await LanguageService.detectCountry();
+
   await GetStorage.init();
 
   Get.put(CuisineController(), permanent: true);

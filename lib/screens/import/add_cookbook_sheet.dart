@@ -80,7 +80,7 @@ class _AddCookbookSheetState extends State<AddCookbookSheet> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Flexible(
+                    Expanded(
                       child: Text(
                         'new_cookbook'.tr,
                         maxLines: 2,

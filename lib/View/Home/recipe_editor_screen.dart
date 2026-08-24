@@ -142,7 +142,14 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   // because it only revealed the duplicate old detail screen, and (2) a
   // second back press then popping past Home and out of the app.
   void _goToRecipeDetail() {
-    Get.back();
+    // Get.back();
+    if (widget.recipe == null) {
+      // New recipe → directly Home
+      Get.until((route) => route.isFirst);
+    } else {
+      // Edit recipe → Recipe Detail
+      Get.back();
+    }
   }
 
   @override
