@@ -1832,286 +1832,343 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
       backgroundColor: Colors.transparent,
       barrierColor: const Color(0x801E1B18),
       builder: (ctx) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setStateSheet) {
-            final checkedCount = selectedIndices.where((c) => c).length;
+        // 1. બધા ingredient names (unique) extract કરો
+        final allNames = ingredientsSource
+            .map((ing) => _parseIngredient(ing).$2) // name part
+            .where((name) => name.trim().isNotEmpty)
+            .toSet()
+            .toList();
 
-            final widgets = <Widget>[];
+        // 2. Future: બધા names નો અનુવાદ મેળવો
+        final translationFuture = AiTranslationService.translateList(allNames);
 
-            void toggleIndex(int idx) {
-              setStateSheet(() {
-                selectedIndices[idx] = !selectedIndices[idx];
-              });
+        return FutureBuilder<List<String>>(
+          future: translationFuture,
+          builder: (context, snapshot) {
+            // 3. જ્યાં સુધી અનુવાદ ન આવે ત્યાં સુધી loading (વૈકલ્પિક)
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Container(
+                height: MediaQuery.of(ctx).size.height * 0.75,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                ),
+                child: const Center(child: CircularProgressIndicator()),
+              );
             }
 
-            Widget selectionRow(String text, int globalIdx) {
-              final isChecked = selectedIndices[globalIdx];
-              final parts = _parseIngredient(text);
-              return GestureDetector(
-                onTap: () => toggleIndex(globalIdx),
-                behavior: HitTestBehavior.opaque,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  decoration: const BoxDecoration(
-                    border: Border(bottom: BorderSide(color: _P.rowLine)),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 22,
-                        height: 22,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(6),
-                          color: isChecked ? _P.primary : Colors.transparent,
-                          border: isChecked
-                              ? null
-                              : Border.all(color: _P.borderInner, width: 2),
-                        ),
-                        child: isChecked
-                            ? const Center(
-                                child: OnboardingLineIcon(
-                                  'check',
-                                  color: Colors.white,
-                                  size: 14,
-                                ),
-                              )
-                            : null,
+            // 4. અનુવાદ મળી ગયા – original → translated map બનાવો
+            final translatedMap = <String, String>{};
+            if (snapshot.hasData) {
+              final translatedNames = snapshot.data!;
+              for (var i = 0; i < allNames.length; i++) {
+                translatedMap[allNames[i]] = translatedNames[i];
+              }
+            }
+            // જો અનુવાદ ન મળે તો original name જ રાખો
+            final getTranslatedName = (String original) =>
+                translatedMap[original] ?? original;
+
+            // 5. StatefulBuilder – checkbox toggle માટે
+            return StatefulBuilder(
+              builder: (BuildContext context, StateSetter setStateSheet) {
+                final checkedCount = selectedIndices.where((c) => c).length;
+
+                final widgets = <Widget>[];
+
+                void toggleIndex(int idx) {
+                  setStateSheet(() {
+                    selectedIndices[idx] = !selectedIndices[idx];
+                  });
+                }
+
+                Widget selectionRow(String scaledIngText, int globalIdx) {
+                  final isChecked = selectedIndices[globalIdx];
+                  final parts = _parseIngredient(scaledIngText);
+                  final originalName = parts.$2;
+                  final translatedName = getTranslatedName(originalName);
+
+                  return GestureDetector(
+                    onTap: () => toggleIndex(globalIdx),
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: const BoxDecoration(
+                        border: Border(bottom: BorderSide(color: _P.rowLine)),
                       ),
-                      const SizedBox(width: 12),
-                      Container(
-                        width: 28,
-                        height: 28,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: _P.goldBg,
-                          borderRadius: BorderRadius.circular(9),
-                        ),
-                        child: Text(
-                          _ingredientEmoji(globalIdx, parts.$2),
-                          style: const TextStyle(fontSize: 15),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      if (parts.$1 != null) ...[
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(minWidth: 56),
-                          child: Text(
-                            "${parts.$1!}  ",
-                            style: _f(
-                              14,
-                              FontWeight.w800,
-                              isChecked ? _P.textDark : _P.textHint,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 22,
+                            height: 22,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(6),
+                              color: isChecked
+                                  ? _P.primary
+                                  : Colors.transparent,
+                              border: isChecked
+                                  ? null
+                                  : Border.all(color: _P.borderInner, width: 2),
+                            ),
+                            child: isChecked
+                                ? const Center(
+                                    child: OnboardingLineIcon(
+                                      'check',
+                                      color: Colors.white,
+                                      size: 14,
+                                    ),
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(width: 12),
+                          Container(
+                            width: 28,
+                            height: 28,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: _P.goldBg,
+                              borderRadius: BorderRadius.circular(9),
+                            ),
+                            child: Text(
+                              _ingredientEmoji(globalIdx, parts.$2),
+                              style: const TextStyle(fontSize: 15),
                             ),
                           ),
+                          const SizedBox(width: 12),
+                          if (parts.$1 != null) ...[
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(minWidth: 56),
+                              child: Text(
+                                "${parts.$1!}  ",
+                                style: _f(
+                                  14,
+                                  FontWeight.w800,
+                                  isChecked ? _P.textDark : _P.textHint,
+                                ),
+                              ),
+                            ),
+                          ],
+                          Expanded(
+                            child: Text(
+                              // 🔁 અહીં translated name નો ઉપયોગ
+                              translatedName,
+                              style: _f(
+                                14,
+                                FontWeight.w500,
+                                isChecked ? _P.textBody : _P.textHint,
+                                h: 1.35,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                // બધી ingredients માટે selectionRow build કરો
+                for (var i = 0; i < ingredientsSource.length; i++) {
+                  final scaled = UnitConverter.scaleAndConvert(
+                    ingredientsSource[i],
+                    multiplier,
+                    system,
+                  );
+                  widgets.add(selectionRow(scaled, i));
+                }
+
+                final allChecked = selectedIndices.every((c) => c);
+
+                // ---- UI (header, list, footer) ----
+                return Container(
+                  height: MediaQuery.of(ctx).size.height * 0.75,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(32),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(22, 14, 22, 10),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Center(
+                              child: Container(
+                                width: 42,
+                                height: 5,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE7E0D2),
+                                  borderRadius: BorderRadius.circular(3),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            Row(
+                              children: [
+                                Text(
+                                  'add_to_groceries_title'.tr,
+                                  style: _f(
+                                    20,
+                                    FontWeight.w800,
+                                    _P.textDark,
+                                    ls: -0.4,
+                                  ),
+                                ),
+                                const Spacer(),
+                                GestureDetector(
+                                  onTap: () => Navigator.pop(ctx),
+                                  child: Container(
+                                    width: 34,
+                                    height: 34,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFFF4F1EA),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: const OnboardingLineIcon(
+                                      'x',
+                                      size: 17,
+                                      color: _P.textMedium,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'select_items_to_purchase'.tr,
+                                  style: _f(
+                                    13.5,
+                                    FontWeight.w600,
+                                    _P.textMedium,
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: () {
+                                    setStateSheet(() {
+                                      final target = !allChecked;
+                                      for (
+                                        var i = 0;
+                                        i < selectedIndices.length;
+                                        i++
+                                      ) {
+                                        selectedIndices[i] = target;
+                                      }
+                                    });
+                                  },
+                                  child: Text(
+                                    allChecked
+                                        ? 'deselect_all'.tr
+                                        : 'select_all'.tr,
+                                    style: _f(13, FontWeight.w700, _P.primary),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
+                      const Divider(color: _P.rowLine, height: 1, thickness: 1),
                       Expanded(
-                        child: Text(
-                          parts.$2,
-                          style: _f(
-                            14,
-                            FontWeight.w500,
-                            isChecked ? _P.textBody : _P.textHint,
-                            h: 1.35,
+                        child: ListView(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 22,
+                            vertical: 8,
+                          ),
+                          children: widgets,
+                        ),
+                      ),
+                      Container(
+                        padding: EdgeInsets.fromLTRB(
+                          22,
+                          12,
+                          22,
+                          MediaQuery.of(ctx).padding.bottom + 16,
+                        ),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          border: Border(top: BorderSide(color: _P.rowLine)),
+                        ),
+                        child: GestureDetector(
+                          onTap: checkedCount == 0
+                              ? null
+                              : () {
+                                  Navigator.pop(ctx);
+                                  final groceryController =
+                                      Get.find<GroceryStore>();
+                                  final toAdd = <String>[];
+                                  for (
+                                    var i = 0;
+                                    i < ingredientsSource.length;
+                                    i++
+                                  ) {
+                                    if (selectedIndices[i]) {
+                                      final scaledIng =
+                                          IngredientScaleHelper.scaleIngredient(
+                                            ingredientsSource[i],
+                                            multiplier,
+                                          );
+                                      toAdd.add(scaledIng);
+                                    }
+                                  }
+
+                                  groceryController.addFromRecipe(
+                                    recipe.id,
+                                    toAdd,
+                                  );
+
+                                  CustomSnackbar.show(
+                                    title: 'n_ingredients_added'.trParams({
+                                      'count': '$checkedCount',
+                                    }),
+                                    actionText: 'view'.tr,
+                                    onAction: () {
+                                      Get.offUntil(
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const HomeScreen(initialIndex: 3),
+                                        ),
+                                        (route) => route.isFirst,
+                                      );
+                                    },
+                                  );
+                                },
+                          child: Container(
+                            height: 50,
+                            decoration: BoxDecoration(
+                              color: checkedCount == 0
+                                  ? const Color(0xFFF4F1EA)
+                                  : _P.primary,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              checkedCount == 0
+                                  ? 'select_items_to_add'.tr
+                                  : checkedCount == 1
+                                  ? 'add_1_item_to_groceries'.tr
+                                  : 'add_n_items_to_groceries'.trParams({
+                                      'count': '$checkedCount',
+                                    }),
+                              style: _f(
+                                15,
+                                FontWeight.w700,
+                                checkedCount == 0 ? _P.textHint : Colors.white,
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     ],
                   ),
-                ),
-              );
-            }
-
-            for (var i = 0; i < ingredientsSource.length; i++) {
-              final scaled = UnitConverter.scaleAndConvert(
-                ingredientsSource[i],
-                multiplier,
-                system,
-              );
-              widgets.add(selectionRow(scaled, i));
-            }
-
-            final allChecked = selectedIndices.every((c) => c);
-
-            return Container(
-              height: MediaQuery.of(ctx).size.height * 0.75,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-              ),
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(22, 14, 22, 10),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Center(
-                          child: Container(
-                            width: 42,
-                            height: 5,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE7E0D2),
-                              borderRadius: BorderRadius.circular(3),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        Row(
-                          children: [
-                            Text(
-                              'add_to_groceries_title'.tr,
-                              style: _f(
-                                20,
-                                FontWeight.w800,
-                                _P.textDark,
-                                ls: -0.4,
-                              ),
-                            ),
-                            const Spacer(),
-                            GestureDetector(
-                              onTap: () => Navigator.pop(ctx),
-                              child: Container(
-                                width: 34,
-                                height: 34,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFF4F1EA),
-                                  shape: BoxShape.circle,
-                                ),
-                                alignment: Alignment.center,
-                                child: const OnboardingLineIcon(
-                                  'x',
-                                  size: 17,
-                                  color: _P.textMedium,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'select_items_to_purchase'.tr,
-                              style: _f(13.5, FontWeight.w600, _P.textMedium),
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                setStateSheet(() {
-                                  final target = !allChecked;
-                                  for (
-                                    var i = 0;
-                                    i < selectedIndices.length;
-                                    i++
-                                  ) {
-                                    selectedIndices[i] = target;
-                                  }
-                                });
-                              },
-                              child: Text(
-                                allChecked
-                                    ? 'deselect_all'.tr
-                                    : 'select_all'.tr,
-                                style: _f(13, FontWeight.w700, _P.primary),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Divider(color: _P.rowLine, height: 1, thickness: 1),
-                  Expanded(
-                    child: ListView(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 22,
-                        vertical: 8,
-                      ),
-                      children: widgets,
-                    ),
-                  ),
-                  Container(
-                    padding: EdgeInsets.fromLTRB(
-                      22,
-                      12,
-                      22,
-                      MediaQuery.of(ctx).padding.bottom + 16,
-                    ),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      border: Border(top: BorderSide(color: _P.rowLine)),
-                    ),
-                    child: GestureDetector(
-                      onTap: checkedCount == 0
-                          ? null
-                          : () {
-                              Navigator.pop(ctx);
-                              final groceryController =
-                                  Get.find<GroceryStore>();
-                              final toAdd = <String>[];
-                              for (
-                                var i = 0;
-                                i < ingredientsSource.length;
-                                i++
-                              ) {
-                                if (selectedIndices[i]) {
-                                  final scaledIng =
-                                      IngredientScaleHelper.scaleIngredient(
-                                        ingredientsSource[i],
-                                        multiplier,
-                                      );
-                                  toAdd.add(scaledIng);
-                                }
-                              }
-
-                              groceryController.addFromRecipe(recipe.id, toAdd);
-
-                              CustomSnackbar.show(
-                                title: 'n_ingredients_added'.trParams({
-                                  'count': '$checkedCount',
-                                }),
-                                actionText: 'view'.tr,
-                                onAction: () {
-                                  Get.offUntil(
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          const HomeScreen(initialIndex: 3),
-                                    ),
-                                    (route) => route.isFirst,
-                                  );
-                                },
-                              );
-                            },
-                      child: Container(
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: checkedCount == 0
-                              ? const Color(0xFFF4F1EA)
-                              : _P.primary,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          checkedCount == 0
-                              ? 'select_items_to_add'.tr
-                              : checkedCount == 1
-                              ? 'add_1_item_to_groceries'.tr
-                              : 'add_n_items_to_groceries'.trParams({
-                                  'count': '$checkedCount',
-                                }),
-                          style: _f(
-                            15,
-                            FontWeight.w700,
-                            checkedCount == 0 ? _P.textHint : Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                );
+              },
             );
           },
         );
@@ -2119,52 +2176,6 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
     );
   }
 
-  // Future<void> _saveToCookbook() async {
-  //   if (_busySave) return;
-
-  //   _busySave = true;
-
-  //   final wasSaved = _saved.value;
-
-  //   if (!wasSaved) {
-  //     _saved.value = true;
-  //     _saves.value++;
-  //   }
-
-  //   try {
-  //     final copyId = await RecipeSocialService.saveCopyToMyRecipes(recipe);
-
-  //     if (copyId == null) {
-  //       if (mounted && !wasSaved) {
-  //         _saved.value = false;
-  //         _saves.value--;
-  //       }
-  //       return;
-  //     }
-
-  //     await RecipeSocialService.setSave(recipe.userId, recipe.id, true);
-
-  //     if (!mounted) return;
-
-  //     showModalBottomSheet(
-  //       context: context,
-  //       isScrollControlled: true,
-  //       backgroundColor: Colors.transparent,
-  //       builder: (_) => CookbookPickerSheet(
-  //         cookbookController: Get.find<CookbookController>(),
-  //         recipeId: copyId,
-  //         recipeImageUrl: recipe.imageUrl,
-  //       ),
-  //     );
-  //   } catch (_) {
-  //     if (mounted && !wasSaved) {
-  //       _saved.value = false;
-  //       _saves.value--;
-  //     }
-  //   } finally {
-  //     _busySave = false;
-  //   }
-  // }
   Future<void> _saveToCookbook() async {
     if (_busySave) return;
 

@@ -20,8 +20,13 @@ class MealPlanController extends GetxController {
   /// mealType are untouched — all logic keys off recipeId). No-op for English.
   Future<List<MealPlanItem>> _translateItems(List<MealPlanItem> items) async {
     if (items.isEmpty || !AiTranslationService.isTranslating) return items;
-    return Future.wait(items.map((m) async =>
-        m.copyWith(recipeTitle: await AiTranslationService.translate(m.recipeTitle))));
+    return Future.wait(
+      items.map(
+        (m) async => m.copyWith(
+          recipeTitle: await AiTranslationService.translate(m.recipeTitle),
+        ),
+      ),
+    );
   }
 
   /// Re-translate already-loaded meals after the app language changes.
@@ -29,6 +34,7 @@ class MealPlanController extends GetxController {
     mealPlanItems.value = await _translateItems(_enWeek);
     monthMealPlanItems.value = await _translateItems(_enMonth);
   }
+
   final RxBool isLoading = false.obs;
   final Rx<DateTime> selectedWeekStart = DateTime.now().obs;
   final Rx<DateTime> selectedDate = DateTime.now().obs;
@@ -37,8 +43,8 @@ class MealPlanController extends GetxController {
   StreamSubscription<QuerySnapshot>? _monthSubscription;
   StreamSubscription? _authSub;
 
-  static const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
-
+  // static const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
+  static const mealTypes = ['breakfast', 'lunch', 'dinner', 'snack'];
   @override
   void onInit() {
     super.onInit();
@@ -70,8 +76,11 @@ class MealPlanController extends GetxController {
   }
 
   DateTime _getMonday(DateTime date) {
-    return DateTime(date.year, date.month, date.day)
-        .subtract(Duration(days: date.weekday - 1));
+    return DateTime(
+      date.year,
+      date.month,
+      date.day,
+    ).subtract(Duration(days: date.weekday - 1));
   }
 
   void selectDate(DateTime date) {
@@ -87,14 +96,16 @@ class MealPlanController extends GetxController {
   }
 
   void nextWeek() {
-    selectedWeekStart.value =
-        selectedWeekStart.value.add(const Duration(days: 7));
+    selectedWeekStart.value = selectedWeekStart.value.add(
+      const Duration(days: 7),
+    );
     selectedDate.value = selectedWeekStart.value;
   }
 
   void previousWeek() {
-    selectedWeekStart.value =
-        selectedWeekStart.value.subtract(const Duration(days: 7));
+    selectedWeekStart.value = selectedWeekStart.value.subtract(
+      const Duration(days: 7),
+    );
     selectedDate.value = selectedWeekStart.value;
   }
 
@@ -139,8 +150,18 @@ class MealPlanController extends GetxController {
   String formatDateRange(DateTime start) {
     final end = start.add(const Duration(days: 6));
     final months = [
-      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
     ];
     return "${start.day} ${months[start.month - 1]} ${start.year} - ${end.day} ${months[end.month - 1]} ${end.year}";
   }
@@ -153,8 +174,9 @@ class MealPlanController extends GetxController {
     }
 
     final startStr = _formatDate(selectedWeekStart.value);
-    final endStr =
-        _formatDate(selectedWeekStart.value.add(const Duration(days: 6)));
+    final endStr = _formatDate(
+      selectedWeekStart.value.add(const Duration(days: 6)),
+    );
 
     isLoading.value = true;
     _mealPlanSubscription?.cancel();
@@ -167,18 +189,19 @@ class MealPlanController extends GetxController {
         .where('date', isLessThanOrEqualTo: endStr)
         .snapshots()
         .listen(
-      (snapshot) async {
-        final en =
-            snapshot.docs.map((doc) => MealPlanItem.fromDocument(doc)).toList();
-        _enWeek = en;
-        mealPlanItems.value = await _translateItems(en);
-        isLoading.value = false;
-      },
-      onError: (error) {
-        isLoading.value = false;
-        log("Error fetching meal plans: $error");
-      },
-    );
+          (snapshot) async {
+            final en = snapshot.docs
+                .map((doc) => MealPlanItem.fromDocument(doc))
+                .toList();
+            _enWeek = en;
+            mealPlanItems.value = await _translateItems(en);
+            isLoading.value = false;
+          },
+          onError: (error) {
+            isLoading.value = false;
+            log("Error fetching meal plans: $error");
+          },
+        );
   }
 
   void fetchMonthMealPlans(DateTime month) {
@@ -203,16 +226,17 @@ class MealPlanController extends GetxController {
         .where('date', isLessThanOrEqualTo: endStr)
         .snapshots()
         .listen(
-      (snapshot) async {
-        final en =
-            snapshot.docs.map((doc) => MealPlanItem.fromDocument(doc)).toList();
-        _enMonth = en;
-        monthMealPlanItems.value = await _translateItems(en);
-      },
-      onError: (error) {
-        log("Error fetching month meal plans: $error");
-      },
-    );
+          (snapshot) async {
+            final en = snapshot.docs
+                .map((doc) => MealPlanItem.fromDocument(doc))
+                .toList();
+            _enMonth = en;
+            monthMealPlanItems.value = await _translateItems(en);
+          },
+          onError: (error) {
+            log("Error fetching month meal plans: $error");
+          },
+        );
   }
 
   String _formatDate(DateTime date) {
@@ -241,13 +265,13 @@ class MealPlanController extends GetxController {
         .doc(uid)
         .collection('meal_plans')
         .add({
-      'date': dateStr,
-      'mealType': mealType,
-      'recipeId': recipeId,
-      'recipeTitle': recipeTitle,
-      'recipeImageUrl': recipeImageUrl,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+          'date': dateStr,
+          'mealType': mealType,
+          'recipeId': recipeId,
+          'recipeTitle': recipeTitle,
+          'recipeImageUrl': recipeImageUrl,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
   }
 
   Future<void> deleteMealPlanItem(String id) async {
@@ -290,8 +314,9 @@ class MealPlanController extends GetxController {
     if (uid == null) return;
 
     final startStr = _formatDate(selectedWeekStart.value);
-    final endStr =
-        _formatDate(selectedWeekStart.value.add(const Duration(days: 6)));
+    final endStr = _formatDate(
+      selectedWeekStart.value.add(const Duration(days: 6)),
+    );
 
     final snapshot = await FirebaseFirestore.instance
         .collection('users')

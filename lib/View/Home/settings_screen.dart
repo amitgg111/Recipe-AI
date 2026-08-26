@@ -460,171 +460,170 @@ class _SettingsScreenState extends State<SettingsScreen>
   /// shadow / row layout); only the deeper gradient, the copy and the ACTIVE
   /// badge differ, so the two feel like the same card upgraded.
   Widget _premiumMembershipCard() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF7C3AED), Color(0xFF9333EA)],
-        ),
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF7C3AED).withValues(alpha: 0.6),
-            blurRadius: 30,
-            offset: const Offset(0, 16),
-            spreadRadius: -16,
+    return GestureDetector(
+      onTap: () => Get.to(() => const ManageSubscriptionScreen()),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF7C3AED), Color(0xFF9333EA)],
           ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        children: [
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF9466F2), Color(0xFF6D3BD4)],
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF7C3AED).withValues(alpha: 0.6),
+              blurRadius: 30,
+              offset: const Offset(0, 16),
+              spreadRadius: -16,
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          children: [
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF9466F2), Color(0xFF6D3BD4)],
+                ),
               ),
             ),
-          ),
-          // ─────────────────────────────
-          // FULL CARD SHIMMER
-          // ─────────────────────────────
-          Positioned.fill(
-            child: AnimatedBuilder(
-              animation: _sheen,
-              builder: (_, __) {
-                final t = _sheen.value;
+            // ─────────────────────────────
+            // FULL CARD SHIMMER
+            // ─────────────────────────────
+            Positioned.fill(
+              child: AnimatedBuilder(
+                animation: _sheen,
+                builder: (_, __) {
+                  final t = _sheen.value;
 
-                return IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment(-2.0 + (t * 4.0), -0.5),
-                        end: Alignment(-1.0 + (t * 4.0), 0.0),
-                        colors: const [
-                          Color(0x00FFFFFF),
-                          Color(0x25FFFFFF),
-                          Color(0x70FFFFFF),
-                          Color(0x25FFFFFF),
-                          Color(0x00FFFFFF),
-                        ],
-                        stops: const [0.0, 0.35, 0.5, 0.65, 1.0],
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          // ─────────────────────────────
-          // CARD CONTENT
-          // ─────────────────────────────
-          Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 15, 16, 13),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      padding: const EdgeInsets.all(8),
+                  return IgnorePointer(
+                    child: DecoratedBox(
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        color: Colors.white.withValues(alpha: 0.18),
-                      ),
-                      child: const OnboardingLineIcon(
-                        'crown',
-                        size: 20,
-                        color: Colors.white,
-                      ),
-                    ),
-
-                    const SizedBox(width: 13),
-
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Recipe AI Plus',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'plus_active_renews'.trParams({
-                              'date': ManageSubscriptionScreen.renewDate,
-                            }),
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xD9FFFFFF),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(width: 10),
-
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.22),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        'plus_active'.tr,
-                        style: const TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          letterSpacing: 0.5,
+                        gradient: LinearGradient(
+                          begin: Alignment(-2.0 + (t * 4.0), -0.5),
+                          end: Alignment(-1.0 + (t * 4.0), 0.0),
+                          colors: const [
+                            Color(0x00FFFFFF),
+                            Color(0x25FFFFFF),
+                            Color(0x70FFFFFF),
+                            Color(0x25FFFFFF),
+                            Color(0x00FFFFFF),
+                          ],
+                          stops: const [0.0, 0.35, 0.5, 0.65, 1.0],
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  );
+                },
               ),
-
-              Divider(
-                height: 1,
-                thickness: 1,
-                indent: 16,
-                endIndent: 16,
-                color: Colors.white.withValues(alpha: 0.22),
-              ),
-
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 13),
-                child: Row(
-                  children: [
-                    Text(
-                      'plus_yearly_yr'.tr,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xE6FFFFFF),
+            ),
+            // ─────────────────────────────
+            // CARD CONTENT
+            // ─────────────────────────────
+            Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 15, 16, 13),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          color: Colors.white.withValues(alpha: 0.18),
+                        ),
+                        child: const OnboardingLineIcon(
+                          'crown',
+                          size: 20,
+                          color: Colors.white,
+                        ),
                       ),
-                    ),
 
-                    const Spacer(),
+                      const SizedBox(width: 13),
 
-                    GestureDetector(
-                      onTap: () =>
-                          Get.to(() => const ManageSubscriptionScreen()),
-                      behavior: HitTestBehavior.opaque,
-                      child: Text(
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Recipe AI Plus',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'plus_active_renews'.trParams({
+                                'date': ManageSubscriptionScreen.renewDate,
+                              }),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xD9FFFFFF),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(width: 10),
+
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.22),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          'plus_active'.tr,
+                          style: const TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                Divider(
+                  height: 1,
+                  thickness: 1,
+                  indent: 16,
+                  endIndent: 16,
+                  color: Colors.white.withValues(alpha: 0.22),
+                ),
+
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 13),
+                  child: Row(
+                    children: [
+                      Text(
+                        'plus_yearly_yr'.tr,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xE6FFFFFF),
+                        ),
+                      ),
+
+                      const Spacer(),
+
+                      Text(
                         'manage_plan'.tr,
                         style: const TextStyle(
                           fontSize: 13,
@@ -632,13 +631,13 @@ class _SettingsScreenState extends State<SettingsScreen>
                           color: Colors.white,
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

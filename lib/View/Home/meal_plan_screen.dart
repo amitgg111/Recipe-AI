@@ -45,13 +45,13 @@ class _S {
 
   static Color mealColor(String type) {
     switch (type) {
-      case 'Breakfast':
+      case 'breakfast':
         return breakfastColor;
-      case 'Lunch':
+      case 'lunch':
         return lunchColor;
-      case 'Dinner':
+      case 'dinner':
         return dinnerColor;
-      case 'Snack':
+      case 'snack':
         return snackColor;
       default:
         return primary;
@@ -1816,7 +1816,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> with RouteAware {
       builder: (_) => _AddMealSheet(
         date: date,
         dayName: _dayNames[date.weekday - 1],
-        initialMealType: initialType,
+        initialMealType: initialType.tr,
         controller: controller,
         homeController: homeController,
       ),
@@ -2231,10 +2231,10 @@ class _AddMealSheetState extends State<_AddMealSheet> {
 
   // HTML 51 chip tints: unselected (bg, text). Selected = solid mealColor + white.
   static const _chipTint = {
-    'Breakfast': (Color(0xFFFCF3DE), Color(0xFF7A5B12)),
-    'Lunch': (Color(0xFFEAF6F0), Color(0xFF1F5E42)),
-    'Dinner': (Color(0xFFE9F0FC), Color(0xFF2D6FE0)),
-    'Snack': (Color(0xFFFCEAE3), Color(0xFF9B3417)),
+    'breakfast': (Color(0xFFFCF3DE), Color(0xFF7A5B12)),
+    'lunch': (Color(0xFFEAF6F0), Color(0xFF1F5E42)),
+    'dinner': (Color(0xFFE9F0FC), Color(0xFF2D6FE0)),
+    'snack': (Color(0xFFFCEAE3), Color(0xFF9B3417)),
   };
 
   @override
@@ -2393,6 +2393,7 @@ class _AddMealSheetState extends State<_AddMealSheet> {
   Widget _typeChip(String type) {
     final sel = type == _selectedType;
     final tint = _chipTint[type]!;
+
     return Padding(
       padding: const EdgeInsets.only(right: 7),
       child: GestureDetector(
@@ -2404,7 +2405,7 @@ class _AddMealSheetState extends State<_AddMealSheet> {
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
-            type,
+            type.tr,
             style: _S.f(
               12.5,
               sel ? FontWeight.w800 : FontWeight.w700,

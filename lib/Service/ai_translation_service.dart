@@ -1191,7 +1191,7 @@ class AiTranslationService {
     }
 
     await prewarmExistingRecipesTranslation();
-    await prepareAllSupportedLanguages();
+    // await prepareAllSupportedLanguages();
   }
 
   // ═══════════════════════════════════════════════════════════════════════
