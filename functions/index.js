@@ -221,26 +221,122 @@ async function storeJpegBuffer(buffer, seed) {
  * @return {Promise<string>} Our Storage URL, or "".
  */
 async function mirrorRemoteImage(url, seed) {
+  const buffer = await fetchRemoteImageBuffer(url);
+  if (!buffer) return "";
+  return await storeJpegBuffer(buffer, seed);
+}
+
+/**
+ * Downloads a remote image into a Buffer with per-host UA handling.
+ * @param {string} url Remote image URL.
+ * @return {Promise<Buffer|null>} Image bytes, or null on any failure.
+ */
+async function fetchRemoteImageBuffer(url) {
   try {
+    // UA per host: Instagram/TikTok/Facebook only serve their og:image to
+    // recognised link-preview crawlers, so those get facebookexternalhit.
+    // Wikimedia is the OPPOSITE — its upload servers REJECT crawler UAs and
+    // require an identifying client string, which is why Wikimedia mirrors
+    // silently failed with the old blanket UA.
+    const host = (() => {
+      try {
+        return new URL(url).hostname;
+      } catch (e) {
+        return "";
+      }
+    })();
+    const socialHost = /instagram|cdninstagram|fbcdn|tiktok|facebook/
+        .test(host);
     const res = await fetch(url, {
       headers: {
-        "User-Agent": "facebookexternalhit/1.1 " +
-          "(+http://www.facebook.com/externalhit_uatext.php)",
+        "User-Agent": socialHost ?
+          "facebookexternalhit/1.1 " +
+          "(+http://www.facebook.com/externalhit_uatext.php)" :
+          "RecipeAI/1.0 (recipeai-32ae9; Firebase Cloud Functions)",
       },
       redirect: "follow",
       signal: AbortSignal.timeout(10000),
     });
-    if (!res.ok) return "";
+    if (!res.ok) {
+      console.error("fetchRemoteImage HTTP", res.status, "for", host);
+      return null;
+    }
     const type = String(res.headers.get("content-type") || "");
-    if (!type.startsWith("image/")) return "";
+    if (!type.startsWith("image/")) return null;
     const buffer = Buffer.from(await res.arrayBuffer());
     const meta = await sharp(buffer).metadata();
     // Reject tiny favicons/badges — a real cover frame is a real photo.
-    if (!meta.width || meta.width < 300 || !meta.height) return "";
-    return await storeJpegBuffer(buffer, seed);
+    if (!meta.width || meta.width < 300 || !meta.height) return null;
+    return buffer;
   } catch (e) {
-    console.error("mirrorRemoteImage failed:", e.message);
-    return "";
+    console.error("fetchRemoteImage failed:", e.message);
+    return null;
+  }
+}
+
+/**
+ * Vision gate for free-source photos: Commons/Openverse full-text search
+ * matches file DESCRIPTIONS loosely, so the top hit can be a completely
+ * unrelated subject (measured: "Chimichurri" returned a performer, "Sattu"
+ * returned people at a cooking fire, "Marry Me Chicken" returned a pizza).
+ * One cheap flash-lite look (~$0.0003) rejects those; a reject falls
+ * through to fal generation ($0.003), so failing CLOSED is nearly free
+ * while failing open puts a wrong photo on a user's recipe.
+ * @param {Object} ai GoogleGenAI client instance.
+ * @param {Buffer} buffer Candidate image bytes.
+ * @param {string} dishName Dish the photo must show.
+ * @return {Promise<boolean>} True only when the photo clearly shows the dish.
+ */
+async function validateDishPhoto(ai, buffer, dishName) {
+  try {
+    const small = await sharp(buffer)
+        .resize({width: 512, withoutEnlargement: true})
+        .jpeg({quality: 70})
+        .toBuffer();
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash-lite",
+      contents: [{
+        role: "user",
+        parts: [
+          {inlineData: {
+            mimeType: "image/jpeg",
+            data: small.toString("base64"),
+          }},
+          {text:
+            `Candidate cover photo for the dish "${dishName}". ` +
+            "Judge like a strict food-magazine editor. accept=true ONLY " +
+            "if ALL of these hold: (1) it is a photograph of this exact " +
+            "prepared dish with EVERY component the name promises " +
+            "visible (e.g. 'Aloo Puri' must show both the aloo curry " +
+            "AND puris — puris alone fail); (2) the plated/served dish " +
+            "is the MAIN subject, filling most of the frame like a " +
+            "food-blog cover; (3) it is well-lit, in focus and " +
+            "genuinely appetizing — reject dim, blurry or messy " +
+            "amateur snapshots. accept=false for: a different or " +
+            "incomplete version of the dish, only raw ingredients, any " +
+            "visible people or hands, street/market/shop/restaurant " +
+            "scenes, wide shots where the food is small, packaging, " +
+            "menus, or overlaid text."},
+        ],
+      }],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "OBJECT",
+          properties: {accept: {type: "BOOLEAN"}},
+          required: ["accept"],
+        },
+        // gemini-3.x rejects the 2.5-era thinkingBudget with a 400;
+        // thinkingLevel "low" is the 3.x equivalent of thinking off.
+        thinkingConfig: {thinkingLevel: "low"},
+      },
+    });
+    logTokens("img-check", response);
+    const parsed = JSON.parse(response.text || "{}");
+    return parsed.accept === true;
+  } catch (e) {
+    console.error("[free-image] validate failed:", e.message);
+    return false;
   }
 }
 
@@ -278,6 +374,184 @@ async function extractVideoFrame(base64, seed) {
   }
 }
 
+// ── Free image sources ──────────────────────────────────────────────────────
+// A real photo of the dish beats a generated one and costs nothing. These run
+// BEFORE any paid generation. Both return "" on miss/failure so the chain
+// simply falls through.
+
+/**
+ * Search Wikimedia Commons for a photo of the dish. Openly licensed;
+ * measured 10/10 coverage on a mixed Indian/global dish panel, including
+ * regional dishes (Kothimbir Vadi, Misal Pav, Litti Chokha).
+ * @param {string} title Dish title.
+ * @return {Promise<Array<{url: string, attribution: string}>>} Up to 3
+ *     candidates, best first.
+ */
+async function searchWikimediaImage(title) {
+  try {
+    const q = encodeURIComponent(title);
+    const api = "https://commons.wikimedia.org/w/api.php?action=query" +
+      "&format=json&generator=search&gsrsearch=" + q +
+      "&gsrnamespace=6&gsrlimit=5&prop=imageinfo" +
+      "&iiprop=url|size|mime|extmetadata&iiurlwidth=1200";
+    let res = await fetch(api, {
+      headers: {"User-Agent": "RecipeAI/1.0 (recipeai-32ae9)"},
+      signal: AbortSignal.timeout(6000),
+    });
+    if (res.status === 429) {
+      // Burst throttled (autofill fires several imports concurrently).
+      // One spaced retry recovers it; giving up here would silently cost
+      // a paid generation instead.
+      await new Promise((r) => setTimeout(r, 1500));
+      res = await fetch(api, {
+        headers: {"User-Agent": "RecipeAI/1.0 (recipeai-32ae9)"},
+        signal: AbortSignal.timeout(6000),
+      });
+    }
+    if (!res.ok) return {url: "", attribution: ""};
+    const data = await res.json();
+    const pages = Object.values(
+        (data.query && data.query.pages) || {},
+    ).sort((a, b) => (a.index || 99) - (b.index || 99));
+    const candidates = [];
+    for (const p of pages) {
+      const info = p.imageinfo && p.imageinfo[0];
+      if (!info) continue;
+      if (!/^image\/(jpe?g|png|webp)$/.test(info.mime || "")) continue;
+      if ((info.width || 0) < 500) continue;
+      const meta = info.extmetadata || {};
+      const artist = String(
+          (meta.Artist && meta.Artist.value) || "",
+      ).replace(/<[^>]*>/g, "").trim();
+      const license = String(
+          (meta.LicenseShortName && meta.LicenseShortName.value) || "",
+      ).trim();
+      candidates.push({
+        url: info.thumburl || info.url,
+        attribution: [artist, license, "Wikimedia Commons"]
+            .filter(Boolean).join(" / "),
+      });
+      if (candidates.length >= 3) break;
+    }
+    return candidates;
+  } catch (e) {
+    console.error("searchWikimediaImage failed:", e.message);
+    return [];
+  }
+}
+
+/**
+ * Openverse fallback (CC search across many sources). Weaker on regional
+ * Indian dishes than Wikimedia, so it runs second. Anonymous access is
+ * rate-limited — failures fall through to generation.
+ * @param {string} title Dish title.
+ * @return {Promise<Array<{url: string, attribution: string}>>} Up to 3
+ *     candidates, best first.
+ */
+async function searchOpenverseImage(title) {
+  try {
+    const q = encodeURIComponent(title);
+    const res = await fetch(
+        "https://api.openverse.org/v1/images/?q=" + q +
+        "&page_size=5&license_type=commercial",
+        {
+          headers: {"User-Agent": "RecipeAI/1.0"},
+          signal: AbortSignal.timeout(6000),
+        },
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    const candidates = [];
+    for (const r of data.results || []) {
+      if ((r.width || 0) < 500) continue;
+      if (!r.url) continue;
+      candidates.push({
+        url: r.url,
+        attribution: [r.creator, r.license ?
+          "CC " + String(r.license).toUpperCase() : "", r.source]
+            .filter(Boolean).join(" / "),
+      });
+      if (candidates.length >= 3) break;
+    }
+    return candidates;
+  } catch (e) {
+    console.error("searchOpenverseImage failed:", e.message);
+    return [];
+  }
+}
+
+/**
+ * Free-first image resolver: real photo from Wikimedia, then Openverse,
+ * every candidate vision-checked before being accepted, then mirrored into
+ * our Storage (1020px JPEG) and registered under the dish slug with its
+ * attribution. Returns "" when no usable free photo exists — the caller
+ * then decides whether to pay for generation.
+ * @param {Object} ai GoogleGenAI client (for the vision check).
+ * @param {Object} recipe Recipe object (title used).
+ * @param {string} dishSlug Pre-computed slug.
+ * @return {Promise<string>} Our Storage URL, or "".
+ */
+async function findFreeDishImage(ai, recipe, dishSlug) {
+  console.log("[free-image] searching:", dishSlug);
+  // The extraction call already returns the canonical dish name ("Rajwadi
+  // Undhiyu" -> "Undhiyu"), so a decorative title no longer blanks the free
+  // search — measured misses were ALL of exactly that kind.
+  const names = [recipe.title];
+  const canonical = String(recipe.canonicalDishName || "").trim();
+  if (canonical && canonical.toLowerCase() !== recipe.title.toLowerCase()) {
+    names.push(canonical);
+  }
+  // Bound the added vision-check cost/latency per import: 5 checks is at
+  // most ~$0.0015 — still 60x cheaper than one Gemini generation.
+  let checksLeft = 5;
+  for (const name of names) {
+    for (const source of ["wikimedia", "openverse"]) {
+      const candidates = source === "wikimedia" ?
+      await searchWikimediaImage(name) :
+      await searchOpenverseImage(name);
+      console.log(
+          "[free-image]", source, JSON.stringify(name),
+          "candidates:", candidates.length,
+      );
+      for (const hit of candidates) {
+        if (checksLeft <= 0) return "";
+        const buffer = await fetchRemoteImageBuffer(hit.url);
+        if (!buffer) continue;
+        checksLeft--;
+        // Validate against the RECIPE'S title, never the searched name —
+        // the canonical name can generalize ("Matcha Green Tea Panna
+        // Cotta" -> "Matcha Dessert"), and checking the general term let
+        // a matcha ICE CREAM photo pass for a panna cotta recipe.
+        const ok = await validateDishPhoto(ai, buffer, recipe.title);
+        console.log(
+            "[free-image]", source, "check:", ok ? "pass" : "REJECT",
+        );
+        if (!ok) continue;
+        const mirrored = await storeJpegBuffer(buffer, recipe.title);
+        if (!mirrored) continue;
+        try {
+          const db = admin.firestore();
+          await db.collection("dish_images").doc(dishSlug).set({
+            url: mirrored,
+            source,
+            attribution: hit.attribution || "",
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          }, {merge: true});
+        } catch (e) {
+          console.error("dish_images attribution write failed:", e.message);
+        }
+        const canonicalSlug = slugifyDish(canonical);
+        if (canonicalSlug && canonicalSlug !== dishSlug) {
+          await registerDishImage(canonicalSlug, mirrored, source);
+        }
+        console.log("[free-image] " + source + " hit: " + dishSlug);
+        return mirrored;
+      }
+    }
+  }
+  return "";
+}
+
 const RECIPE_RESPONSE_SCHEMA = {
   type: "OBJECT",
   properties: {
@@ -285,6 +559,20 @@ const RECIPE_RESPONSE_SCHEMA = {
     // client then aborts the import instead of saving a made-up recipe.
     isRecipe: {type: "BOOLEAN"},
     title: {type: "STRING"},
+    canonicalDishName: {
+      type: "STRING",
+      description:
+      "The plain, most common name of this dish, stripped of regional, " +
+      "royal or marketing modifiers and using the standard spelling — " +
+      "the name a food encyclopedia entry would use. Examples: " +
+      "'Rajwadi Undhiyu' -> 'Undhiyu'; 'Gujarati Daalbhat' -> 'Dal Bhat'; " +
+      "'Khandeshi Shev Bhaji' -> 'Shev Bhaji'; " +
+      "'Creamy Garlic Pasta' -> 'Garlic Pasta'. " +
+      "It must still name the SPECIFIC dish — never a broad category " +
+      "('Matcha Green Tea Panna Cotta' -> 'Matcha Panna Cotta', " +
+      "NOT 'Matcha Dessert'; never just 'Curry', 'Dessert', 'Snack'). " +
+      "If the title already is the common name, repeat it unchanged.",
+    },
     description: {type: "STRING"},
     imageUrl: {type: "STRING"},
     sourceUrl: {type: "STRING"},
@@ -297,37 +585,12 @@ const RECIPE_RESPONSE_SCHEMA = {
     imagePrompt: {
       type: "STRING",
       description:
-      "Generate ONE detailed, self-contained prompt for an AI food " +
-      "image generator. The prompt must recreate the EXACT finished " +
-      "dish from this recipe with maximum visual accuracy. Describe " +
-      "the dish in enough detail that another AI can generate a " +
-      "nearly identical result. " +
-
-      "Include ALL visible characteristics: exact food colour, " +
-      "browning level, sauce or gravy thickness, texture, " +
-      "crispiness, moisture, visible ingredients, ingredient " +
-      "placement, garnish type and exact garnish placement, " +
-      "portion size, food shape, layering, height, arrangement, " +
-      "serving bowl or plate type, plate colour, plate material, " +
-      "camera angle, zoom level, framing and lighting. " +
-
-      "The food must fill about 90% of the frame and show ONLY one " +
-      "finished dish. " +
-
-      "Do NOT redesign the recipe. Do NOT improve presentation. " +
-      "Do NOT change colours. Do NOT change garnish. Do NOT change " +
-      "ingredient proportions. Do NOT add extra ingredients. " +
-      "Do NOT change the serving vessel. Do NOT add side dishes, " +
-      "drinks, cutlery, napkins or decorations. " +
-
-      "Food only. Never include people, hands, tables, " +
-      "restaurants, kitchens, scenery, landscapes, buildings, " +
-      "text, logos or watermarks. " +
-
-      "Always end the prompt with: ultra realistic DSLR " +
-      "professional food photography, macro food details, " +
-      "authentic colours, shallow depth of field, natural " +
-      "lighting, 4K, 45-degree close-up hero shot.",
+      "ONE food-photography description of THIS exact finished dish, " +
+      "50 words maximum: name the dish, then its real colours, " +
+      "textures, sauce/gravy consistency, garnish and serving vessel. " +
+      "Example: 'Glossy dark-brown veg Manchurian balls in thick " +
+      "soy-chili-garlic sauce, garnished with spring onions, in a " +
+      "black ceramic bowl.' Food only — no people, text or scenery.",
     },
     keywords: {type: "ARRAY", items: {type: "STRING"}},
     ingredients: {type: "ARRAY", items: {type: "STRING"}},
@@ -366,6 +629,7 @@ const RECIPE_RESPONSE_SCHEMA = {
     },
   },
   required: [
+    "canonicalDishName",
     // Without this the model may omit isRecipe entirely (OpenAPI semantics:
     // unlisted properties are optional), and `rawRecipe.isRecipe === false`
     // evaluates undefined === false -> the non-recipe guard silently never
@@ -546,6 +810,7 @@ function normalizeRecipe(raw) {
       recipe.title || recipe.recipeName || recipe.name || "",
   ).trim();
 
+  recipe.canonicalDishName = String(recipe.canonicalDishName || "").trim();
   recipe.description = String(recipe.description || "").trim();
   recipe.imageUrl = decodeHtmlEntities(recipe.imageUrl);
   recipe.sourceUrl = String(recipe.sourceUrl || "AI Generated").trim();
@@ -685,7 +950,66 @@ function buildCaptionImagePrompt(caption) {
 }
 
 /**
- * Generates an image with Imagen and stores it in Firebase Storage.
+ * Paid generation, cheapest first: fal.ai FLUX.1 [schnell] bills ~$0.003
+ * per ~1MP image versus ~$0.093 for the Gemini image model.
+ *
+ * @param {string} prompt Compact positive-style image prompt.
+ * @return {Promise<Buffer|null>} Raw image bytes, or null so the caller
+ *     can fall through to the Gemini image model.
+ */
+async function generateImageWithFal(prompt) {
+  const key = process.env.FAL_KEY;
+  if (!key) return null;
+  try {
+    const res = await fetch("https://fal.run/fal-ai/flux/schnell", {
+      method: "POST",
+      headers: {
+        "Authorization": `Key ${key}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        prompt: prompt,
+        image_size: "landscape_4_3",
+        num_images: 1,
+        num_inference_steps: 4,
+        enable_safety_checker: true,
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      console.error("[fal-image] HTTP", res.status, body.slice(0, 200));
+      return null;
+    }
+    const json = await res.json();
+    const url = json && json.images && json.images[0] && json.images[0].url;
+    if (!url) {
+      console.error("[fal-image] no image url in response");
+      return null;
+    }
+    const img = await fetch(url);
+    if (!img.ok) {
+      console.error("[fal-image] download HTTP", img.status);
+      return null;
+    }
+    const buffer = Buffer.from(await img.arrayBuffer());
+    console.log("[fal-image] ok bytes=", buffer.length);
+    return buffer;
+  } catch (e) {
+    console.error("[fal-image] failed:", e.message);
+    return null;
+  }
+}
+
+// Slugs that name a food CATEGORY or placeholder rather than a dish — never
+// valid registry keys and never useful free-search queries.
+const GENERIC_DISH_SLUGS = new Set([
+  "recipe", "food", "dish", "meal", "snack", "dessert", "curry", "sabzi",
+  "breakfast", "lunch", "dinner", "untitled", "my-recipe", "new-recipe",
+]);
+
+/**
+ * Finds or generates a dish image and stores it in Firebase Storage.
+ * Order: registry reuse, free real photo, fal.ai FLUX, Gemini image model.
  * Returns "" (empty string) on any failure so callers can fall back safely.
  *
  * @param {Object} ai GoogleGenAI client instance.
@@ -696,13 +1020,37 @@ async function generateAndStoreRecipeImage(ai, recipe) {
   try {
     if (!recipe || !recipe.title) return "";
 
-    // Free before paid: if ANY image for this dish already exists in the
-    // registry (generated, mirrored or a video frame), reuse it.
+    // A placeholder/generic title (the caption-PARALLEL path sends literally
+    // "recipe") must never touch the registry or the free-photo search —
+    // searching Openverse for "recipe" once registered a random food photo
+    // under the slug "recipe". Generic titles go straight to generation
+    // from their imagePrompt and are not registered.
     const dishSlug = slugifyDish(recipe.title);
-    const existing = await lookupDishImage(dishSlug);
-    if (existing) {
-      console.log("[dish_images] reuse:", dishSlug);
-      return existing;
+    const genericSlug = GENERIC_DISH_SLUGS.has(dishSlug) ||
+      dishSlug.length < 4;
+
+    if (!genericSlug) {
+      // Free before paid: if ANY image for this dish already exists in the
+      // registry (generated, mirrored or a video frame), reuse it.
+      let existing = await lookupDishImage(dishSlug);
+      if (!existing) {
+        const canonSlug = slugifyDish(recipe.canonicalDishName || "");
+        if (canonSlug && canonSlug !== dishSlug) {
+          existing = await lookupDishImage(canonSlug);
+        }
+      }
+      if (existing) {
+        console.log("[dish_images] reuse:", dishSlug);
+        return existing;
+      }
+
+      // FREE FIRST: a real photo of the dish from Wikimedia/Openverse costs
+      // nothing; paid generation below only runs when no usable photo
+      // exists.
+      const freeUrl = await findFreeDishImage(ai, recipe, dishSlug);
+      if (freeUrl) return freeUrl;
+    } else {
+      console.log("[free-image] generic title, skipping:", dishSlug);
     }
 
     // Prefer the image prompt Gemini authored alongside the recipe (it knows
@@ -773,40 +1121,56 @@ Recipe Description:
 
 ${base}
 `.trim();
-    // NOTE: imagen-4.0-generate-001 was removed by Google (404 NOT_FOUND —
-    // "no longer available"). Image generation now runs through the Gemini
-    // image model via generateContent with an IMAGE response modality; the
-    // picture comes back as an inline data part, not a generatedImages array.
-    const response = await ai.models.generateContent({
-      model: "gemini-3.1-flash-image",
-      contents: prompt,
-      config: {
-        responseModalities: ["IMAGE"],
-      },
-    });
+    // FLUX schnell truncates very long prompts (T5 encoder limit) and does
+    // not follow "Do NOT ..." negative instructions well, so it gets a
+    // compact positive-style prompt instead of the Gemini checklist above.
+    const falPrompt = (
+      "Professional food photography, ultra realistic DSLR close-up hero " +
+      "shot at a 45-degree angle, natural lighting, sharp focus, a single " +
+      "finished dish filling the frame on a plain neutral surface, " +
+      "authentic homemade appearance, no people, no hands, no text, " +
+      "no watermark. The dish: " + base
+    ).slice(0, 1800);
 
-    logTokens("image-gen", response);
-    const parts =
-      (response &&
-        response.candidates &&
-        response.candidates[0] &&
-        response.candidates[0].content &&
-        response.candidates[0].content.parts) ||
-      [];
-    let imageBytes = "";
-    for (const part of parts) {
-      if (part && part.inlineData && part.inlineData.data) {
-        imageBytes = part.inlineData.data;
-        break;
+    let buffer = await generateImageWithFal(falPrompt);
+    let imageSource = "fal";
+    if (!buffer) {
+      imageSource = "generated";
+      // NOTE: imagen-4.0-generate-001 was removed by Google (404 NOT_FOUND —
+      // "no longer available"). Image generation runs through the Gemini
+      // image model via generateContent with an IMAGE response modality; the
+      // picture comes back as an inline data part, not generatedImages.
+      const response = await ai.models.generateContent({
+        model: "gemini-3.1-flash-image",
+        contents: prompt,
+        config: {
+          responseModalities: ["IMAGE"],
+        },
+      });
+
+      logTokens("image-gen", response);
+      const parts =
+        (response &&
+          response.candidates &&
+          response.candidates[0] &&
+          response.candidates[0].content &&
+          response.candidates[0].content.parts) ||
+        [];
+      let imageBytes = "";
+      for (const part of parts) {
+        if (part && part.inlineData && part.inlineData.data) {
+          imageBytes = part.inlineData.data;
+          break;
+        }
       }
-    }
 
-    if (!imageBytes) {
-      console.error("Image generation returned no image bytes.");
-      return "";
-    }
+      if (!imageBytes) {
+        console.error("Image generation returned no image bytes.");
+        return "";
+      }
 
-    let buffer = Buffer.from(imageBytes, "base64");
+      buffer = Buffer.from(imageBytes, "base64");
+    }
     // The image model returns a PNG that is typically 1-2MB. Re-encode to a
     // 1020px-wide JPEG (~100-150KB) before storing — the card renders at
     // ~1000px, so nothing visible is lost, and every future feed load
@@ -845,13 +1209,66 @@ ${base}
     const publicUrl =
       `https://firebasestorage.googleapis.com/v0/b/${bucket.name}` +
       `/o/${encodeURIComponent(fileName)}?alt=media&token=${downloadToken}`;
-    await registerDishImage(dishSlug, publicUrl, "generated");
+    if (!genericSlug) {
+      await registerDishImage(dishSlug, publicUrl, imageSource);
+      // Register under the canonical slug too, so a future import of the
+      // plain dish name reuses this image instead of generating again.
+      const altSlug = slugifyDish(recipe.canonicalDishName || "");
+      if (altSlug && altSlug !== dishSlug) {
+        await registerDishImage(altSlug, publicUrl, imageSource);
+      }
+    }
     return publicUrl;
   } catch (error) {
     console.error("generateAndStoreRecipeImage failed:", error);
     return "";
   }
 }
+
+// Shared chef-grade measurement + language rules, injected into every
+// extraction prompt. Fixes the measured symptom of social imports: loose,
+// casual ingredients ("some flour", "potato 3 nos") that neither read like
+// a cookbook nor parse in the app's unit switcher.
+const CHEF_MEASUREMENT_RULES = `
+INGREDIENT MEASUREMENTS — LIKE AN EXPERIENCED HOME COOK:
+Write every ingredient as quantity + unit + ingredient + preparation,
+e.g. "2 tablespoons oil", "3 large potatoes, boiled and mashed".
+Use the everyday kitchen measure a home cook understands at a glance:
+- Ground spices, whole spices, seeds, baking powder: teaspoon/tablespoon.
+- Rice, flour, lentils, sugar, chopped vegetables, liquids: cup
+  (oil for tempering/frying stays in tablespoons).
+- Home cooks do not own weighing scales: use grams ONLY for items bought
+  by weight or packet — paneer, butter, chicken, meat, fish, cheese
+  ("200 g paneer" is one standard packet). NEVER grams for flour, rice,
+  lentils, sugar or vegetables — those go in cups or counts.
+- Whole produce: COUNT with size — "3 large potatoes", "2 medium onions,
+  finely chopped", "10-12 curry leaves".
+- Leafy greens bought loose (spinach, methi, coriander for a sabzi):
+  bunches — "2 bunches spinach, washed and chopped".
+- Garlic: cloves ("4 garlic cloves, crushed"). Ginger: grated or paste,
+  measured in teaspoons ("1 teaspoon grated ginger") — NEVER in inches.
+- "to taste" is allowed ONLY for salt and optional garnish, written
+  EXACTLY as "salt to taste" — never with a number in front (wrong:
+  "1 salt to taste"). Everything else always has a real quantity; never
+  write "as needed" or "some".
+- Write part quantities as simple fractions — ½, ¼, ¾, 1½ — never
+  decimals (wrong: "0.5 cup"; right: "½ cup").
+- Use ONLY these units: cup, tablespoon, teaspoon, g, kg, ml, l, clove,
+  pinch, slice, piece, bunch. Never katori, bowl, glass, nos, packet,
+  inch.
+- Quantities must be realistic for the stated servings and consistent
+  with each other.
+
+LANGUAGE — SIMPLE ENOUGH FOR A FIRST-TIME COOK:
+- Use plain everyday words that anyone can follow, including someone
+  who has never cooked or had little schooling. Prefer "fry", "boil",
+  "mix", "cook on low flame" over chef terms like "saute", "blanch",
+  "deglaze", "reduce".
+- Short, direct sentences. One action per step, with the flame level
+  and a time or easy visual cue: "Fry the onions on medium flame until
+  golden brown, 4-5 minutes."
+- No slang, no emoji, no filler words like "yummy" or "super easy".
+`;
 
 const RECIPE_IMAGE_PROMPT = `
   You are a world-class chef and recipe developer.
@@ -913,8 +1330,8 @@ NUTRITION:
 
   For simple single-component dishes use one section named "Main Recipe".
 
+  ${CHEF_MEASUREMENT_RULES}
   INGREDIENT FORMAT:
-  - Every item MUST include quantity: "1 cup rice", "2 tablespoons oil"
   - Minimum 8 ingredients total.
 
   INSTRUCTION FORMAT:
@@ -941,7 +1358,7 @@ NUTRITION:
 // TEXT PROMPT
 exports.askGemini = onCall(
     {
-      secrets: ["GEMINI_API_KEY"],
+      secrets: ["GEMINI_API_KEY", "FAL_KEY"],
     },
     async (request) => {
       const startTime = Date.now();
@@ -1023,8 +1440,8 @@ CRITICAL — SECTION STRUCTURE (MUST FOLLOW):
 - ALWAYS split multi-component dishes into separate named sections.
 - For simple single-component dishes use one section named "Main Recipe".
 
+${CHEF_MEASUREMENT_RULES}
 INGREDIENT FORMAT:
-- Every item MUST include quantity: "1 cup rice", "2 tablespoons oil"
 - Minimum 8 ingredients total when possible.
 
 INSTRUCTION FORMAT:
@@ -1101,8 +1518,8 @@ Cake: sections for Batter, Frosting.
 
 For simple single-component dishes use one section named "Main Recipe".
 
+${CHEF_MEASUREMENT_RULES}
 INGREDIENT FORMAT:
-- Every item MUST include quantity: "1 cup rice", "2 tablespoons oil"
 - Minimum 8 ingredients total.
 
 INSTRUCTION FORMAT:
@@ -1114,23 +1531,15 @@ FLAT LISTS:
 - "ingredients" = ALL items from every ingredientSection combined in order.
 - "instructions" = ALL steps from every instructionSection combined in order.
 
-IMAGE PROMPT (VERY IMPORTANT — this text is sent directly to an AI image
-generator, no other context is given to it):
-- Fill "imagePrompt" with a single, self-contained food-photography
-  description of THIS exact finished dish — plated, filling the frame.
-- Name the dish and describe its real, specific appearance: colours,
-  textures, shape, sauce/gravy consistency, garnish, and the type of plate
-  or bowl it is served in.
+IMAGE PROMPT (sent directly to an AI image generator, no other context):
+- Fill "imagePrompt" with ONE food-photography description of THIS exact
+  finished dish, 50 words maximum: name the dish, then its real colours,
+  textures, sauce/gravy consistency, garnish and serving vessel.
   Example for Veg Manchurian: "Glossy dark-brown fried vegetable
-  Manchurian balls tossed in a thick, shiny soy-chili-garlic sauce,
-  garnished with chopped spring onions and sesame seeds, served in a
-  black ceramic bowl."
-- Food only — never landscapes, scenery, nature, people, buildings, text,
-  or a different dish.
-- Always end the imagePrompt with: "ultra realistic professional
-  restaurant food photo, DSLR, 4K, natural lighting, 45-degree close-up
-  hero shot."
-- This field must NEVER be left empty.
+  Manchurian balls in a thick soy-chili-garlic sauce, garnished with
+  spring onions and sesame seeds, served in a black ceramic bowl."
+- Food only — never landscapes, scenery, people, buildings, text, or a
+  different dish. This field must NEVER be left empty.
 
 TITLE:
 - Use the proper, correctly-spelled dish name.
@@ -1179,6 +1588,10 @@ STRICT ACCURACY RULE (MOST IMPORTANT — READ CAREFULLY):
 - If the audio/visual is unclear on a minor detail (e.g. exact cook time),
   infer the most likely value using culinary knowledge, but never fabricate
   entire ingredients, steps, or dish identity.
+
+${CHEF_MEASUREMENT_RULES}
+(These rules set HOW quantities and steps are written — they never justify
+adding ingredients or steps that are not in the video.)
 
 Return ONLY valid JSON matching this schema. No markdown. No commentary:
 {
@@ -1409,7 +1822,7 @@ async function generateStructuredRecipe(
 // SOCIAL URL / CAPTION TO RECIPE
 exports.extractRecipeFromSocialContent = onCall(
     {
-      secrets: ["GEMINI_API_KEY"],
+      secrets: ["GEMINI_API_KEY", "FAL_KEY"],
       timeoutSeconds: 300,
       memory: "1GiB",
     },
@@ -1448,6 +1861,16 @@ exports.extractRecipeFromSocialContent = onCall(
         let pageContext = {};
         if (url) {
           pageContext = await fetchUrlContext(url);
+        }
+        // The client fetches the post's og:image ON-DEVICE (residential IP)
+        // — Instagram/TikTok wall it off from this server's datacenter IP,
+        // so the client-supplied cover is usually the ONLY way to get the
+        // reel's real thumbnail. It becomes both the vision context for
+        // extraction and, mirrored below, the recipe's image.
+        const clientCover =
+          String(request.data.coverImageUrl || "").trim();
+        if (!pageContext.imageUrl && /^https?:\/\//.test(clientCover)) {
+          pageContext.imageUrl = clientCover;
         }
 
         let recipe = null;
@@ -1545,13 +1968,20 @@ exports.extractRecipeFromSocialContent = onCall(
         // Storage makes it durable (platform CDN links expire) and lets the
         // client's allowlist accept it, so no image is generated at all.
         const dishSlug = slugifyDish(recipe.title);
-        let ownedImage = await lookupDishImage(dishSlug);
-        if (!ownedImage && pageContext.imageUrl) {
+        // The reel's OWN cover comes FIRST — the user asked for the
+        // authentic image from the post, not a registry/searched/generated
+        // one. The registry only serves when no cover could be fetched.
+        let ownedImage = "";
+        if (pageContext.imageUrl) {
           ownedImage = await mirrorRemoteImage(
               pageContext.imageUrl, recipe.title);
           if (ownedImage) {
+            console.log("[social-image] using post's own cover");
             await registerDishImage(dishSlug, ownedImage, "mirrored");
           }
+        }
+        if (!ownedImage) {
+          ownedImage = await lookupDishImage(dishSlug);
         }
         if (ownedImage) {
           recipe.imageUrl = ownedImage;
@@ -1584,7 +2014,7 @@ exports.extractRecipeFromSocialContent = onCall(
 // VIDEO TO RECIPE
 exports.analyzeRecipeVideo = onCall(
     {
-      secrets: ["GEMINI_API_KEY"],
+      secrets: ["GEMINI_API_KEY", "FAL_KEY"],
       timeoutSeconds: 300,
       memory: "2GiB",
     },
@@ -1766,9 +2196,56 @@ exports.analyzeRecipeVideo = onCall(
     },
 );
 
+/**
+ * Names the dish a social caption is about, so the PARALLEL image path can
+ * run the normal registry/free-photo/fal pipeline instead of handing the
+ * raw caption to FLUX. FLUX cannot follow "identify the dish" instructions
+ * the way the Gemini image model could — captions full of hashtags drew the
+ * wrong dish entirely (measured: a vada pav reel got a non-vada-pav image).
+ * Costs ~$0.0002.
+ * @param {Object} ai GoogleGenAI client instance.
+ * @param {string} caption Social post caption.
+ * @return {Promise<string>} Dish name, or "" when none is identifiable.
+ */
+async function extractDishNameFromCaption(ai, caption) {
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash-lite",
+      contents:
+        "Social media post caption:\n" +
+        String(caption).slice(0, 1500) +
+        "\n\nWhat specific dish does this caption's recipe make?",
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "OBJECT",
+          properties: {
+            dishName: {
+              type: "STRING",
+              description:
+              "The specific dish name, e.g. 'Vada Pav'. " +
+              "Empty string when no specific dish is identifiable.",
+            },
+          },
+          required: ["dishName"],
+        },
+        thinkingConfig: {thinkingLevel: "low"},
+      },
+    });
+    logTokens("dish-name", response);
+    const parsed = JSON.parse(response.text || "{}");
+    const name = String(parsed.dishName || "").trim();
+    if (!name || /unknown|no.?dish|none/i.test(name)) return "";
+    return name;
+  } catch (e) {
+    console.error("extractDishNameFromCaption failed:", e.message);
+    return "";
+  }
+}
+
 exports.generateRecipeImage = onCall(
     {
-      secrets: ["GEMINI_API_KEY"],
+      secrets: ["GEMINI_API_KEY", "FAL_KEY"],
       timeoutSeconds: 300,
       memory: "1GiB",
     },
@@ -1779,10 +2256,17 @@ exports.generateRecipeImage = onCall(
         const caption = String(request.data.caption || "").trim();
 
         // PARALLEL path: when only a caption is provided (no extracted recipe
-        // yet), generate straight from the caption — the dish is named in it —
-        // so the image can run alongside recipe extraction instead of after it.
+        // yet), first NAME the dish with a ~$0.0002 text call, then run the
+        // normal registry/free-photo/fal pipeline with that real title. Only
+        // when no dish is identifiable fall back to a caption-built prompt
+        // under a generic title (which skips registry + free search).
         if ((!recipe || !recipe.title) && caption) {
-          recipe = {
+          const dishName = await extractDishNameFromCaption(getAI(), caption);
+          console.log(
+              "[parallel-image] caption dish:",
+              dishName || "(unidentified)",
+          );
+          recipe = dishName ? {title: dishName} : {
             title: "recipe",
             imagePrompt: buildCaptionImagePrompt(caption),
           };
@@ -1819,7 +2303,7 @@ exports.generateRecipeImage = onCall(
 // IMAGE TO RECIPE
 exports.analyzeRecipeImage = onCall(
     {
-      secrets: ["GEMINI_API_KEY"],
+      secrets: ["GEMINI_API_KEY", "FAL_KEY"],
       timeoutSeconds: 300,
       memory: "1GiB",
     },
@@ -1953,7 +2437,7 @@ exports.analyzeRecipeImage = onCall(
 // TEXT TO RECIPE
 exports.generateRecipeFromName = onCall(
     {
-      secrets: ["GEMINI_API_KEY"],
+      secrets: ["GEMINI_API_KEY", "FAL_KEY"],
       timeoutSeconds: 300,
       memory: "1GiB",
     },

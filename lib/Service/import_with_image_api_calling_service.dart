@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image/image.dart' as img;
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -238,10 +239,14 @@ class RecipeImportService {
   static Future<Map<String, dynamic>> getRecipeFromSocialContent({
     String? url,
     String? caption,
+    String? coverImageUrl,
   }) async {
     // The caption is already enriched by the caller
     // (importRecipeFromSocialContent fetches the post's page on-device and
-    // passes the full caption here).
+    // passes the full caption here). The cover URL is the og:image fetched
+    // ON-DEVICE — Instagram/TikTok wall it off from the server's datacenter
+    // IP, so without this the backend never sees the reel's real thumbnail
+    // and falls back to searched/generated images.
     final callable = FirebaseFunctions.instance.httpsCallable(
       'extractRecipeFromSocialContent',
       options: HttpsCallableOptions(timeout: const Duration(seconds: 120)),
@@ -250,6 +255,8 @@ class RecipeImportService {
     final result = await callable.call({
       if (url != null && url.isNotEmpty) 'url': url,
       if (caption != null && caption.isNotEmpty) 'caption': caption,
+      if (coverImageUrl != null && coverImageUrl.isNotEmpty)
+        'coverImageUrl': coverImageUrl,
     });
 
     final data = Map<String, dynamic>.from(result.data);
@@ -259,6 +266,53 @@ class RecipeImportService {
     }
 
     return Map<String, dynamic>.from(data['recipe']);
+  }
+
+  /// Downloads the reel's own cover (og:image) ON-DEVICE and uploads it to
+  /// our Storage. Instagram's CDN answers this phone's residential IP but
+  /// returns 403 to the backend's datacenter IP — measured — so the server
+  /// can never mirror it; the phone is the only party that can. Returns the
+  /// durable Storage URL, or null so the caller falls back to generation.
+  static Future<String?> _downloadAndUploadCover(String coverUrl) async {
+    try {
+      final res = await http
+          .get(
+            Uri.parse(coverUrl),
+            headers: {
+              'User-Agent': 'facebookexternalhit/1.1 '
+                  '(+http://www.facebook.com/externalhit_uatext.php)',
+            },
+          )
+          .timeout(const Duration(seconds: 15));
+      if (res.statusCode != 200 || res.bodyBytes.isEmpty) {
+        print('[CoverUpload] download failed HTTP ${res.statusCode}');
+        return null;
+      }
+      final compressed = await _compressImageBytes(res.bodyBytes);
+      if (compressed == null || compressed.isEmpty) return null;
+
+      final uid = AuthService.currentUser?.uid;
+      if (uid == null) return null;
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('users')
+          .child(uid)
+          .child('recipes')
+          .child('cover_${DateTime.now().millisecondsSinceEpoch}.jpg');
+      await ref.putData(
+        compressed,
+        SettableMetadata(
+          contentType: 'image/jpeg',
+          cacheControl: 'public,max-age=31536000',
+        ),
+      );
+      final url = await ref.getDownloadURL();
+      print('[CoverUpload] reel cover uploaded OK');
+      return url;
+    } catch (e) {
+      print('[CoverUpload] failed: $e');
+      return null;
+    }
   }
 
   /// Generates a recipe image straight from a caption (PARALLEL path) — the
@@ -573,6 +627,11 @@ class RecipeImportService {
     // Firestore credit actually remains. It should not normally fire.
     //
 
+    // Start the hero image download NOW, while the user is still watching
+    // the import progress — by the time the recipe screen opens the image
+    // is already cached instead of cold-loading in front of them.
+    _warmImageCache(imageUrl);
+
     final hasCredit = await SubscriptionService.instance.consumeCredit();
 
     if (!hasCredit) {
@@ -766,6 +825,22 @@ class RecipeImportService {
   /// completely in the background — it must never block navigation, and a
   /// failure here should never crash or surface to the user (the recipe
   /// itself already saved fine; worst case the photo stays blank).
+  /// Starts downloading [url] into the shared image cache (same cache
+  /// CachedNetworkImage/AppNetworkImage read from) the moment a final image
+  /// URL is known — while the user is still on the import progress screen.
+  /// Without this, the detail screen's hero starts its FIRST download only
+  /// after the screen opens, which is the visible image-load delay on
+  /// freshly generated images.
+  static void _warmImageCache(String? url) {
+    final u = (url ?? '').trim();
+    if (!u.startsWith('http')) return;
+    try {
+      CachedNetworkImageProvider(u).resolve(const ImageConfiguration());
+    } catch (_) {
+      // Cache warming is best-effort; the widget will download normally.
+    }
+  }
+
   static Future<void> _applyPendingImageUpload({
     required String recipeId,
     required Future<String?> pendingUpload,
@@ -780,6 +855,10 @@ class RecipeImportService {
         );
         return;
       }
+
+      // Warm the cache BEFORE patching Firestore: when the doc stream
+      // rebuilds the hero with this URL, it renders from disk instantly.
+      _warmImageCache(url);
 
       await FirebaseFirestore.instance
           .collection('recipes')
@@ -808,6 +887,7 @@ class RecipeImportService {
     try {
       final url = await parallelImage;
       if (url != null && url.isNotEmpty) {
+        _warmImageCache(url);
         await FirebaseFirestore.instance
             .collection('recipes')
             .doc(recipeId)
@@ -889,6 +969,7 @@ class RecipeImportService {
 
       // If Cloud Function does not update Firestore itself,
       // update it here.
+      _warmImageCache(imageUrl);
       await FirebaseFirestore.instance
           .collection('recipes')
           .doc(recipeId)
@@ -1167,10 +1248,18 @@ class RecipeImportService {
                   url.contains('/reels/') ||
                   url.contains('/tv/'));
           final captionForImage = enrichedCaption?.trim() ?? '';
-          final Future<String?>? parallelImage =
-              (looksLikeVideo && captionForImage.length >= 25)
-                  ? _generateImageFromCaption(captionForImage)
-                  : null;
+          // The reel's OWN cover is the recipe image: this phone downloads
+          // and uploads it (the backend gets 403 from Instagram's CDN, so
+          // only the device can). If there is no cover — or the upload
+          // fails — _applyParallelImage falls back to generating from the
+          // caption/title, so a reel is never left imageless.
+          final Future<String?>? parallelImage = looksLikeVideo
+              ? ((coverImage != null && coverImage.isNotEmpty)
+                  ? _downloadAndUploadCover(coverImage)
+                  : (captionForImage.length >= 25
+                      ? _generateImageFromCaption(captionForImage)
+                      : null))
+              : null;
 
           // ========================================================
           // STEP 2: AI RECIPE EXTRACTION (parallel with the image above)
@@ -1181,6 +1270,7 @@ class RecipeImportService {
           final recipeData = await getRecipeFromSocialContent(
             url: url,
             caption: enrichedCaption,
+            coverImageUrl: coverImage,
           );
 
           aiTimer.stop();

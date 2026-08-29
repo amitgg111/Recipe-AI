@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:google_mlkit_language_id/google_mlkit_language_id.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:google_mlkit_translation/google_mlkit_translation.dart';
+import 'package:recipe_ai/Service/food_term_glossary.dart';
 import 'package:recipe_ai/Service/language_service.dart';
 
 class AiTranslationService {
@@ -20,7 +21,71 @@ class AiTranslationService {
   static final Map<String, Map<String, String>> _cache = {};
   static final GetStorage _storage = GetStorage();
 
-  static const String _cacheKey = 'ai_translation_cache';
+  // v2: glossary-guarded translations — the old blob is full of pre-glossary
+  // output (mangled food words), so it must not keep serving from cache.
+  static const String _cacheKey = 'ai_translation_cache_v2';
+
+  // ── Glossary guard ─────────────────────────────────────────────────────
+  // ML Kit mangles culinary vocabulary ("ajwain", "sattu", dish names). For
+  // languages with a curated glossary, every known term is swapped for a
+  // numeric placeholder before ML Kit runs and restored as the CORRECT
+  // word after — ML Kit only translates the sentence around them.
+
+  static final Map<String, RegExp> _glossaryRegexCache = {};
+
+  static RegExp? _glossaryRegexFor(String bcp) {
+    final terms = kFoodTermGlossary[bcp];
+    if (terms == null || terms.isEmpty) return null;
+    return _glossaryRegexCache.putIfAbsent(bcp, () {
+      final keys = terms.keys.toList()
+        ..sort((a, b) => b.length.compareTo(a.length));
+      final pattern = keys.map(RegExp.escape).join('|');
+      return RegExp('\\b($pattern)\\b', caseSensitive: false);
+    });
+  }
+
+  /// Translates [input] with [mlkit], protecting glossary terms. Falls back
+  /// to plain translation when a placeholder does not survive ML Kit.
+  static Future<String> _translateGuarded(
+    String input,
+    String bcp,
+    Future<String> Function(String) mlkit,
+  ) async {
+    final regex = _glossaryRegexFor(bcp);
+    final terms = kFoodTermGlossary[bcp];
+    if (regex == null || terms == null || !regex.hasMatch(input)) {
+      return mlkit(input);
+    }
+
+    final replacements = <String>[];
+    final protected = input.replaceAllMapped(regex, (m) {
+      final term = terms[m.group(0)!.toLowerCase()];
+      if (term == null) return m.group(0)!;
+      replacements.add(term);
+      return '[[${replacements.length - 1}]]';
+    });
+
+    if (replacements.isEmpty) return mlkit(input);
+
+    var out = await mlkit(protected);
+    var missing = false;
+    for (var i = 0; i < replacements.length; i++) {
+      // Tolerate ML Kit reshaping the brackets: [[0]], [ [0] ], [0].
+      final ph = RegExp('\\[+\\s*\\[?\\s*$i\\s*\\]?\\s*\\]+');
+      if (ph.hasMatch(out)) {
+        out = out.replaceAll(ph, replacements[i]);
+      } else {
+        missing = true;
+        break;
+      }
+    }
+    if (missing) {
+      // A placeholder got eaten — restoring would leave junk. Translate the
+      // raw string instead: worse food words, but never broken text.
+      return mlkit(input);
+    }
+    return out;
+  }
   static final RxBool isPreparing = false.obs;
   // Tracks which languages (by bcp code) have EVERY current recipe cached,
   // so a manual switch can go straight to cache instead of live-translating.
@@ -564,7 +629,11 @@ class AiTranslationService {
     }
 
     try {
-      final result = await _translator!.translateText(input);
+      final result = await _translateGuarded(
+        input,
+        bcp,
+        (s) => _translator!.translateText(s),
+      );
 
       final translated = result.trim();
 
@@ -644,7 +713,11 @@ class AiTranslationService {
       final results = await Future.wait(
         batch.map((text) async {
           try {
-            final result = await _translator!.translateText(text);
+            final result = await _translateGuarded(
+              text,
+              bcp,
+              (s) => _translator!.translateText(s),
+            );
 
             return MapEntry(text, result.trim());
           } catch (_) {
@@ -886,13 +959,21 @@ class AiTranslationService {
   /// across a whole recipe instead of creating a new one per string).
   static Future<String> translateWithTranslator(
     OnDeviceTranslator? translator,
-    String? text,
-  ) async {
+    String? text, {
+    String? bcp,
+  }) async {
     final input = text?.trim() ?? '';
     if (input.isEmpty || translator == null) return input;
 
     try {
-      final result = (await translator.translateText(input)).trim();
+      // No default glossary here: existing callers use this for
+      // OTHER-language → English translation, where the display glossary
+      // (en → hi/gu) must not fire. Pass [bcp] explicitly to opt in.
+      final result = (await _translateGuarded(
+        input,
+        bcp ?? '',
+        (s) => translator.translateText(s),
+      )).trim();
       return result.isEmpty ? input : result;
     } catch (e) {
       print('❌ translateWithTranslator failed: $e');
