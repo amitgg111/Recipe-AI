@@ -1,7 +1,11 @@
 import 'dart:io';
 
 import 'package:flutter/gestures.dart';
+
 import 'package:recipe_ai/Service/language_service.dart';
+import 'package:recipe_ai/Service/remote_config_service.dart';
+import 'package:recipe_ai/Service/subscription_service.dart';
+import 'package:recipe_ai/View/Home/settings/upgrade_plus_screen.dart';
 import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -11,7 +15,7 @@ import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/utils/validators.dart';
 import 'package:recipe_ai/utils/auth_error_mapper.dart';
 import 'package:recipe_ai/View/Home/home_screen.dart';
-import 'package:recipe_ai/screens/onboarding/trial_chooser_screen.dart';
+
 import 'package:recipe_ai/widgets/custom_snackbar.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/app_logo.dart';
@@ -89,15 +93,6 @@ class _LoginScreenState extends State<LoginScreen> {
     ]) {
       f.addListener(() => setState(() {}));
     }
-  }
-
-  @override
-  void deactivate() {
-    // Any navigation that removes this screen from the tree (back, Get.offAll,
-    // replace, page transition) clears the fields so nothing typed persists to
-    // the next visit.
-    _clearAllControllers();
-    super.deactivate();
   }
 
   @override
@@ -247,7 +242,7 @@ class _LoginScreenState extends State<LoginScreen> {
         type: SnackbarType.success,
       );
 
-      await _routeAfterAuth();
+      await _routeAfterSignup();
     } catch (e) {
       if (!mounted) return;
 
@@ -347,16 +342,48 @@ class _LoginScreenState extends State<LoginScreen> {
           }, SetOptions(merge: true))
           .catchError((_) {});
 
-      // Only required Firestore read.
-      final snap = await userRef.get();
+      Get.offAll(() => const HomeScreen(), transition: Transition.noTransition);
+    } catch (e) {
+      Get.offAll(() => const HomeScreen(), transition: Transition.noTransition);
+    }
+  }
 
-      final needsTrialChooser = snap.data()?['trialChooserCompleted'] == false;
+  Future<void> _routeAfterSignup() async {
+    final user = AuthService.currentUser;
+    if (user == null) return;
 
-      Get.offAll(
-        () =>
-            needsTrialChooser ? const TrialChooserScreen() : const HomeScreen(),
-        transition: Transition.noTransition,
-      );
+    try {
+      final userRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid);
+
+      userRef
+          .set({
+            'countryCode': LanguageService.deviceCountryCode,
+            'countryLanguages': LanguageService.deviceLanguages,
+          }, SetOptions(merge: true))
+          .catchError((_) {});
+
+      // First land on HomeScreen.
+      Get.offAll(() => const HomeScreen(), transition: Transition.noTransition);
+
+      // IMPORTANT:
+      // Wait for HomeScreen to be shown, then open Premium.
+      await Future.delayed(const Duration(seconds: 2));
+
+      if (AuthService.currentUser?.uid != user.uid) return;
+      if (SubscriptionService.instance.isPlus) return;
+
+      // Wait one frame so HomeScreen is fully mounted.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (AuthService.currentUser?.uid != user.uid) return;
+        if (SubscriptionService.instance.isPlus) return;
+
+        Get.to(
+          () => const UpgradePlusScreen(),
+          transition: Transition.noTransition,
+        );
+      });
     } catch (e) {
       Get.offAll(() => const HomeScreen(), transition: Transition.noTransition);
     }
@@ -719,6 +746,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         color: const Color(0xFF8A7E70),
                         height: 1.5,
                       ),
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () => LegalLinkLauncher.open(
+                          RemoteConfigService.instance.termsOfServiceUrl,
+                        ),
                     ),
                     const TextSpan(text: ' & '),
                     TextSpan(
@@ -729,6 +760,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         color: const Color(0xFF8A7E70),
                         height: 1.5,
                       ),
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () => LegalLinkLauncher.open(
+                          RemoteConfigService.instance.privacyPolicyUrl,
+                        ),
                     ),
                     const TextSpan(text: '.'),
                   ],

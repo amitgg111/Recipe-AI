@@ -1669,9 +1669,11 @@ class _CookbooksScreenState extends State<CookbooksScreen>
             );
 
             return GestureDetector(
-              onTap: () {
-                Get.to(() => const UpgradePlusScreen());
-              },
+              onTap: !plus
+                  ? () {
+                      Get.to(() => const UpgradePlusScreen());
+                    }
+                  : () {},
               behavior: HitTestBehavior.opaque,
               child: Container(
                 padding: const EdgeInsets.symmetric(

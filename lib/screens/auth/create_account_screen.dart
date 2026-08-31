@@ -1,10 +1,10 @@
 import 'package:flutter/gestures.dart';
+import 'package:recipe_ai/Service/remote_config_service.dart';
 import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/utils/auth_error_mapper.dart';
 import 'package:recipe_ai/widgets/custom_snackbar.dart';
@@ -13,7 +13,6 @@ import 'package:recipe_ai/widgets/app_logo.dart';
 import 'package:recipe_ai/screens/auth/login_screen.dart';
 import 'package:recipe_ai/screens/auth/sign_up_screen.dart';
 import 'package:recipe_ai/View/Home/home_screen.dart';
-import 'package:recipe_ai/screens/onboarding/trial_chooser_screen.dart';
 
 class CreateAccountScreen extends StatefulWidget {
   const CreateAccountScreen({super.key});
@@ -107,17 +106,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     if (user == null) return;
 
     try {
-      final snap = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
-      final needsTrialChooser = snap.data()?['trialChooserCompleted'] == false;
-      print("--------------- final needsTrialChooser-------------------$needsTrialChooser");
-      Get.offAll(
-        () =>
-            needsTrialChooser ? const TrialChooserScreen() : const HomeScreen(),
-        transition: Transition.noTransition,
-      );
+      Get.offAll(() => const HomeScreen(), transition: Transition.noTransition);
     } catch (_) {
       Get.offAll(() => const HomeScreen(), transition: Transition.noTransition);
     }
@@ -292,6 +281,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                         color: const Color(0xFF8A7E70),
                         height: 1.5,
                       ),
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () => LegalLinkLauncher.open(
+                          RemoteConfigService.instance.termsOfServiceUrl,
+                        ),
                     ),
                     TextSpan(text: ' ${'and'.tr} '),
                     TextSpan(
@@ -302,6 +295,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                         color: const Color(0xFF8A7E70),
                         height: 1.5,
                       ),
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () => LegalLinkLauncher.open(
+                          RemoteConfigService.instance.privacyPolicyUrl,
+                        ),
                     ),
                     const TextSpan(text: '.'),
                   ],

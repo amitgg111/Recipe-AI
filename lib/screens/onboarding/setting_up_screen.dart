@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:recipe_ai/screens/auth/create_account_screen.dart';
 import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -6,7 +7,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
-import 'package:recipe_ai/screens/onboarding/plus_intro_screen.dart';
 
 class SettingUpScreen extends StatefulWidget {
   final VoidCallback? onContinue;
@@ -71,9 +71,7 @@ class _SettingUpScreenState extends State<SettingUpScreen>
     _panRotation = Tween<double>(
       begin: -3.0 * math.pi / 180.0,
       end: 3.0 * math.pi / 180.0,
-    ).animate(
-      CurvedAnimation(parent: _panController, curve: Curves.easeInOut),
-    );
+    ).animate(CurvedAnimation(parent: _panController, curve: Curves.easeInOut));
 
     // Food flip 1 (orange ball): arc Y 0 -> -60 -> 0, 2.2s, ease-in-out
     _foodController1 = AnimationController(
@@ -82,13 +80,17 @@ class _SettingUpScreenState extends State<SettingUpScreen>
     )..repeat();
     _foodArc1 = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween(begin: 0.0, end: -60.0)
-            .chain(CurveTween(curve: Curves.easeOut)),
+        tween: Tween(
+          begin: 0.0,
+          end: -60.0,
+        ).chain(CurveTween(curve: Curves.easeOut)),
         weight: 50,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: -60.0, end: 0.0)
-            .chain(CurveTween(curve: Curves.easeIn)),
+        tween: Tween(
+          begin: -60.0,
+          end: 0.0,
+        ).chain(CurveTween(curve: Curves.easeIn)),
         weight: 50,
       ),
     ]).animate(_foodController1);
@@ -100,13 +102,17 @@ class _SettingUpScreenState extends State<SettingUpScreen>
     );
     _foodArc2 = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween(begin: 0.0, end: -60.0)
-            .chain(CurveTween(curve: Curves.easeOut)),
+        tween: Tween(
+          begin: 0.0,
+          end: -60.0,
+        ).chain(CurveTween(curve: Curves.easeOut)),
         weight: 50,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: -60.0, end: 0.0)
-            .chain(CurveTween(curve: Curves.easeIn)),
+        tween: Tween(
+          begin: -60.0,
+          end: 0.0,
+        ).chain(CurveTween(curve: Curves.easeIn)),
         weight: 50,
       ),
     ]).animate(_foodController2);
@@ -246,8 +252,9 @@ class _SettingUpScreenState extends State<SettingUpScreen>
                                 shape: BoxShape.circle,
                                 gradient: RadialGradient(
                                   colors: [
-                                    const Color(0xFFF2623E)
-                                        .withValues(alpha: 0.14),
+                                    const Color(
+                                      0xFFF2623E,
+                                    ).withValues(alpha: 0.14),
                                     Colors.transparent,
                                   ],
                                   stops: const [0.0, 0.66],
@@ -286,8 +293,9 @@ class _SettingUpScreenState extends State<SettingUpScreen>
                                             ),
                                             boxShadow: [
                                               BoxShadow(
-                                                color: Colors.black
-                                                    .withValues(alpha: 0.18),
+                                                color: Colors.black.withValues(
+                                                  alpha: 0.18,
+                                                ),
                                                 blurRadius: 20,
                                                 offset: const Offset(0, 8),
                                               ),
@@ -311,8 +319,9 @@ class _SettingUpScreenState extends State<SettingUpScreen>
                                           height: 14,
                                           decoration: BoxDecoration(
                                             color: const Color(0xFF5A4632),
-                                            borderRadius:
-                                                BorderRadius.circular(8),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
                                           ),
                                         ),
                                       ],
@@ -332,9 +341,7 @@ class _SettingUpScreenState extends State<SettingUpScreen>
                                 right: 0,
                                 child: Center(
                                   child: Transform.rotate(
-                                    angle: _foodController1.value *
-                                        2 *
-                                        math.pi,
+                                    angle: _foodController1.value * 2 * math.pi,
                                     child: Container(
                                       width: 32,
                                       height: 32,
@@ -367,9 +374,8 @@ class _SettingUpScreenState extends State<SettingUpScreen>
                                   child: Transform.translate(
                                     offset: const Offset(14, 0),
                                     child: Transform.rotate(
-                                      angle: _foodController2.value *
-                                          2 *
-                                          math.pi,
+                                      angle:
+                                          _foodController2.value * 2 * math.pi,
                                       child: Container(
                                         width: 22,
                                         height: 22,
@@ -438,14 +444,11 @@ class _SettingUpScreenState extends State<SettingUpScreen>
                           animation: _spinnerController,
                           builder: (context, _) {
                             return Transform.rotate(
-                              angle:
-                                  _spinnerController.value * 2 * math.pi,
+                              angle: _spinnerController.value * 2 * math.pi,
                               child: SizedBox(
                                 width: 22,
                                 height: 22,
-                                child: CustomPaint(
-                                  painter: _SpinnerPainter(),
-                                ),
+                                child: CustomPaint(painter: _SpinnerPainter()),
                               ),
                             );
                           },
@@ -473,8 +476,10 @@ class _SettingUpScreenState extends State<SettingUpScreen>
               // Continue button
               PrimaryButton(
                 label: 'continue_'.tr,
-                onPressed: widget.onContinue ??
-                    () => Get.to(() => const PlusIntroScreen()),
+                onPressed:
+                    widget.onContinue ??
+                    // () => Get.to(() => const PlusIntroScreen()),
+                    () => Get.to(() => const CreateAccountScreen()),
               ),
             ],
           ),
@@ -582,9 +587,7 @@ class _SettingUpBodyState extends State<SettingUpBody>
     _panRotation = Tween<double>(
       begin: -3.0 * math.pi / 180.0,
       end: 3.0 * math.pi / 180.0,
-    ).animate(
-      CurvedAnimation(parent: _panController, curve: Curves.easeInOut),
-    );
+    ).animate(CurvedAnimation(parent: _panController, curve: Curves.easeInOut));
 
     _foodController1 = AnimationController(
       vsync: this,
@@ -592,13 +595,17 @@ class _SettingUpBodyState extends State<SettingUpBody>
     )..repeat();
     _foodArc1 = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween(begin: 0.0, end: -60.0)
-            .chain(CurveTween(curve: Curves.easeOut)),
+        tween: Tween(
+          begin: 0.0,
+          end: -60.0,
+        ).chain(CurveTween(curve: Curves.easeOut)),
         weight: 50,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: -60.0, end: 0.0)
-            .chain(CurveTween(curve: Curves.easeIn)),
+        tween: Tween(
+          begin: -60.0,
+          end: 0.0,
+        ).chain(CurveTween(curve: Curves.easeIn)),
         weight: 50,
       ),
     ]).animate(_foodController1);
@@ -609,13 +616,17 @@ class _SettingUpBodyState extends State<SettingUpBody>
     );
     _foodArc2 = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween(begin: 0.0, end: -60.0)
-            .chain(CurveTween(curve: Curves.easeOut)),
+        tween: Tween(
+          begin: 0.0,
+          end: -60.0,
+        ).chain(CurveTween(curve: Curves.easeOut)),
         weight: 50,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: -60.0, end: 0.0)
-            .chain(CurveTween(curve: Curves.easeIn)),
+        tween: Tween(
+          begin: -60.0,
+          end: 0.0,
+        ).chain(CurveTween(curve: Curves.easeIn)),
         weight: 50,
       ),
     ]).animate(_foodController2);
@@ -725,8 +736,7 @@ class _SettingUpBodyState extends State<SettingUpBody>
                             shape: BoxShape.circle,
                             gradient: RadialGradient(
                               colors: [
-                                const Color(0xFFF2623E)
-                                    .withValues(alpha: 0.14),
+                                const Color(0xFFF2623E).withValues(alpha: 0.14),
                                 Colors.transparent,
                               ],
                               stops: const [0.0, 0.66],
@@ -765,8 +775,9 @@ class _SettingUpBodyState extends State<SettingUpBody>
                                         ),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: Colors.black
-                                                .withValues(alpha: 0.18),
+                                            color: Colors.black.withValues(
+                                              alpha: 0.18,
+                                            ),
                                             blurRadius: 20,
                                             offset: const Offset(0, 8),
                                           ),
@@ -843,8 +854,7 @@ class _SettingUpBodyState extends State<SettingUpBody>
                               child: Transform.translate(
                                 offset: const Offset(14, 0),
                                 child: Transform.rotate(
-                                  angle:
-                                      _foodController2.value * 2 * math.pi,
+                                  angle: _foodController2.value * 2 * math.pi,
                                   child: Container(
                                     width: 22,
                                     height: 22,
@@ -955,8 +965,7 @@ class _SettingUpBodyState extends State<SettingUpBody>
                               animation: _spinnerController,
                               builder: (context, _) {
                                 return Transform.rotate(
-                                  angle:
-                                      _spinnerController.value * 2 * math.pi,
+                                  angle: _spinnerController.value * 2 * math.pi,
                                   child: SizedBox(
                                     width: 22,
                                     height: 22,

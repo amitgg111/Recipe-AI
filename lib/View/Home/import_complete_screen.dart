@@ -26,7 +26,6 @@ import 'package:recipe_ai/widgets/nutrition_preview_card.dart';
 import 'package:recipe_ai/widgets/nutrition_locked_card.dart';
 import 'package:recipe_ai/View/Home/nutrition/nutrition_screen.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
-import 'package:recipe_ai/widgets/app_logo.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:recipe_ai/widgets/tr_text.dart';
 
@@ -379,6 +378,34 @@ class _ImportCompleteScreenState extends State<ImportCompleteScreen> {
   // ─── Source pill ───────────────────────────────────────────────────────────
   Widget _sourcePill() {
     final info = _sourceInfo();
+
+    Widget leading;
+
+    if (info.imageAsset != null) {
+      leading = ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: Image.asset(
+          info.imageAsset!,
+          width: 16,
+          height: 16,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) {
+            return Icon(
+              info.icon ?? Icons.language_rounded,
+              size: 14,
+              color: info.fg,
+            );
+          },
+        ),
+      );
+    } else {
+      leading = Icon(
+        info.icon ?? Icons.language_rounded,
+        size: 14,
+        color: info.fg,
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -388,20 +415,7 @@ class _ImportCompleteScreenState extends State<ImportCompleteScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          info.logo
-              ? SizedBox(
-                  width: 15,
-                  height: 15,
-                  child: Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      color: info.fg,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const AppLogoMark(size: 11),
-                  ),
-                )
-              : Icon(info.icon, size: 14, color: info.fg),
+          leading,
           const SizedBox(width: 6),
           Flexible(
             child: Text(
@@ -1020,31 +1034,32 @@ class _ImportCompleteScreenState extends State<ImportCompleteScreen> {
         : 'source_handle_suffix'.trParams({'handle': 'recipe.app'});
 
     // Social platforms → "From <Platform> · @handle"
+
     if (s.contains('instagram')) {
       return _SourceInfo(
-        'source_instagram'.tr,
-        'source_pill_from_instagram'.trParams({'suffix': suffix}),
-        AppColors.instagramBg,
-        AppColors.instagram,
-        Icons.camera_alt_rounded,
+        banner: 'source_instagram'.tr,
+        pill: 'source_pill_from_instagram'.trParams({'suffix': suffix}),
+        bg: AppColors.instagramBg,
+        fg: AppColors.instagram,
+        imageAsset: 'assets/welcome/instragram.png',
       );
     }
     if (s.contains('facebook')) {
       return _SourceInfo(
-        'source_facebook'.tr,
-        'source_pill_from_facebook'.trParams({'suffix': suffix}),
-        AppColors.blueBg,
-        AppColors.facebook,
-        Icons.facebook_rounded,
+        banner: 'source_facebook'.tr,
+        pill: 'source_pill_from_facebook'.trParams({'suffix': suffix}),
+        bg: AppColors.blueBg,
+        fg: AppColors.facebook,
+        imageAsset: 'assets/welcome/facebook.png',
       );
     }
     if (s.contains('tiktok')) {
       return _SourceInfo(
-        'source_tiktok'.tr,
-        'source_pill_from_tiktok'.trParams({'suffix': suffix}),
-        AppColors.tiktokBg,
-        AppColors.tiktok,
-        Icons.music_note_rounded,
+        banner: 'source_tiktok'.tr,
+        pill: 'source_pill_from_tiktok'.trParams({'suffix': suffix}),
+        bg: AppColors.tiktokBg,
+        fg: AppColors.tiktok,
+        imageAsset: 'assets/welcome/tiktok.png',
       );
     }
     // Text / name → "From text to generate" (never for real URLs, which must
@@ -1055,12 +1070,11 @@ class _ImportCompleteScreenState extends State<ImportCompleteScreen> {
             s.contains('text') ||
             s.isEmpty)) {
       return _SourceInfo(
-        'source_a_recipe_name'.tr,
-        'source_pill_from_text'.tr,
-        AppColors.purpleBg,
-        AppColors.purple,
-        Icons.auto_awesome_rounded,
-        logo: true,
+        banner: 'source_a_recipe_name'.tr,
+        pill: 'source_pill_from_text'.tr,
+        bg: AppColors.purpleBg,
+        fg: AppColors.purple,
+        icon: Icons.auto_awesome_rounded,
       );
     }
     // Photo / video / other social media → "From image/video to generate"
@@ -1072,11 +1086,11 @@ class _ImportCompleteScreenState extends State<ImportCompleteScreen> {
             s.contains('social') ||
             s.contains('media'))) {
       return _SourceInfo(
-        'source_a_photo_or_video'.tr,
-        'source_pill_from_image_video'.tr,
-        AppColors.redBg,
-        AppColors.primary,
-        Icons.movie_creation_rounded,
+        banner: 'source_a_photo_or_video'.tr,
+        pill: 'source_pill_from_image_video'.tr,
+        bg: AppColors.redBg,
+        fg: AppColors.primary,
+        icon: Icons.movie_creation_rounded,
       );
     }
     // A real website link.
@@ -1085,19 +1099,19 @@ class _ImportCompleteScreenState extends State<ImportCompleteScreen> {
           ? 'source_handle_suffix'.trParams({'handle': handle})
           : '';
       return _SourceInfo(
-        'source_the_web'.tr,
-        'source_pill_from_the_web'.trParams({'suffix': webSuffix}),
-        AppColors.greenBgLight,
-        AppColors.green,
-        Icons.language_rounded,
+        banner: 'source_the_web'.tr,
+        pill: 'source_pill_from_the_web'.trParams({'suffix': webSuffix}),
+        bg: AppColors.greenBgLight,
+        fg: AppColors.green,
+        icon: Icons.language_rounded,
       );
     }
     return _SourceInfo(
-      'source_an_import'.tr,
-      'source_pill_from_image_video'.tr,
-      AppColors.redBg,
-      AppColors.primary,
-      Icons.movie_creation_rounded,
+      banner: 'source_an_import'.tr,
+      pill: 'source_pill_from_image_video'.tr,
+      bg: AppColors.redBg,
+      fg: AppColors.primary,
+      icon: Icons.movie_creation_rounded,
     );
   }
 
@@ -1157,19 +1171,25 @@ class _ImportCompleteScreenState extends State<ImportCompleteScreen> {
 }
 
 class _SourceInfo {
-  final String banner; // used in the review banner sentence
-  final String pill; // used in the source pill
+  final String banner;
+  final String pill;
   final Color bg;
   final Color fg;
-  final IconData icon;
-  final bool logo;
-  _SourceInfo(
-    this.banner,
-    this.pill,
-    this.bg,
-    this.fg,
-    this.icon, {
-    this.logo = false,
+
+  /// Asset image for platforms like Instagram/Facebook/TikTok.
+  /// If null, [icon] will be used.
+  final String? imageAsset;
+
+  /// Fallback icon for non-social sources.
+  final IconData? icon;
+
+  const _SourceInfo({
+    required this.banner,
+    required this.pill,
+    required this.bg,
+    required this.fg,
+    this.imageAsset,
+    this.icon,
   });
 }
 

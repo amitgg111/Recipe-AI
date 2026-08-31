@@ -148,7 +148,7 @@ class _RecipeCameraScreenState extends State<RecipeCameraScreen> {
     final controller = _cameraController;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         top: false,
         bottom: false,

@@ -111,17 +111,17 @@ class ImportFromSocialScreen extends StatelessWidget {
                     Row(
                       children: [
                         _socialIconWhiteBg(
-                          Icons.camera_alt_rounded,
+                          'assets/welcome/instragram.png',
                           const Color(0xFFE1306C),
                         ),
                         const SizedBox(width: 8),
                         _socialIconWhiteBg(
-                          Icons.music_note_rounded,
+                          'assets/welcome/tiktok.png',
                           Colors.black,
                         ),
                         const SizedBox(width: 8),
                         _socialIconWhiteBg(
-                          Icons.facebook_rounded,
+                          'assets/welcome/facebook.png',
                           const Color(0xFF1877F2),
                         ),
                       ],
@@ -136,7 +136,7 @@ class ImportFromSocialScreen extends StatelessWidget {
     );
   }
 
-  static Widget _socialIconWhiteBg(IconData icon, Color color) {
+  static Widget _socialIconWhiteBg(String icon, Color color) {
     return Container(
       width: 34,
       height: 34,
@@ -144,7 +144,7 @@ class ImportFromSocialScreen extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
       ),
-      child: Icon(icon, size: 18, color: color),
+      child: Image.asset(icon, height: 18, color: color),
     );
   }
 }
@@ -204,14 +204,14 @@ class _SocialGuideScreenState extends State<SocialGuideScreen> {
     }
   }
 
-  IconData get _platformIcon {
+  String get _platformIcon {
     switch (widget.platform) {
       case SocialPlatform.instagram:
-        return Icons.camera_alt_rounded;
+        return 'assets/welcome/instragram.png';
       case SocialPlatform.tiktok:
-        return Icons.music_note_rounded;
+        return 'assets/welcome/tiktok.png';
       case SocialPlatform.facebook:
-        return Icons.facebook_rounded;
+        return 'assets/welcome/facebook.png';
     }
   }
 
@@ -323,7 +323,11 @@ class _SocialGuideScreenState extends State<SocialGuideScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(_platformIcon, color: Colors.white, size: 20),
+                            Image.asset(
+                              _platformIcon,
+                              color: Colors.white,
+                              height: 20,
+                            ),
                             const SizedBox(width: 8),
                             Flexible(
                               child: Text(

@@ -8,6 +8,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:recipe_ai/Controllers/cuisine_controller.dart';
+import 'package:recipe_ai/Controllers/internet_controller.dart';
 import 'package:recipe_ai/Service/ai_translation_service.dart';
 import 'package:recipe_ai/Service/language_service.dart';
 import 'package:recipe_ai/Service/remote_config_service.dart';
@@ -134,6 +135,7 @@ void main() async {
   Get.put(CookbookController(), permanent: true);
   Get.put(SettingsController(), permanent: true);
   Get.put(SubscriptionService(), permanent: true);
+  Get.put(InternetController(), permanent: true);
   // In-app purchases (RevenueCat). Configures only once real keys are set in
   // RevenueCatConfig; entitlement changes drive SubscriptionService.isPlus.
   Get.put(RevenueCatService(), permanent: true);
@@ -210,6 +212,24 @@ class MyApp extends StatelessWidget {
       // above Home is popped, so they can reset to the current period.
       navigatorObservers: [appRouteObserver],
       home: const SplashScreen(),
+      builder: (context, child) {
+        return Stack(
+          children: [
+            if (child != null) child,
+            GetBuilder<InternetController>(
+              init: Get.find<InternetController>(),
+              builder: (controller) {
+                return Obx(() {
+                  if (!controller.hasInternet.value) {
+                    return const NoInternetOverlay();
+                  }
+                  return const SizedBox.shrink();
+                });
+              },
+            ),
+          ],
+        );
+      },
       getPages: [
         // Onboarding
         GetPage(name: AppRoutes.onboarding, page: () => const WelcomeScreen()),

@@ -22,15 +22,15 @@ Widget _glyph(String key, {required double size, required String color}) {
         '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/>'
         '<circle cx="18" cy="19" r="3"/>'
         '<path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>',
-    'camera':
-        '<rect x="3" y="7" width="18" height="13" rx="4"/>'
-        '<circle cx="12" cy="13.5" r="3.4"/>'
-        '<circle cx="17" cy="10.5" r="1" fill="$color" stroke="none"/>',
-    'music':
-        '<circle cx="7" cy="18" r="2.6"/><circle cx="17" cy="16" r="2.6"/>'
-        '<path d="M9.6 18V5l9.4-2v13"/>',
-    'chat':
-        '<path d="M4 6a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-4 4z"/>',
+    // 'camera':
+    //     '<rect x="3" y="7" width="18" height="13" rx="4"/>'
+    //     '<circle cx="12" cy="13.5" r="3.4"/>'
+    //     '<circle cx="17" cy="10.5" r="1" fill="$color" stroke="none"/>',
+    // 'music':
+    //     '<circle cx="7" cy="18" r="2.6"/><circle cx="17" cy="16" r="2.6"/>'
+    //     '<path d="M9.6 18V5l9.4-2v13"/>',
+    // 'chat':
+    //     '<path d="M4 6a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-4 4z"/>',
   }[key]!;
   final svg =
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" '
@@ -156,7 +156,6 @@ class ImportPickerScreen extends StatelessWidget {
                             title: 'write_from_scratch'.tr,
                             subtitle: 'create_your_own'.tr,
                             onTap: () {
-
                               Get.to(() => const RecipeEditorScreen());
                               HapticFeedback.heavyImpact();
                             },
@@ -238,11 +237,11 @@ class ImportPickerScreen extends StatelessWidget {
           // Social icon tiles (white .92 background, brand-coloured glyph).
           const Row(
             children: [
-              _SocialIconButton(glyph: 'camera', colorHex: '#C13584'),
+              _SocialIconButton(glyph: 'assets/welcome/instragram.png'),
               SizedBox(width: 8),
-              _SocialIconButton(glyph: 'music', colorHex: '#1F1F24'),
+              _SocialIconButton(glyph: 'assets/welcome/tiktok.png'),
               SizedBox(width: 8),
-              _SocialIconButton(glyph: 'chat', colorHex: '#2D6FE0'),
+              _SocialIconButton(glyph: 'assets/welcome/facebook.png'),
             ],
           ),
         ],
@@ -253,9 +252,8 @@ class ImportPickerScreen extends StatelessWidget {
 
 class _SocialIconButton extends StatelessWidget {
   final String glyph;
-  final String colorHex;
 
-  const _SocialIconButton({required this.glyph, required this.colorHex});
+  const _SocialIconButton({required this.glyph});
 
   @override
   Widget build(BuildContext context) {
@@ -267,7 +265,7 @@ class _SocialIconButton extends StatelessWidget {
         color: Colors.white.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: _glyph(glyph, size: 18, color: colorHex),
+      child: Image.asset(glyph, height: 48),
     );
   }
 }

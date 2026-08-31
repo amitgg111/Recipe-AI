@@ -373,9 +373,11 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       final remaining = rawCredits < 0 ? 0 : rawCredits;
 
       return GestureDetector(
-        onTap: () {
-          Get.to(() => const UpgradePlusScreen());
-        },
+        onTap: !plus
+            ? () {
+                Get.to(() => const UpgradePlusScreen());
+              }
+            : () {  },
         behavior: HitTestBehavior.opaque,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),

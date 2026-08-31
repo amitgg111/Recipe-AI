@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:recipe_ai/screens/auth/create_account_screen.dart';
 import 'package:recipe_ai/screens/onboarding/cuisine_preference.dart';
 import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:get/get.dart';
@@ -114,7 +116,8 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
       // Continue to the existing Plus intro (steps 13–15).
 
       Get.to(
-        () => const PlusIntroScreen(),
+        // () => const PlusIntroScreen(),
+        () => const CreateAccountScreen(),
         transition: Transition.noTransition,
       );
     }
@@ -228,52 +231,22 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
     }
   }
 
-  /// Optional widget rendered just below the fixed CTA (kept minimal).
-  // Widget? _footerFor(int page) {
-  //   if (page == 0) {
-  //     // Welcome: "Already have an account? Log in"
-  //     return Padding(
-  //       padding: const EdgeInsets.only(top: 16),
-  //       child: Row(
-  //         mainAxisAlignment: MainAxisAlignment.center,
-  //         children: [
-  //           Text(
-  //             '${'already_have_account'.tr} ',
-  //             style: GoogleFonts.plusJakartaSans(
-  //               fontSize: 14,
-  //               fontWeight: FontWeight.w500,
-  //               color: AppColors.textMedium,
-  //             ),
-  //           ),
-  //           GestureDetector(
-  //             onTap: () => Get.to(
-  //               () => const LoginScreen(),
-  //               transition: Transition.noTransition,
-  //             ),
-  //             child: Text(
-  //               'login'.tr,
-  //               style: GoogleFonts.plusJakartaSans(
-  //                 fontSize: 14,
-  //                 fontWeight: FontWeight.w700,
-  //                 color: AppColors.textDark,
-  //                 decoration: TextDecoration.underline,
-  //                 decorationThickness: 1.5,
-  //               ),
-  //             ),
-  //           ),
-  //         ],
-  //       ),
-  //     );
-  //   }
-  //   return null;
-  // }
-
   // ---- Build ---------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
     // final footer = _footerFor(_page);
-
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: _page == 0
+            ? const Color(0xFF1B1310)
+            : AppColors.background,
+        statusBarIconBrightness: _page == 0
+            ? Brightness.light
+            : Brightness.dark,
+        statusBarBrightness: _page == 0 ? Brightness.dark : Brightness.light,
+      ),
+    );
     return Scaffold(
       backgroundColor: _page == 0
           ? const Color(0xFF1B1310)
@@ -287,7 +260,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
             // track. Hidden entirely on the Welcome page (page 0) — the
             // indicator only appears from screen 2 onward.
             if (_page > 0) ...[
-              const SizedBox(height: 10),
+              const SizedBox(height: 15),
               const Padding(
                 padding: EdgeInsets.only(top: 40),
                 child: _AppNameLogo(),
