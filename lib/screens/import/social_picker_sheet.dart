@@ -150,24 +150,6 @@ class SocialPickerSheet extends StatelessWidget {
   }
 }
 
-// White design glyph, viewBox 0 0 24 24.
-// Widget _svg(String inner, {double size = 22}) {
-//   final svg =
-//       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" '
-//       'fill="none" stroke="#FFFFFF" stroke-width="1.9" '
-//       'stroke-linecap="round" stroke-linejoin="round">$inner</svg>';
-//   return SvgPicture.string(svg, width: size, height: size);
-// }
-
-// Design icon paths (verbatim). The camera's viewfinder dot is a filled circle.
-const _kCamera =
-    '<rect x="3" y="7" width="18" height="13" rx="4"/>'
-    '<circle cx="12" cy="13.5" r="3.4"/>'
-    '<circle cx="17" cy="10.5" r="1" fill="#FFFFFF" stroke="none"/>';
-const _kMusic =
-    '<circle cx="7" cy="18" r="2.6"/>'
-    '<circle cx="17" cy="16" r="2.6"/><path d="M9.6 18V5l9.4-2v13"/>';
-
 const _kChevR = '<path d="M9 6l6 6-6 6"/>';
 
 class _SocialOption extends StatelessWidget {
