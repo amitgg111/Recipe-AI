@@ -363,46 +363,45 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
                           );
                         }),
 
-                        if (_monthly && _yearlyHasTrial) ...[
-                          const SizedBox(height: 14),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 13,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFF6E6),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: const Color(0xFFF3E2BC),
-                              ),
-                            ),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Icon(
-                                  Icons.auto_awesome,
-                                  size: 16,
-                                  color: Color(0xFFC0860F),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'trial_yearly_only'.tr,
-                                    style: _font(
-                                      size: 12,
-                                      weight: FontWeight.w600,
-                                      color: const Color(0xFF7A5B12),
-                                      height: 1.4,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                        // if (_monthly && _yearlyHasTrial) ...[
+                        //   const SizedBox(height: 14),
+                        //   Container(
+                        //     padding: const EdgeInsets.symmetric(
+                        //       horizontal: 13,
+                        //       vertical: 10,
+                        //     ),
+                        //     decoration: BoxDecoration(
+                        //       color: const Color(0xFFFFF6E6),
+                        //       borderRadius: BorderRadius.circular(12),
+                        //       border: Border.all(
+                        //         color: const Color(0xFFF3E2BC),
+                        //       ),
+                        //     ),
+                        //     child: Row(
+                        //       crossAxisAlignment: CrossAxisAlignment.start,
+                        //       children: [
+                        //         const Icon(
+                        //           Icons.auto_awesome,
+                        //           size: 16,
+                        //           color: Color(0xFFC0860F),
+                        //         ),
+                        //         const SizedBox(width: 8),
+                        //         Expanded(
+                        //           child: Text(
+                        //             'trial_yearly_only'.tr,
+                        //             style: _font(
+                        //               size: 12,
+                        //               weight: FontWeight.w600,
+                        //               color: const Color(0xFF7A5B12),
+                        //               height: 1.4,
+                        //             ),
+                        //           ),
+                        //         ),
+                        //       ],
+                        //     ),
+                        //   ),
+                        // ],
                         const SizedBox(height: 12),
-
                         Obx(() {
                           _rc.offering.value;
                           final price = _monthly ? _monthlyPrice : _yearlyPrice;

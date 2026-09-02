@@ -1,4 +1,5 @@
 import 'package:flutter/gestures.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:recipe_ai/Service/remote_config_service.dart';
 import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:flutter/material.dart';
@@ -212,21 +213,13 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                     ? null
                     : _onGoogleContinue,
                 isLoading: _isGoogleLoading,
-                leading: Container(
+                leading: SizedBox(
                   width: 24,
                   height: 24,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF0EEE9),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    'G',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      color: const Color(0xFF6B6359),
-                    ),
+                  child: SvgPicture.asset(
+                    'assets/welcome/google.svg', // તમારું SVG path
+                    width: 24,
+                    height: 24,
                   ),
                 ),
               ),
@@ -243,10 +236,14 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                       ? null
                       : _onAppleContinue,
                   isLoading: _isAppleLoading,
-                  leading: const Icon(
-                    Icons.apple,
-                    size: 20,
-                    color: Color(0xFF2A211B),
+                  leading: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: SvgPicture.asset(
+                      'assets/welcome/apple.svg', // તમારું SVG path
+                      width: 24,
+                      height: 24,
+                    ),
                   ),
                 ),
               ],

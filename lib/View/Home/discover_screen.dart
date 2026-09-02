@@ -7,6 +7,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:recipe_ai/Controllers/discover_controller.dart';
 import 'package:recipe_ai/Controllers/cookbook_controller.dart';
 import 'package:recipe_ai/Controllers/profile_controller.dart';
+import 'package:recipe_ai/View/Home/settings/manage_subscription_screen.dart';
 import 'package:recipe_ai/theme/app_dimensions.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/widgets/app_wordmark.dart';
@@ -377,7 +378,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             ? () {
                 Get.to(() => const UpgradePlusScreen());
               }
-            : () {  },
+            : () {
+                Get.to(() => const ManageSubscriptionScreen());
+              },
         behavior: HitTestBehavior.opaque,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),

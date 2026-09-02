@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:flutter_svg/svg.dart';
 import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -289,47 +290,23 @@ class _AwesomeImportScreenState extends State<AwesomeImportScreen>
     // Positions from HTML spec: left, top relative to 236x236 container
     // Each icon is 44x44
     final icons = <_OrbitIcon>[
-      // Top center: Instagram (gradient)
       const _OrbitIcon(
         left: 96,
         top: -4,
-        name: 'camera',
-        isGradient: true,
-        bgColor: Colors.white,
-        iconColor: Colors.white,
+        svgPath: 'assets/icons/instagram.svg',
       ),
-      // Right: TikTok
-      const _OrbitIcon(
-        left: 191,
-        top: 65,
-        name: 'music',
-        bgColor: Color(0xFF1F1F24),
-        iconColor: Colors.white,
-      ),
-      // Bottom-right: YouTube
+      const _OrbitIcon(left: 191, top: 65, svgPath: 'assets/icons/tiktok.svg'),
       const _OrbitIcon(
         left: 155,
         top: 177,
-        name: 'play',
-        bgColor: Color(0xFFFCE2E0),
-        iconColor: Color(0xFFDD3B33),
+        svgPath: 'assets/icons/youtube.svg',
       ),
-      // Bottom-left: Facebook
       const _OrbitIcon(
         left: 37,
         top: 177,
-        name: 'chat',
-        bgColor: Color(0xFFE4ECFB),
-        iconColor: Color(0xFF2D6FE0),
+        svgPath: 'assets/icons/facebook.svg',
       ),
-      // Left: Pinterest
-      const _OrbitIcon(
-        left: 1,
-        top: 65,
-        name: 'pin',
-        bgColor: Color(0xFFFCE4EE),
-        iconColor: Color(0xFFC13584),
-      ),
+      const _OrbitIcon(left: 1, top: 65, svgPath: 'assets/icons/pinterest.svg'),
     ];
 
     return List.generate(icons.length, (i) {
@@ -339,38 +316,14 @@ class _AwesomeImportScreenState extends State<AwesomeImportScreen>
       return Positioned(
         left: data.left,
         top: data.top + floatY,
-        child: Container(
+        child: SizedBox(
           width: 44,
           height: 44,
-          decoration: BoxDecoration(
-            color: data.isGradient ? null : data.bgColor,
-            gradient: data.isGradient
-                ? const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color(0xFFFEDA77),
-                      Color(0xFFDD2A7B),
-                      Color(0xFF8134AF),
-                    ],
-                    stops: [0.0, 0.55, 1.0],
-                  )
-                : null,
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Center(
-            child: OnboardingLineIcon(
-              data.name,
-              color: data.iconColor,
-              size: 20,
-            ),
+          child: SvgPicture.asset(
+            data.svgPath,
+            width: 44,
+            height: 44,
+            fit: BoxFit.contain, // full image neatly fit થાય
           ),
         ),
       );
@@ -631,41 +584,69 @@ class _AwesomeImportBodyState extends State<AwesomeImportBody>
       const _OrbitIcon(
         left: 96,
         top: -4,
-        name: 'camera',
-        isGradient: true,
-        bgColor: Colors.white,
-        iconColor: Colors.white,
+        svgPath: 'assets/welcome/instagram.svg',
       ),
       const _OrbitIcon(
         left: 191,
         top: 65,
-        name: 'music',
-        bgColor: Color(0xFF1F1F24),
-        iconColor: Colors.white,
+        svgPath: 'assets/welcome/tiktok.svg',
       ),
       const _OrbitIcon(
         left: 155,
         top: 177,
-        name: 'play',
-        bgColor: Color(0xFFFCE2E0),
-        iconColor: Color(0xFFDD3B33),
+        svgPath: 'assets/welcome/youtube.svg',
       ),
       const _OrbitIcon(
         left: 37,
         top: 177,
-        name: 'chat',
-        bgColor: Color(0xFFE4ECFB),
-        iconColor: Color(0xFF2D6FE0),
+        svgPath: 'assets/welcome/facebook.svg',
       ),
-      const _OrbitIcon(
-        left: 1,
-        top: 65,
-        name: 'pin',
-        bgColor: Color(0xFFFCE4EE),
-        iconColor: Color(0xFFC13584),
-      ),
+      const _OrbitIcon(left: 1, top: 65, svgPath: 'assets/welcome/x.svg'),
     ];
 
+    // return List.generate(icons.length, (i) {
+    //   final data = icons[i];
+    //   final floatY = _floatAnimations[i].value;
+
+    //   return Positioned(
+    //     left: data.left,
+    //     top: data.top + floatY,
+    //     child: Container(
+    //       width: 44,
+    //       height: 44,
+    //       decoration: BoxDecoration(
+    //         color: data.isGradient ? null : data.bgColor,
+    //         gradient: data.isGradient
+    //             ? const LinearGradient(
+    //                 begin: Alignment.topLeft,
+    //                 end: Alignment.bottomRight,
+    //                 colors: [
+    //                   Color(0xFFFEDA77),
+    //                   Color(0xFFDD2A7B),
+    //                   Color(0xFF8134AF),
+    //                 ],
+    //                 stops: [0.0, 0.55, 1.0],
+    //               )
+    //             : null,
+    //         borderRadius: BorderRadius.circular(14),
+    //         boxShadow: [
+    //           BoxShadow(
+    //             color: Colors.black.withValues(alpha: 0.08),
+    //             blurRadius: 12,
+    //             offset: const Offset(0, 4),
+    //           ),
+    //         ],
+    //       ),
+    //       child: Center(
+    //         child: OnboardingLineIcon(
+    //           data.name,
+    //           color: data.iconColor,
+    //           size: 20,
+    //         ),
+    //       ),
+    //     ),
+    //   );
+    // });
     return List.generate(icons.length, (i) {
       final data = icons[i];
       final floatY = _floatAnimations[i].value;
@@ -673,38 +654,14 @@ class _AwesomeImportBodyState extends State<AwesomeImportBody>
       return Positioned(
         left: data.left,
         top: data.top + floatY,
-        child: Container(
+        child: SizedBox(
           width: 44,
           height: 44,
-          decoration: BoxDecoration(
-            color: data.isGradient ? null : data.bgColor,
-            gradient: data.isGradient
-                ? const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color(0xFFFEDA77),
-                      Color(0xFFDD2A7B),
-                      Color(0xFF8134AF),
-                    ],
-                    stops: [0.0, 0.55, 1.0],
-                  )
-                : null,
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Center(
-            child: OnboardingLineIcon(
-              data.name,
-              color: data.iconColor,
-              size: 20,
-            ),
+          child: SvgPicture.asset(
+            data.svgPath,
+            width: 44,
+            height: 44,
+            fit: BoxFit.contain, // full image neatly fit થાય
           ),
         ),
       );
@@ -748,18 +705,12 @@ class _OrbitCenterLogo extends StatelessWidget {
 class _OrbitIcon {
   final double left;
   final double top;
-  final String name;
-  final Color bgColor;
-  final Color iconColor;
-  final bool isGradient;
+  final String svgPath;
 
   const _OrbitIcon({
     required this.left,
     required this.top,
-    required this.name,
-    required this.bgColor,
-    required this.iconColor,
-    this.isGradient = false,
+    required this.svgPath,
   });
 }
 

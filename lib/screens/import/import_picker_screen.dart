@@ -237,11 +237,11 @@ class ImportPickerScreen extends StatelessWidget {
           // Social icon tiles (white .92 background, brand-coloured glyph).
           const Row(
             children: [
-              _SocialIconButton(glyph: 'assets/welcome/instragram.png'),
+              _SocialIconButton(glyph: 'assets/welcome/instagram.svg'),
               SizedBox(width: 8),
-              _SocialIconButton(glyph: 'assets/welcome/tiktok.png'),
+              _SocialIconButton(glyph: 'assets/welcome/tiktok.svg'),
               SizedBox(width: 8),
-              _SocialIconButton(glyph: 'assets/welcome/facebook.png'),
+              _SocialIconButton(glyph: 'assets/welcome/facebook.svg'),
             ],
           ),
         ],
@@ -265,7 +265,7 @@ class _SocialIconButton extends StatelessWidget {
         color: Colors.white.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Image.asset(glyph, height: 48),
+      child: SvgPicture.asset(glyph, height: 48),
     );
   }
 }

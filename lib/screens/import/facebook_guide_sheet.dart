@@ -37,6 +37,15 @@ class _FacebookGuideSheetState extends State<FacebookGuideSheet> {
     _startAutoAdvance();
   }
 
+  void _pauseAutoAdvance() {
+    _autoAdvanceTimer?.cancel();
+  }
+
+  void _resumeAutoAdvance() {
+    _autoAdvanceTimer?.cancel();
+    _startAutoAdvance();
+  }
+
   void _startAutoAdvance() {
     _autoAdvanceTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       final nextPage = (_currentPage + 1) % 3;
@@ -117,16 +126,21 @@ class _FacebookGuideSheetState extends State<FacebookGuideSheet> {
 
           // Slideshow
           Expanded(
-            child: PageView(
-              controller: _pageController,
-              onPageChanged: (index) {
-                setState(() => _currentPage = index);
-              },
-              children: [
-                _FacebookSlide1(),
-                _FacebookSlide2(),
-                _FacebookSlide3(),
-              ],
+            child: Listener(
+              onPointerDown: (_) => _pauseAutoAdvance(),
+              onPointerUp: (_) => _resumeAutoAdvance(),
+
+              child: PageView(
+                controller: _pageController,
+                onPageChanged: (index) {
+                  setState(() => _currentPage = index);
+                },
+                children: [
+                  _FacebookSlide1(),
+                  _FacebookSlide2(),
+                  _FacebookSlide3(),
+                ],
+              ),
             ),
           ),
 

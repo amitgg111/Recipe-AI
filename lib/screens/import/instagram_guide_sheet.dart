@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:recipe_ai/widgets/app_logo.dart';
 import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -30,6 +31,14 @@ class _InstagramGuideSheetState extends State<InstagramGuideSheet> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
   Timer? _autoAdvanceTimer;
+  void _pauseAutoAdvance() {
+    _autoAdvanceTimer?.cancel();
+  }
+
+  void _resumeAutoAdvance() {
+    _autoAdvanceTimer?.cancel();
+    _startAutoAdvance();
+  }
 
   @override
   void initState() {
@@ -117,12 +126,17 @@ class _InstagramGuideSheetState extends State<InstagramGuideSheet> {
 
           // Slideshow
           Expanded(
-            child: PageView(
-              controller: _pageController,
-              onPageChanged: (index) {
-                setState(() => _currentPage = index);
-              },
-              children: [_Slide1(), _Slide2(), _Slide3()],
+            child: Listener(
+              onPointerDown: (_) => _pauseAutoAdvance(),
+              onPointerUp: (_) => _resumeAutoAdvance(),
+
+              child: PageView(
+                controller: _pageController,
+                onPageChanged: (index) {
+                  setState(() => _currentPage = index);
+                },
+                children: [_Slide1(), _Slide2(), _Slide3()],
+              ),
             ),
           ),
 
@@ -416,31 +430,10 @@ class _Slide3 extends StatelessWidget {
                 _mockAppIcon(Colors.grey.shade300, 'messages'.tr),
                 _mockAppIcon(Colors.grey.shade300, 'notes'.tr),
                 // Recipe AI highlighted
-                Column(
+                const Column(
                   children: [
-                    Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFFF8763), AppColors.primary],
-                        ),
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.3),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.restaurant_menu_rounded,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
+                    AppLogoMark(size: 18),
+                    SizedBox(height: 6),
                     AppWordmark(fontSize: 11, fontWeight: FontWeight.w700),
                   ],
                 ),

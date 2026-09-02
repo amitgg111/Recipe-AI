@@ -928,6 +928,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           // (works even if the AuthWrapper stream is slow to react).
           profileController.clearLocalData();
           try {
+            await SubscriptionService.instance.onLogout(); // ← આ ઉમેરો
             await AuthService.logout();
           } catch (_) {}
           Get.offAll(() => const AuthWrapper());

@@ -42,7 +42,7 @@ class NotificationPermissionResult {
 ///  • mirrors the push toggles as OneSignal data tags so campaigns/segments
 ///    can respect them,
 ///  • owns the OS notification-permission flow (request-once + open settings).
-class NotificationService {
+class   NotificationService {
   NotificationService._();
   static final NotificationService instance = NotificationService._();
 

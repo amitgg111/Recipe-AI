@@ -90,29 +90,13 @@ class _RecipeSourcesScreenState extends State<RecipeSourcesScreen> {
                 trailing: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _SocialBadge(
-                      iconKey: 'camera',
-                      color: Color(0xFFC13584),
-                      bg: Color(0xFFFCE4EE),
-                    ),
+                    _RealSocialBadge(assetPath: 'assets/welcome/instagram.svg'),
                     SizedBox(width: 6),
-                    _SocialBadge(
-                      iconKey: 'music',
-                      color: Color(0xFF1F1F24),
-                      bg: Color(0xFFECECEF),
-                    ),
+                    _RealSocialBadge(assetPath: 'assets/welcome/tiktok.svg'),
                     SizedBox(width: 6),
-                    _SocialBadge(
-                      iconKey: 'chat',
-                      color: Color(0xFF2D6FE0),
-                      bg: Color(0xFFE4ECFB),
-                    ),
+                    _RealSocialBadge(assetPath: 'assets/welcome/facebook.svg'),
                     SizedBox(width: 6),
-                    _SocialBadge(
-                      iconKey: 'pin',
-                      color: Color(0xFFDD3B33),
-                      bg: Color(0xFFFCE2E0),
-                    ),
+                    _RealSocialBadge(assetPath: 'assets/welcome/x.svg'),
                   ],
                 ),
               ),
@@ -131,11 +115,7 @@ class _RecipeSourcesScreenState extends State<RecipeSourcesScreen> {
                       bg: Color(0xFFDCEBF4),
                     ),
                     SizedBox(width: 6),
-                    _SocialBadge(
-                      iconKey: 'search',
-                      color: Color(0xFF6B6359),
-                      bg: Color(0xFFF0EEE9),
-                    ),
+                    _RealSocialBadge(assetPath: 'assets/welcome/google.svg'),
                   ],
                 ),
               ),
@@ -248,29 +228,13 @@ class _RecipeSourcesBodyState extends State<RecipeSourcesBody> {
             trailing: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _SocialBadge(
-                  iconKey: 'camera',
-                  color: Color(0xFFC13584),
-                  bg: Color(0xFFFCE4EE),
-                ),
+                _RealSocialBadge(assetPath: 'assets/welcome/instagram.svg'),
                 SizedBox(width: 6),
-                _SocialBadge(
-                  iconKey: 'music',
-                  color: Color(0xFF1F1F24),
-                  bg: Color(0xFFECECEF),
-                ),
+                _RealSocialBadge(assetPath: 'assets/welcome/tiktok.svg'),
                 SizedBox(width: 6),
-                _SocialBadge(
-                  iconKey: 'chat',
-                  color: Color(0xFF2D6FE0),
-                  bg: Color(0xFFE4ECFB),
-                ),
+                _RealSocialBadge(assetPath: 'assets/welcome/facebook.svg'),
                 SizedBox(width: 6),
-                _SocialBadge(
-                  iconKey: 'pin',
-                  color: Color(0xFFDD3B33),
-                  bg: Color(0xFFFCE2E0),
-                ),
+                _RealSocialBadge(assetPath: 'assets/welcome/x.svg'),
               ],
             ),
           ),
@@ -289,11 +253,7 @@ class _RecipeSourcesBodyState extends State<RecipeSourcesBody> {
                   bg: Color(0xFFDCEBF4),
                 ),
                 SizedBox(width: 6),
-                _SocialBadge(
-                  iconKey: 'search',
-                  color: Color(0xFF6B6359),
-                  bg: Color(0xFFF0EEE9),
-                ),
+                _RealSocialBadge(assetPath: 'assets/welcome/google.svg'),
               ],
             ),
           ),
@@ -457,6 +417,26 @@ class _SocialBadge extends StatelessWidget {
       ),
       alignment: Alignment.center,
       child: SvgPicture.string(svg, width: def.size, height: def.size),
+    );
+  }
+}
+
+class _RealSocialBadge extends StatelessWidget {
+  final String assetPath;
+
+  const _RealSocialBadge({required this.assetPath});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 28,
+      height: 28,
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(9),
+      ),
+      alignment: Alignment.center,
+      child: SvgPicture.asset(assetPath, width: 19, height: 19),
     );
   }
 }

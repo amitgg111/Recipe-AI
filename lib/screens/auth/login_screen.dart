@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/gestures.dart';
+import 'package:flutter_svg/svg.dart';
 
 import 'package:recipe_ai/Service/language_service.dart';
 import 'package:recipe_ai/Service/remote_config_service.dart';
@@ -71,7 +72,7 @@ class _LoginScreenState extends State<LoginScreen> {
       _isAppleLoading;
   // Terms & Privacy agreement checkbox on the sign-up form — checked (on) by
   // default; the user can uncheck it to disable account creation.
-  bool _agreedToTerms = true;
+  bool _agreedToTerms = false;
 
   // Inline validation errors (null = nothing shown under the field).
   String? _loginEmailError;
@@ -341,6 +342,7 @@ class _LoginScreenState extends State<LoginScreen> {
             'countryLanguages': LanguageService.deviceLanguages,
           }, SetOptions(merge: true))
           .catchError((_) {});
+      await SubscriptionService.instance.bindUser(user.uid);
 
       Get.offAll(() => const HomeScreen(), transition: Transition.noTransition);
     } catch (e) {
@@ -363,6 +365,8 @@ class _LoginScreenState extends State<LoginScreen> {
             'countryLanguages': LanguageService.deviceLanguages,
           }, SetOptions(merge: true))
           .catchError((_) {});
+
+      await SubscriptionService.instance.bindUser(user.uid);
 
       // First land on HomeScreen.
       Get.offAll(() => const HomeScreen(), transition: Transition.noTransition);
@@ -827,21 +831,13 @@ class _LoginScreenState extends State<LoginScreen> {
             label: 'google'.tr,
             isLoading: _isGoogleLoading,
             onTap: _isAnyAuthLoading ? null : _onGoogleSignIn,
-            leading: Container(
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF0EEE9),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                'G',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF6B6359),
-                ),
+            leading: SizedBox(
+              width: 24,
+              height: 24,
+              child: SvgPicture.asset(
+                'assets/welcome/google.svg', // તમારું SVG path
+                width: 24,
+                height: 24,
               ),
             ),
           ),
@@ -852,6 +848,15 @@ class _LoginScreenState extends State<LoginScreen> {
           Expanded(
             child: _SocialButton(
               label: 'apple'.tr,
+              leading: SizedBox(
+                width: 24,
+                height: 24,
+                child: SvgPicture.asset(
+                  'assets/welcome/apple.svg', // તમારું SVG path
+                  width: 24,
+                  height: 24,
+                ),
+              ),
               isLoading: _isAppleLoading,
               onTap: _isAnyAuthLoading ? null : _onAppleSignIn,
             ),

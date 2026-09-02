@@ -32,10 +32,10 @@ class SettingsController extends GetxController {
   // Notification toggles (defaults mirror the design).
   final RxBool cookTimerAlerts = true.obs;
   final RxBool mealPlanReminders = true.obs;
-  final RxBool weeklyGroceryReminder = false.obs;
+  final RxBool weeklyGroceryReminder = true.obs;
   final RxBool likesAndComments = true.obs;
-  final RxBool newFollowers = false.obs;
-  final RxBool productNews = false.obs;
+  final RxBool newFollowers = true.obs;
+  final RxBool productNews = true.obs;
 
   String? _uid;
 
@@ -64,10 +64,10 @@ class SettingsController extends GetxController {
     language.value = _box.read(_kLang) ?? 'English';
     cookTimerAlerts.value = _box.read(_kCookTimer) ?? true;
     mealPlanReminders.value = _box.read(_kMealPlan) ?? true;
-    weeklyGroceryReminder.value = _box.read(_kWeeklyGroc) ?? false;
+    weeklyGroceryReminder.value = _box.read(_kWeeklyGroc) ?? true;
     likesAndComments.value = _box.read(_kLikes) ?? true;
-    newFollowers.value = _box.read(_kFollowers) ?? false;
-    productNews.value = _box.read(_kNews) ?? false;
+    newFollowers.value = _box.read(_kFollowers) ?? true;
+    productNews.value = _box.read(_kNews) ?? true;
   }
 
   DocumentReference<Map<String, dynamic>>? get _userRef => _uid == null
@@ -219,30 +219,26 @@ class SettingsController extends GetxController {
   void _writePref(String fireKey, bool value) {
     final ref = _userRef;
     if (ref == null) return;
-    ref.set(
-      {
-        'notificationPrefs': {fireKey: value},
-      },
-      SetOptions(merge: true),
-    ).catchError((_) {});
+    ref
+        .set({
+          'notificationPrefs': {fireKey: value},
+        }, SetOptions(merge: true))
+        .catchError((_) {});
   }
 
   Future<void> _writeAllPrefs() async {
     final ref = _userRef;
     if (ref == null) return;
-    await ref.set(
-      {
-        'notificationPrefs': {
-          _fCookTimer: cookTimerAlerts.value,
-          _fMealPlan: mealPlanReminders.value,
-          _fWeeklyGroc: weeklyGroceryReminder.value,
-          _fLikes: likesAndComments.value,
-          _fFollowers: newFollowers.value,
-          _fNews: productNews.value,
-        },
+    await ref.set({
+      'notificationPrefs': {
+        _fCookTimer: cookTimerAlerts.value,
+        _fMealPlan: mealPlanReminders.value,
+        _fWeeklyGroc: weeklyGroceryReminder.value,
+        _fLikes: likesAndComments.value,
+        _fFollowers: newFollowers.value,
+        _fNews: productNews.value,
       },
-      SetOptions(merge: true),
-    );
+    }, SetOptions(merge: true));
   }
 
   void _syncTags() {

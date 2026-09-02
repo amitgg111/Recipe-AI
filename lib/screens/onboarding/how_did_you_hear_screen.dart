@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:get/get.dart';
@@ -6,7 +7,6 @@ import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/Controllers/onboarding_controller.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
-import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:recipe_ai/widgets/progress_indicator_dots.dart';
 import 'package:recipe_ai/screens/onboarding/recipe_sources_screen.dart';
 
@@ -28,52 +28,52 @@ class _HowDidYouHearScreenState extends State<HowDidYouHearScreen> {
   final List<_SourceOption> _sources = const [
     _SourceOption(
       label: 'Google Search',
-      icon: Icons.search,
-      iconColor: Color(0xFF6B6359),
-      bgColor: Color(0xFFF0EEE9),
+      icon: 'assets/welcome/google.svg',
+      // iconColor: Color(0xFF6B6359),
+      // bgColor: Color(0xFFF0EEE9),
     ),
     _SourceOption(
       label: 'YouTube',
-      icon: Icons.play_arrow,
-      iconColor: Color(0xFFDD3B33),
-      bgColor: Color(0xFFFCE2E0),
+      icon: 'assets/welcome/youtube.svg',
+      // iconColor: Color(0xFFDD3B33),
+      // bgColor: Color(0xFFFCE2E0),
     ),
     _SourceOption(
       label: 'TikTok',
-      icon: Icons.music_note,
-      iconColor: Colors.white,
-      bgColor: Color(0xFF1F1F24),
+      icon: 'assets/welcome/tiktok.svg',
+      // iconColor: Colors.white,
+      // bgColor: Color(0xFF1F1F24),
     ),
     _SourceOption(
       label: 'source_through_a_friend',
-      icon: Icons.people_alt_rounded,
-      iconColor: Color(0xFF5B63D3),
-      bgColor: Color(0xFFE8E9FB),
+      icon: '',
+      // iconColor: Color(0xFF5B63D3),
+      // bgColor: Color(0xFFE8E9FB),
     ),
     _SourceOption(
       label: 'App store',
-      icon: Icons.play_arrow,
-      iconColor: Color(0xFF2E9E5B),
-      bgColor: Color(0xFFE2F0E6),
+      icon: 'assets/welcome/apple.svg',
+      // iconColor: Color(0xFF2E9E5B),
+      // bgColor: Color(0xFFE2F0E6),
     ),
     _SourceOption(
       label: 'Facebook',
-      icon: Icons.chat_bubble_outline,
-      iconColor: Color(0xFF2D6FE0),
-      bgColor: Color(0xFFE4ECFB),
+      icon: 'assets/welcome/facebook.svg',
+      // iconColor: Color(0xFF2D6FE0),
+      // bgColor: Color(0xFFE4ECFB),
     ),
     _SourceOption(
       label: 'Instagram',
-      icon: Icons.camera_alt_outlined,
-      iconColor: Color(0xFFC13584),
-      bgColor: Color(0xFFFCE4EE),
-      isInstagram: true,
+      icon: 'assets/welcome/instagram.svg',
+
+      // iconColor: Color(0xFFC13584),
+      // bgColor: Color(0xFFFCE4EE),
     ),
     _SourceOption(
       label: 'source_other',
-      icon: Icons.more_horiz,
-      iconColor: Color(0xFF8A7E70),
-      bgColor: Color(0xFFEFEAE0),
+      icon: '',
+      // iconColor: Color(0xFF8A7E70),
+      // bgColor: Color(0xFFEFEAE0),
     ),
   ];
 
@@ -175,7 +175,7 @@ class _HowDidYouHearScreenState extends State<HowDidYouHearScreen> {
                                   width: 40,
                                   height: 40,
                                   decoration: BoxDecoration(
-                                    color: source.bgColor,
+                                    // color: source.bgColor,
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Center(
@@ -261,46 +261,47 @@ class _HowDidYouHearBodyState extends State<HowDidYouHearBody> {
     _SourceOption(
       key: 'google_search',
       label: 'Google Search',
-      icon: Icons.search,
-      iconColor: Color(0xFF6B6359),
-      bgColor: Color(0xFFF0EEE9),
+      icon: 'assets/welcome/google.svg',
+      // iconColor: Color(0xFF6B6359),
+      // bgColor: Color(0xFFF0EEE9),
     ),
     _SourceOption(
       key: 'youtube',
       label: 'YouTube',
-      icon: Icons.play_arrow,
-      iconColor: Color(0xFFDD3B33),
-      bgColor: Color(0xFFFCE2E0),
+      icon: 'assets/welcome/youtube.svg',
+      // iconColor: Color(0xFFDD3B33),
+      // bgColor: Color(0xFFFCE2E0),
     ),
 
     _SourceOption(
       key: 'app_store',
       label: 'App store',
-      icon: Icons.play_arrow,
-      iconColor: Color(0xFF2E9E5B),
-      bgColor: Color(0xFFE2F0E6),
+      icon: 'assets/welcome/apple.svg',
+      // iconColor: Color(0xFF2E9E5B),
+      // bgColor: Color(0xFFE2F0E6),
     ),
     _SourceOption(
       key: 'facebook',
       label: 'Facebook',
-      icon: Icons.chat_bubble_outline,
-      iconColor: Color(0xFF2D6FE0),
-      bgColor: Color(0xFFE4ECFB),
+      icon: 'assets/welcome/facebook.svg',
+
+      // iconColor: Color(0xFF2D6FE0),
+      // bgColor: Color(0xFFE4ECFB),
     ),
     _SourceOption(
       key: 'instagram',
       label: 'Instagram',
-      icon: Icons.camera_alt_outlined,
-      iconColor: Color(0xFFC13584),
-      bgColor: Color(0xFFFCE4EE),
-      isInstagram: true,
+      icon: 'assets/welcome/instagram.svg',
+
+      // iconColor: Color(0xFFC13584),
+      // bgColor: Color(0xFFFCE4EE),
     ),
     _SourceOption(
       key: 'other',
       label: 'source_other',
-      icon: Icons.more_horiz,
-      iconColor: Color(0xFF8A7E70),
-      bgColor: Color(0xFFEFEAE0),
+      icon: '',
+      // iconColor: Color(0xFF8A7E70),
+      // bgColor: Color(0xFFEFEAE0),
     ),
   ];
 
@@ -369,7 +370,7 @@ class _HowDidYouHearBodyState extends State<HowDidYouHearBody> {
                               width: 40,
                               height: 40,
                               decoration: BoxDecoration(
-                                color: source.bgColor,
+                                color: AppColors.background,
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Center(child: _SourceLeadingIcon(source)),
@@ -425,100 +426,47 @@ class _HowDidYouHearBodyState extends State<HowDidYouHearBody> {
 class _SourceOption {
   final String key;
   final String label;
-  final IconData icon;
-  final Color iconColor;
-  final Color bgColor;
+  final String icon;
+  // final Color iconColor;
+  // final Color bgColor;
 
   /// Render the custom Instagram glyph instead of [icon] (Material has no
   /// Instagram logo, so it's drawn by [_InstagramGlyphPainter]).
-  final bool isInstagram;
 
   const _SourceOption({
     this.key = '',
     required this.label,
     required this.icon,
-    required this.iconColor,
-    required this.bgColor,
-    this.isInstagram = false,
+
+    // required this.iconColor,
+    // required this.bgColor,
   });
 }
 
-/// Leading icon for a source tile: the custom Instagram glyph when
-/// [option.isInstagram], otherwise the plain Material [Icon].
 class _SourceLeadingIcon extends StatelessWidget {
   final _SourceOption option;
+
   const _SourceLeadingIcon(this.option);
 
   @override
   Widget build(BuildContext context) {
-    if (option.isInstagram) {
-      return SizedBox(
-        width: 20,
-        height: 20,
-        child: CustomPaint(painter: _InstagramGlyphPainter(option.iconColor)),
+    // SVG icon available હોય તો actual SVG image બતાવશે.
+    if (option.icon.isNotEmpty) {
+      return SvgPicture.asset(
+        option.icon,
+        width: 30,
+        height: 30,
+        fit: BoxFit.contain,
       );
     }
-    return OnboardingLineIcon(
-      _registryName(option.icon),
+
+    // Friend / Other માટે fallback icon
+    return Icon(
+      option.key == 'friend'
+          ? Icons.people_outline_rounded
+          : Icons.more_horiz_rounded,
       size: 20,
-      color: option.iconColor,
+      // color: option.iconColor,
     );
   }
-
-  /// Maps the source's Material [IconData] to the matching HTML line-icon
-  /// registry name (1:1 with the design mock's `I` icon set).
-  static String _registryName(IconData icon) {
-    if (icon == Icons.search) return 'search';
-    if (icon == Icons.play_arrow) return 'play';
-    if (icon == Icons.music_note) return 'music';
-    if (icon == Icons.people_alt_rounded) return 'friend';
-    if (icon == Icons.chat_bubble_outline) return 'chat';
-    if (icon == Icons.camera_alt_outlined) return 'camera';
-    if (icon == Icons.more_horiz) return 'dots';
-    return 'dots';
-  }
-}
-
-/// Draws the Instagram mark — a rounded-square camera outline, a centered lens
-/// circle, and a small dot near the top-right — stroked in [color].
-class _InstagramGlyphPainter extends CustomPainter {
-  final Color color;
-  const _InstagramGlyphPainter(this.color);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final s = size.width;
-    final stroke = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = s * 0.1
-      ..strokeCap = StrokeCap.round
-      ..isAntiAlias = true;
-
-    // Rounded-square camera body.
-    final inset = s * 0.11;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(inset, inset, s - inset * 2, s - inset * 2),
-        Radius.circular(s * 0.27),
-      ),
-      stroke,
-    );
-
-    // Lens.
-    canvas.drawCircle(Offset(s * 0.5, s * 0.5), s * 0.22, stroke);
-
-    // Top-right dot (filled).
-    canvas.drawCircle(
-      Offset(s * 0.72, s * 0.28),
-      s * 0.06,
-      Paint()
-        ..color = color
-        ..isAntiAlias = true,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _InstagramGlyphPainter old) =>
-      old.color != color;
 }

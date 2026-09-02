@@ -30,6 +30,14 @@ class _TikTokGuideSheetState extends State<TikTokGuideSheet> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
   Timer? _autoAdvanceTimer;
+  void _pauseAutoAdvance() {
+    _autoAdvanceTimer?.cancel();
+  }
+
+  void _resumeAutoAdvance() {
+    _autoAdvanceTimer?.cancel();
+    _startAutoAdvance();
+  }
 
   @override
   void initState() {
@@ -117,12 +125,17 @@ class _TikTokGuideSheetState extends State<TikTokGuideSheet> {
 
           // Slideshow
           Expanded(
-            child: PageView(
-              controller: _pageController,
-              onPageChanged: (index) {
-                setState(() => _currentPage = index);
-              },
-              children: [_TikTokSlide1(), _TikTokSlide2(), _TikTokSlide3()],
+            child: Listener(
+              onPointerDown: (_) => _pauseAutoAdvance(),
+              onPointerUp: (_) => _resumeAutoAdvance(),
+
+              child: PageView(
+                controller: _pageController,
+                onPageChanged: (index) {
+                  setState(() => _currentPage = index);
+                },
+                children: [_TikTokSlide1(), _TikTokSlide2(), _TikTokSlide3()],
+              ),
             ),
           ),
 

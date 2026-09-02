@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/widgets/social_guide_animation.dart';
@@ -111,17 +112,17 @@ class ImportFromSocialScreen extends StatelessWidget {
                     Row(
                       children: [
                         _socialIconWhiteBg(
-                          'assets/welcome/instragram.png',
+                          'assets/welcome/instagram.svg',
                           const Color(0xFFE1306C),
                         ),
                         const SizedBox(width: 8),
                         _socialIconWhiteBg(
-                          'assets/welcome/tiktok.png',
+                          'assets/welcome/tiktok.svg',
                           Colors.black,
                         ),
                         const SizedBox(width: 8),
                         _socialIconWhiteBg(
-                          'assets/welcome/facebook.png',
+                          'assets/welcome/facebook.svg',
                           const Color(0xFF1877F2),
                         ),
                       ],
@@ -144,7 +145,7 @@ class ImportFromSocialScreen extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
       ),
-      child: Image.asset(icon, height: 18, color: color),
+      child: SvgPicture.asset(icon, height: 18, color: color),
     );
   }
 }
@@ -207,11 +208,11 @@ class _SocialGuideScreenState extends State<SocialGuideScreen> {
   String get _platformIcon {
     switch (widget.platform) {
       case SocialPlatform.instagram:
-        return 'assets/welcome/instragram.png';
+        return 'assets/welcome/instragram.svg';
       case SocialPlatform.tiktok:
-        return 'assets/welcome/tiktok.png';
+        return 'assets/welcome/tiktok.svg';
       case SocialPlatform.facebook:
-        return 'assets/welcome/facebook.png';
+        return 'assets/welcome/facebook.svg';
     }
   }
 

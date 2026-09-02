@@ -25,17 +25,21 @@ class SocialGuideAnimation extends StatefulWidget {
 class _SocialGuideAnimationState extends State<SocialGuideAnimation>
     with SingleTickerProviderStateMixin {
   late final AnimationController _c;
-
+  bool _dragging = false;
   static const _accent = Color(0xFFF2623E); // highlight ring
   static const _arrow = Color(0xFF3B7DE0); // arrow + label
   static const _foodUrl =
       'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80&auto=format&fit=crop';
-
   @override
   void initState() {
     super.initState();
-    _c = AnimationController(vsync: this, duration: const Duration(seconds: 9))
-      ..repeat();
+    _c = AnimationController(vsync: this, duration: const Duration(seconds: 9));
+    _c.addStatusListener((status) {
+      if (status == AnimationStatus.completed && !_dragging) {
+        _c.forward(from: 0);
+      }
+    });
+    _c.forward();
   }
 
   @override
@@ -48,9 +52,9 @@ class _SocialGuideAnimationState extends State<SocialGuideAnimation>
   // crossfade (each slide owns 1/3 of the timeline, fading at its edges).
   double _slideOpacity(int i) {
     double d = _c.value - i / 3.0;
-    d -= d.floorToDouble(); // wrap into [0,1)
+    d -= d.floorToDouble();
     if (d >= 1 / 3) return 0;
-    final local = d * 3; // 0..1 within this slide's window
+    final local = d * 3;
     const fade = 0.14;
     if (local < fade) return local / fade;
     if (local > 1 - fade) return (1 - local) / fade;
@@ -58,22 +62,76 @@ class _SocialGuideAnimationState extends State<SocialGuideAnimation>
   }
 
   int get _activeDot => (_c.value * 3).floor() % 3;
+  void _onDragStart(DragStartDetails details) {
+    _dragging = true;
+    _c.stop();
+  }
+
+  void _onDragUpdate(DragUpdateDetails details, double width) {
+    if (width <= 0) return;
+    final delta = -details.primaryDelta! / width;
+    double newValue = _c.value + delta;
+    newValue = newValue % 1.0;
+    if (newValue < 0) newValue += 1.0;
+    setState(() => _c.value = newValue);
+  }
+
+  void _onDragEnd(DragEndDetails details) {
+    final current = _c.value;
+    // fling support: strong swipe jumps a full slide even mid-crossfade
+    final velocity = details.primaryVelocity ?? 0;
+    int nearestSlide = (current * 3).round();
+    if (velocity.abs() > 300) {
+      nearestSlide += velocity < 0 ? 1 : -1;
+    }
+    nearestSlide = nearestSlide % 3;
+    if (nearestSlide < 0) nearestSlide += 3;
+    final target = nearestSlide / 3.0;
+
+    double diff = target - current;
+    if (diff > 0.5) diff -= 1.0;
+    if (diff < -0.5) diff += 1.0;
+    final end = current + diff;
+
+    _c
+        .animateTo(
+          end,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+        )
+        .whenComplete(() {
+          _dragging = false;
+          _c.value = end % 1.0;
+          if (mounted) _c.forward(from: _c.value);
+        });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         Expanded(
-          child: AnimatedBuilder(
-            animation: _c,
-            builder: (context, _) {
-              return Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Opacity(opacity: _slideOpacity(0), child: _slide0()),
-                  Opacity(opacity: _slideOpacity(1), child: _slide1()),
-                  Opacity(opacity: _slideOpacity(2), child: _slide2()),
-                ],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onHorizontalDragStart: _onDragStart,
+                onHorizontalDragUpdate: (d) =>
+                    _onDragUpdate(d, constraints.maxWidth),
+                onHorizontalDragEnd: _onDragEnd,
+                child: AnimatedBuilder(
+                  animation: _c,
+                  builder: (context, _) {
+                    return Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Opacity(opacity: _slideOpacity(0), child: _slide0()),
+                        Opacity(opacity: _slideOpacity(1), child: _slide1()),
+                        Opacity(opacity: _slideOpacity(2), child: _slide2()),
+                      ],
+                    );
+                  },
+                ),
               );
             },
           ),

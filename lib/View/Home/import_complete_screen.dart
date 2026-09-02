@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 
 import 'package:recipe_ai/View/Home/home_screen.dart';
 import 'package:shimmer/shimmer.dart';
@@ -384,7 +385,7 @@ class _ImportCompleteScreenState extends State<ImportCompleteScreen> {
     if (info.imageAsset != null) {
       leading = ClipRRect(
         borderRadius: BorderRadius.circular(4),
-        child: Image.asset(
+        child: SvgPicture.asset(
           info.imageAsset!,
           width: 16,
           height: 16,
@@ -1041,7 +1042,7 @@ class _ImportCompleteScreenState extends State<ImportCompleteScreen> {
         pill: 'source_pill_from_instagram'.trParams({'suffix': suffix}),
         bg: AppColors.instagramBg,
         fg: AppColors.instagram,
-        imageAsset: 'assets/welcome/instragram.png',
+        imageAsset: 'assets/welcome/instagram.svg',
       );
     }
     if (s.contains('facebook')) {
@@ -1050,7 +1051,7 @@ class _ImportCompleteScreenState extends State<ImportCompleteScreen> {
         pill: 'source_pill_from_facebook'.trParams({'suffix': suffix}),
         bg: AppColors.blueBg,
         fg: AppColors.facebook,
-        imageAsset: 'assets/welcome/facebook.png',
+        imageAsset: 'assets/welcome/facebook.svg',
       );
     }
     if (s.contains('tiktok')) {
@@ -1059,7 +1060,7 @@ class _ImportCompleteScreenState extends State<ImportCompleteScreen> {
         pill: 'source_pill_from_tiktok'.trParams({'suffix': suffix}),
         bg: AppColors.tiktokBg,
         fg: AppColors.tiktok,
-        imageAsset: 'assets/welcome/tiktok.png',
+        imageAsset: 'assets/welcome/tiktok.svg',
       );
     }
     // Text / name → "From text to generate" (never for real URLs, which must

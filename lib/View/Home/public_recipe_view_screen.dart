@@ -1,5 +1,9 @@
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:recipe_ai/Controllers/nutrition_controller.dart';
+import 'package:recipe_ai/Service/subscription_service.dart';
+import 'package:recipe_ai/View/Home/nutrition/nutrition_screen.dart';
+import 'package:recipe_ai/widgets/nutrition_locked_card.dart';
+import 'package:recipe_ai/widgets/nutrition_preview_card.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -25,6 +29,7 @@ import 'package:recipe_ai/Helper/unit_converter.dart';
 import 'package:recipe_ai/Helper/instruction_scaler.dart';
 import 'package:recipe_ai/Controllers/settings_controller.dart';
 import 'package:recipe_ai/widgets/custom_snackbar.dart';
+import 'package:recipe_ai/widgets/premium_lock_overlay.dart';
 import 'package:share_plus/share_plus.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -46,7 +51,7 @@ class _P {
   static const green = Color(0xFF1F7A5E);
   static const goldBg = Color(0xFFFBF1E4);
   static const noteBg = Color(0xFFFCE3DB);
-  static const purple = Color(0xFF8B5CF6);
+
   static const star = Color(0xFFF2A24C);
 
   static const double outerPad = 22.0;
@@ -412,8 +417,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                         RepaintBoundary(child: _buildRateCard()),
                         const SizedBox(height: _P.gap),
                         RepaintBoundary(child: _buildCommentsCard()),
-                        const SizedBox(height: _P.gap),
-                        _buildSaveButton(),
+                        const SizedBox(height: _P.gap + 30),
                       ],
                     ),
                   ),
@@ -421,6 +425,7 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
               ],
             ),
           ),
+
           Positioned(
             top: topPad + 8,
             left: 18,
@@ -477,6 +482,12 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
                 ),
               ),
             ),
+          ),
+          Positioned(
+            bottom: 22,
+            left: 18,
+            right: 18,
+            child: _buildSaveButton(),
           ),
         ],
       ),
@@ -1132,168 +1143,48 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
     );
   }
 
-  // ── Nutrition (Plus, visual) ────────────────────────────────────────────────
+  // ── Nutrition (Plus) — same behavior as RecipeDetailScreen ───────────────
   Widget _buildNutritionCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(_P.cardPad),
-      decoration: _cardDeco(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'nutrition'.tr.toUpperCase(),
-            style: _f(13, FontWeight.w800, _P.primary, ls: 0.6),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            'per_1_serving'.tr,
-            style: _f(12.5, FontWeight.w500, const Color(0xFF9A938A)),
-          ),
-          const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFBF1C9),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const OnboardingLineIcon('crown', size: 18, color: _P.purple),
-                const SizedBox(width: 11),
-                Expanded(
-                  child: Text.rich(
-                    TextSpan(
-                      style: _f(
-                        13.5,
-                        FontWeight.w500,
-                        _P.textBodyDark,
-                        h: 1.45,
-                      ),
-                      children: [
-                        TextSpan(text: 'this_is_plus_feature'.tr),
-                        TextSpan(
-                          text: 'subscribe_now'.tr,
-                          style: _f(13.5, FontWeight.w800, _P.purple),
-                        ),
-                        TextSpan(text: 'unlock_nutrition_calculator'.tr),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 18),
-          // Static placeholder visual (fixed 520 kcal + gauge) — blurred and
-          // wrapped in RepaintBoundary since ImageFilter.blur is one of the
-          // more expensive things Flutter can repaint; isolating it here
-          // means it never repaints just because a sibling card's
-          // translation landed.
-          RepaintBoundary(
-            child: ImageFiltered(
-              imageFilter: ui.ImageFilter.blur(sigmaX: 3, sigmaY: 3),
-              child: Opacity(
-                opacity: 0.85,
-                child: Row(
-                  children: [
-                    Container(
-                      width: 104,
-                      height: 104,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: SweepGradient(
-                          colors: [
-                            Color(0xFFF2A24C),
-                            Color(0xFFF2A24C),
-                            Color(0xFFF08FB0),
-                            Color(0xFFF08FB0),
-                            Color(0xFF7FD0A8),
-                            Color(0xFF7FD0A8),
-                          ],
-                          stops: [0.0, 0.46, 0.46, 0.72, 0.72, 1.0],
-                        ),
-                      ),
-                      child: Center(
-                        child: Container(
-                          width: 74,
-                          height: 74,
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: Text(
-                              '520',
-                              style: _f(
-                                18,
-                                FontWeight.w800,
-                                const Color(0xFF9A938A),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 22),
-                    Expanded(
-                      child: Column(
-                        children: [
-                          _nutriBar(const Color(0xFFF08FB0)),
-                          const SizedBox(height: 14),
-                          _nutriBar(const Color(0xFFF2A24C)),
-                          const SizedBox(height: 14),
-                          _nutriBar(const Color(0xFF7FD0A8)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+    // Nutrition is a Plus feature. Plus members see the real preview + can
+    // open the full flow; free users see the locked card (yellow "Subscribe
+    // now" banner + blurred donut/macros) — tapping opens the upgrade dialog.
+    // Values are estimated from the recipe ingredients by NutritionEstimator,
+    // using the live serving count (_servings) so the stepper recalculates
+    // without reopening. Reacts live to the plan via Obx.
+    //
+    // Estimate from the ENGLISH original: the food database is English-keyed.
+    // Public recipes are already stored in canonical English, so we pass the
+    // RecipeModel built from this DiscoverRecipe (see _toRecipeModel).
+    final n = NutritionController.to.calculateNutrition(
+      _toRecipeModel(),
+      servingsOverride: _servings,
     );
-  }
-
-  Widget _nutriBar(Color dot) {
-    return Row(
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(
-            color: dot,
-            borderRadius: BorderRadius.circular(3),
-          ),
-        ),
-        const SizedBox(width: 9),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 54,
-              height: 8,
-              decoration: BoxDecoration(
-                color: const Color(0xFFE2D8C7),
-                borderRadius: BorderRadius.circular(4),
-              ),
+    if (n.isEmpty) return const SizedBox.shrink();
+    return Obx(() {
+      final isPlus = SubscriptionService.instance.isPlusListenable.value;
+      if (!isPlus) {
+        return NutritionLockedCard(
+          nutrition: n,
+          onTap: () =>
+              showUpgradeDialog(context, feature: 'nutrition_calculator'.tr),
+        );
+      }
+      return NutritionPreviewCard(
+        nutrition: n,
+        servings: n.servings,
+        onViewBreakdown: () {
+          Get.to(
+            () => NutritionScreen(
+              recipeName: _display(recipe.filterTitle),
+              nutrition: n,
             ),
-            const SizedBox(height: 4),
-            Container(
-              width: 34,
-              height: 7,
-              decoration: BoxDecoration(
-                color: _P.border,
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
+            transition: Transition.fadeIn,
+            duration: const Duration(milliseconds: 320),
+            curve: Curves.easeOutCubic,
+          );
+        },
+      );
+    });
   }
 
   // ── Rate ────────────────────────────────────────────────────────────────────

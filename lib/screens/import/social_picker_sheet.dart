@@ -70,8 +70,8 @@ class SocialPickerSheet extends StatelessWidget {
                 // Instagram — gradient tile + white camera glyph.
                 _SocialOption(
                   icon: _tile(
-                    child: Image.asset(
-                      'assets/welcome/instragram.png',
+                    child: SvgPicture.asset(
+                      'assets/welcome/instagram.svg',
                       height: 48,
                       width: 48,
                     ),
@@ -95,8 +95,8 @@ class SocialPickerSheet extends StatelessWidget {
                 // TikTok — dark tile + white music glyph.
                 _SocialOption(
                   icon: _tile(
-                    child: Image.asset(
-                      'assets/welcome/tiktok.png',
+                    child: SvgPicture.asset(
+                      'assets/welcome/tiktok.svg',
                       height: 48,
                       width: 48,
                     ),
@@ -112,8 +112,8 @@ class SocialPickerSheet extends StatelessWidget {
                 _SocialOption(
                   icon: _tile(
                     // child: _svg(_kChat, size: 22)
-                    child: Image.asset(
-                      'assets/welcome/facebook.png',
+                    child: SvgPicture.asset(
+                      'assets/welcome/facebook.svg',
                       height: 48,
                       width: 48,
                     ),
