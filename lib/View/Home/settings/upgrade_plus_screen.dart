@@ -72,9 +72,6 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
       (_monthly ? _monthlyPkg : _yearlyPkg)?.storeProduct.introductoryPrice !=
       null;
 
-  bool get _yearlyHasTrial =>
-      _yearlyPkg == null || _yearlyPkg!.storeProduct.introductoryPrice != null;
-
   @override
   void initState() {
     super.initState();
