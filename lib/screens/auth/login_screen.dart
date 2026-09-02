@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 
 import 'package:recipe_ai/Service/language_service.dart';
 import 'package:recipe_ai/Service/remote_config_service.dart';
@@ -84,6 +85,8 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
+    // Analytics
+    AnalyticsService.instance.trackScreen("LoginScreen");
     _tab = widget.initialTab;
     for (final f in [
       _loginEmailFocus,
@@ -189,7 +192,9 @@ class _LoginScreenState extends State<LoginScreen> {
         email: _loginEmailController.text,
         password: _loginPasswordController.text,
       );
-
+      // ✅ Analytics - Login Success
+      await AnalyticsService.instance.trackLogin("email");
+      await AnalyticsService.instance.setUserId(AuthService.currentUser!.uid);
       await _routeAfterAuth();
     } catch (e) {
       if (!mounted) return;
@@ -234,7 +239,9 @@ class _LoginScreenState extends State<LoginScreen> {
         email: _signupEmailController.text,
         password: _signupPasswordController.text,
       );
-
+      // ✅ Analytics - Sign Up Success
+      await AnalyticsService.instance.trackSignUp("email");
+      await AnalyticsService.instance.setUserId(AuthService.currentUser!.uid);
       if (!mounted) return;
 
       CustomSnackbar.show(
@@ -271,7 +278,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
       // User cancelled Google account picker.
       if (userCred == null) return;
-
+      // ✅ Analytics
+      await AnalyticsService.instance.trackLogin("google");
+      await AnalyticsService.instance.setUserId(userCred.user!.uid);
       await _routeAfterAuth();
     } catch (e) {
       if (!mounted) return;
@@ -301,6 +310,9 @@ class _LoginScreenState extends State<LoginScreen> {
       if (result.cancelled) return;
 
       if (result.success) {
+        // ✅ Analytics
+        await AnalyticsService.instance.trackLogin("apple");
+        await AnalyticsService.instance.setUserId(result.user!.uid);
         await _routeAfterAuth();
       } else {
         if (!mounted) return;
@@ -635,7 +647,13 @@ class _LoginScreenState extends State<LoginScreen> {
           label: 'login'.tr,
           isLoading: _isLoginLoading,
           enabled: _isLoginValid && !_isAnyAuthLoading,
-          onTap: _onLogin,
+          onTap: () {
+            AnalyticsService.instance.trackButtonTap(
+              "Login Button",
+              screenName: "LoginScreen",
+            );
+            _onLogin();
+          },
         ),
         const SizedBox(height: 14),
         const _OrDivider(),
@@ -782,7 +800,13 @@ class _LoginScreenState extends State<LoginScreen> {
           label: 'create_account'.tr,
           isLoading: _isSignupLoading,
           enabled: _isSignupValid && _agreedToTerms && !_isAnyAuthLoading,
-          onTap: _onCreateAccount,
+          onTap: () {
+            AnalyticsService.instance.trackButtonTap(
+              "Create Account Button",
+              screenName: "LoginScreen",
+            );
+            _onCreateAccount();
+          },
         ),
 
         const SizedBox(height: 14),

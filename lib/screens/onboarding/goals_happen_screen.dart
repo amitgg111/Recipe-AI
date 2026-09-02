@@ -7,6 +7,7 @@ import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/widgets/progress_indicator_dots.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:recipe_ai/screens/onboarding/when_to_cook_screen.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 
 class GoalsHappenScreen extends StatefulWidget {
   static const String routeName = '/onboarding/goals-happen';
@@ -18,6 +19,12 @@ class GoalsHappenScreen extends StatefulWidget {
 }
 
 class _GoalsHappenScreenState extends State<GoalsHappenScreen> {
+  @override
+  void initState() {
+    super.initState();
+    AnalyticsService.instance.trackScreen('GoalsHappenScreen');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

@@ -14,7 +14,8 @@ import 'package:recipe_ai/Helper/recipe_publish_policy.dart';
 
 import '../Controllers/home_controller.dart';
 import '../Model/recipe_section_model.dart';
-import '../Service/auth_service.dart';
+import 'package:recipe_ai/Service/auth_service.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 
 /// Result of [RecipeEditorController._translateFieldsToEnglish]: every
 /// user-facing text field of the recipe, already translated to English (or
@@ -929,6 +930,11 @@ class RecipeEditorController extends GetxController {
         });
         Get.back();
       }
+
+      await AnalyticsService.instance.trackEvent(
+        isEdit ? 'edit_recipe_success' : 'create_recipe_success',
+        parameters: {'title': titleController.text},
+      );
 
       CustomSnackbar.show(
         title: 'Success',

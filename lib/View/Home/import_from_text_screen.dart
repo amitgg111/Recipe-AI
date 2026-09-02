@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/Service/import_with_image_api_calling_service.dart';
 import 'package:recipe_ai/widgets/custom_snackbar.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
@@ -57,6 +58,17 @@ class _GenerateRecipeScreenState extends State<GenerateRecipeScreen> {
     // Clear the field once the recipe was generated & the review screen shown,
     // so returning here starts fresh.
     if (ok) recipeController.clear();
+
+    AnalyticsService.instance.trackButtonTap(
+      "Generate Recipe From Text",
+      screenName: "GenerateRecipeScreen",
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    AnalyticsService.instance.trackScreen("GenerateRecipeScreen/ByName");
   }
 
   @override

@@ -13,6 +13,7 @@ import 'package:recipe_ai/Service/local_notification_service.dart';
 import 'package:recipe_ai/Service/revenuecat_service.dart';
 import 'package:recipe_ai/widgets/custom_snackbar.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 
 class TrialChooserScreen extends StatefulWidget {
   const TrialChooserScreen({super.key});
@@ -33,6 +34,7 @@ class _TrialChooserScreenState extends State<TrialChooserScreen> {
   @override
   void initState() {
     super.initState();
+    AnalyticsService.instance.trackScreen('TrialChooserScreen');
     // Make sure offerings are loading/loaded so the yearly card + button
     // reflect real store data as soon as possible.
     _rc.fetchOfferings();

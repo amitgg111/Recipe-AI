@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:recipe_ai/View/Auth/forget_password_screen.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/widgets/custom_snackbar.dart';
@@ -29,6 +30,7 @@ class _AuthScreenState extends State<AuthScreen>
   @override
   void initState() {
     super.initState();
+    AnalyticsService.instance.trackScreen('AuthScreen');
     _fadeCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 260),
@@ -47,6 +49,10 @@ class _AuthScreenState extends State<AuthScreen>
   }
 
   void _toggleMode() {
+    AnalyticsService.instance.trackButtonTap(
+      isLogin ? 'switch_to_signup' : 'switch_to_login',
+      screenName: 'AuthScreen',
+    );
     _fadeCtrl.reverse().then((_) {
       setState(() => isLogin = !isLogin);
       _fadeCtrl.forward();
@@ -54,6 +60,10 @@ class _AuthScreenState extends State<AuthScreen>
   }
 
   Future<void> _submit() async {
+    AnalyticsService.instance.trackButtonTap(
+      isLogin ? 'email_login_submit' : 'email_signup_submit',
+      screenName: 'AuthScreen',
+    );
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
     final name = nameController.text.trim();
@@ -94,6 +104,10 @@ class _AuthScreenState extends State<AuthScreen>
   }
 
   Future<void> _googleSignIn() async {
+    AnalyticsService.instance.trackButtonTap(
+      'google_sign_in',
+      screenName: 'AuthScreen',
+    );
     setState(() => isLoading = true);
     try {
       final userCred = await AuthService.signInWithGoogle();

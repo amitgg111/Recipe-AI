@@ -10,6 +10,7 @@ import 'package:recipe_ai/widgets/app_logo.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/screens/onboarding/age_screen.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 
 class AwesomeImportScreen extends StatefulWidget {
   static const String routeName = '/onboarding/awesome-import';
@@ -49,6 +50,7 @@ class _AwesomeImportScreenState extends State<AwesomeImportScreen>
   @override
   void initState() {
     super.initState();
+    AnalyticsService.instance.trackScreen('AwesomeImportScreen');
 
     // Ring pulse: linear, constant motion, started once and never reset.
     _ringPulseController = AnimationController(

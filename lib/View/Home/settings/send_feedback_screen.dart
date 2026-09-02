@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/View/Home/settings/settings_common.dart';
 import 'package:recipe_ai/widgets/custom_snackbar.dart';
@@ -32,7 +33,11 @@ class _SendFeedbackScreenState extends State<SendFeedbackScreen> {
       source: ImageSource.gallery,
       imageQuality: 80,
     );
-    if (file != null && mounted) setState(() => _shot = file);
+    if (file != null && mounted) {
+      setState(() => _shot = file);
+
+      AnalyticsService.instance.trackEvent("feedback_screenshot_added");
+    }
   }
 
   // [emoji, storage value (never localize — written to Firestore), label key]
@@ -99,7 +104,15 @@ class _SendFeedbackScreenState extends State<SendFeedbackScreen> {
         'screenshotUrl': screenshotUrl,
         'appVersion': '1.0.0',
         'createdAt': FieldValue.serverTimestamp(),
-      });
+      }); // ✅ Analytics
+      AnalyticsService.instance.trackEvent(
+        "feedback_submitted",
+        parameters: {
+          "type": _types[_type][1],
+          "has_screenshot": screenshotUrl != null,
+          "message_length": text.length,
+        },
+      );
       if (!mounted) return;
       setState(() => _submitting = false);
       // A clear confirmation "moment": an animated success dialog, then pop
@@ -200,6 +213,12 @@ class _SendFeedbackScreenState extends State<SendFeedbackScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    AnalyticsService.instance.trackScreen("SendFeedbackScreen");
   }
 
   @override
@@ -446,7 +465,16 @@ class _SendFeedbackScreenState extends State<SendFeedbackScreen> {
   Widget _typeChip(int i) {
     final active = _type == i;
     return GestureDetector(
-      onTap: () => setState(() => _type = i),
+      onTap: () {
+        setState(() => _type = i);
+
+        AnalyticsService.instance.trackEvent(
+          "feedback_type_selected",
+          parameters: {
+            "type": _types[i][1], // Idea / Bug / Praise
+          },
+        );
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         decoration: BoxDecoration(

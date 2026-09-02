@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_spacing.dart';
@@ -225,6 +226,11 @@ class _AddCookbookSheetState extends State<AddCookbookSheet> {
                             return;
                           }
                           Navigator.pop(context, _controller.text.trim());
+
+                          AnalyticsService.instance.trackButtonTap(
+                            "Create New Cookbook",
+                            screenName: "AddCookbookSheet",
+                          );
                         },
                 ),
                 SizedBox(height: MediaQuery.of(context).padding.bottom + 8),

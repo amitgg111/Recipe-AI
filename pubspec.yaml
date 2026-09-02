@@ -88,6 +88,9 @@ dependencies:
   vector_math: ^2.1.4
   firebase_remote_config: ^6.5.6
   connectivity_plus: ^7.3.1
+  firebase_crashlytics: ^5.3.0
+  firebase_analytics: ^12.5.0
+  mixpanel_flutter: ^2.13.0
 
 
 

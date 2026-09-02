@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/Service/local_notification_service.dart';
 import 'package:recipe_ai/Service/notification_service.dart';
 import 'package:recipe_ai/Helper/unit_converter.dart';
@@ -147,6 +148,8 @@ class SettingsController extends GetxController {
   void setUnits(String value) {
     units.value = value;
     _box.write(_kUnits, value);
+    AnalyticsService.instance.setUserProperty(name: 'units', value: value);
+    AnalyticsService.instance.trackEvent('change_units', parameters: {'units': value});
   }
 
   /// The active measurement system, derived reactively from [units].
@@ -158,6 +161,8 @@ class SettingsController extends GetxController {
   void setLanguage(String value) {
     language.value = value;
     _box.write(_kLang, value);
+    AnalyticsService.instance.setUserProperty(name: 'language', value: value);
+    AnalyticsService.instance.trackEvent('change_language', parameters: {'language': value});
   }
 
   // ─────────────────────────── notification setters ─────────────────────────

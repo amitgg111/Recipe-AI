@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/widgets/custom_snackbar.dart';
 import 'package:recipe_ai/utils/validators.dart';
@@ -31,6 +32,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   void initState() {
     super.initState();
     _emailFocus.addListener(() => setState(() {}));
+
+    AnalyticsService.instance.trackScreen("ForgotPasswordScreen");
   }
 
   @override
@@ -60,7 +63,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       setState(() => _emailError = emailErr);
       return;
     }
-
+    // Button tap
+    AnalyticsService.instance.trackButtonTap(
+      "Send Reset Link",
+      screenName: "ForgotPasswordScreen",
+    );
     setState(() {
       _isLoading = true;
       _emailError = null;
@@ -80,6 +87,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       }
       await AuthService.forgotPassword(email);
       if (!mounted) return;
+
+      // Success
+      AnalyticsService.instance.trackEvent(
+        "password_reset_requested",
+        parameters: {"method": "email"},
+      );
       CustomSnackbar.show(
         title: 'email_sent'.tr,
         message: 'check_inbox_reset_link'.tr,
@@ -109,6 +122,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   void _onBackToLogin() {
+    AnalyticsService.instance.trackButtonTap(
+      "Back to Log In",
+      screenName: "ForgotPasswordScreen",
+    );
+
     Navigator.of(
       context,
     ).pushReplacement(MaterialPageRoute(builder: (_) => const LoginScreen()));

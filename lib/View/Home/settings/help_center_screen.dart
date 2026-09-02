@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/View/Home/settings/send_feedback_screen.dart';
 import 'package:recipe_ai/View/Home/settings/settings_common.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
@@ -29,6 +30,11 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
     ['faq_q_cancel_plus', 'faq_a_cancel_plus'],
     ['faq_q_make_public', 'faq_a_make_public'],
   ];
+  @override
+  void initState() {
+    AnalyticsService.instance.trackScreen("HelpCenterScreen");
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/Controllers/home_controller.dart';
@@ -55,6 +56,8 @@ class _ProfileViewScreenState extends State<ProfileViewScreen>
         });
       });
     }
+
+    AnalyticsService.instance.trackScreen("ProfileScreen");
   }
 
   @override
@@ -118,10 +121,13 @@ class _ProfileViewScreenState extends State<ProfileViewScreen>
                 trailing: SettingsUi.squareIconButton(
                   icon: Icons.edit_outlined,
                   onTap: () async {
+                    AnalyticsService.instance.trackButtonTap(
+                      "Edit Profile",
+                      screenName: "ProfileScreen",
+                    );
+
                     await Get.to(() => const EditProfileScreen());
-
                     if (!mounted) return;
-
                     await _refreshProfile();
                   },
                 ),
@@ -215,8 +221,14 @@ class _ProfileViewScreenState extends State<ProfileViewScreen>
               Padding(
                 padding: const EdgeInsets.only(top: 18),
                 child: GestureDetector(
-                  onTap: () =>
-                      Get.to(() => const MyRecipesScreen(favoritesOnly: true)),
+                  onTap: () {
+                    AnalyticsService.instance.trackEvent(
+                      "favorites_opened",
+                      parameters: {"source": "profile"},
+                    );
+
+                    Get.to(() => const MyRecipesScreen(favoritesOnly: true));
+                  },
                   behavior: HitTestBehavior.opaque,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -294,7 +306,14 @@ class _ProfileViewScreenState extends State<ProfileViewScreen>
                     ),
                     if (recipes.isNotEmpty)
                       GestureDetector(
-                        onTap: () => Get.to(() => const MyRecipesScreen()),
+                        onTap: () {
+                          AnalyticsService.instance.trackEvent(
+                            "my_recipes_opened",
+                            parameters: {"source": "profile"},
+                          );
+
+                          Get.to(() => const MyRecipesScreen());
+                        },
                         child: Text(
                           'see_all'.tr,
                           style: const TextStyle(
@@ -334,8 +353,13 @@ class _ProfileViewScreenState extends State<ProfileViewScreen>
   Widget _statsCard(int recipeCount) {
     final uid = AuthService.currentUser?.uid;
     final name = FirebaseAuth.instance.currentUser?.displayName ?? 'profile'.tr;
+
     void openList(bool followers) {
       if (uid == null) return;
+      AnalyticsService.instance.trackEvent(
+        followers ? "followers_opened" : "following_opened",
+        parameters: {"source": "profile"},
+      );
       Get.to(
         () => FollowListScreen(
           userId: uid,
@@ -477,7 +501,14 @@ class _ProfileViewScreenState extends State<ProfileViewScreen>
     return Column(
       children: [
         GestureDetector(
-          onTap: () => Get.to(() => RecipeDetailScreen(recipe: recipe)),
+          onTap: () {
+            AnalyticsService.instance.trackEvent(
+              "recipe_opened",
+              parameters: {"recipe_id": recipe.id, "source": "profile"},
+            );
+
+            Get.to(() => RecipeDetailScreen(recipe: recipe));
+          },
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 11),
             child: Row(

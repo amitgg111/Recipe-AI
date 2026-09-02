@@ -605,6 +605,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/Service/remote_config_service.dart';
 
 class SubscriptionService extends GetxController {
@@ -1094,7 +1095,11 @@ class SubscriptionService extends GetxController {
       });
 
       if (success) {
-        print('[Subscription] Credit consumed.');
+        print('[Subscription] Credit consumed.'); // Analytics
+        AnalyticsService.instance.trackCreditSpent(
+          amount: 1,
+          reason: "feature_usage", // અથવા specific reason પાસ કરો
+        );
       } else {
         print('[Subscription] No free credits left.');
       }

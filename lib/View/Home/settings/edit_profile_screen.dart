@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/Controllers/profile_controller.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/View/Home/settings/settings_common.dart';
 import 'package:recipe_ai/widgets/custom_snackbar.dart';
@@ -37,9 +38,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _contactController = TextEditingController();
     _bioController = TextEditingController();
     _loadUserDoc();
+    AnalyticsService.instance.trackScreen("EditProfileScreen");
   }
 
   Future<void> _save() async {
+    // Button tap
+    AnalyticsService.instance.trackButtonTap(
+      "Save Profile",
+      screenName: "EditProfileScreen",
+    );
     setState(() {
       _nameError = ValidationHelper.name(_nameController.text);
 
@@ -95,7 +102,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       await _profile.loadProfile();
 
       if (!mounted) return;
-
+      // ✅ Success event
+      AnalyticsService.instance.trackEvent(
+        "profile_updated",
+        parameters: {
+          "has_contact": _contactController.text.trim().isNotEmpty,
+          "has_bio": _bioController.text.trim().isNotEmpty,
+        },
+      );
       CustomSnackbar.show(
         title: 'Success',
         message: 'Profile updated successfully',
@@ -212,7 +226,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             right: -2,
                             bottom: -2,
                             child: GestureDetector(
-                              onTap: _profile.pickImage,
+                              onTap: () {
+                                AnalyticsService.instance.trackButtonTap(
+                                  "Change Photo",
+                                  screenName: "EditProfileScreen",
+                                );
+                                _profile.pickImage();
+                              },
                               child: Container(
                                 width: 32,
                                 height: 32,

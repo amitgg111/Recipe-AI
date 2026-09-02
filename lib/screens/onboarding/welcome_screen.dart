@@ -7,6 +7,7 @@ import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/app_logo.dart';
 
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // NOTE: this screen uses a real photo asset instead of the old pot
@@ -47,6 +48,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   @override
   void initState() {
     super.initState();
+    AnalyticsService.instance.trackScreen('WelcomeScreen');
 
     // Edge-to-edge with a transparent status bar so the hero photo runs
     // up behind it, matching the design.

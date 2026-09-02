@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/Controllers/ai_assistant_controller.dart';
 import 'package:recipe_ai/Controllers/home_controller.dart';
 import 'package:recipe_ai/Service/ai_translation_service.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:recipe_ai/widgets/tr_text.dart';
 
@@ -101,7 +102,13 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   Future<void> _startSwap() async {
     final line = await _pickIngredient();
     if (line == null) return;
+
     final name = _ctrl.nameOf(line);
+
+    AnalyticsService.instance.trackButtonTap(
+      "Ingredient Swap",
+      screenName: "AiAssistantScreen",
+    );
     setState(() {
       _messages.add(
         _Msg(
@@ -136,6 +143,11 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   Future<void> _startScale() async {
     final target = await _pickServings();
     if (target == null) return;
+    AnalyticsService.instance.trackButtonTap(
+      "Scale Recipe",
+      screenName: "AiAssistantScreen",
+    );
+
     final preview = _ctrl.buildScalePreview(recipe, target);
     setState(() {
       _messages.add(
@@ -250,7 +262,14 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
               ),
               const SizedBox(height: 24),
               GestureDetector(
-                onTap: () => Navigator.pop(ctx, value),
+                onTap: () {
+                  AnalyticsService.instance.trackButtonTap(
+                    "Scale Recipe",
+                    screenName: "AiAssistantScreen",
+                  );
+
+                  Navigator.pop(ctx, value);
+                },
                 behavior: HitTestBehavior.opaque,
                 child: Container(
                   height: 52,
@@ -298,6 +317,10 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     final q = _input.text.trim();
     if (q.isEmpty || _busy) return;
     _input.clear();
+    AnalyticsService.instance.trackButtonTap(
+      "Send Message",
+      screenName: "AiAssistantScreen",
+    );
     // Detect a typed "scale to N" request → deterministic scale.
     final m = RegExp(
       r'(?:scale|make).*?(\d+)\s*(?:servings|people|portions)?',
@@ -334,12 +357,40 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   }
 
   Future<void> _applySwap(_SwapData d, _Msg msg) async {
+    AnalyticsService.instance.trackButtonTap(
+      "Apply Swap",
+      screenName: "AiAssistantScreen",
+    );
+
+    AnalyticsService.instance.trackEvent(
+      "ai_swap_applied",
+      parameters: {
+        "recipe_id": recipe.id,
+        "ingredient": d.ingredientLine,
+        "replacement": d.options[d.selected].replacement,
+        "vegan": d.options[d.selected].vegan,
+      },
+    );
     setState(() => msg.applied = true);
     await _ctrl.applySwap(recipe, d.ingredientLine, d.options[d.selected]);
     if (mounted) Get.back<void>(); // return to detail → banner shows
   }
 
   Future<void> _applyScale(ScalePreview p, _Msg msg) async {
+    AnalyticsService.instance.trackButtonTap(
+      "Update Recipe",
+      screenName: "AiAssistantScreen",
+    );
+
+    AnalyticsService.instance.trackEvent(
+      "ai_recipe_scaled",
+      parameters: {
+        "recipe_id": recipe.id,
+        "from_servings": p.fromServings,
+        "to_servings": p.toServings,
+      },
+    );
+
     setState(() => msg.applied = true);
     await _ctrl.applyScale(recipe, p);
     if (mounted) Get.back<void>();
@@ -415,6 +466,12 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    AnalyticsService.instance.trackScreen("AiAssistantScreen/ChatScreen");
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _bg,
@@ -452,7 +509,14 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
         children: [
           _sqBtn(
             Icons.close_rounded,
-            () => Get.back<void>(),
+            () {
+              AnalyticsService.instance.trackButtonTap(
+                "Close",
+                screenName: "AiAssistantScreen",
+              );
+
+              Get.back<void>();
+            },
             bg: Colors.white,
             border: true,
             color: _ink,

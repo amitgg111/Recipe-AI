@@ -7,6 +7,7 @@
 
   import 'package:recipe_ai/Service/revenuecat_config.dart';
   import 'package:recipe_ai/Service/subscription_service.dart';
+  import 'package:recipe_ai/Service/analytics_service.dart';
 
   /// Wraps the RevenueCat SDK.
   ///
@@ -119,7 +120,15 @@
       try {
         final res = await Purchases.purchase(PurchaseParams.package(package));
         _syncEntitlement(res.customerInfo);
-        return _hasPlus(res.customerInfo);
+        final hasPlus = _hasPlus(res.customerInfo);
+        if (hasPlus) {
+          await AnalyticsService.instance.trackPurchase(
+            itemId: package.identifier,
+            value: package.storeProduct.price,
+            currency: package.storeProduct.currencyCode,
+          );
+        }
+        return hasPlus;
       } on PlatformException catch (e) {
         final code = PurchasesErrorHelper.getErrorCode(e);
         if (code == PurchasesErrorCode.purchaseCancelledError) return false;
@@ -132,7 +141,11 @@
       if (!_configured) return false;
       final info = await Purchases.restorePurchases();
       _syncEntitlement(info);
-      return _hasPlus(info);
+      final hasPlus = _hasPlus(info);
+      if (hasPlus) {
+        await AnalyticsService.instance.trackEvent('subscription_restored');
+      }
+      return hasPlus;
     }
 
     /// Show the native subscription management screen, or launch the management URL.

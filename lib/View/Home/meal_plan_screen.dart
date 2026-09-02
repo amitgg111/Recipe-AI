@@ -7,6 +7,7 @@ import 'package:recipe_ai/Controllers/home_controller.dart';
 import 'package:recipe_ai/Controllers/meal_plan_controller.dart';
 import 'package:recipe_ai/Core/Routes/app_route_observer.dart';
 import 'package:recipe_ai/Model/meal_plan_model.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/Service/recipe_localizer.dart';
 import 'package:recipe_ai/View/Home/recipe_detail_screen.dart';
@@ -122,6 +123,8 @@ class _MealPlanScreenState extends State<MealPlanScreen> with RouteAware {
     _monthWorker = ever<DateTime>(controller.selectedDate, (date) {
       if (_viewIndex == 1) _ensureMonthFetched(date);
     });
+
+    AnalyticsService.instance.trackScreen("MealPlanScreen");
   }
 
   @override

@@ -9,6 +9,7 @@ import 'package:recipe_ai/Controllers/grocery_store_controller.dart';
 import 'package:recipe_ai/Controllers/home_controller.dart';
 import 'package:recipe_ai/Controllers/settings_controller.dart';
 import 'package:recipe_ai/Helper/unit_converter.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/Service/recipe_localizer.dart';
 import 'package:recipe_ai/utils/validation_helper.dart';
@@ -283,6 +284,13 @@ class _GroceriesScreenState extends State<GroceriesScreen> {
     text = text.replaceAll(RegExp(r'\s+'), ' ').trim();
 
     return text;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    AnalyticsService.instance.trackScreen("GroceriesScreen");
   }
 
   @override

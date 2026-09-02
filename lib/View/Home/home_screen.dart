@@ -82,6 +82,7 @@ import 'package:recipe_ai/View/Home/settings_screen.dart';
 import 'package:recipe_ai/View/Home/settings/upgrade_plus_screen.dart';
 
 import 'package:recipe_ai/Service/subscription_service.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/app_bottom_nav.dart';
@@ -110,6 +111,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+
+    AnalyticsService.instance.trackScreen('HomeScreen');
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (Get.isRegistered<ShareIntentService>()) {
@@ -184,6 +187,11 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: AppBottomNav(
         currentIndex: _activeIndex,
         onTap: (index) {
+          AnalyticsService.instance.trackButtonTap(
+            'bottom_nav_tab',
+            screenName: 'HomeScreen',
+            extra: {'tab_index': index},
+          );
           // The Meal Plan tab (2) always opens on the current
           // week/month, regardless of which month the user
           // last browsed before leaving.

@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/app_logo.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 
 /// Import processing screen — a pixel match of the HTML "Reading your recipe"
 /// design: orbiting CSS-drawn produce around a pulsing chef-hat, an animated
@@ -50,6 +51,7 @@ class ImportProcessingScreenState extends State<ImportProcessingScreen>
   @override
   void initState() {
     super.initState();
+    AnalyticsService.instance.trackScreen('ImportProcessingScreen');
     _orbit = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 6),

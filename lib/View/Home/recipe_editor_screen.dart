@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/Controllers/home_controller.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/Service/recipe_localizer.dart';
@@ -87,6 +88,8 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     if (widget.recipe != null) {
       _loadLocalizedText();
     }
+
+    AnalyticsService.instance.trackScreen("RecipeEditorScreen/NewRecipeAdd");
   }
 
   Future<void> _loadLocalizedText() async {
@@ -211,7 +214,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     bool isEdit,
   ) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 14),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 14),
       child: SizedBox(
         height: 44,
         child: Row(
@@ -248,6 +251,10 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                           return;
                         }
                         controller.saveRecipe();
+                        AnalyticsService.instance.trackButtonTap(
+                          "Save/Edit Recipe",
+                          screenName: "RecipeEditorScreen",
+                        );
                       },
                 child: Container(
                   height: 40,

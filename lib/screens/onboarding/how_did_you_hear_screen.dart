@@ -9,6 +9,7 @@ import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/widgets/progress_indicator_dots.dart';
 import 'package:recipe_ai/screens/onboarding/recipe_sources_screen.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 
 class HowDidYouHearScreen extends StatefulWidget {
   static const String routeName = '/onboarding/how-did-you-hear';
@@ -23,6 +24,12 @@ class _HowDidYouHearScreenState extends State<HowDidYouHearScreen> {
   // Multi-select; the user can pick any number of sources. Nothing is
   // highlighted until they tap (selection is shown by the card's border).
   final Set<int> _selectedSources = <int>{};
+
+  @override
+  void initState() {
+    super.initState();
+    AnalyticsService.instance.trackScreen('HowDidYouHearScreen');
+  }
 
   // Exactly the eight sources shown in the design, in order.
   final List<_SourceOption> _sources = const [

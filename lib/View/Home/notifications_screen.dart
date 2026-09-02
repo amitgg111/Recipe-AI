@@ -8,6 +8,7 @@ import 'package:recipe_ai/Controllers/home_controller.dart';
 import 'package:recipe_ai/Controllers/notification_controller.dart';
 import 'package:recipe_ai/Model/notification_model.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/Service/follow_service.dart';
 import 'package:recipe_ai/View/Home/recipe_detail_screen.dart';
 import 'package:recipe_ai/View/Home/social/creator_profile_screen.dart';
@@ -50,6 +51,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   void initState() {
     super.initState();
+    AnalyticsService.instance.trackScreen('NotificationsScreen');
     _scroll.addListener(_onScroll);
   }
 
@@ -80,7 +82,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             padding: EdgeInsets.fromLTRB(8, top + 6, 12, 8),
             child: Row(
               children: [
-                _iconButton('back', () => Get.back()),
+                _iconButton('back', () {
+                  AnalyticsService.instance.trackButtonTap(
+                    'back',
+                    screenName: 'NotificationsScreen',
+                  );
+                  Get.back();
+                }),
                 const SizedBox(width: 4),
                 Text(
                   'notifications'.tr,
@@ -90,7 +98,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 Obx(
                   () => _c.unreadCount.value > 0
                       ? TextButton(
-                          onPressed: _c.markAllRead,
+                          onPressed: () {
+                            AnalyticsService.instance.trackButtonTap(
+                              'mark_all_notifications_read',
+                              screenName: 'NotificationsScreen',
+                            );
+                            _c.markAllRead();
+                          },
                           child: Text(
                             'mark_all_read'.tr,
                             style: _f(13, FontWeight.w700, _N.primary),

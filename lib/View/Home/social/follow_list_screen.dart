@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/Model/user_model.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/Service/follow_service.dart';
 import 'package:recipe_ai/Service/user_service.dart';
 import 'package:recipe_ai/View/Home/social/creator_profile_screen.dart';
@@ -29,6 +30,12 @@ class FollowListScreen extends StatefulWidget {
 
 class _FollowListScreenState extends State<FollowListScreen> {
   late bool _followers = widget.showFollowers;
+  @override
+  void initState() {
+    super.initState();
+
+    AnalyticsService.instance.trackScreen("FollowListScreen");
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -119,7 +126,16 @@ class _FollowListScreenState extends State<FollowListScreen> {
       child: SlidingSegmented.tabs(
         labels: ['followers'.tr, 'following'.tr],
         selectedIndex: _followers ? 0 : 1,
-        onChanged: (i) => setState(() => _followers = i == 0),
+        onChanged: (i) {
+          final isFollowers = i == 0;
+
+          AnalyticsService.instance.trackButtonTap(
+            isFollowers ? "Followers" : "Following",
+            screenName: "FollowListScreen",
+          );
+
+          setState(() => _followers = isFollowers);
+        },
         height: 38,
       ),
     );
@@ -139,13 +155,29 @@ class _FollowListScreenState extends State<FollowListScreen> {
           ),
           child: UserTile(
             user: user,
-            onTap: () => Get.to(
-              () => CreatorProfileScreen(
-                userId: user.uid,
-                fallbackName: user.displayName,
-                fallbackAvatar: user.photoUrl,
-              ),
-            ),
+            onTap: () {
+              AnalyticsService.instance.trackButtonTap(
+                "User Profile",
+                screenName: "FollowListScreen",
+              );
+
+              AnalyticsService.instance.trackEvent(
+                "creator_profile_opened",
+                parameters: {
+                  "creator_id": user.uid,
+                  "creator_name": user.displayName,
+                  "source": _followers ? "followers" : "following",
+                },
+              );
+
+              Get.to(
+                () => CreatorProfileScreen(
+                  userId: user.uid,
+                  fallbackName: user.displayName,
+                  fallbackAvatar: user.photoUrl,
+                ),
+              );
+            },
           ),
         );
       },

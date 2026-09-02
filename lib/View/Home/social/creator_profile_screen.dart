@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:recipe_ai/Controllers/profile_controller.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -16,20 +17,33 @@ import 'package:recipe_ai/widgets/tr_text.dart';
 
 /// A public creator profile: photo, name, @username, bio, stats, follow button,
 /// and their PUBLIC recipes only.
-class CreatorProfileScreen extends StatelessWidget {
+class CreatorProfileScreen extends StatefulWidget {
   final String userId;
   final String? fallbackName;
   final String? fallbackAvatar;
 
-  CreatorProfileScreen({
+  const CreatorProfileScreen({
     super.key,
     required this.userId,
     this.fallbackName,
     this.fallbackAvatar,
   });
 
-  bool get _isSelf => AuthService.currentUser?.uid == userId;
+  @override
+  State<CreatorProfileScreen> createState() => _CreatorProfileScreenState();
+
+  static String _fmt(int n) {
+    if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
+    if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}k';
+    return '$n';
+  }
+}
+
+class _CreatorProfileScreenState extends State<CreatorProfileScreen> {
+  bool get _isSelf => AuthService.currentUser?.uid == widget.userId;
+
   final profileController = Get.find<ProfileController>();
+
   TextStyle _f(double s, FontWeight w, Color c, {double? sp}) =>
       GoogleFonts.plusJakartaSans(
         fontSize: s,
@@ -37,6 +51,11 @@ class CreatorProfileScreen extends StatelessWidget {
         color: c,
         letterSpacing: sp,
       );
+  @override
+  void initState() {
+    super.initState();
+    AnalyticsService.instance.trackScreen("CreatorProfileScreen");
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,25 +63,25 @@ class CreatorProfileScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: StreamBuilder<UserModel?>(
-          stream: UserService.userStream(userId),
+          stream: UserService.userStream(widget.userId),
           builder: (context, snap) {
             final user =
                 snap.data ??
                 UserModel(
-                  uid: userId,
+                  uid: widget.userId,
                   bio: '',
-                  photoUrl: fallbackAvatar ?? '',
+                  photoUrl: widget.fallbackAvatar ?? '',
                   email: '',
                   followersCount: 0,
                   followingCount: 0,
                 );
             return StreamBuilder<List<DiscoverRecipe>>(
               stream: UserService.publicRecipesStream(
-                userId,
+                widget.userId,
                 authorName: user.displayName,
                 authorAvatar: user.photoUrl.isNotEmpty
                     ? user.photoUrl
-                    : fallbackAvatar,
+                    : widget.fallbackAvatar,
               ),
               builder: (context, rSnap) {
                 final recipes = rSnap.data ?? const <DiscoverRecipe>[];
@@ -75,7 +94,8 @@ class CreatorProfileScreen extends StatelessWidget {
                     const SizedBox(height: 18),
                     _statsCard(context, user, recipes.length),
                     const SizedBox(height: 14),
-                    if (!_isSelf) FollowButton(targetUid: userId, expand: true),
+                    if (!_isSelf)
+                      FollowButton(targetUid: widget.userId, expand: true),
                     if (!_isSelf) const SizedBox(height: 4),
                     _recipesSection(recipes),
                   ],
@@ -124,7 +144,7 @@ class CreatorProfileScreen extends StatelessWidget {
   }
 
   Widget _identity(UserModel user) {
-    final isCurrentUser = profileController.uid == userId;
+    final isCurrentUser = profileController.uid == widget.userId;
 
     final displayName = isCurrentUser && profileController.name.value.isNotEmpty
         ? profileController.name.value
@@ -147,7 +167,9 @@ class CreatorProfileScreen extends StatelessWidget {
             ],
           ),
           child: UserAvatar(
-            photoUrl: user.photoUrl.isNotEmpty ? user.photoUrl : fallbackAvatar,
+            photoUrl: user.photoUrl.isNotEmpty
+                ? user.photoUrl
+                : widget.fallbackAvatar,
             initial: initial,
             size: 96,
           ),
@@ -197,27 +219,41 @@ class CreatorProfileScreen extends StatelessWidget {
           _stat('$publicRecipes', 'recipes'.tr, null),
           _divider(),
           _stat(
-            _fmt(user.followersCount),
+            CreatorProfileScreen._fmt(user.followersCount),
             'followers'.tr,
-            () => Get.to(
-              () => FollowListScreen(
-                userId: userId,
-                title: displayName,
-                showFollowers: true,
-              ),
-            ),
+            () => Get.to(() {
+              AnalyticsService.instance.trackButtonTap(
+                "Followers",
+                screenName: "CreatorProfileScreen",
+              );
+
+              Get.to(
+                () => FollowListScreen(
+                  userId: widget.userId,
+                  title: displayName,
+                  showFollowers: true,
+                ),
+              );
+            }),
           ),
           _divider(),
           _stat(
-            _fmt(user.followingCount),
+            CreatorProfileScreen._fmt(user.followingCount),
             'following'.tr,
-            () => Get.to(
-              () => FollowListScreen(
-                userId: userId,
-                title: displayName,
-                showFollowers: false,
-              ),
-            ),
+            () => Get.to(() {
+              AnalyticsService.instance.trackButtonTap(
+                "Following",
+                screenName: "CreatorProfileScreen",
+              );
+
+              Get.to(
+                () => FollowListScreen(
+                  userId: widget.userId,
+                  title: displayName,
+                  showFollowers: false,
+                ),
+              );
+            }),
           ),
         ],
       ),
@@ -279,7 +315,23 @@ class CreatorProfileScreen extends StatelessWidget {
     return Column(
       children: [
         InkWell(
-          onTap: () => Get.to(() => PublicRecipeViewScreen(recipe: r)),
+          onTap: () {
+            AnalyticsService.instance.trackButtonTap(
+              "Public Recipe",
+              screenName: "CreatorProfileScreen",
+            );
+
+            AnalyticsService.instance.trackEvent(
+              "public_recipe_opened",
+              parameters: {
+                "recipe_id": r.id,
+                "recipe_title": r.title,
+                "creator_id": widget.userId,
+              },
+            );
+
+            Get.to(() => PublicRecipeViewScreen(recipe: r));
+          },
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 11),
             child: Row(
@@ -391,11 +443,5 @@ class CreatorProfileScreen extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  static String _fmt(int n) {
-    if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
-    if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}k';
-    return '$n';
   }
 }

@@ -9,6 +9,7 @@ import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/widgets/progress_indicator_dots.dart';
 import 'package:recipe_ai/screens/onboarding/awesome_import_screen.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 
 class RecipeSourcesScreen extends StatefulWidget {
   static const String routeName = '/onboarding/recipe-sources';
@@ -21,6 +22,12 @@ class RecipeSourcesScreen extends StatefulWidget {
 
 class _RecipeSourcesScreenState extends State<RecipeSourcesScreen> {
   final Set<int> _selected = {0};
+
+  @override
+  void initState() {
+    super.initState();
+    AnalyticsService.instance.trackScreen('RecipeSourcesScreen');
+  }
 
   void _toggle(int index) {
     setState(() {

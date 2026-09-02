@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:recipe_ai/Service/mixpanel_service.dart';
 
 /// Holds every onboarding/intro selection so it survives:
 ///  * navigating back and forth (the flow recreates each step widget, which
@@ -227,9 +228,11 @@ class OnboardingController extends GetxController {
   /// failure so the next auth/selection change retries. Returns success.
   Future<bool> syncToFirebase(String uid) async {
     try {
+      final mapData = _toMap();
       await FirebaseFirestore.instance.collection('users').doc(uid).set({
-        'onboarding': _toMap(),
+        'onboarding': mapData,
       }, SetOptions(merge: true));
+      await MixpanelService.instance.setUserProfile(mapData);
       _box.write(_kPending, false);
       return true;
     } catch (_) {

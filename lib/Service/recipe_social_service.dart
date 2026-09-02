@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_ai/Controllers/discover_controller.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 
 /// Handles social engagement (like / save / comment / share) on public recipes.
 ///
@@ -50,9 +51,11 @@ class RecipeSocialService {
         'createdAt': FieldValue.serverTimestamp(),
       });
       await recipe.update({'likesCount': FieldValue.increment(1)});
+      await AnalyticsService.instance.trackEvent('like_recipe', parameters: {'recipe_id': recipeId, 'owner_id': ownerId});
     } else if (!liked && exists) {
       await likeRef.delete();
       await recipe.update({'likesCount': FieldValue.increment(-1)});
+      await AnalyticsService.instance.trackEvent('unlike_recipe', parameters: {'recipe_id': recipeId, 'owner_id': ownerId});
     }
   }
 
@@ -160,9 +163,11 @@ class RecipeSocialService {
         'createdAt': FieldValue.serverTimestamp(),
       });
       await recipe.update({'savesCount': FieldValue.increment(1)});
+      await AnalyticsService.instance.trackEvent('bookmark_recipe', parameters: {'recipe_id': recipeId, 'owner_id': ownerId});
     } else if (!saved && exists) {
       await saveRef.delete();
       await recipe.update({'savesCount': FieldValue.increment(-1)});
+      await AnalyticsService.instance.trackEvent('unbookmark_recipe', parameters: {'recipe_id': recipeId, 'owner_id': ownerId});
     }
   }
 
@@ -391,6 +396,7 @@ class RecipeSocialService {
     } else if (old != rating) {
       await recipe.update({'ratingSum': FieldValue.increment(rating - old)});
     }
+    await AnalyticsService.instance.trackEvent('rate_recipe', parameters: {'recipe_id': recipeId, 'rating': rating});
   }
 
   // ── Comments ─────────────────────────────────────────────────────────────
@@ -416,6 +422,7 @@ class RecipeSocialService {
       'createdAt': FieldValue.serverTimestamp(),
     });
     await recipe.update({'commentsCount': FieldValue.increment(1)});
+    await AnalyticsService.instance.trackEvent('comment_recipe', parameters: {'recipe_id': recipeId});
   }
 
   static Stream<QuerySnapshot<Map<String, dynamic>>> commentsStream(
@@ -439,6 +446,7 @@ class RecipeSocialService {
         ownerId,
         recipeId,
       ).update({'sharesCount': FieldValue.increment(1)});
+      await AnalyticsService.instance.trackEvent('share_recipe', parameters: {'recipe_id': recipeId});
     } catch (_) {
       // best-effort; sharing itself must never fail because of this
     }

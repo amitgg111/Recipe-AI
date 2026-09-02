@@ -8,6 +8,7 @@ import 'package:recipe_ai/Controllers/discover_controller.dart';
 import 'package:recipe_ai/Controllers/grocery_store_controller.dart';
 import 'package:recipe_ai/Controllers/meal_plan_controller.dart';
 import 'package:recipe_ai/Service/ai_translation_service.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/Service/language_service.dart';
 import 'package:recipe_ai/View/Home/settings/settings_common.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
@@ -23,6 +24,12 @@ class LanguageScreen extends StatefulWidget {
 class _LanguageScreenState extends State<LanguageScreen> {
   final _settings = Get.find<SettingsController>();
   final String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    AnalyticsService.instance.trackScreen("LanguageScreen");
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -117,15 +124,24 @@ class _LanguageScreenState extends State<LanguageScreen> {
       onTap: () async {
         if (LanguageService.currentCode == lang.code) return;
 
-        // Instant, no-restart switch + persist. This alone updates the static
-        // UI, because the GetX `.tr` strings are compiled into the app.
+        final previousLanguage = LanguageService.currentCode;
+
+        // Instant, no-restart switch + persist
         await LanguageService.setLanguage(lang.code);
         _settings.setLanguage(lang.english);
         if (mounted) setState(() {});
 
-        // Re-point the on-device translator and re-render the Firebase-backed
-        // CONTENT (recipes, discover, groceries, meal plan). Without this the
-        // chrome switches to Hindi but every recipe stays in English.
+        // ✅ Analytics
+        AnalyticsService.instance.trackEvent(
+          "language_changed",
+          parameters: {
+            "from": previousLanguage,
+            "to": lang.code,
+            "language_name": lang.english,
+          },
+        );
+
+        // Re-point translator + refresh content
         await _applyContentLanguage(lang.code);
       },
       child: Padding(

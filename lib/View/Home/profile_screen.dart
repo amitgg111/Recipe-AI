@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:recipe_ai/Controllers/profile_controller.dart';
 
 import 'package:recipe_ai/Service/auth_service.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/widgets/custom_snackbar.dart';
 import 'package:recipe_ai/widgets/custom_text.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
@@ -28,6 +29,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
 
+    AnalyticsService.instance.trackScreen('ProfileScreen');
+
     nameController = TextEditingController(text: user.displayName ?? '');
 
     photoController = TextEditingController(text: user.photoURL ?? '');
@@ -41,6 +44,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> updateProfile() async {
+    AnalyticsService.instance.trackButtonTap(
+      'save_profile',
+      screenName: 'ProfileScreen',
+    );
     try {
       setState(() => isLoading = true);
 
@@ -70,6 +77,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> logout() async {
+    AnalyticsService.instance.trackButtonTap(
+      'logout',
+      screenName: 'ProfileScreen',
+    );
     await AuthService.logout();
   }
 
@@ -113,7 +124,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     bottom: 0,
                     right: 0,
                     child: GestureDetector(
-                      onTap: profileController.pickImage,
+                      onTap: () {
+                        AnalyticsService.instance.trackButtonTap(
+                          'change_profile_photo',
+                          screenName: 'ProfileScreen',
+                        );
+                        profileController.pickImage();
+                      },
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: const BoxDecoration(

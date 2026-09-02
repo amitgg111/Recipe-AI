@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -27,7 +29,6 @@ import 'package:recipe_ai/Service/revenuecat_service.dart';
 import 'package:recipe_ai/Controllers/onboarding_controller.dart';
 import 'package:recipe_ai/Controllers/notification_controller.dart';
 import 'package:recipe_ai/Controllers/share_intent_service_controller.dart';
-import 'package:recipe_ai/Core/Routes/app_routes.dart';
 import 'package:recipe_ai/Core/Routes/app_route_observer.dart';
 import 'package:recipe_ai/Core/Theme/app_theme_controller.dart';
 import 'package:recipe_ai/View/Splash/spalsh_screen.dart';
@@ -35,72 +36,15 @@ import 'package:recipe_ai/View/Splash/spalsh_screen.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/Service/notification_service.dart';
 import 'package:recipe_ai/Service/local_notification_service.dart';
+import 'package:recipe_ai/Service/mixpanel_service.dart';
 import 'package:recipe_ai/firebase_options.dart';
 import 'package:recipe_ai/theme/app_theme.dart' as new_theme;
-
-// Onboarding screens
-import 'package:recipe_ai/screens/onboarding/welcome_screen.dart';
-import 'package:recipe_ai/screens/onboarding/social_proof_screen.dart';
-import 'package:recipe_ai/screens/onboarding/goals_screen.dart';
-import 'package:recipe_ai/screens/onboarding/thats_great_screen.dart';
-import 'package:recipe_ai/screens/onboarding/goals_happen_screen.dart';
-import 'package:recipe_ai/screens/onboarding/when_to_cook_screen.dart';
-import 'package:recipe_ai/screens/onboarding/notifications_screen.dart';
-import 'package:recipe_ai/screens/onboarding/how_did_you_hear_screen.dart';
-import 'package:recipe_ai/screens/onboarding/recipe_sources_screen.dart';
-import 'package:recipe_ai/screens/onboarding/awesome_import_screen.dart';
-import 'package:recipe_ai/screens/onboarding/age_screen.dart';
-import 'package:recipe_ai/screens/onboarding/setting_up_screen.dart';
-import 'package:recipe_ai/screens/onboarding/plus_intro_screen.dart';
-import 'package:recipe_ai/screens/onboarding/plus_comparison_screen.dart';
-import 'package:recipe_ai/screens/onboarding/trial_chooser_screen.dart';
-
-// Auth screens
-import 'package:recipe_ai/screens/auth/create_account_screen.dart';
-import 'package:recipe_ai/screens/auth/login_screen.dart';
-import 'package:recipe_ai/screens/auth/sign_up_screen.dart';
-import 'package:recipe_ai/screens/auth/forgot_password_screen.dart';
-// Cookbook screens
-import 'package:recipe_ai/screens/cookbooks/cookbooks_empty_screen.dart';
-import 'package:recipe_ai/screens/cookbooks/cookbooks_home_screen.dart';
-import 'package:recipe_ai/screens/cookbooks/cookbook_detail_screen.dart';
-import 'package:recipe_ai/screens/cookbooks/cookbook_detail_empty_screen.dart';
-
-// Cookbook variant screens
-import 'package:recipe_ai/screens/cookbooks/recipes_grid_screen.dart';
-
-// Import screens
-import 'package:recipe_ai/screens/import/import_picker_screen.dart';
-
-import 'package:recipe_ai/screens/import/import_complete_screen.dart';
-
-// Recipe screens
-import 'package:recipe_ai/screens/recipe/recipe_detail_view_screen.dart';
-import 'package:recipe_ai/screens/recipe/recipe_detail_edit_screen.dart';
-
-// Cook Mode screens
-import 'package:recipe_ai/screens/cook_mode/cook_mode_step_screen.dart';
-import 'package:recipe_ai/screens/cook_mode/cook_mode_timer_screen.dart';
-import 'package:recipe_ai/screens/cook_mode/cook_mode_paused_screen.dart';
-import 'package:recipe_ai/screens/cook_mode/cook_mode_chip_screen.dart';
-import 'package:recipe_ai/screens/cook_mode/cook_mode_ingredients_screen.dart';
-import 'package:recipe_ai/screens/cook_mode/cook_mode_timer_done_screen.dart';
-import 'package:recipe_ai/screens/cook_mode/cook_mode_all_timers_screen.dart';
-import 'package:recipe_ai/screens/cook_mode/cook_mode_lock_notification.dart';
-import 'package:recipe_ai/screens/cook_mode/cook_mode_finish_screen.dart';
-
-// Discover screens
-import 'package:recipe_ai/screens/discover/discover_feed_screen.dart';
-import 'package:recipe_ai/screens/discover/public_recipe_screen.dart';
-
-// Meal Plan screens
-import 'package:recipe_ai/screens/meal_plan/meal_plan_day_screen.dart';
-import 'package:recipe_ai/screens/meal_plan/meal_plan_calendar_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await MixpanelService.instance.init();
   // Start pulling the live credit amounts (new-user / weekly-renewal) from
   // Remote Config as early as possible. Fire-and-forget: the getters return a
   // safe fallback until the fetch activates, so nothing needs to block on it.
@@ -114,6 +58,16 @@ void main() async {
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
+  FlutterError.onError = (errorDetails) {
+    FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
+  };
+
+  PlatformDispatcher.instance.onError = (error, stack) {
+    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+
+    return true;
+  };
+
   runApp(
     const MyApp(), // Wrap your app
   );
@@ -170,6 +124,11 @@ void _bindNotificationsToAuth() {
   final subscription = Get.find<SubscriptionService>();
   AuthService.authStateChanges.listen((user) async {
     if (user != null) {
+      await MixpanelService.instance.identify(user.uid);
+      await MixpanelService.instance.setUserProfile({
+        'email': user.email ?? '',
+        'display_name': user.displayName ?? '',
+      });
       await NotificationService.instance.loginUser(user.uid);
       await settings.bindUser(user.uid);
       await subscription.bindUser(user.uid);
@@ -178,6 +137,7 @@ void _bindNotificationsToAuth() {
       unawaited(AiTranslationService.prepareAllSupportedLanguages());
       unawaited(AiTranslationService.prepareAlternateLanguages());
     } else {
+      await MixpanelService.instance.reset();
       await settings.onLogout();
       subscription.onLogout();
       await RevenueCatService.instance.logoutUser();
@@ -230,169 +190,169 @@ class MyApp extends StatelessWidget {
           ],
         );
       },
-      getPages: [
-        // Onboarding
-        GetPage(name: AppRoutes.onboarding, page: () => const WelcomeScreen()),
-        GetPage(
-          name: AppRoutes.socialProof,
-          page: () => const SocialProofScreen(),
-        ),
-        GetPage(name: AppRoutes.goals, page: () => const GoalsScreen()),
-        GetPage(
-          name: AppRoutes.thatsGreat,
-          page: () => const ThatsGreatScreen(),
-        ),
-        GetPage(
-          name: AppRoutes.goalsHappen,
-          page: () => const GoalsHappenScreen(),
-        ),
-        GetPage(
-          name: AppRoutes.whenToCook,
-          page: () => const WhenToCookScreen(),
-        ),
-        GetPage(
-          name: AppRoutes.notifications,
-          page: () => const NotificationsScreen(),
-        ),
-        GetPage(
-          name: AppRoutes.howDidYouHear,
-          page: () => const HowDidYouHearScreen(),
-        ),
-        GetPage(
-          name: AppRoutes.recipeSources,
-          page: () => const RecipeSourcesScreen(),
-        ),
-        GetPage(
-          name: AppRoutes.awesomeImport,
-          page: () => const AwesomeImportScreen(),
-        ),
-        GetPage(name: AppRoutes.age, page: () => const AgeScreen()),
-        GetPage(name: AppRoutes.settingUp, page: () => const SettingUpScreen()),
-        GetPage(name: AppRoutes.plusIntro, page: () => const PlusIntroScreen()),
-        GetPage(
-          name: AppRoutes.plusComparison,
-          page: () => const PlusComparisonScreen(),
-        ),
-        GetPage(
-          name: AppRoutes.trialChooser,
-          page: () => const TrialChooserScreen(),
-        ),
+      // getPages: [
+      //   // Onboarding
+      //   GetPage(name: '/onboarding', page: () => const WelcomeScreen()),
+      //   GetPage(
+      //     name: '/social-proof',
+      //     page: () => const SocialProofScreen(),
+      //   ),
+      //   GetPage(name: '/goals', page: () => const GoalsScreen()),
+      //   GetPage(
+      //     name: '/thats-great',
+      //     page: () => const ThatsGreatScreen(),
+      //   ),
+      //   GetPage(
+      //     name: '/goals-happen',
+      //     page: () => const GoalsHappenScreen(),
+      //   ),
+      //   GetPage(
+      //     name: '/when-to-cook',
+      //     page: () => const WhenToCookScreen(),
+      //   ),
+      //   GetPage(
+      //     name: '/notifications',
+      //     page: () => const NotificationsScreen(),
+      //   ),
+      //   GetPage(
+      //     name: '/how-did-you-hear',
+      //     page: () => const HowDidYouHearScreen(),
+      //   ),
+      //   GetPage(
+      //     name: '/recipe-sources',
+      //     page: () => const RecipeSourcesScreen(),
+      //   ),
+      //   GetPage(
+      //     name: '/awesome-import',
+      //     page: () => const AwesomeImportScreen(),
+      //   ),
+      //   GetPage(name: '/age', page: () => const AgeScreen()),
+      //   GetPage(name: '/setting-up', page: () => const SettingUpScreen()),
+      //   GetPage(name: '/plus-intro', page: () => const PlusIntroScreen()),
+      //   GetPage(
+      //     name: '/plus-comparison',
+      //     page: () => const PlusComparisonScreen(),
+      //   ),
+      //   GetPage(
+      //     name: '/trial-chooser',
+      //     page: () => const TrialChooserScreen(),
+      //   ),
 
-        // Auth
-        GetPage(
-          name: AppRoutes.createAccount,
-          page: () => const CreateAccountScreen(),
-        ),
-        GetPage(name: AppRoutes.login, page: () => const LoginScreen()),
-        GetPage(name: AppRoutes.signup, page: () => const SignUpScreen()),
-        GetPage(
-          name: AppRoutes.forgotPassword,
-          page: () => const ForgotPasswordScreen(),
-        ),
+      //   // Auth
+      //   GetPage(
+      //     name: '/create-account',
+      //     page: () => const CreateAccountScreen(),
+      //   ),
+      //   GetPage(name: '/login', page: () => const LoginScreen()),
+      //   GetPage(name: '/signup', page: () => const SignUpScreen()),
+      //   GetPage(
+      //     name: '/forgot-password',
+      //     page: () => const ForgotPasswordScreen(),
+      //   ),
 
-        // Cookbooks
-        GetPage(
-          name: AppRoutes.cookbooksEmpty,
-          page: () => const CookbooksEmptyScreen(),
-        ),
-        GetPage(
-          name: AppRoutes.cookbooksHome,
-          page: () => const CookbooksHomeScreen(),
-        ),
-        GetPage(
-          name: AppRoutes.cookbookDetail,
-          page: () => const CookbookDetailScreen(),
-        ),
-        GetPage(
-          name: AppRoutes.cookbookDetailEmpty,
-          page: () => const CookbookDetailEmptyScreen(),
-        ),
+      //   // Cookbooks
+      //   GetPage(
+      //     name: '/cookbooks-empty',
+      //     page: () => const CookbooksEmptyScreen(),
+      //   ),
+      //   GetPage(
+      //     name: '/cookbooks-home',
+      //     page: () => const CookbooksHomeScreen(),
+      //   ),
+      //   GetPage(
+      //     name: '/cookbook-detail',
+      //     page: () => const CookbookDetailScreen(),
+      //   ),
+      //   GetPage(
+      //     name: '/cookbook-detail-empty',
+      //     page: () => const CookbookDetailEmptyScreen(),
+      //   ),
 
-        // Cookbook variants
-        GetPage(
-          name: AppRoutes.recipesGrid,
-          page: () => const RecipesGridScreen(),
-        ),
+      //   // Cookbook variants
+      //   GetPage(
+      //     name: '/recipes-grid',
+      //     page: () => const RecipesGridScreen(),
+      //   ),
 
-        // Import
-        GetPage(
-          name: AppRoutes.importPicker,
-          page: () => const ImportPickerScreen(),
-        ),
+      //   // Import
+      //   GetPage(
+      //     name: '/import-picker',
+      //     page: () => const ImportPickerScreen(),
+      //   ),
 
-        GetPage(
-          name: AppRoutes.importComplete,
-          page: () => const ImportCompleteScreen(),
-        ),
+      //   GetPage(
+      //     name: '/import-complete',
+      //     page: () => const ImportCompleteScreen(),
+      //   ),
 
-        // Recipe
-        GetPage(
-          name: AppRoutes.recipeDetailView,
-          page: () => const RecipeDetailViewScreen(),
-        ),
-        GetPage(
-          name: AppRoutes.recipeDetailEdit,
-          page: () => const RecipeDetailEditScreen(),
-        ),
+      //   // Recipe
+      //   GetPage(
+      //     name: '/recipe-detail-view',
+      //     page: () => const RecipeDetailViewScreen(),
+      //   ),
+      //   GetPage(
+      //     name: '/recipe-detail-edit',
+      //     page: () => const RecipeDetailEditScreen(),
+      //   ),
 
-        // Cook Mode
-        GetPage(
-          name: AppRoutes.cookModeStep,
-          page: () => const CookModeStepScreen(),
-        ),
-        GetPage(
-          name: AppRoutes.cookModeTimer,
-          page: () => const CookModeTimerScreen(),
-        ),
-        GetPage(
-          name: AppRoutes.cookModePaused,
-          page: () => const CookModePausedScreen(),
-        ),
-        GetPage(
-          name: AppRoutes.cookModeChip,
-          page: () => const CookModeChipScreen(),
-        ),
-        GetPage(
-          name: AppRoutes.cookModeIngredients,
-          page: () => const CookModeIngredientsScreen(),
-        ),
-        GetPage(
-          name: AppRoutes.cookModeTimerDone,
-          page: () => const CookModeTimerDoneScreen(),
-        ),
-        GetPage(
-          name: AppRoutes.cookModeAllTimers,
-          page: () => const CookModeAllTimersScreen(),
-        ),
-        GetPage(
-          name: AppRoutes.cookModeLockNotification,
-          page: () => const CookModeLockNotification(),
-        ),
-        GetPage(
-          name: AppRoutes.cookModeFinish,
-          page: () => const CookModeFinishScreen(),
-        ),
+      //   // Cook Mode
+      //   GetPage(
+      //     name: '/cook-mode-step',
+      //     page: () => const CookModeStepScreen(),
+      //   ),
+      //   GetPage(
+      //     name: '/cook-mode-timer',
+      //     page: () => const CookModeTimerScreen(),
+      //   ),
+      //   GetPage(
+      //     name: '/cook-mode-paused',
+      //     page: () => const CookModePausedScreen(),
+      //   ),
+      //   GetPage(
+      //     name: '/cook-mode-chip',
+      //     page: () => const CookModeChipScreen(),
+      //   ),
+      //   GetPage(
+      //     name: '/cook-mode-ingredients',
+      //     page: () => const CookModeIngredientsScreen(),
+      //   ),
+      //   GetPage(
+      //     name: '/cook-mode-timer-done',
+      //     page: () => const CookModeTimerDoneScreen(),
+      //   ),
+      //   GetPage(
+      //     name: '/cook-mode-all-timers',
+      //     page: () => const CookModeAllTimersScreen(),
+      //   ),
+      //   GetPage(
+      //     name: '/cook-mode-lock-notification',
+      //     page: () => const CookModeLockNotification(),
+      //   ),
+      //   GetPage(
+      //     name: '/cook-mode-finish',
+      //     page: () => const CookModeFinishScreen(),
+      //   ),
 
-        // Discover
-        GetPage(
-          name: AppRoutes.discoverFeed,
-          page: () => const DiscoverFeedScreen(),
-        ),
-        GetPage(
-          name: AppRoutes.publicRecipe,
-          page: () => const PublicRecipeScreen(),
-        ),
+      //   // Discover
+      //   GetPage(
+      //     name: '/discover-feed',
+      //     page: () => const DiscoverFeedScreen(),
+      //   ),
+      //   GetPage(
+      //     name: '/public-recipe',
+      //     page: () => const PublicRecipeScreen(),
+      //   ),
 
-        // Meal Plan
-        GetPage(
-          name: AppRoutes.mealPlanDay,
-          page: () => const MealPlanDayScreen(),
-        ),
-        GetPage(
-          name: AppRoutes.mealPlanCalendar,
-          page: () => const MealPlanCalendarScreen(),
-        ),
-      ],
+      //   // Meal Plan
+      //   GetPage(
+      //     name: '/meal-plan-day',
+      //     page: () => const MealPlanDayScreen(),
+      //   ),
+      //   GetPage(
+      //     name: '/meal-plan-calendar',
+      //     page: () => const MealPlanCalendarScreen(),
+      //   ),
+      // ],
     );
   }
 }

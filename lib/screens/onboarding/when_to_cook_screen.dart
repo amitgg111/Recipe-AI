@@ -8,6 +8,7 @@ import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/widgets/progress_indicator_dots.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:recipe_ai/screens/onboarding/notifications_screen.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 
 class WhenToCookScreen extends StatefulWidget {
   static const String routeName = '/onboarding/when-to-cook';
@@ -20,6 +21,12 @@ class WhenToCookScreen extends StatefulWidget {
 
 class _WhenToCookScreenState extends State<WhenToCookScreen> {
   int selectedIndex = 0; // First option selected by default
+
+  @override
+  void initState() {
+    super.initState();
+    AnalyticsService.instance.trackScreen('WhenToCookScreen');
+  }
 
   final List<String> _options = [
     'when_option_morning'.tr,

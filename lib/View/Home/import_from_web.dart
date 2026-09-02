@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/Core/Theme/app_theme.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/View/Home/import_complete_screen.dart';
 import 'package:recipe_ai/widgets/custom_text.dart';
 import 'package:recipe_ai/widgets/custom_snackbar.dart';
@@ -39,6 +40,7 @@ class _ImportFromWebScreenState extends State<ImportFromWebScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       controller.loadLandingPage();
     });
+    AnalyticsService.instance.trackScreen("ImportFromWebScreen");
   }
 
   /// Full web import: show the animated processing screen, scrape the current
@@ -72,6 +74,11 @@ class _ImportFromWebScreenState extends State<ImportFromWebScreen> {
       Get.off(
         () => ImportCompleteScreen(recipe: model),
         transition: Transition.fadeIn,
+      );
+
+      AnalyticsService.instance.trackButtonTap(
+        "Import Recipe From WebSite",
+        screenName: "ImportFromWebScreen",
       );
     } catch (e) {
       CustomSnackbar.show(

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/Controllers/cuisine_controller.dart';
 import 'package:recipe_ai/Controllers/onboarding_controller.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/screens/meal_plan/meal_planner_ui.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/cuisine_chip.dart';
@@ -35,6 +36,7 @@ class _AllCuisinesScreenState extends State<AllCuisinesScreen> {
     _searchC.addListener(() {
       setState(() => _query = _searchC.text.trim().toLowerCase());
     });
+    AnalyticsService.instance.trackScreen("CuisinesScreen");
   }
 
   @override

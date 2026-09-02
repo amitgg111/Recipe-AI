@@ -20,6 +20,7 @@ import 'package:recipe_ai/Service/notification_service.dart';
 import 'package:recipe_ai/Service/revenuecat_service.dart';
 import 'package:recipe_ai/Service/subscription_service.dart';
 import 'package:recipe_ai/Service/remote_config_service.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/utils/auth_error_mapper.dart';
 
 /// Outcome of an Apple Sign In attempt.
@@ -130,6 +131,9 @@ class AuthService {
       await OnboardingController.to.syncToFirebase(credential.user!.uid);
     }
 
+    await AnalyticsService.instance.setUserId(credential.user!.uid);
+    await AnalyticsService.instance.trackSignUp('email');
+
     return credential;
   }
 
@@ -141,10 +145,15 @@ class AuthService {
     required String email,
     required String password,
   }) async {
-    return await _auth.signInWithEmailAndPassword(
+    final credential = await _auth.signInWithEmailAndPassword(
       email: email.trim(),
       password: password,
     );
+    if (credential.user != null) {
+      await AnalyticsService.instance.setUserId(credential.user!.uid);
+      await AnalyticsService.instance.trackLogin('email');
+    }
+    return credential;
   }
 
   // ====================================================
@@ -218,6 +227,9 @@ class AuthService {
         "updatedAt": FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     }
+
+    await AnalyticsService.instance.setUserId(user.uid);
+    await AnalyticsService.instance.trackLogin('google');
 
     return userCredential;
   }
@@ -304,6 +316,13 @@ class AuthService {
         appleFullName: fullName,
         appleEmail: appleCredential.email,
       );
+
+      await AnalyticsService.instance.setUserId(user.uid);
+      if (isNewUser) {
+        await AnalyticsService.instance.trackSignUp('apple');
+      } else {
+        await AnalyticsService.instance.trackLogin('apple');
+      }
 
       return AppleSignInResult.success(user, isNewUser: isNewUser);
     } on SignInWithAppleAuthorizationException catch (e) {
@@ -459,6 +478,7 @@ class AuthService {
       }
       await google.signOut();
     } catch (_) {}
+    await AnalyticsService.instance.clearUserId();
     await _auth.signOut();
   }
 

@@ -8,6 +8,7 @@ import 'package:recipe_ai/Controllers/onboarding_controller.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/widgets/progress_indicator_dots.dart';
 import 'package:recipe_ai/screens/onboarding/thats_great_screen.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 
 class GoalsScreen extends StatefulWidget {
   static const String routeName = '/onboarding/goals';
@@ -83,6 +84,12 @@ class _GoalsScreenState extends State<GoalsScreen> {
         _selectedGoals.add(index);
       }
     });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    AnalyticsService.instance.trackScreen('GoalsScreen');
   }
 
   @override

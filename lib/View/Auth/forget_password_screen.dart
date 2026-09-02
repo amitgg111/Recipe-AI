@@ -1,15 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/utils/auth_error_mapper.dart';
 
 import 'package:recipe_ai/widgets/custom_snackbar.dart';
 import 'package:recipe_ai/widgets/custom_text.dart';
 
-class ForgotPasswordScreen extends StatelessWidget {
-  ForgotPasswordScreen({super.key});
+class ForgotPasswordScreen extends StatefulWidget {
+  const ForgotPasswordScreen({super.key});
+
+  @override
+  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+}
+
+class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   final emailController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    AnalyticsService.instance.trackScreen('ForgetPasswordScreen');
+  }
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +53,10 @@ class ForgotPasswordScreen extends StatelessWidget {
               height: 55,
               child: ElevatedButton(
                 onPressed: () async {
+                  AnalyticsService.instance.trackButtonTap(
+                    'send_reset_link',
+                    screenName: 'ForgetPasswordScreen',
+                  );
                   try {
                     await AuthService.forgotPassword(
                       emailController.text.trim(),

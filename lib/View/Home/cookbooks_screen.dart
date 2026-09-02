@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:recipe_ai/Service/ai_translation_service.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/Service/language_service.dart';
 import 'package:recipe_ai/Service/recipe_localizer.dart';
@@ -65,7 +66,7 @@ class _CookbooksScreenState extends State<CookbooksScreen>
       duration: const Duration(milliseconds: 2400),
       vsync: this,
     )..repeat();
-
+    AnalyticsService.instance.trackScreen("HomeScreen/CookbooksScreen");
     // _bindSubscription();
   }
 
@@ -180,9 +181,19 @@ class _CookbooksScreenState extends State<CookbooksScreen>
             return GestureDetector(
               onTap: !plus
                   ? () {
+                      AnalyticsService.instance.trackButtonTap(
+                        "Upgrade Plus",
+                        screenName: "CookbooksScreen",
+                      );
+
                       Get.to(() => const UpgradePlusScreen());
                     }
                   : () {
+                      AnalyticsService.instance.trackButtonTap(
+                        "Manage Subscription",
+                        screenName: "CookbooksScreen",
+                      );
+
                       Get.to(() => const ManageSubscriptionScreen());
                     },
               behavior: HitTestBehavior.opaque,
@@ -262,7 +273,14 @@ class _CookbooksScreenState extends State<CookbooksScreen>
                 color: Colors.white,
                 size: 24,
               ),
-              onPressed: () => _showAddMenu(context),
+              onPressed: () {
+                AnalyticsService.instance.trackButtonTap(
+                  "Add First Recipe",
+                  screenName: "CookbooksScreen",
+                );
+
+                _showAddMenu(context);
+              },
             ),
             const SizedBox(height: 100),
           ],
@@ -288,13 +306,27 @@ class _CookbooksScreenState extends State<CookbooksScreen>
                   child: SlidingSegmented.tabs(
                     labels: ['cookbooks'.tr, 'recipes'.tr],
                     selectedIndex: _selectedSegment,
-                    onChanged: (i) => setState(() => _selectedSegment = i),
+                    onChanged: (i) {
+                      AnalyticsService.instance.trackButtonTap(
+                        i == 0 ? "Cookbooks Tab" : "Recipes Tab",
+                        screenName: "CookbooksScreen",
+                      );
+
+                      setState(() => _selectedSegment = i);
+                    },
                     height: 36,
                   ),
                 ),
                 const SizedBox(width: AppSpacing.md),
                 GestureDetector(
-                  onTap: () => _showSortSheet(context),
+                  onTap: () {
+                    AnalyticsService.instance.trackButtonTap(
+                      "Sort",
+                      screenName: "CookbooksScreen",
+                    );
+
+                    _showSortSheet(context);
+                  },
                   child: Container(
                     padding: const EdgeInsets.all(10),
                     width: AppDimensions.appBarButtonSize,
@@ -428,6 +460,20 @@ class _CookbooksScreenState extends State<CookbooksScreen>
               cookbook: cookbook,
               recipes: controller.recipes,
               onTap: () {
+                AnalyticsService.instance.trackButtonTap(
+                  "Open Cookbook",
+                  screenName: "CookbooksScreen",
+                );
+
+                AnalyticsService.instance.trackEvent(
+                  "cookbook_opened",
+                  parameters: {
+                    "cookbook_id": cookbook.id,
+                    "cookbook_name": cookbook.name,
+                    "recipe_count": cookbook.recipeCount,
+                  },
+                );
+
                 Get.to(() => CookbookRecipesScreen(cookbook: cookbook));
               },
             );
@@ -625,6 +671,11 @@ class _CookbooksScreenState extends State<CookbooksScreen>
             onTap: () {
               HapticFeedback.mediumImpact();
 
+              AnalyticsService.instance.trackButtonTap(
+                "Add",
+                screenName: "CookbooksScreen",
+              );
+
               _showAddMenu(context);
             },
             child: Container(
@@ -672,20 +723,45 @@ class _CookbooksScreenState extends State<CookbooksScreen>
     AddMenuSheet.show(
       context,
       onAddRecipe: () {
+        AnalyticsService.instance.trackButtonTap(
+          "Add Recipe",
+          screenName: "CookbooksScreen",
+        );
+
+        AnalyticsService.instance.trackEvent(
+          "recipe_import_started",
+          parameters: {"source": "CookbooksScreen"},
+        );
+
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const ImportPickerScreen()),
         );
       },
-      onAddCookbook: () => showNewCookbookSheet(context),
+      onAddCookbook: () {
+        AnalyticsService.instance.trackButtonTap(
+          "Add Cookbook",
+          screenName: "CookbooksScreen",
+        );
+
+        showNewCookbookSheet(context);
+      },
     );
   }
 }
 
 void showNewCookbookSheet(BuildContext context) async {
   final name = await AddCookbookSheet.show(context);
+
   if (name != null && name.trim().isNotEmpty) {
-    Get.find<CookbookController>().createCookbook(name.trim());
+    final cookbookName = name.trim();
+
+    AnalyticsService.instance.trackEvent(
+      "cookbook_created",
+      parameters: {"cookbook_name": cookbookName},
+    );
+
+    Get.find<CookbookController>().createCookbook(cookbookName);
   }
 }
 
@@ -951,6 +1027,19 @@ class _RecipeCardState extends State<_RecipeCard> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
+        AnalyticsService.instance.trackButtonTap(
+          "Open Recipe",
+          screenName: "CookbooksScreen",
+        );
+
+        AnalyticsService.instance.trackEvent(
+          "recipe_opened_from_cookbooks",
+          parameters: {
+            "recipe_id": widget.recipe.id,
+            "recipe_title": widget.recipe.title,
+          },
+        );
+
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -983,9 +1072,27 @@ class _RecipeCardState extends State<_RecipeCard> {
                     right: 8,
                     child: GestureDetector(
                       onTap: () {
+                        final newFavoriteState = !widget.recipe.isFavorite;
+
+                        AnalyticsService.instance.trackButtonTap(
+                          newFavoriteState ? "Add Favorite" : "Remove Favorite",
+                          screenName: "CookbooksScreen",
+                        );
+
+                        AnalyticsService.instance.trackEvent(
+                          newFavoriteState
+                              ? "recipe_favorited"
+                              : "recipe_unfavorited",
+                          parameters: {
+                            "recipe_id": widget.recipe.id,
+                            "recipe_title": widget.recipe.title,
+                            "source": "CookbooksScreen",
+                          },
+                        );
+
                         Get.find<HomeController>().toggleFavorite(
                           widget.recipe.id,
-                          !widget.recipe.isFavorite,
+                          newFavoriteState,
                         );
                       },
                       behavior: HitTestBehavior.opaque,

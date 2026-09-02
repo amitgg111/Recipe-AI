@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/Service/revenuecat_service.dart';
 import 'package:recipe_ai/View/Home/settings/settings_common.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
@@ -9,7 +10,7 @@ import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 
 /// "Manage subscription" — the Plus plan detail screen. Shows the active plan
 /// and billing details fetched from RevenueCat.
-class ManageSubscriptionScreen extends StatelessWidget {
+class ManageSubscriptionScreen extends StatefulWidget {
   const ManageSubscriptionScreen({super.key});
 
   static const _purple = Color(0xFF7C3AED);
@@ -23,8 +24,18 @@ class ManageSubscriptionScreen extends StatelessWidget {
     try {
       final date = DateTime.parse(isoDate).toLocal();
       final months = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
       ];
       return '${date.day} ${months[date.month - 1]} ${date.year}';
     } catch (_) {
@@ -32,8 +43,32 @@ class ManageSubscriptionScreen extends StatelessWidget {
     }
   }
 
+  @override
+  State<ManageSubscriptionScreen> createState() =>
+      _ManageSubscriptionScreenState();
+
+  static Widget _activeBadge() => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+    decoration: BoxDecoration(
+      color: Colors.white.withValues(alpha: 0.22),
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Text(
+      'plus_active'.tr,
+      style: const TextStyle(
+        fontSize: 10.5,
+        fontWeight: FontWeight.w800,
+        color: Colors.white,
+        letterSpacing: 0.5,
+      ),
+    ),
+  );
+}
+
+class _ManageSubscriptionScreenState extends State<ManageSubscriptionScreen> {
   String get _priceString {
-    final activeId = RevenueCatService.instance.activeEntitlement?.productIdentifier;
+    final activeId =
+        RevenueCatService.instance.activeEntitlement?.productIdentifier;
     final service = RevenueCatService.instance;
     if (activeId != null) {
       if (service.yearly?.storeProduct.identifier == activeId) {
@@ -47,12 +82,15 @@ class ManageSubscriptionScreen extends StatelessWidget {
   }
 
   String get _planName {
-    final activeId = RevenueCatService.instance.activeEntitlement?.productIdentifier;
+    final activeId =
+        RevenueCatService.instance.activeEntitlement?.productIdentifier;
     final service = RevenueCatService.instance;
     if (activeId != null) {
       if (service.monthly?.storeProduct.identifier == activeId) {
         // Fallback to English if translation is missing
-        return 'monthly_plan'.tr == 'monthly_plan' ? 'Monthly Plan' : 'monthly_plan'.tr;
+        return 'monthly_plan'.tr == 'monthly_plan'
+            ? 'Monthly Plan'
+            : 'monthly_plan'.tr;
       }
     }
     return 'yearly_plan'.tr;
@@ -67,9 +105,21 @@ class ManageSubscriptionScreen extends StatelessWidget {
     return 'Store';
   }
 
+  @override
+  void initState() {
+    super.initState();
+
+    AnalyticsService.instance.trackScreen("ManageSubscriptionScreen");
+  }
+
   void _confirmCancel() {
+    AnalyticsService.instance.trackEvent(
+      "cancel_subscription_tapped",
+      parameters: {"plan": _planName, "price": _priceString},
+    );
+
     Get.bottomSheet(
-      _CancelSheet(renewDate: renewDate),
+      _CancelSheet(renewDate: ManageSubscriptionScreen.renewDate),
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
     );
@@ -81,8 +131,8 @@ class ManageSubscriptionScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Obx(() {
-          final renewDateStr = renewDate;
-          
+          final renewDateStr = ManageSubscriptionScreen.renewDate;
+
           return SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(18, 4, 18, 28),
             child: Column(
@@ -138,13 +188,13 @@ class ManageSubscriptionScreen extends StatelessWidget {
   }
 
   Widget _value(String text) => Text(
-        text,
-        style: const TextStyle(
-          fontSize: 13.5,
-          fontWeight: FontWeight.w700,
-          color: AppColors.textDark,
-        ),
-      );
+    text,
+    style: const TextStyle(
+      fontSize: 13.5,
+      fontWeight: FontWeight.w700,
+      color: AppColors.textDark,
+    ),
+  );
 
   Widget _planCard(String renewDateStr) {
     return Container(
@@ -152,12 +202,15 @@ class ManageSubscriptionScreen extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [_purple, _purple2],
+          colors: [
+            ManageSubscriptionScreen._purple,
+            ManageSubscriptionScreen._purple2,
+          ],
         ),
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: _purple.withValues(alpha: 0.5),
+            color: ManageSubscriptionScreen._purple.withValues(alpha: 0.5),
             blurRadius: 28,
             offset: const Offset(0, 14),
             spreadRadius: -16,
@@ -203,7 +256,7 @@ class ManageSubscriptionScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 10),
-                _activeBadge(),
+                ManageSubscriptionScreen._activeBadge(),
               ],
             ),
           ),
@@ -243,23 +296,6 @@ class ManageSubscriptionScreen extends StatelessWidget {
     );
   }
 
-  static Widget _activeBadge() => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.22),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          'plus_active'.tr,
-          style: const TextStyle(
-            fontSize: 10.5,
-            fontWeight: FontWeight.w800,
-            color: Colors.white,
-            letterSpacing: 0.5,
-          ),
-        ),
-      );
-
   Widget _cancelButton() {
     return GestureDetector(
       onTap: _confirmCancel,
@@ -270,14 +306,16 @@ class ManageSubscriptionScreen extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _danger.withValues(alpha: 0.35)),
+          border: Border.all(
+            color: ManageSubscriptionScreen._danger.withValues(alpha: 0.35),
+          ),
         ),
         child: Text(
           'cancel_subscription'.tr,
           style: const TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w700,
-            color: _danger,
+            color: ManageSubscriptionScreen._danger,
           ),
         ),
       ),
@@ -288,7 +326,7 @@ class ManageSubscriptionScreen extends StatelessWidget {
 class _PlanSub extends StatelessWidget {
   final String planName;
   const _PlanSub({required this.planName});
-  
+
   @override
   Widget build(BuildContext context) {
     return Text(
@@ -313,8 +351,9 @@ class _CancelSheet extends StatelessWidget {
   static const _danger = Color(0xFFE0481F);
 
   void _cancelAnyway() {
+    AnalyticsService.instance.trackEvent("cancel_anyway_tapped");
+
     Get.back(); // close the sheet
-    // Open native subscription management (App Store / Play Store)
     RevenueCatService.instance.showManageSubscriptions();
   }
 
@@ -461,7 +500,10 @@ class _CancelSheet extends StatelessWidget {
 
   Widget _keepButton() {
     return GestureDetector(
-      onTap: Get.back,
+      onTap: () {
+        AnalyticsService.instance.trackEvent("keep_plus_tapped");
+        Get.back();
+      },
       child: Container(
         width: double.infinity,
         height: 52,

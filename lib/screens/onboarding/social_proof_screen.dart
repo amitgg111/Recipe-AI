@@ -7,6 +7,7 @@ import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/widgets/progress_indicator_dots.dart';
 import 'package:recipe_ai/screens/onboarding/goals_screen.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 
 class SocialProofScreen extends StatefulWidget {
   static const String routeName = '/onboarding/social-proof';
@@ -18,6 +19,12 @@ class SocialProofScreen extends StatefulWidget {
 }
 
 class _SocialProofScreenState extends State<SocialProofScreen> {
+  @override
+  void initState() {
+    super.initState();
+    AnalyticsService.instance.trackScreen('SocialProofScreen');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

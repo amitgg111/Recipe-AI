@@ -10,6 +10,7 @@ import 'package:recipe_ai/Controllers/meal_plan_controller.dart';
 import 'package:recipe_ai/Helper/recipe_response_parser.dart';
 import 'package:recipe_ai/Service/ai_translation_service.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/Service/import_with_image_api_calling_service.dart';
 import 'package:recipe_ai/Service/nutrition_estimator.dart';
 
@@ -1283,6 +1284,7 @@ class MealPlannerController extends GetxController {
     }
     // Applied → the draft is no longer needed.
     await _clearDraft();
+    await AnalyticsService.instance.trackEvent('apply_generated_meal_plan');
   }
 
   // ── Draft persistence (generated week, before/instead of Apply) ─────────────

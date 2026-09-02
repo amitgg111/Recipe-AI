@@ -9,6 +9,7 @@ import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/widgets/progress_indicator_dots.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:recipe_ai/screens/onboarding/how_did_you_hear_screen.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 
 class NotificationsScreen extends StatefulWidget {
   static const String routeName = '/onboarding/notifications';
@@ -25,6 +26,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   // Guards against duplicate permission requests / double navigation.
   bool _processing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    AnalyticsService.instance.trackScreen('OnboardingNotificationsScreen');
+  }
 
   // The OS permission is requested only when the user explicitly taps "Allow"
   // (or the positive CTA) — never automatically — so both buttons drive a

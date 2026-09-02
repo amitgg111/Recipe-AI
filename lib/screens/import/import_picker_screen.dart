@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/View/Home/recipe_camera_screen.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
@@ -60,7 +61,13 @@ class ImportPickerScreen extends StatelessWidget {
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: () => Get.back(),
+                    onTap: () {
+                      AnalyticsService.instance.trackButtonTap(
+                        'back',
+                        screenName: 'ImportPickerScreen',
+                      );
+                      Get.back();
+                    },
                     child: Container(
                       width: 42,
                       height: 42,
@@ -91,7 +98,13 @@ class ImportPickerScreen extends StatelessWidget {
                     // Featured card — opens the social-share picker.
                     GestureDetector(
                       behavior: HitTestBehavior.opaque,
-                      onTap: () => ImportFromSocialScreen.showPicker(context),
+                      onTap: () {
+                        AnalyticsService.instance.trackButtonTap(
+                          'import_from_social',
+                          screenName: 'ImportPickerScreen',
+                        );
+                        ImportFromSocialScreen.showPicker(context);
+                      },
                       child: _buildFeaturedCard(),
                     ),
                     const SizedBox(height: AppSpacing.lg),
@@ -107,6 +120,10 @@ class ImportPickerScreen extends StatelessWidget {
                             title: 'import_from_photo'.tr,
                             subtitle: 'snap_or_upload_pic'.tr,
                             onTap: () {
+                              AnalyticsService.instance.trackButtonTap(
+                                'import_from_photo',
+                                screenName: 'ImportPickerScreen',
+                              );
                               HapticFeedback.heavyImpact();
 
                               Get.to(() => const RecipeCameraScreen());
@@ -122,6 +139,10 @@ class ImportPickerScreen extends StatelessWidget {
                             title: 'import_from_text'.tr,
                             subtitle: 'paste_or_type'.tr,
                             onTap: () {
+                              AnalyticsService.instance.trackButtonTap(
+                                'import_from_text',
+                                screenName: 'ImportPickerScreen',
+                              );
                               // Get.back();
                               HapticFeedback.heavyImpact();
                               Get.to(() => const GenerateRecipeScreen());
@@ -141,6 +162,10 @@ class ImportPickerScreen extends StatelessWidget {
                             title: 'import_from_web'.tr,
                             subtitle: 'paste_recipe_url'.tr,
                             onTap: () {
+                              AnalyticsService.instance.trackButtonTap(
+                                'import_from_web',
+                                screenName: 'ImportPickerScreen',
+                              );
                               // Get.back();
                               HapticFeedback.heavyImpact();
                               Get.to(() => const ImportFromWebScreen());
@@ -156,6 +181,10 @@ class ImportPickerScreen extends StatelessWidget {
                             title: 'write_from_scratch'.tr,
                             subtitle: 'create_your_own'.tr,
                             onTap: () {
+                              AnalyticsService.instance.trackButtonTap(
+                                'write_from_scratch',
+                                screenName: 'ImportPickerScreen',
+                              );
                               Get.to(() => const RecipeEditorScreen());
                               HapticFeedback.heavyImpact();
                             },

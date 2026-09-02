@@ -14,6 +14,8 @@ import 'package:recipe_ai/Service/recipe_social_service.dart';
 import 'package:recipe_ai/Helper/recipe_response_parser.dart';
 import 'package:recipe_ai/Helper/recipe_publish_policy.dart';
 import 'package:recipe_ai/Model/recipe_section_model.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
+import 'package:recipe_ai/Service/mixpanel_service.dart';
 import 'package:recipe_ai/widgets/custom_snackbar.dart';
 
 class RecipeModel {
@@ -604,6 +606,11 @@ class HomeController extends GetxController {
         message: 'Recipe deleted successfully',
         type: SnackbarType.success,
       );
+      await MixpanelService.instance.trackRecipeAction(
+        action: 'deleted',
+        recipeId: recipe.id,
+        recipeTitle: recipe.title,
+      );
       return true;
     } catch (e) {
       CustomSnackbar.show(
@@ -623,10 +630,14 @@ class HomeController extends GetxController {
     try {
       final uid = AuthService.currentUser?.uid;
       if (uid == null) return;
-      FirebaseFirestore.instance.collection('recipes').doc(recipeId).update({
+      await FirebaseFirestore.instance.collection('recipes').doc(recipeId).update({
         'isFavorite': isFavorite,
         'updatedAt': FieldValue.serverTimestamp(),
       });
+      await MixpanelService.instance.trackRecipeAction(
+        action: isFavorite ? 'favorite' : 'unfavorite',
+        recipeId: recipeId,
+      );
     } catch (e) {
       log('toggleFavorite error: $e');
     }

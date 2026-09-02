@@ -7,6 +7,7 @@ import 'package:recipe_ai/Controllers/onboarding_controller.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:recipe_ai/screens/onboarding/setting_up_screen.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 
 class AgeScreen extends StatefulWidget {
   final VoidCallback? onContinue;
@@ -25,6 +26,12 @@ class AgeScreen extends StatefulWidget {
 }
 
 class _AgeScreenState extends State<AgeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    AnalyticsService.instance.trackScreen('AgeScreen');
+  }
+
   int _selectedIndex = 1; // "25-34" selected by default
 
   List<String> get _ageRanges => [

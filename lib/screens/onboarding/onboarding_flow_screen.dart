@@ -16,6 +16,7 @@ import '../../widgets/onboarding_progress_bar.dart';
 
 import '../../Controllers/onboarding_controller.dart';
 import '../../Service/notification_service.dart';
+import '../../Service/analytics_service.dart';
 
 import 'welcome_screen.dart';
 import 'social_proof_screen.dart';
@@ -45,6 +46,12 @@ class OnboardingFlowScreen extends StatefulWidget {
 }
 
 class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
+  @override
+  void initState() {
+    super.initState();
+    AnalyticsService.instance.trackScreen('OnboardingFlowScreen');
+  }
+
   /// Number of steps handled by this unified flow (1–12). The progress track
   /// fills across these steps and completes (100%) on the final step (12).
   static const int _flowPages = 13;

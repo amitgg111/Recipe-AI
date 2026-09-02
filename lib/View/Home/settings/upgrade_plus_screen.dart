@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 
 import 'package:recipe_ai/Service/subscription_service.dart';
 import 'package:recipe_ai/Service/revenuecat_service.dart';
@@ -75,9 +76,12 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
   @override
   void initState() {
     super.initState();
-    // (existing animation controllers set up below)
     _rc.fetchOfferings();
     _initAnimations();
+
+    // Analytics
+    AnalyticsService.instance.trackScreen("UpgradePlusScreen");
+    AnalyticsService.instance.trackEvent("plus_paywall_viewed");
   }
 
   // ── Palette (straight from the design) ──────────────────────────────────────
@@ -141,12 +145,27 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
   Future<void> _subscribe() async {
     if (_busy) return;
     final pkg = _monthly ? _monthlyPkg : _yearlyPkg;
+    final plan = _monthly ? "monthly" : "yearly";
+    final hasTrial = _selectedHasTrial;
 
+    // Button tap
+    AnalyticsService.instance.trackEvent(
+      "plus_subscribe_tapped",
+      parameters: {
+        "plan": plan,
+        "has_trial": hasTrial,
+        "price": _monthly ? _monthlyPrice : _yearlyPrice,
+      },
+    );
     // No package yet → RevenueCat isn't configured (keys not set) or offerings
     // haven't loaded. Keep the dev unlock so the app is usable before store
     // setup is finished.
     if (pkg == null) {
       await SubscriptionService.instance.setPlus(true);
+      AnalyticsService.instance.trackEvent(
+        "plus_activated",
+        parameters: {"source": "dev_unlock", "plan": plan},
+      );
       _onPlusActivated();
       return;
     }
@@ -156,10 +175,28 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
       final ok = await _rc.purchase(pkg);
       if (!mounted) return;
       if (ok) {
+        AnalyticsService.instance.trackEvent(
+          "plus_purchase_success",
+          parameters: {
+            "plan": plan,
+            "has_trial": hasTrial,
+            "price": _monthly ? _monthlyPrice : _yearlyPrice,
+          },
+        );
         _onPlusActivated();
+      } else {
+        // User cancelled
+        AnalyticsService.instance.trackEvent(
+          "plus_purchase_cancelled",
+          parameters: {"plan": plan},
+        );
       }
       // ok == false → user cancelled; leave the paywall open silently.
-    } catch (_) {
+    } catch (e) {
+      AnalyticsService.instance.trackEvent(
+        "plus_purchase_failed",
+        parameters: {"plan": plan, "error": e.toString()},
+      );
       if (mounted) {
         CustomSnackbar.show(
           title: 'purchase_failed'.tr,
@@ -174,11 +211,13 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
 
   Future<void> _restore() async {
     if (_busy) return;
+    AnalyticsService.instance.trackEvent("plus_restore_tapped");
     setState(() => _busy = true);
     try {
       final ok = await _rc.restore();
       if (!mounted) return;
       if (ok) {
+        AnalyticsService.instance.trackEvent("plus_restore_success");
         _onPlusActivated();
       } else {
         CustomSnackbar.show(
@@ -321,8 +360,14 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
                                         price: _monthlyPrice,
                                         note: 'per_month'.tr,
                                         highlightNoteWhenSelected: false,
-                                        onTap: () =>
-                                            setState(() => _monthly = true),
+                                        // Monthly card
+                                        onTap: () {
+                                          setState(() => _monthly = true);
+                                          AnalyticsService.instance.trackEvent(
+                                            "plan_selected",
+                                            parameters: {"plan": "monthly"},
+                                          );
+                                        },
                                       ),
                                     ),
                                     const SizedBox(width: 11),
@@ -333,8 +378,14 @@ class _UpgradePlusScreenState extends State<UpgradePlusScreen>
                                         price: _yearlyPrice,
                                         note: _yearlyPerMonth,
                                         highlightNoteWhenSelected: true,
-                                        onTap: () =>
-                                            setState(() => _monthly = false),
+                                        // Yearly card
+                                        onTap: () {
+                                          setState(() => _monthly = false);
+                                          AnalyticsService.instance.trackEvent(
+                                            "plan_selected",
+                                            parameters: {"plan": "yearly"},
+                                          );
+                                        },
                                       ),
                                     ),
                                   ],

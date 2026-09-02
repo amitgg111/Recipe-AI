@@ -1,5 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/Service/remote_config_service.dart';
 import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:flutter/material.dart';
@@ -29,14 +30,19 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   Future<void> _onGoogleContinue() async {
     if (_isGoogleLoading || _isAppleLoading) return;
     setState(() => _isGoogleLoading = true);
-
+    AnalyticsService.instance.trackButtonTap(
+      "Continue with Google",
+      screenName: "CreateAccountScreen",
+    );
     try {
       final userCred = await AuthService.signInWithGoogle();
 
       if (userCred == null) {
         return;
       }
-
+      // Success
+      await AnalyticsService.instance.trackLogin("google");
+      await AnalyticsService.instance.setUserId(userCred.user!.uid);
       await _routeAfterAuth();
     } catch (e) {
       if (!mounted) return;
@@ -53,8 +59,18 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     }
   }
 
+  @override
+  void initState() {
+    super.initState();
+    AnalyticsService.instance.trackScreen("CreateAccountScreen");
+  }
+
   Future<void> _onAppleContinue() async {
     if (_isGoogleLoading || _isAppleLoading) return;
+    AnalyticsService.instance.trackButtonTap(
+      "Continue with Apple",
+      screenName: "CreateAccountScreen",
+    );
     setState(() => _isAppleLoading = true);
 
     try {
@@ -65,6 +81,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
       }
 
       if (result.success) {
+        await AnalyticsService.instance.trackLogin("apple");
+        await AnalyticsService.instance.setUserId(result.user!.uid);
         await _routeAfterAuth();
       } else {
         if (!mounted) return;
@@ -91,12 +109,20 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   }
 
   void _onOtherOptions() {
+    AnalyticsService.instance.trackButtonTap(
+      "Other Options",
+      screenName: "CreateAccountScreen",
+    );
     Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (_) => const SignUpScreen()));
   }
 
   void _onLogIn() {
+    AnalyticsService.instance.trackButtonTap(
+      "Log In Link",
+      screenName: "CreateAccountScreen",
+    );
     Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (_) => const LoginScreen()));

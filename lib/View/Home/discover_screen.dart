@@ -7,6 +7,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:recipe_ai/Controllers/discover_controller.dart';
 import 'package:recipe_ai/Controllers/cookbook_controller.dart';
 import 'package:recipe_ai/Controllers/profile_controller.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
+import 'package:recipe_ai/Service/mixpanel_service.dart';
 import 'package:recipe_ai/View/Home/settings/manage_subscription_screen.dart';
 import 'package:recipe_ai/theme/app_dimensions.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
@@ -85,6 +87,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       if (!mounted) return;
       _precacheFeedImages(list);
     });
+    AnalyticsService.instance.trackScreen("DiscoverScreen");
   }
 
   Worker? _precacheSub;
@@ -223,12 +226,18 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
                           return GestureDetector(
                             onTap: () {
+                              AnalyticsService.instance.trackButtonTap(
+                                "Category: $cat",
+                                screenName: "DiscoverScreen",
+                              );
+
+                              AnalyticsService.instance.trackEvent(
+                                "discover_category_selected",
+                                parameters: {"category": cat},
+                              );
+
                               controller.selectCategory(cat);
 
-                              // The instant cache keeps the list (no clear),
-                              // so reset the feed to the top on switch —
-                              // otherwise the new tab shows at the previous
-                              // tab's scroll offset.
                               if (feedScrollController.hasClients) {
                                 feedScrollController.jumpTo(0);
                               }
@@ -376,9 +385,19 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       return GestureDetector(
         onTap: !plus
             ? () {
+                AnalyticsService.instance.trackButtonTap(
+                  "Upgrade Plus",
+                  screenName: "DiscoverScreen",
+                );
+
                 Get.to(() => const UpgradePlusScreen());
               }
             : () {
+                AnalyticsService.instance.trackButtonTap(
+                  "Manage Subscription",
+                  screenName: "DiscoverScreen",
+                );
+
                 Get.to(() => const ManageSubscriptionScreen());
               },
         behavior: HitTestBehavior.opaque,
@@ -514,6 +533,14 @@ class _SearchField extends StatelessWidget {
           Expanded(
             child: TextField(
               onChanged: (v) => controller.searchQuery.value = v.trim(),
+              onSubmitted: (v) {
+                if (v.trim().isNotEmpty) {
+                  MixpanelService.instance.trackSearch(
+                    query: v.trim(),
+                    searchType: 'discover_recipes',
+                  );
+                }
+              },
               cursorColor: _D.primary,
               onTapOutside: (_) {
                 FocusManager.instance.primaryFocus?.unfocus();
@@ -632,6 +659,20 @@ class _RecipeCardState extends State<_RecipeCard> {
   }
 
   void _open() {
+    AnalyticsService.instance.trackButtonTap(
+      "View Recipe",
+      screenName: "DiscoverScreen",
+    );
+
+    AnalyticsService.instance.trackEvent(
+      "discover_recipe_opened",
+      parameters: {
+        "recipe_id": recipe.id,
+        "recipe_title": recipe.title,
+        "category": recipe.cuisine ?? "",
+      },
+    );
+
     Get.to(
       () => PublicRecipeViewScreen(
         recipe: recipe,
@@ -659,6 +700,19 @@ class _RecipeCardState extends State<_RecipeCard> {
 
   void _openAuthor() {
     if (recipe.userId.isEmpty) return;
+    AnalyticsService.instance.trackButtonTap(
+      "Open Creator Profile",
+      screenName: "DiscoverScreen",
+    );
+
+    AnalyticsService.instance.trackEvent(
+      "creator_profile_opened_from_discover",
+      parameters: {
+        "creator_id": recipe.userId,
+        "creator_name": recipe.userName,
+        "recipe_id": recipe.id,
+      },
+    );
     Get.to(
       () => CreatorProfileScreen(
         userId: recipe.userId,
@@ -693,6 +747,20 @@ class _RecipeCardState extends State<_RecipeCard> {
 
     try {
       await RecipeSocialService.setLike(recipe.userId, recipe.id, target);
+
+      AnalyticsService.instance.trackButtonTap(
+        target ? "Like Recipe" : "Unlike Recipe",
+        screenName: "DiscoverScreen",
+      );
+
+      AnalyticsService.instance.trackEvent(
+        target ? "recipe_liked" : "recipe_unliked",
+        parameters: {
+          "recipe_id": recipe.id,
+          "recipe_title": recipe.title,
+          "source": "DiscoverScreen",
+        },
+      );
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -761,6 +829,20 @@ class _RecipeCardState extends State<_RecipeCard> {
       _disc.savedOriginalIds.refresh();
 
       await RecipeSocialService.setSave(recipe.userId, recipe.id, true);
+
+      AnalyticsService.instance.trackButtonTap(
+        "Save Recipe",
+        screenName: "DiscoverScreen",
+      );
+
+      AnalyticsService.instance.trackEvent(
+        "recipe_saved",
+        parameters: {
+          "recipe_id": recipe.id,
+          "recipe_title": recipe.title,
+          "source": "DiscoverScreen",
+        },
+      );
     } catch (e) {
       // no-op — surfaced via existing snackbars/UX elsewhere
     } finally {
@@ -796,6 +878,19 @@ class _RecipeCardState extends State<_RecipeCard> {
 
       await RecipeSocialService.setSave(recipe.userId, recipe.id, false);
 
+      AnalyticsService.instance.trackButtonTap(
+        "Unsave Recipe",
+        screenName: "DiscoverScreen",
+      );
+
+      AnalyticsService.instance.trackEvent(
+        "recipe_unsaved",
+        parameters: {
+          "recipe_id": recipe.id,
+          "recipe_title": recipe.title,
+          "source": "DiscoverScreen",
+        },
+      );
       _disc.savedOriginalIds.remove(recipe.id);
       _disc.savedOriginalIds.refresh();
 
@@ -833,6 +928,19 @@ class _RecipeCardState extends State<_RecipeCard> {
     }
 
     await Share.share(buf.toString(), subject: recipe.title);
+    AnalyticsService.instance.trackButtonTap(
+      "Share Recipe",
+      screenName: "DiscoverScreen",
+    );
+
+    AnalyticsService.instance.trackEvent(
+      "recipe_shared",
+      parameters: {
+        "recipe_id": recipe.id,
+        "recipe_title": recipe.title,
+        "source": "DiscoverScreen",
+      },
+    );
 
     unawaited(RecipeSocialService.registerShare(recipe.userId, recipe.id));
   }
@@ -1107,12 +1215,27 @@ class _RecipeCardState extends State<_RecipeCard> {
                       color: _D.textDark,
                     ),
                     count: recipe.commentsCount,
-                    onTap: () => CommentsSheet.show(
-                      context,
-                      ownerId: recipe.userId,
-                      recipeId: recipe.id,
-                      onCommentAdded: () {},
-                    ),
+                    onTap: () {
+                      AnalyticsService.instance.trackButtonTap(
+                        "Comments",
+                        screenName: "DiscoverScreen",
+                      );
+
+                      AnalyticsService.instance.trackEvent(
+                        "recipe_comments_opened",
+                        parameters: {
+                          "recipe_id": recipe.id,
+                          "recipe_title": recipe.title,
+                        },
+                      );
+
+                      CommentsSheet.show(
+                        context,
+                        ownerId: recipe.userId,
+                        recipeId: recipe.id,
+                        onCommentAdded: () {},
+                      );
+                    },
                   ),
                   const SizedBox(width: 4),
                   _action(

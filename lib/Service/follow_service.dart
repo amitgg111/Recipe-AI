@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 
 /// Follow / unfollow relationships between users.
 ///
@@ -39,8 +40,9 @@ class FollowService {
     // Cache-first read is instant; if the relationship is unchanged, do nothing.
     bool already = false;
     try {
-      final snap =
-          await followerRef.get(const GetOptions(source: Source.cache));
+      final snap = await followerRef.get(
+        const GetOptions(source: Source.cache),
+      );
       already = snap.exists;
     } catch (_) {
       already = false; // never cached → not following
@@ -52,19 +54,27 @@ class FollowService {
       final now = FieldValue.serverTimestamp();
       batch.set(followerRef, {'uid': me, 'followedAt': now});
       batch.set(followingRef, {'uid': targetUid, 'followedAt': now});
-      batch.set(targetRef, {'followersCount': FieldValue.increment(1)},
-          SetOptions(merge: true));
-      batch.set(meRef, {'followingCount': FieldValue.increment(1)},
-          SetOptions(merge: true));
+      batch.set(targetRef, {
+        'followersCount': FieldValue.increment(1),
+      }, SetOptions(merge: true));
+      batch.set(meRef, {
+        'followingCount': FieldValue.increment(1),
+      }, SetOptions(merge: true));
     } else {
       batch.delete(followerRef);
       batch.delete(followingRef);
-      batch.set(targetRef, {'followersCount': FieldValue.increment(-1)},
-          SetOptions(merge: true));
-      batch.set(meRef, {'followingCount': FieldValue.increment(-1)},
-          SetOptions(merge: true));
+      batch.set(targetRef, {
+        'followersCount': FieldValue.increment(-1),
+      }, SetOptions(merge: true));
+      batch.set(meRef, {
+        'followingCount': FieldValue.increment(-1),
+      }, SetOptions(merge: true));
+      await batch.commit();
+      await AnalyticsService.instance.trackEvent(
+        follow ? 'follow_user' : 'unfollow_user',
+        parameters: {'target_uid': targetUid},
+      );
     }
-    await batch.commit();
   }
 
   /// Whether the current user follows [targetUid] (live).

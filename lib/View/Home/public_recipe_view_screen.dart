@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:recipe_ai/Controllers/nutrition_controller.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/Service/subscription_service.dart';
 import 'package:recipe_ai/View/Home/nutrition/nutrition_screen.dart';
 import 'package:recipe_ai/widgets/nutrition_locked_card.dart';
@@ -236,6 +237,10 @@ class _PublicRecipeViewScreenState extends State<PublicRecipeViewScreen> {
     _commentsCount = ValueNotifier<int>(0);
 
     _loadSocial();
+
+    AnalyticsService.instance.trackScreen(
+      "PublicRecipeViewScreen/DiscoverRecipe",
+    );
   }
 
   @override

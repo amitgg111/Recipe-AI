@@ -8,6 +8,7 @@ import 'package:recipe_ai/Controllers/discover_controller.dart';
 import 'package:recipe_ai/Controllers/notification_controller.dart';
 import 'package:recipe_ai/Controllers/profile_controller.dart';
 import 'package:recipe_ai/Controllers/settings_controller.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/Service/remote_config_service.dart';
 import 'package:recipe_ai/Service/subscription_service.dart';
@@ -51,6 +52,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       vsync: this,
       duration: const Duration(milliseconds: 3200),
     )..repeat();
+    AnalyticsService.instance.trackScreen("SettingsScreen/MoreTab");
   }
 
   @override

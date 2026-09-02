@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recipe_ai/Controllers/home_controller.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/Service/recipe_localizer.dart';
 import 'package:recipe_ai/View/Home/recipe_detail_screen.dart';
@@ -59,6 +60,14 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
     } finally {
       _localizingRecipeIds.remove(recipe.id);
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    AnalyticsService.instance.trackScreen(
+      widget.favoritesOnly ? "FavoriteRecipesScreen" : "MyRecipesScreen",
+    );
   }
 
   @override
@@ -218,7 +227,21 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
   Widget _chip(String label, int index, {String? iconName, Color? iconColor}) {
     final active = _filter == index;
     return GestureDetector(
-      onTap: () => setState(() => _filter = index),
+      onTap: () {
+        setState(() => _filter = index);
+
+        AnalyticsService.instance.trackEvent(
+          "recipe_filter_changed",
+          parameters: {
+            "filter": index == 0
+                ? "all"
+                : index == 1
+                ? "public"
+                : "private",
+            "screen": widget.favoritesOnly ? "favorites" : "my_recipes",
+          },
+        );
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
         decoration: BoxDecoration(
@@ -271,7 +294,18 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
     return Column(
       children: [
         InkWell(
-          onTap: () => Get.to(() => RecipeDetailScreen(recipe: recipe)),
+          onTap: () {
+            AnalyticsService.instance.trackEvent(
+              "recipe_opened",
+              parameters: {
+                "recipe_id": recipe.id,
+                "is_public": recipe.isPublic,
+                "source": widget.favoritesOnly ? "favorites" : "my_recipes",
+              },
+            );
+
+            Get.to(() => RecipeDetailScreen(recipe: recipe));
+          },
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 11),
             child: Row(
@@ -393,13 +427,22 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
               color: makePublic ? AppColors.green : AppColors.textDark,
               onTap: () async {
                 Get.back();
-                // Recipes saved from Discover can never be published — show the
-                // block popup and change nothing.
+
                 if (makePublic && !recipe.canBePublished) {
                   showCannotPublishDialog();
                   return;
                 }
+
                 await _home.updateRecipeVisibility(recipe.id, makePublic);
+
+                AnalyticsService.instance.trackEvent(
+                  "recipe_visibility_changed",
+                  parameters: {
+                    "recipe_id": recipe.id,
+                    "new_visibility": makePublic ? "public" : "private",
+                  },
+                );
+
                 CustomSnackbar.show(
                   title: makePublic ? 'now_public'.tr : 'now_private'.tr,
                   message: makePublic

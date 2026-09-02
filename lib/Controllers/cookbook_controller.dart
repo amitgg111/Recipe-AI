@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/Service/ai_translation_service.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/widgets/custom_snackbar.dart';
 
 class CookbookModel {
@@ -205,12 +206,7 @@ class CookbookController extends GetxController {
           .collection("cookbooks")
           .doc(cookbookId)
           .delete();
-
-      // CustomSnackbar.show(
-      //   title: 'Deleted',
-      //   message: 'Cookbook deleted',
-      //   type: SnackbarType.success,
-      // );
+      await AnalyticsService.instance.trackEvent('delete_cookbook', parameters: {'cookbook_id': cookbookId});
     } catch (e) {
       log("Delete cookbook error => $e");
       CustomSnackbar.show(

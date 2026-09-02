@@ -22,6 +22,7 @@ import 'package:recipe_ai/View/Home/recipe_detail_screen.dart';
 import 'package:recipe_ai/View/Home/recipe_editor_screen.dart';
 import 'package:recipe_ai/Controllers/nutrition_controller.dart';
 import 'package:recipe_ai/Service/subscription_service.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/widgets/premium_lock_overlay.dart';
 import 'package:recipe_ai/widgets/nutrition_preview_card.dart';
 import 'package:recipe_ai/widgets/nutrition_locked_card.dart';
@@ -75,6 +76,7 @@ class _ImportCompleteScreenState extends State<ImportCompleteScreen> {
   @override
   void initState() {
     super.initState();
+    AnalyticsService.instance.trackScreen('ImportCompleteScreen');
     _currentRecipe = widget.recipe;
     _loadLocalizedText();
   }
@@ -192,6 +194,10 @@ class _ImportCompleteScreenState extends State<ImportCompleteScreen> {
                 children: [
                   GestureDetector(
                     onTap: () {
+                      AnalyticsService.instance.trackButtonTap(
+                        'close_import_review',
+                        screenName: 'ImportCompleteScreen',
+                      );
                       // Pop back if a screen exists beneath. This screen is
                       // reached via Get.off (replacing the import/processing
                       // screen); if it ended up as the ONLY route, a bare pop
@@ -930,7 +936,13 @@ class _ImportCompleteScreenState extends State<ImportCompleteScreen> {
   // ─── Save / Edit buttons ───────────────────────────────────────────────────
   Widget _saveButton(BuildContext context) {
     return GestureDetector(
-      onTap: () => _showCookbookPicker(context),
+      onTap: () {
+        AnalyticsService.instance.trackButtonTap(
+          'save_imported_recipe',
+          screenName: 'ImportCompleteScreen',
+        );
+        _showCookbookPicker(context);
+      },
       child: Container(
         height: 50,
         decoration: BoxDecoration(
@@ -967,6 +979,10 @@ class _ImportCompleteScreenState extends State<ImportCompleteScreen> {
   Widget _editButton(BuildContext context) {
     return GestureDetector(
       onTap: () async {
+        AnalyticsService.instance.trackButtonTap(
+          'edit_imported_recipe',
+          screenName: 'ImportCompleteScreen',
+        );
         final updatedRecipe = await Get.to<RecipeModel>(
           () => RecipeEditorScreen(recipe: _currentRecipe),
         );

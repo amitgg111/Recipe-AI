@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/Service/import_with_image_api_calling_service.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 
@@ -27,6 +28,8 @@ class _RecipeCameraScreenState extends State<RecipeCameraScreen> {
   void initState() {
     super.initState();
     _initializeCamera();
+
+    AnalyticsService.instance.trackScreen("RecipeCameraScreen");
   }
 
   Future<void> _initializeCamera() async {
@@ -521,7 +524,13 @@ class _RecipeCameraScreenState extends State<RecipeCameraScreen> {
 
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: () => Get.back(result: true),
+                          onPressed: () {
+                            AnalyticsService.instance.trackButtonTap(
+                              "Generate Recipe From Image",
+                              screenName: "RecipeCameraScreen",
+                            );
+                            Get.back(result: true);
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,

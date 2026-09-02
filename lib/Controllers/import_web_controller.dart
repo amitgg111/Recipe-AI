@@ -13,6 +13,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_scraper/recipe_scraper.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/Model/recipe_section_model.dart';
 import 'package:recipe_ai/Controllers/home_controller.dart';
 
@@ -503,6 +504,8 @@ class ImportWebController extends GetxController {
       if (freeRecipesLeft.value > 0) {
         freeRecipesLeft.value--;
       }
+
+      await AnalyticsService.instance.trackEvent('import_recipe_success', parameters: {'recipe_id': docRef.id, 'title': englishRecipe.title});
 
       return RecipeModel(
         id: docRef.id,

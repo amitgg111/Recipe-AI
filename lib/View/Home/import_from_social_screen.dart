@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/widgets/social_guide_animation.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/theme/app_text_styles.dart';
@@ -208,7 +209,7 @@ class _SocialGuideScreenState extends State<SocialGuideScreen> {
   String get _platformIcon {
     switch (widget.platform) {
       case SocialPlatform.instagram:
-        return 'assets/welcome/instragram.svg';
+        return 'assets/welcome/instagram.svg';
       case SocialPlatform.tiktok:
         return 'assets/welcome/tiktok.svg';
       case SocialPlatform.facebook:
@@ -307,6 +308,7 @@ class _SocialGuideScreenState extends State<SocialGuideScreen> {
                       child: Container(
                         width: double.infinity,
                         height: AppDimensions.buttonHeight,
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
                         decoration: BoxDecoration(
                           color: AppColors.primary,
                           borderRadius: BorderRadius.circular(
@@ -324,13 +326,9 @@ class _SocialGuideScreenState extends State<SocialGuideScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Image.asset(
-                              _platformIcon,
-                              color: Colors.white,
-                              height: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Flexible(
+                            SvgPicture.asset(_platformIcon, height: 30),
+
+                            Expanded(
                               child: Text(
                                 'open_platform_to_find_recipe'.trParams({
                                   'platform': _platformName,
@@ -374,7 +372,10 @@ class _SocialGuideScreenState extends State<SocialGuideScreen> {
         fallbackUrl = 'https://www.facebook.com';
         break;
     }
-
+    AnalyticsService.instance.trackButtonTap(
+      "Generate Recipe From $urlScheme",
+      screenName: "SocialGuideScreen",
+    );
     _tryLaunch(urlScheme, fallbackUrl);
   }
 

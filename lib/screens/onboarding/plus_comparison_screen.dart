@@ -6,6 +6,7 @@ import 'package:recipe_ai/widgets/app_logo.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 
 class PlusComparisonScreen extends StatefulWidget {
   final VoidCallback? onContinue;
@@ -80,6 +81,7 @@ class _PlusComparisonScreenState extends State<PlusComparisonScreen>
   @override
   void initState() {
     super.initState();
+    AnalyticsService.instance.trackScreen('PlusComparisonScreen');
 
     _sheenController = AnimationController(
       vsync: this,

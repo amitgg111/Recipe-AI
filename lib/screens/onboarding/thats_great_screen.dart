@@ -8,6 +8,7 @@ import 'package:recipe_ai/widgets/primary_button.dart';
 import 'package:recipe_ai/widgets/progress_indicator_dots.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 import 'package:recipe_ai/screens/onboarding/goals_happen_screen.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 
 class ThatsGreatScreen extends StatefulWidget {
   static const String routeName = '/onboarding/thats-great';
@@ -26,6 +27,7 @@ class _ThatsGreatScreenState extends State<ThatsGreatScreen>
   @override
   void initState() {
     super.initState();
+    AnalyticsService.instance.trackScreen('ThatsGreatScreen');
     // 4.2s duration, ease-in-out, infinite reverse
     _floatController = AnimationController(
       duration: const Duration(milliseconds: 4200),

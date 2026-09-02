@@ -5,6 +5,7 @@ import 'package:recipe_ai/theme/app_text_styles.dart';
 import 'package:recipe_ai/theme/app_dimensions.dart';
 import 'package:recipe_ai/widgets/app_bottom_nav.dart';
 import 'package:recipe_ai/widgets/app_search_bar.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 
 class DiscoverFeedScreen extends StatefulWidget {
   const DiscoverFeedScreen({super.key});
@@ -61,6 +62,14 @@ class _DiscoverFeedScreenState extends State<DiscoverFeedScreen> {
     ),
   ];
 
+  void _track(String action, {Map<String, Object>? extra}) {
+    AnalyticsService.instance.trackButtonTap(
+      action,
+      screenName: 'DiscoverFeedScreen',
+      extra: extra,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -90,7 +99,10 @@ class _DiscoverFeedScreenState extends State<DiscoverFeedScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: AppBottomNav(currentIndex: 1, onTap: (i) {}),
+      bottomNavigationBar: AppBottomNav(
+        currentIndex: 1,
+        onTap: (i) => _track('bottom_nav_tab', extra: {'tab_index': i}),
+      ),
     );
   }
 
@@ -140,7 +152,10 @@ class _DiscoverFeedScreenState extends State<DiscoverFeedScreen> {
         itemBuilder: (context, index) {
           final selected = index == _selectedFilter;
           return GestureDetector(
-            onTap: () => setState(() => _selectedFilter = index),
+            onTap: () {
+              _track('discover_filter', extra: {'filter': _filters[index]});
+              setState(() => _selectedFilter = index);
+            },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
@@ -224,7 +239,10 @@ class _DiscoverFeedScreenState extends State<DiscoverFeedScreen> {
                   ),
                 ),
                 GestureDetector(
-                  onTap: () {},
+                  onTap: () => _track(
+                    'view_community_recipe',
+                    extra: {'author': post.author, 'recipe_title': post.title},
+                  ),
                   child: Text(
                     'View recipe >',
                     style: AppTextStyles.link.copyWith(fontSize: 12.5),

@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:recipe_ai/screens/auth/create_account_screen.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/widgets/app_wordmark.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -62,6 +63,7 @@ class _SettingUpScreenState extends State<SettingUpScreen>
   @override
   void initState() {
     super.initState();
+    AnalyticsService.instance.trackScreen('SettingUpScreen');
 
     // Pan tilt: subtle rotation -3deg to 3deg, 2.2s, ease-in-out, infinite
     _panController = AnimationController(

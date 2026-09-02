@@ -12,6 +12,7 @@ import 'package:recipe_ai/screens/recipe/recipe_menu_popup.dart';
 import 'package:recipe_ai/screens/recipe/add_note_sheet.dart';
 import 'package:recipe_ai/screens/recipe/add_to_cookbook_sheet.dart';
 import 'package:recipe_ai/screens/recipe/recipe_detail_edit_screen.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 
 class RecipeDetailViewScreen extends StatefulWidget {
   const RecipeDetailViewScreen({super.key});
@@ -25,6 +26,12 @@ class _RecipeDetailViewScreenState extends State<RecipeDetailViewScreen> {
   int _navIndex = 0;
   final Set<int> _checkedIngredients = {};
   final GlobalKey _menuButtonKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    AnalyticsService.instance.trackScreen('RecipeDetailViewScreen');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +59,14 @@ class _RecipeDetailViewScreenState extends State<RecipeDetailViewScreen> {
             bottom: 0,
             child: AppBottomNav(
               currentIndex: _navIndex,
-              onTap: (i) => setState(() => _navIndex = i),
+              onTap: (i) {
+                AnalyticsService.instance.trackButtonTap(
+                  'bottom_nav_tab',
+                  screenName: 'RecipeDetailViewScreen',
+                  extra: {'tab_index': i},
+                );
+                setState(() => _navIndex = i);
+              },
             ),
           ),
         ],
@@ -102,13 +116,25 @@ class _RecipeDetailViewScreenState extends State<RecipeDetailViewScreen> {
               children: [
                 _buildHeroButton(
                   icon: Icons.arrow_back_ios_new_rounded,
-                  onTap: () => Get.back(),
+                  onTap: () {
+                    AnalyticsService.instance.trackButtonTap(
+                      'back',
+                      screenName: 'RecipeDetailViewScreen',
+                    );
+                    Get.back();
+                  },
                 ),
                 Row(
                   children: [
                     _buildHeroButton(
                       icon: Icons.edit_outlined,
-                      onTap: () => Get.to(() => const RecipeDetailEditScreen()),
+                      onTap: () {
+                        AnalyticsService.instance.trackButtonTap(
+                          'edit_recipe',
+                          screenName: 'RecipeDetailViewScreen',
+                        );
+                        Get.to(() => const RecipeDetailEditScreen());
+                      },
                     ),
                     const SizedBox(width: 8),
                     _buildHeroButton(
@@ -289,19 +315,31 @@ class _RecipeDetailViewScreenState extends State<RecipeDetailViewScreen> {
           _buildActionButton(
             icon: Icons.menu_book_rounded,
             label: 'cookbook'.tr,
-            onTap: () => AddToCookbookSheet.show(context),
+            onTap: () {
+              AnalyticsService.instance.trackButtonTap(
+                'add_to_cookbook',
+                screenName: 'RecipeDetailViewScreen',
+              );
+              AddToCookbookSheet.show(context);
+            },
           ),
           const SizedBox(width: 12),
           _buildActionButton(
             icon: Icons.calendar_today_rounded,
             label: 'meal_plan'.tr,
-            onTap: () {},
+            onTap: () => AnalyticsService.instance.trackButtonTap(
+              'add_to_meal_plan',
+              screenName: 'RecipeDetailViewScreen',
+            ),
           ),
           const SizedBox(width: 12),
           _buildActionButton(
             icon: Icons.share_outlined,
             label: 'share'.tr,
-            onTap: () {},
+            onTap: () => AnalyticsService.instance.trackButtonTap(
+              'share_recipe',
+              screenName: 'RecipeDetailViewScreen',
+            ),
           ),
         ],
       ),

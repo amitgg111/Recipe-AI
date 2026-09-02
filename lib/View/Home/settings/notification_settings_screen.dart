@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/Controllers/settings_controller.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/Service/notification_service.dart';
 import 'package:recipe_ai/View/Home/settings/settings_common.dart';
 import 'package:recipe_ai/theme/app_colors.dart';
@@ -31,6 +32,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
     // dialog again, so a denied user gets the "Open settings" path instead).
     WidgetsBinding.instance.addPostFrameCallback((_) => _resolvePermission());
     _push.addPermissionObserver(_onPermissionChanged);
+    AnalyticsService.instance.trackScreen("NotificationScreen");
   }
 
   @override
@@ -93,8 +95,10 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
               _PermissionBanner(onOpenSettings: _push.openSystemSettings),
             ],
 
-            SettingsUi.label('section_cooking'.tr,
-                padding: const EdgeInsets.fromLTRB(4, 4, 4, 9)),
+            SettingsUi.label(
+              'section_cooking'.tr,
+              padding: const EdgeInsets.fromLTRB(4, 4, 4, 9),
+            ),
             SettingsUi.card(
               rows: [
                 _toggle(
@@ -188,7 +192,20 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
             ),
           ),
           const SizedBox(width: 13),
-          Obx(() => SettingsSwitch(value: value.value, onChanged: onChanged)),
+          Obx(
+            () => SettingsSwitch(
+              value: value.value,
+              onChanged: (newValue) {
+                // Analytics
+                AnalyticsService.instance.trackEvent(
+                  "notification_setting_changed",
+                  parameters: {"setting": title, "enabled": newValue},
+                );
+
+                onChanged(newValue);
+              },
+            ),
+          ),
         ],
       ),
     );
@@ -212,8 +229,11 @@ class _PermissionBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.notifications_off_rounded,
-              size: 22, color: AppColors.primary),
+          const Icon(
+            Icons.notifications_off_rounded,
+            size: 22,
+            color: AppColors.primary,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -241,10 +261,15 @@ class _PermissionBanner extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           GestureDetector(
-            onTap: onOpenSettings,
+            onTap: () {
+              AnalyticsService.instance.trackButtonTap(
+                "Open System Settings",
+                screenName: "NotificationSettingsScreen",
+              );
+              onOpenSettings();
+            },
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
               decoration: BoxDecoration(
                 color: AppColors.primary,
                 borderRadius: BorderRadius.circular(11),

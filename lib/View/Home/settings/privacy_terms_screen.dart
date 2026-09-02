@@ -1,13 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/Service/remote_config_service.dart';
 import 'package:recipe_ai/View/Home/settings/settings_common.dart';
 
 import 'package:recipe_ai/theme/app_colors.dart';
 import 'package:recipe_ai/widgets/onboarding_line_icon.dart';
 
-class PrivacyTermsScreen extends StatelessWidget {
+class PrivacyTermsScreen extends StatefulWidget {
   const PrivacyTermsScreen({super.key});
+
+  @override
+  State<PrivacyTermsScreen> createState() => _PrivacyTermsScreenState();
+}
+
+class _PrivacyTermsScreenState extends State<PrivacyTermsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    AnalyticsService.instance.trackScreen("PrivacyTermsScreen");
+  }
 
   @override
   Widget build(BuildContext context) {

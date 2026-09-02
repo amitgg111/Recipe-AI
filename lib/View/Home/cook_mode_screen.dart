@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:get/get.dart';
 import 'package:recipe_ai/Controllers/home_controller.dart';
@@ -115,6 +116,7 @@ class _CookModeScreenState extends State<CookModeScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _autoStartIfNeeded(_currentPage);
     });
+    AnalyticsService.instance.trackScreen("CookModeScreen");
   }
 
   Future<void> _loadLocalizedText() async {
@@ -523,7 +525,14 @@ class _CookModeScreenState extends State<CookModeScreen>
       children: [
         _squareBtn(
           const OnboardingLineIcon('x', size: 20, color: _C.textDark),
-          _confirmExit,
+          () {
+            AnalyticsService.instance.trackButtonTap(
+              "Close",
+              screenName: "CookModeScreen",
+            );
+
+            _confirmExit();
+          },
         ),
         const SizedBox(width: 14),
         Expanded(
@@ -621,7 +630,23 @@ class _CookModeScreenState extends State<CookModeScreen>
               label: 'start_timer_duration'.trParams({
                 'duration': _fmt(duration),
               }),
-              onTap: () => _startTimer(index, duration),
+              onTap: () {
+                AnalyticsService.instance.trackButtonTap(
+                  "Start Timer",
+                  screenName: "CookModeScreen",
+                );
+
+                AnalyticsService.instance.trackEvent(
+                  "cook_timer_started",
+                  parameters: {
+                    "recipe_id": widget.recipe.id,
+                    "step": index + 1,
+                    "duration_seconds": duration,
+                  },
+                );
+
+                _startTimer(index, duration);
+              },
             )
           else
             _outlineTimerButton(
@@ -631,7 +656,14 @@ class _CookModeScreenState extends State<CookModeScreen>
                 color: _C.primary,
               ),
               label: 'add_a_timer'.tr,
-              onTap: () => _openSetTimerSheet(index),
+              onTap: () {
+                AnalyticsService.instance.trackButtonTap(
+                  "Add Timer",
+                  screenName: "CookModeScreen",
+                );
+
+                _openSetTimerSheet(index);
+              },
             ),
 
           const SizedBox(height: 6),
@@ -829,7 +861,14 @@ class _CookModeScreenState extends State<CookModeScreen>
               children: [
                 _timerIconButton(
                   icon: Icons.restart_alt_rounded,
-                  onTap: () => _reset(index),
+                  onTap: () {
+                    AnalyticsService.instance.trackButtonTap(
+                      "Reset Timer",
+                      screenName: "CookModeScreen",
+                    );
+
+                    _reset(index);
+                  },
                 ),
 
                 const SizedBox(width: 10),
@@ -838,6 +877,11 @@ class _CookModeScreenState extends State<CookModeScreen>
                   icon: paused ? 'play' : 'pause',
                   label: paused ? 'resume'.tr : 'pause'.tr,
                   onTap: () {
+                    AnalyticsService.instance.trackButtonTap(
+                      paused ? "Resume Timer" : "Pause Timer",
+                      screenName: "CookModeScreen",
+                    );
+
                     if (paused) {
                       _resume(index);
                     } else {
@@ -848,7 +892,16 @@ class _CookModeScreenState extends State<CookModeScreen>
 
                 const SizedBox(width: 10),
 
-                _timerAddButton(onTap: () => _addMinute(index)),
+                _timerAddButton(
+                  onTap: () {
+                    AnalyticsService.instance.trackButtonTap(
+                      "Add 1 Minute",
+                      screenName: "CookModeScreen",
+                    );
+
+                    _addMinute(index);
+                  },
+                ),
               ],
             ),
           ],
@@ -1127,7 +1180,14 @@ class _CookModeScreenState extends State<CookModeScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   GestureDetector(
-                    onTap: () => _addMinute(index),
+                    onTap: () {
+                      AnalyticsService.instance.trackButtonTap(
+                        "Add 1 Minute",
+                        screenName: "CookModeScreen",
+                      );
+
+                      _addMinute(index);
+                    },
                     child: Container(
                       height: 46,
                       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -1152,7 +1212,14 @@ class _CookModeScreenState extends State<CookModeScreen>
                     ),
                     label: 'dismiss'.tr,
                     color: _C.green,
-                    onTap: () => _dismiss(index),
+                    onTap: () {
+                      AnalyticsService.instance.trackButtonTap(
+                        "Dismiss Timer",
+                        screenName: "CookModeScreen",
+                      );
+
+                      _dismiss(index);
+                    },
                   ),
                 ],
               ),
@@ -1219,7 +1286,14 @@ class _CookModeScreenState extends State<CookModeScreen>
     final progress = t.total > 0 ? t.remaining / t.total : 0.0;
     final ringSize = big ? 34.0 : 30.0;
     return GestureDetector(
-      onTap: () => _goTo(index),
+      onTap: () {
+        AnalyticsService.instance.trackButtonTap(
+          "Timer Step",
+          screenName: "CookModeScreen",
+        );
+
+        _goTo(index);
+      },
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: big ? 11 : 10, vertical: 9),
         decoration: BoxDecoration(
@@ -1295,13 +1369,38 @@ class _CookModeScreenState extends State<CookModeScreen>
       children: [
         _squareBtn(
           const OnboardingLineIcon('back', size: 20, color: _C.textDark),
-          _prev,
+          () {
+            AnalyticsService.instance.trackButtonTap(
+              "Previous Step",
+              screenName: "CookModeScreen",
+            );
+
+            _prev();
+          },
           size: 50,
         ),
         const SizedBox(width: 12),
         Expanded(
           child: GestureDetector(
-            onTap: _next,
+            onTap: () {
+              AnalyticsService.instance.trackButtonTap(
+                isLast ? "Finish Cooking" : "Next Step",
+                screenName: "CookModeScreen",
+              );
+
+              if (isLast) {
+                AnalyticsService.instance.trackEvent(
+                  "cooking_completed",
+                  parameters: {
+                    "recipe_id": widget.recipe.id,
+                    "recipe_title": widget.recipe.title,
+                    "step_count": _steps.length,
+                  },
+                );
+              }
+
+              _next();
+            },
             child: Container(
               height: 50,
               decoration: BoxDecoration(
@@ -1385,7 +1484,14 @@ class _CookModeScreenState extends State<CookModeScreen>
                 children: [
                   Expanded(
                     child: GestureDetector(
-                      onTap: () => Navigator.pop(ctx),
+                      onTap: () {
+                        AnalyticsService.instance.trackButtonTap(
+                          "Stay",
+                          screenName: "CookModeScreen",
+                        );
+
+                        Navigator.pop(ctx);
+                      },
                       child: Container(
                         height: 48,
                         alignment: Alignment.center,
@@ -1405,6 +1511,20 @@ class _CookModeScreenState extends State<CookModeScreen>
                   Expanded(
                     child: GestureDetector(
                       onTap: () {
+                        AnalyticsService.instance.trackButtonTap(
+                          "Leave Cook Mode",
+                          screenName: "CookModeScreen",
+                        );
+
+                        AnalyticsService.instance.trackEvent(
+                          "cook_mode_exited",
+                          parameters: {
+                            "recipe_id": widget.recipe.id,
+                            "current_step": _currentPage + 1,
+                            "total_steps": _steps.length,
+                          },
+                        );
+
                         Navigator.pop(ctx);
                         Get.back();
                       },
@@ -1691,7 +1811,24 @@ class _FinishViewState extends State<_FinishView>
             children: List.generate(5, (i) {
               final filled = i < widget.rating;
               return GestureDetector(
-                onTap: () => widget.onRate(i + 1),
+                onTap: () {
+                  final rating = i + 1;
+
+                  AnalyticsService.instance.trackButtonTap(
+                    "Rate Recipe",
+                    screenName: "CookModeScreen",
+                  );
+
+                  AnalyticsService.instance.trackEvent(
+                    "recipe_rated_after_cooking",
+                    parameters: {
+                      "recipe_id": widget.recipe.id,
+                      "rating": rating,
+                    },
+                  );
+
+                  widget.onRate(rating);
+                },
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 5),
                   child: OnboardingLineIcon(
@@ -1715,11 +1852,27 @@ class _FinishViewState extends State<_FinishView>
       children: [
         GestureDetector(
           onTap: () {
+            AnalyticsService.instance.trackButtonTap(
+              "Save & Finish",
+              screenName: "CookModeScreen",
+            );
+
+            AnalyticsService.instance.trackEvent(
+              "cook_mode_finished",
+              parameters: {
+                "recipe_id": recipe.id,
+                "recipe_title": recipe.title,
+                "rating": widget.rating,
+                "step_count": widget.stepCount,
+              },
+            );
+
             CustomSnackbar.show(
               title: 'nice_work'.tr,
               message: 'enjoy_your_recipe'.trParams({'recipe': recipe.title}),
               type: SnackbarType.success,
             );
+
             widget.onClose();
           },
           child: Container(
@@ -1746,10 +1899,25 @@ class _FinishViewState extends State<_FinishView>
         ),
         const SizedBox(height: 12),
         GestureDetector(
-          onTap: () => Share.share(
-            'share_cooked_text'.trParams({'recipe': recipe.title}),
-            subject: recipe.title,
-          ),
+          onTap: () {
+            AnalyticsService.instance.trackButtonTap(
+              "Share Recipe",
+              screenName: "CookModeScreen",
+            );
+
+            AnalyticsService.instance.trackEvent(
+              "cooked_recipe_shared",
+              parameters: {
+                "recipe_id": recipe.id,
+                "recipe_title": recipe.title,
+              },
+            );
+
+            Share.share(
+              'share_cooked_text'.trParams({'recipe': recipe.title}),
+              subject: recipe.title,
+            );
+          },
           child: Container(
             height: 50,
             width: double.infinity,
@@ -1950,7 +2118,24 @@ class _SetTimerSheetState extends State<_SetTimerSheet> {
           ),
           const SizedBox(height: 22),
           GestureDetector(
-            onTap: _total == 0 ? null : () => widget.onConfirm(_total),
+            onTap: _total == 0
+                ? null
+                : () {
+                    AnalyticsService.instance.trackButtonTap(
+                      "Set Timer",
+                      screenName: "CookModeScreen",
+                    );
+
+                    AnalyticsService.instance.trackEvent(
+                      "custom_timer_set",
+                      parameters: {
+                        "step": widget.stepNumber,
+                        "duration_seconds": _total,
+                      },
+                    );
+
+                    widget.onConfirm(_total);
+                  },
             child: Container(
               height: 50,
               alignment: Alignment.center,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:recipe_ai/Model/nutrition_model.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/View/Home/nutrition/ingredient_nutrition_screen.dart';
 import 'package:recipe_ai/widgets/nutrition_animations.dart';
 import 'package:recipe_ai/widgets/nutrition_widgets.dart';
@@ -72,6 +73,13 @@ class _NutritionScreenState extends State<NutritionScreen> {
     final t = p + c + f;
     if (t <= 0) return const [0.02, 0.02, 0.02];
     return [p / t, c / t, f / t];
+  }
+
+  @override
+  void initState() {
+    AnalyticsService.instance.trackScreen("HomeScreen");
+
+    super.initState();
   }
 
   @override

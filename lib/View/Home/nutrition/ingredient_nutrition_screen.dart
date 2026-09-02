@@ -1,16 +1,15 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:recipe_ai/Model/nutrition_model.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/widgets/nutrition_animations.dart';
 import 'package:recipe_ai/widgets/nutrition_widgets.dart';
 
 /// Per-ingredient calorie breakdown (design screen 81). Shows each ingredient's
 /// contribution to either one serving or the whole recipe (based on [perServing]),
 /// largest first, with a purple bar sized against the biggest contributor.
-class IngredientNutritionScreen extends StatelessWidget {
+class IngredientNutritionScreen extends StatefulWidget {
   final String recipeName;
   final NutritionModel nutrition;
   final bool perServing;
@@ -22,16 +21,29 @@ class IngredientNutritionScreen extends StatelessWidget {
     this.perServing = true,
   });
 
+  @override
+  State<IngredientNutritionScreen> createState() =>
+      _IngredientNutritionScreenState();
+}
+
+class _IngredientNutritionScreenState extends State<IngredientNutritionScreen> {
   // Ingredient calories are stored per-serving; scale up for whole-recipe mode.
   double _scaled(double perServe) =>
-      perServing ? perServe : perServe * nutrition.servings;
+      widget.perServing ? perServe : perServe * widget.nutrition.servings;
 
-  double get _headerKcal =>
-      perServing ? nutrition.caloriesPerServing : nutrition.caloriesWholeRecipe;
+  double get _headerKcal => widget.perServing
+      ? widget.nutrition.caloriesPerServing
+      : widget.nutrition.caloriesWholeRecipe;
+
+  @override
+  void initState() {
+    super.initState();
+    AnalyticsService.instance.trackScreen("PerIngredientNutritionScreen");
+  }
 
   @override
   Widget build(BuildContext context) {
-    final items = nutrition.ingredientsNutrition;
+    final items = widget.nutrition.ingredientsNutrition;
     // Progress bar % = ingredient calories ÷ whole (current-mode) total × 100
     // (spec step 5), so the largest contributor reads e.g. 43%, not 100%.
     final total = _headerKcal > 0
@@ -213,10 +225,10 @@ class IngredientNutritionScreen extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          perServing
+                          widget.perServing
                               ? 'nutrition_kcal_per_serving_unit'.tr
                               : 'nutrition_kcal_serves'.trParams({
-                                  'servings': '${nutrition.servings}',
+                                  'servings': '${widget.nutrition.servings}',
                                 }),
                           style: NutritionPalette.font(
                             size: 13,

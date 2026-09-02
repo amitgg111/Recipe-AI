@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_ai/Service/auth_service.dart';
 import 'package:recipe_ai/Service/ai_translation_service.dart';
+import 'package:recipe_ai/Service/analytics_service.dart';
 import 'package:recipe_ai/Helper/unit_converter.dart';
 
 class GroceryItem {
@@ -893,20 +894,6 @@ class GroceryStore extends GetxController {
 
   // ── Public API ─────────────────────────────────────────────────────────────
   /// Add ingredients from a recipe; skips duplicates by name (case-insensitive).
-  // void addFromRecipe(List<String> ingredients) {
-  //   for (final raw in ingredients) {
-  //     final (name, qty) = parseIngredient(raw);
-  //     final exists = items.any(
-  //       (i) => i.name.toLowerCase() == name.toLowerCase(),
-  //     );
-  //     if (!exists) {
-  //       items.add(
-  //         GroceryItem(name: name, quantity: qty, aisle: detectAisle(raw)),
-  //       );
-  //     }
-  //   }
-  //   _saveToFirebase();
-  // }
   void addFromRecipe(String recipeId, List<String> ingredients) {
     // Requirements 6/7/12 — adding the SAME recipe again must UPDATE its
     // grocery items with the latest (serving-scaled) quantities instead of
@@ -983,16 +970,19 @@ class GroceryStore extends GetxController {
   void removeItem(GroceryItem item) {
     items.remove(item);
     _saveToFirebase();
+    AnalyticsService.instance.trackEvent('remove_grocery_item', parameters: {'item_name': item.name});
   }
 
   void clearChecked() {
     items.removeWhere((i) => i.checked);
     _saveToFirebase();
+    AnalyticsService.instance.trackEvent('clear_completed_groceries');
   }
 
   void clearAll() {
     items.clear();
     _saveToFirebase();
+    AnalyticsService.instance.trackEvent('clear_all_groceries');
   }
 
   /// Remove groceries that belong to a specific recipe
