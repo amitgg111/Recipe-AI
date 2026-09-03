@@ -12,6 +12,7 @@ import 'package:get_storage/get_storage.dart';
 import 'package:recipe_ai/Controllers/cuisine_controller.dart';
 import 'package:recipe_ai/Controllers/internet_controller.dart';
 import 'package:recipe_ai/Service/ai_translation_service.dart';
+
 import 'package:recipe_ai/Service/language_service.dart';
 import 'package:recipe_ai/Service/remote_config_service.dart';
 import 'package:recipe_ai/Service/recipe_auto_translate_service.dart';
@@ -54,6 +55,7 @@ void main() async {
   // localized (defaults to English when nothing is saved).
   await LanguageService.init();
   await LanguageService.detectCountry();
+
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
@@ -145,8 +147,32 @@ void _bindNotificationsToAuth() {
   });
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      MixpanelService.instance.pingLastActive();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -190,169 +216,6 @@ class MyApp extends StatelessWidget {
           ],
         );
       },
-      // getPages: [
-      //   // Onboarding
-      //   GetPage(name: '/onboarding', page: () => const WelcomeScreen()),
-      //   GetPage(
-      //     name: '/social-proof',
-      //     page: () => const SocialProofScreen(),
-      //   ),
-      //   GetPage(name: '/goals', page: () => const GoalsScreen()),
-      //   GetPage(
-      //     name: '/thats-great',
-      //     page: () => const ThatsGreatScreen(),
-      //   ),
-      //   GetPage(
-      //     name: '/goals-happen',
-      //     page: () => const GoalsHappenScreen(),
-      //   ),
-      //   GetPage(
-      //     name: '/when-to-cook',
-      //     page: () => const WhenToCookScreen(),
-      //   ),
-      //   GetPage(
-      //     name: '/notifications',
-      //     page: () => const NotificationsScreen(),
-      //   ),
-      //   GetPage(
-      //     name: '/how-did-you-hear',
-      //     page: () => const HowDidYouHearScreen(),
-      //   ),
-      //   GetPage(
-      //     name: '/recipe-sources',
-      //     page: () => const RecipeSourcesScreen(),
-      //   ),
-      //   GetPage(
-      //     name: '/awesome-import',
-      //     page: () => const AwesomeImportScreen(),
-      //   ),
-      //   GetPage(name: '/age', page: () => const AgeScreen()),
-      //   GetPage(name: '/setting-up', page: () => const SettingUpScreen()),
-      //   GetPage(name: '/plus-intro', page: () => const PlusIntroScreen()),
-      //   GetPage(
-      //     name: '/plus-comparison',
-      //     page: () => const PlusComparisonScreen(),
-      //   ),
-      //   GetPage(
-      //     name: '/trial-chooser',
-      //     page: () => const TrialChooserScreen(),
-      //   ),
-
-      //   // Auth
-      //   GetPage(
-      //     name: '/create-account',
-      //     page: () => const CreateAccountScreen(),
-      //   ),
-      //   GetPage(name: '/login', page: () => const LoginScreen()),
-      //   GetPage(name: '/signup', page: () => const SignUpScreen()),
-      //   GetPage(
-      //     name: '/forgot-password',
-      //     page: () => const ForgotPasswordScreen(),
-      //   ),
-
-      //   // Cookbooks
-      //   GetPage(
-      //     name: '/cookbooks-empty',
-      //     page: () => const CookbooksEmptyScreen(),
-      //   ),
-      //   GetPage(
-      //     name: '/cookbooks-home',
-      //     page: () => const CookbooksHomeScreen(),
-      //   ),
-      //   GetPage(
-      //     name: '/cookbook-detail',
-      //     page: () => const CookbookDetailScreen(),
-      //   ),
-      //   GetPage(
-      //     name: '/cookbook-detail-empty',
-      //     page: () => const CookbookDetailEmptyScreen(),
-      //   ),
-
-      //   // Cookbook variants
-      //   GetPage(
-      //     name: '/recipes-grid',
-      //     page: () => const RecipesGridScreen(),
-      //   ),
-
-      //   // Import
-      //   GetPage(
-      //     name: '/import-picker',
-      //     page: () => const ImportPickerScreen(),
-      //   ),
-
-      //   GetPage(
-      //     name: '/import-complete',
-      //     page: () => const ImportCompleteScreen(),
-      //   ),
-
-      //   // Recipe
-      //   GetPage(
-      //     name: '/recipe-detail-view',
-      //     page: () => const RecipeDetailViewScreen(),
-      //   ),
-      //   GetPage(
-      //     name: '/recipe-detail-edit',
-      //     page: () => const RecipeDetailEditScreen(),
-      //   ),
-
-      //   // Cook Mode
-      //   GetPage(
-      //     name: '/cook-mode-step',
-      //     page: () => const CookModeStepScreen(),
-      //   ),
-      //   GetPage(
-      //     name: '/cook-mode-timer',
-      //     page: () => const CookModeTimerScreen(),
-      //   ),
-      //   GetPage(
-      //     name: '/cook-mode-paused',
-      //     page: () => const CookModePausedScreen(),
-      //   ),
-      //   GetPage(
-      //     name: '/cook-mode-chip',
-      //     page: () => const CookModeChipScreen(),
-      //   ),
-      //   GetPage(
-      //     name: '/cook-mode-ingredients',
-      //     page: () => const CookModeIngredientsScreen(),
-      //   ),
-      //   GetPage(
-      //     name: '/cook-mode-timer-done',
-      //     page: () => const CookModeTimerDoneScreen(),
-      //   ),
-      //   GetPage(
-      //     name: '/cook-mode-all-timers',
-      //     page: () => const CookModeAllTimersScreen(),
-      //   ),
-      //   GetPage(
-      //     name: '/cook-mode-lock-notification',
-      //     page: () => const CookModeLockNotification(),
-      //   ),
-      //   GetPage(
-      //     name: '/cook-mode-finish',
-      //     page: () => const CookModeFinishScreen(),
-      //   ),
-
-      //   // Discover
-      //   GetPage(
-      //     name: '/discover-feed',
-      //     page: () => const DiscoverFeedScreen(),
-      //   ),
-      //   GetPage(
-      //     name: '/public-recipe',
-      //     page: () => const PublicRecipeScreen(),
-      //   ),
-
-      //   // Meal Plan
-      //   GetPage(
-      //     name: '/meal-plan-day',
-      //     page: () => const MealPlanDayScreen(),
-      //   ),
-      //   GetPage(
-      //     name: '/meal-plan-calendar',
-      //     page: () => const MealPlanCalendarScreen(),
-      //   ),
-      // ],
     );
   }
 }

@@ -611,8 +611,8 @@ class NutritionEstimator {
 class _Parsed {
   final String name;
   final double grams;
-  final bool isKnown; // 👈 NEW FIELD
-  const _Parsed({required this.name, required this.grams, this.isKnown = true});
+
+  const _Parsed({required this.name, required this.grams});
 }
 
 /// Per-100 g nutrition for a group of ingredient keywords.

@@ -15,20 +15,19 @@ class MixpanelService {
   /// Initializes the Mixpanel SDK. Safe to call multiple times or without a valid token.
   Future<void> init({String? token}) async {
     if (_isInitialized) return;
-    
+
     final projectToken = token ?? MixpanelConfig.projectToken;
     if (projectToken.isEmpty || projectToken.contains('YOUR_')) {
       if (kDebugMode) {
-        print("📊 Mixpanel Notice: SDK not configured (placeholder token used). Tracking calls will log gracefully.");
+        print(
+          "📊 Mixpanel Notice: SDK not configured (placeholder token used). Tracking calls will log gracefully.",
+        );
       }
       return;
     }
 
     try {
-      _mixpanel = await Mixpanel.init(
-        projectToken,
-        trackAutomaticEvents: true,
-      );
+      _mixpanel = await Mixpanel.init(projectToken, trackAutomaticEvents: true);
       _isInitialized = true;
       if (kDebugMode) {
         print("📊 Mixpanel initialized successfully.");
@@ -37,6 +36,17 @@ class MixpanelService {
       if (kDebugMode) {
         print("📊 Mixpanel initialization error: $e");
       }
+    }
+  }
+
+  /// Explicitly ping last-active timestamp — extra safety on top of automatic events
+  Future<void> pingLastActive() async {
+    try {
+      if (_isInitialized && _mixpanel != null) {
+        _mixpanel!.track("app_active_ping");
+      }
+    } catch (e) {
+      if (kDebugMode) print("📊 Mixpanel LastSeen Ping Error: $e");
     }
   }
 
@@ -180,11 +190,7 @@ class MixpanelService {
   }) async {
     await trackEvent(
       "credit_spent",
-      parameters: {
-        "amount": amount,
-        "reason": reason,
-        ...?extra,
-      },
+      parameters: {"amount": amount, "reason": reason, ...?extra},
     );
   }
 
@@ -214,11 +220,7 @@ class MixpanelService {
   }) async {
     await trackEvent(
       "search_performed",
-      parameters: {
-        "query": query,
-        "search_type": searchType,
-        ...?extra,
-      },
+      parameters: {"query": query, "search_type": searchType, ...?extra},
     );
   }
 
@@ -257,10 +259,7 @@ class MixpanelService {
   }
 
   /// Track bottom tab switches
-  Future<void> trackTabSwitch({
-    required String tabName,
-    int? tabIndex,
-  }) async {
+  Future<void> trackTabSwitch({required String tabName, int? tabIndex}) async {
     await trackEvent(
       "tab_switch",
       parameters: {

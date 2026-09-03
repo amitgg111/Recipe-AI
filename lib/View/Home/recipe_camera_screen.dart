@@ -23,7 +23,7 @@ class _RecipeCameraScreenState extends State<RecipeCameraScreen> {
 
   bool _isInitializing = true;
   bool _isProcessing = false;
-
+  File? _capturedImage;
   @override
   void initState() {
     super.initState();
@@ -175,7 +175,24 @@ class _RecipeCameraScreenState extends State<RecipeCameraScreen> {
                 // ─────────────────────────────────────────────
                 // CAMERA
                 // ─────────────────────────────────────────────
-                if (_isInitializing)
+                // if (_isInitializing)
+                //   const Center(
+                //     child: CircularProgressIndicator(color: Colors.white),
+                //   )
+                // else if (controller != null && controller.value.isInitialized)
+                //   _buildCameraPreview(controller)
+                // else
+                //   Center(
+                //     child: Text(
+                //       'unable_to_access_camera'.tr,
+                //       style: const TextStyle(color: Colors.white, fontSize: 16),
+                //     ),
+                //   ),
+                if (_capturedImage != null) // 👈 NAVI CONDITION - sauthi upar
+                  Positioned.fill(
+                    child: Image.file(_capturedImage!, fit: BoxFit.cover),
+                  )
+                else if (_isInitializing)
                   const Center(
                     child: CircularProgressIndicator(color: Colors.white),
                   )
@@ -455,6 +472,10 @@ class _RecipeCameraScreenState extends State<RecipeCameraScreen> {
   }
 
   Future<void> _showImageConfirmation(File image) async {
+    setState(
+      () => _capturedImage = image,
+    ); // 👈 NAVI LINE - dialog khulta pehla photo set karo
+
     final screenHeight = MediaQuery.of(context).size.height;
 
     final shouldProcess = await Get.dialog<bool>(
@@ -552,11 +573,21 @@ class _RecipeCameraScreenState extends State<RecipeCameraScreen> {
       ),
     );
 
+    // if (shouldProcess == true && mounted) {
+    //   setState(() => _isProcessing = true);
+    //   await _processRecipeImage(image);
+    // } else if (mounted) {
+    //   setState(() => _isProcessing = false);
+    // }
     if (shouldProcess == true && mounted) {
       setState(() => _isProcessing = true);
       await _processRecipeImage(image);
     } else if (mounted) {
-      setState(() => _isProcessing = false);
+      setState(() {
+        _isProcessing = false;
+        _capturedImage =
+            null; // 👈 NAVI LINE - "retake" karyu to pacha camera dekhado
+      });
     }
   }
 }
